@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AppRole } from "@/integrations/supabase/types";
+import type { AppRole } from "@/integrations/supabase/schema-extras";
 
 const APP_ROLES = ["admin", "gestor", "arte", "dtf", "silk", "acabamento"] as const;
 
@@ -27,7 +27,8 @@ export const createUserAccount = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+    const admin = supabaseAdmin as any;
+    const { data: created, error } = await admin.auth.admin.createUser({
       email: data.email,
       password: data.password,
       email_confirm: true,
@@ -35,8 +36,8 @@ export const createUserAccount = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     const uid = created.user!.id;
-    await supabaseAdmin.from("profiles").upsert({ id: uid, email: data.email, nome: data.nome ?? null });
-    const { error: rErr } = await supabaseAdmin.from("user_roles").insert({
+    await admin.from("profiles").upsert({ id: uid, email: data.email, nome: data.nome ?? null });
+    const { error: rErr } = await admin.from("user_roles").insert({
       user_id: uid,
       role: data.role as AppRole,
       areas_extras: data.areas_extras ?? null,
@@ -50,18 +51,19 @@ export const listUsers = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: profiles, error: pErr } = await supabaseAdmin
+    const admin = supabaseAdmin as any;
+    const { data: profiles, error: pErr } = await admin
       .from("profiles")
       .select("id, email, nome, created_at")
       .order("created_at", { ascending: false });
     if (pErr) throw new Error(pErr.message);
-    const { data: roles, error: rErr } = await supabaseAdmin
+    const { data: roles, error: rErr } = await admin
       .from("user_roles")
       .select("user_id, role, areas_extras");
     if (rErr) throw new Error(rErr.message);
-    return (profiles ?? []).map((p) => ({
+    return ((profiles ?? []) as any[]).map((p) => ({
       ...p,
-      roles: (roles ?? []).filter((r) => r.user_id === p.id),
+      roles: ((roles ?? []) as any[]).filter((r) => r.user_id === p.id),
     }));
   });
 
@@ -79,8 +81,9 @@ export const updateUserRole = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
-    const { error } = await supabaseAdmin.from("user_roles").insert({
+    const admin = supabaseAdmin as any;
+    await admin.from("user_roles").delete().eq("user_id", data.userId);
+    const { error } = await admin.from("user_roles").insert({
       user_id: data.userId,
       role: data.role as AppRole,
       areas_extras: data.areas_extras ?? null,
@@ -96,7 +99,8 @@ export const deleteUserAccount = createServerFn({ method: "POST" })
     if (data.userId === context.userId) throw new Error("Não é possível excluir a própria conta.");
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    const admin = supabaseAdmin as any;
+    const { error } = await admin.auth.admin.deleteUser(data.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
