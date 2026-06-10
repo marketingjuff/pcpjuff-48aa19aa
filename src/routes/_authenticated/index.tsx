@@ -49,9 +49,7 @@ function AppHome() {
 
   const upsert = useMutation({
     mutationFn: async (payload: Partial<Pedido> & { id?: string }) => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Não autenticado");
-      const row = { ...payload, user_id: u.user.id } as any;
+      const row = { ...payload } as any;
       if (row.id) {
         const { error } = await supabase.from("pedidos").update(row).eq("id", row.id);
         if (error) throw error;
