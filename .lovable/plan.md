@@ -1,47 +1,133 @@
-## O que está acontecendo
+# Plano de Alterações — PCP JUFF
 
-O email que você recebeu é o template padrão do Supabase. O link nele aponta para `localhost:3000` porque essa é a **Site URL** padrão do seu projeto Supabase — e como você não tem nada rodando em `localhost:3000`, o navegador mostra "conexão recusada" e o token expira (`otp_expired`).
-
-Isso **não é um problema de código** do app — é configuração no painel do Supabase. Há duas formas de resolver, e você escolhe:
+Vou implementar em **4 fases**. Cada fase termina em algo testável.
 
 ---
 
-## Opção A (recomendada para uso interno) — Desativar confirmação de email
+## Fase 1 — Infraestrutura (base para o resto)
 
-Se o PCP Juff é uso interno da equipe, o mais simples é não exigir confirmação por email. O usuário cria a conta e já entra direto.
+**Banco / Schema**
+- Tabela `feriados` (id, data, descricao) + GRANTs + RLS (todos autenticados leem/escrevem).
+- Tabela `app_role` enum: `admin | gestor | arte | dtf | silk | acabamento`.
+- Tabela `user_roles` (user_id, role, areas_extras text[]) + função `has_role()` security definer.
+- Tabela `profiles` (id, email, nome) com trigger `on_auth_user_created` que:
+  - cria o profile;
+  - se o e-mail for `juliana@`, `flavio@` ou `marketing@juff.com.br`, atribui role `admin` automaticamente.
+- Novos campos em `pedidos`: `data_entrega`, `saida_juff`, `tempo_producao`, `uf_entrega`, `necessita_vetorizacao` (bool), `obs_vendedor`, `layout_url`, `vetorizacao_executada` (bool), `quem_bateu_dtf`, `quem_bateu_silk`, `responsavel_acabamento`, `tela_gravada`, `embalado`, `finalizado_em` (timestamp).
+- Renomear `modelo_estampa` → `tipo_estampa`, `status` → `status_geral`.
+- Novos status de arte: `imprimindo | aprovar_amostra | arte_finalizada`.
 
-Passos no painel Supabase:
-1. Acesse seu projeto em supabase.com
-2. Authentication → Providers → Email
-3. Desative "Confirm email"
-4. Salve
+**Storage**
+- Bucket privado `layouts` para PDFs (até 30MB), com policies para autenticados.
 
-Pronto — novos cadastros entram direto sem precisar do link.
+**Permissões (RLS)**
+- Política nas tabelas baseada em `has_role()`:
+  - Admin: tudo.
+  - Gestor: SELECT tudo, UPDATE somente colunas de Dados In + reabertura (`finalizado_em = null`); colunas extras liberadas via `areas_extras`.
+  - Arte/DTF/Silk/Acabamento: SELECT tudo, UPDATE só das colunas da sua aba.
+- Implementado via `has_column_access(area)` helper.
 
-Eu também ajustaria a tela `/auth` para mostrar a mensagem certa após o signup (entrar direto em vez de "verifique seu email").
-
----
-
-## Opção B — Manter confirmação e arrumar a URL do link
-
-Se quiser manter a confirmação por email, precisa apontar a Site URL para a URL real do app.
-
-Passos no painel Supabase:
-1. Authentication → URL Configuration
-2. **Site URL**: cole a URL de preview/produção do app, por exemplo
-   `https://74c45605-832d-4366-bdd6-081b5bb1b360.lovableproject.com`
-   (ou o domínio publicado depois que você publicar)
-3. **Redirect URLs** (Additional Redirect URLs): adicione a mesma URL com `/*` no fim para liberar callbacks, ex.:
-   `https://74c45605-832d-4366-bdd6-081b5bb1b360.lovableproject.com/*`
-4. Salve
-
-Depois disso, peça um novo cadastro — o novo email virá com link correto. **Os links antigos já estão expirados**, não tente reusar.
+**Painel de Configurações (admin)**
+- Nova rota `/_authenticated/configuracoes` com 2 abas: **Feriados** (CRUD) e **Usuários**.
+- Aba Usuários: lista usuários, cria conta via **server function** `createUserAccount` que usa `supabaseAdmin.auth.admin.createUser({ email, password, email_confirm: true })` e insere role + `areas_extras`. Admin define e-mail+senha inicial.
+- Acesso à página bloqueado para não-admin.
 
 ---
 
-## Decisão que preciso de você
+## Fase 2 — Dados In + Arte
 
-Me responda só com **A** ou **B**:
+**Dados In**
+- Layout dividido em 2 colunas: **Input do Vendedor** (verde claro) | **Input de Produção** (azul claro), nas ordens especificadas.
+- Novos campos: Data de Entrega, UF, Vetorização?, Layout (upload PDF), Obs. do vendedor.
+- Cálculos automáticos: **Saída Juff = Data de Entrega − tempo de frete** (dias úteis, considerando feriados); **Tempo de produção = dias úteis entre Entrada e Saída Juff**.
+- Visual: Orçamento Comercial em destaque (só número, grande, read-only).
+- Trocar posições Orçamento ↔ Pedido Olist. Remover coluna "Pedidos" e botão "Duplicar".
+- **Dashboard Dados In** abaixo do form com colunas listadas (scroll horizontal).
 
-- **A** — desativar confirmação (mais simples, recomendado para uso interno). Eu ajusto a mensagem da tela de cadastro pra refletir isso.
-- **B** — manter confirmação; nesse caso você ajusta as URLs no painel Supabase conforme os passos acima e eu não preciso mexer no código.
+**Arte**
+- "Pedido OK" → **Status da Arte** (Imprimindo / Aprovar Amostra / Arte Finalizada).
+- Remover "Qual estampa/descrição". Remover coluna "Pedidos" e adicionar **Dashboard da Arte** (com Frete, Tempo de Frete, UF).
+- DTF Impresso e Fotolito Impresso: dropdown só Sim/Não.
+- Visibilidade condicional dos pares conforme Tipo de Estampa (DTF / Silk / DTF+Silk / Lisa).
+- Reset de data quando status volta para Não.
+- Espelho de Vetorização (Sim/Não) do Dados In + flag "executado".
+- Renomear data "DTF Impresso" → "DTF Impresso Executado".
+
+**Helper compartilhado**
+- `lib/dias-uteis.ts` usando feriados.
+- `useUnsavedChanges` hook + diálogo global "Tem certeza que deseja sair?" (Salvar verde / Não Salvar vermelho), bloqueando troca de aba e navegação.
+- `lib/format.ts`: `formatDateBR(date)` → `dd/mm/aa` aplicado em toda a plataforma.
+
+---
+
+## Fase 3 — DTF, Silk, Acabamento, Finalizados
+
+**DTF**
+- Campo "Quem bateu o DTF?" (Jefferson, Sarah, Rubens, Outros).
+- Remover coluna "Pedidos" → **Dashboard do DTF** (filtros: Orçamento, Pedido, Status, DTF Impresso, DTF Estampado).
+- Puxar status DTF Impresso da Arte; banner amarelo persistente "arte pendente" se Não.
+- Reordenar: DTF Impresso antes do Início Estamparia.
+- Reset data ao mudar "DTF Estampado?" para Não; renomear para **DTF Estampado Executado**.
+- Mostrar só a data de término (sem cálculo de dias).
+- Dependência Silk+DTF visível.
+
+**Silk**
+- Campo "Quem bateu o Silk?" (Gleisson, Marcelo, Outros).
+- **Dashboard do Silk** (filtros: Orçamento, Pedido, Status, Tela Gravada, Silk Feito).
+- Puxar status Fotolito Impresso da Arte; banner amarelo "arte pendente".
+- Reordenar Fotolito Impresso antes do Início Estamparia.
+- Reset data; renomear para **Data Executada de Silk**.
+
+**Acabamento**
+- Responsável: Vanessa, Patrícia, Juliana, Outros.
+- Remover "DTF OK" e "Silk OK" (vêm automáticos). Renomear "Silk Feito" → **Silk Estampado?**.
+- Reset: se Embalado? = Não/vazio → Data Saída Juff e Responsável ficam vazios.
+- Mostrar Data de Entrega vinda do Dados In.
+- **Dashboard do Acabamento** (filtros Orçamento, Pedido, DTF Estampado, Silk Estampado) com colunas Saída Juff e Data Entrega.
+- Indicador: quando Embalado=Sim e demais campos completos → marca `finalizado_em = now()`.
+
+**Finalizados (nova aba)**
+- Lista pedidos onde `finalizado_em IS NOT NULL`.
+- Saem dos dashboards das outras abas.
+- Resumo com filtros + filtro de período (padrão TUDO).
+- Botão "Reabrir" → seta `finalizado_em = null`, volta para Acabamento.
+
+---
+
+## Fase 4 — Dashboard Master + Avisos Globais
+
+**Dashboard Master**
+- Renomear "Dashboard" → **Dashboard Master**.
+- Cards do topo: remover Abertos/Completos. Manter **Total** e **Atrasados**. Adicionar contagens por área (Arte, DTF, Silk, Acabamento). Silk+DTF conta nas duas. Finalizados não contam. Todos clicáveis aplicam filtro.
+- Painel de **Pendências** no topo (Atrasados + Aguardando etapa anterior), clicável.
+- Colunas: adicionar Data de Entrega e Frete.
+- Ordenação: clique no cabeçalho "Dias" alterna asc/desc.
+- Filtros: Vendedores, Status Geral, Tipo de Estampa (renomeado), **Todas as Etapas** (com opção "todas menos finalizados"), Data de Entrega, Frete.
+- "Dias" = dias úteis até a entrega.
+
+**Avisos persistentes (topo, globais)**
+- Componente `<PendenciasBanner />` no layout `_authenticated`:
+  - amarelo: aguardando etapa anterior;
+  - vermelho: atrasado.
+- Visível enquanto a pendência existir; some quando resolve. Vale para todas as abas.
+
+**Observações renomeadas**
+- "Observações da Arte / do DTF / do Silk / do Acabamento" conforme a aba.
+
+---
+
+## Detalhes técnicos
+
+- **Edge functions Supabase NÃO** serão usadas. Toda lógica server-side vai em `createServerFn` do TanStack Start (admin de usuários, upload de PDF, cálculos sensíveis).
+- `supabaseAdmin` só dentro do handler (`await import('@/integrations/supabase/client.server')`), após checar `has_role(userId, 'admin')`.
+- Cálculo de dias úteis no cliente quando puramente de exibição; nas mutações que gravam `saida_juff`/`tempo_producao`, calcular antes de salvar.
+- `Pedido` type será regenerado a partir do schema novo.
+- Realtime continua via `postgres_changes` na tabela `pedidos`.
+
+## Risco / pontos a confirmar depois
+
+- Reset de campos no Acabamento quando `embalado` = Não: confirmamos que **não** deve apagar dados da Arte/DTF/Silk, apenas os do próprio Acabamento. (assumindo que sim)
+- "Tempo de Frete" — assumindo coluna já existente em pedidos; se não existir, adicionar na Fase 1.
+- Bucket `layouts` privado: PDFs servidos por URL assinada de curta duração (1h) gerada no cliente.
+
+Posso começar pela Fase 1 quando você aprovar.
