@@ -25,6 +25,7 @@ function AppHome() {
   const qc = useQueryClient();
   const [tab, setTab] = useState("dashboard");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const isAdmin = useIsAdmin();
 
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ["pedidos"],
