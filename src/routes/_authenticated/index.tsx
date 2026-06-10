@@ -1,11 +1,12 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Factory, LogOut } from "lucide-react";
+import { Factory, LogOut, Settings } from "lucide-react";
 import { toast } from "sonner";
+import { useIsAdmin } from "@/hooks/use-role";
 import type { Pedido } from "@/lib/pedidos";
 import { DadosInTab } from "@/components/pcp/DadosInTab";
 import { ArteTab } from "@/components/pcp/ArteTab";
@@ -24,6 +25,7 @@ function AppHome() {
   const qc = useQueryClient();
   const [tab, setTab] = useState("dashboard");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const isAdmin = useIsAdmin();
 
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ["pedidos"],
@@ -107,9 +109,16 @@ function AppHome() {
               <p className="text-xs text-muted-foreground">Controle de produção</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-1" /> Sair
-          </Button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Link to="/configuracoes">
+                <Button variant="ghost" size="sm"><Settings className="h-4 w-4 mr-1" /> Configurações</Button>
+              </Link>
+            )}
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-1" /> Sair
+            </Button>
+          </div>
         </div>
       </header>
 
