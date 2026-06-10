@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { AppRole } from "@/integrations/supabase/types";
+import type { AppRole, UserRoleRow } from "@/integrations/supabase/schema-extras";
 
 export function useCurrentUser() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -21,12 +21,12 @@ export function useMyRoles() {
     queryKey: ["my-roles", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("user_roles")
         .select("role, areas_extras")
         .eq("user_id", userId!);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as Pick<UserRoleRow, "role" | "areas_extras">[];
     },
   });
 }
