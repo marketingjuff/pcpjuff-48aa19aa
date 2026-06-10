@@ -39,13 +39,18 @@ function AuthPage() {
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email, password,
       options: { emailRedirectTo: `${window.location.origin}/` },
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Conta criada — verifique seu email se necessário.");
+    if (data.session) {
+      toast.success("Conta criada — entrando...");
+      navigate({ to: "/", replace: true });
+    } else {
+      toast.success("Conta criada! Se a confirmação por email estiver ativa, verifique sua caixa. Caso contrário, entre na aba 'Entrar'.");
+    }
   }
 
   return (
