@@ -134,7 +134,8 @@ function AppHomeInner() {
 
   function goToTabWithPedido(t: string, id: string) {
     setSelectedId(id);
-    setTab(t);
+    if (isDirty) setPendingNav({ kind: "tab", value: t });
+    else setTab(t);
   }
 
   return (
