@@ -15,7 +15,6 @@ import { SilkTab } from "@/components/pcp/SilkTab";
 import { AcabamentoTab } from "@/components/pcp/AcabamentoTab";
 import { DashboardTab } from "@/components/pcp/DashboardTab";
 import { FinalizadosTab } from "@/components/pcp/FinalizadosTab";
-import { PendenciasBanner } from "@/components/pcp/PendenciasBanner";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: AppHome,
@@ -124,7 +123,6 @@ function AppHome() {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        {tab !== "dados" && <PendenciasBanner pedidos={pedidos} />}
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid w-full grid-cols-7 mb-6">
             <TabsTrigger value="dashboard">Dashboard Master</TabsTrigger>
