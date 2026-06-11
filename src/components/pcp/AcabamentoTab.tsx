@@ -188,9 +188,9 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
                       <td className="px-3 py-2">{modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"}</td>
                       <td className="px-3 py-2">{modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"}</td>
                       <td className="px-3 py-2">{p.embalado ?? "—"}</td>
+                      <td className="px-3 py-2">{p.responsavel_acabamento ?? "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
-                      <td className="px-3 py-2">{p.responsavel_acabamento ?? "—"}</td>
                     </tr>
                   );
                 })}
