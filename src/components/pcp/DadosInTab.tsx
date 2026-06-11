@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
-  VENDEDORES, STATUS_GERAL_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS,
+  STATUS_GERAL_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS,
   calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk,
 } from "@/lib/pedidos";
+import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -40,7 +41,7 @@ const empty: Partial<Pedido> = {
   pedido_olist: "",
   orcamento: "",
   qtd: null,
-  vendedor: "Wander",
+  vendedor: null,
   tipo_estampa: "",
   status_geral: "",
   entrada_pedido: new Date().toISOString().slice(0, 10),
@@ -52,6 +53,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const [uploading, setUploading] = useState(false);
   const { feriados } = useFeriados();
   const { isDirty } = useDirtyForm();
+  const { names: vendedores } = useAppList("vendedor");
 
   useEffect(() => {
     if (!isDirty) setForm(selected ?? empty);
@@ -186,8 +188,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             <Field label="Quantas peças *"><Input value={form.qtd ?? ""} onChange={(e) => set("qtd", e.target.value)} required /></Field>
             <Field label="Vendedor *">
               <Select value={form.vendedor ?? ""} onValueChange={(v) => set("vendedor", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{VENDEDORES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>{vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
             <Field label="Frete (transportadora)"><Input value={form.frete ?? ""} onChange={(e) => set("frete", e.target.value)} /></Field>

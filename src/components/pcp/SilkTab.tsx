@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiSilk, QUEM_BATEU_SILK, visivelEmSilk } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiSilk, visivelEmSilk } from "@/lib/pedidos";
+import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -26,6 +27,7 @@ interface Props {
 export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = true }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
+  const { names: operadoresSilk } = useAppList("silk");
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
@@ -34,7 +36,18 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   useDirtyTracker(form, selected ?? {}, active && !!selected);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
   function setSilkFeito(v: string) {
-    setForm((f) => ({ ...f, silk_feito: v, ...(v !== "Sim" ? { silk_data_executada: null } : {}) }));
+    setForm((f) => ({
+      ...f,
+      silk_feito: v,
+      ...(v !== "Sim" ? { silk_data_executada: null, quem_bateu_silk: null } : {}),
+    }));
+  }
+  function setDataExec(v: string | null | undefined) {
+    setForm((f) => ({
+      ...f,
+      silk_data_executada: v ?? null,
+      ...(!v ? { quem_bateu_silk: null } : {}),
+    }));
   }
   function handleSave() {
     if (!selected) return;
@@ -134,12 +147,12 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   </Select>
                 </FormField>
                 <FormField label={`Data Executada de Silk${form.silk_feito === "Sim" ? " *" : ""}`}>
-                  <DateInputBR disabled={form.silk_feito !== "Sim"} value={form.silk_data_executada} onChange={(v) => set("silk_data_executada", v)} />
+                  <DateInputBR disabled={form.silk_feito !== "Sim"} value={form.silk_data_executada} onChange={setDataExec} />
                 </FormField>
                 <FormField label="Quem bateu o Silk?">
-                  <Select value={form.quem_bateu_silk ?? ""} onValueChange={(v) => set("quem_bateu_silk", v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>{QUEM_BATEU_SILK.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                  <Select value={form.quem_bateu_silk ?? ""} onValueChange={(v) => set("quem_bateu_silk", v)} disabled={!form.silk_data_executada}>
+                    <SelectTrigger><SelectValue placeholder={!form.silk_data_executada ? "Preencha a data primeiro" : "Selecione..."} /></SelectTrigger>
+                    <SelectContent>{operadoresSilk.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                   </Select>
                 </FormField>
                 <div className="md:col-span-2">

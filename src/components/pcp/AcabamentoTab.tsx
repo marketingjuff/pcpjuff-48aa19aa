@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, RESPONSAVEIS_ACABAMENTO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento } from "@/lib/pedidos";
+import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -26,6 +27,7 @@ interface Props {
 export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, active = true }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
+  const { names: responsaveis } = useAppList("acabamento");
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
@@ -39,6 +41,13 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
       ...f,
       embalado: v,
       ...(v !== "Sim" ? { data_saida_juff: null, responsavel_acabamento: null, responsavel_conferencia: null } : {}),
+    }));
+  }
+  function setDataSaida(v: string | null | undefined) {
+    setForm((f) => ({
+      ...f,
+      data_saida_juff: v ?? null,
+      ...(!v ? { responsavel_acabamento: null } : {}),
     }));
   }
 
@@ -138,14 +147,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                   <SelectContent>{SIM_NAO_PROCESSO.slice(0, 2).map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                 </Select>
               </FormField>
-              <FormField label="Responsável pelo Acabamento">
-                <Select value={form.responsavel_acabamento ?? ""} onValueChange={(v) => set("responsavel_acabamento", v)} disabled={form.embalado !== "Sim"}>
-                  <SelectTrigger><SelectValue placeholder={form.embalado !== "Sim" ? "Embale primeiro" : "Selecione..."} /></SelectTrigger>
-                  <SelectContent>{RESPONSAVEIS_ACABAMENTO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                </Select>
-              </FormField>
               <FormField label={`Data Saída Juff${form.embalado === "Sim" ? " *" : ""}`}>
-                <DateInputBR disabled={form.embalado !== "Sim"} value={form.data_saida_juff} onChange={(v) => set("data_saida_juff", v)} />
+                <DateInputBR disabled={form.embalado !== "Sim"} value={form.data_saida_juff} onChange={setDataSaida} />
+              </FormField>
+              <FormField label="Responsável pelo Acabamento">
+                <Select value={form.responsavel_acabamento ?? ""} onValueChange={(v) => set("responsavel_acabamento", v)} disabled={!form.data_saida_juff}>
+                  <SelectTrigger><SelectValue placeholder={!form.data_saida_juff ? "Preencha a data primeiro" : "Selecione..."} /></SelectTrigger>
+                  <SelectContent>{responsaveis.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                </Select>
               </FormField>
               <div className="md:col-span-2">
                 <FormField label="Observações do Acabamento">
