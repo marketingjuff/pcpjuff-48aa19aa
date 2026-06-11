@@ -71,21 +71,15 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
               </Badge>
             </CardHeader>
             <CardContent className="space-y-6">
-              {selected.fotolito_impresso !== "Sim" && (
-                <div className="flex items-center gap-2 p-3 rounded-md bg-warning/15 text-sm border border-warning/30">
-                  <Info className="h-4 w-4" /> Arte ainda não liberou o fotolito.
-                </div>
-              )}
-              {selected.tipo_estampa === "DTF+Silk" && (
-                <div className="flex items-center gap-2 p-3 rounded-md bg-info/10 text-sm border border-info/30">
-                  <Info className="h-4 w-4" /> Pedido com dependência Silk + DTF.
-                </div>
-              )}
-              {atrasado && (
-                <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">
-                  <AlertTriangle className="h-4 w-4" /> Data executada após o limite de estamparia.
-                </div>
-              )}
+            <EtapaStatusBanner
+              pendencias={[
+                selected.fotolito_impresso !== "Sim" && "Arte ainda não liberou o fotolito",
+                form.tela_gravada !== "Sim" && "Tela ainda não foi gravada",
+              ].filter(Boolean) as string[]}
+              atrasado={!!atrasado}
+              atrasadoMsg="Data executada após o limite de estamparia."
+            />
+
               <div className="grid gap-4 md:grid-cols-2">
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
