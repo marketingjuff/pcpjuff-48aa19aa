@@ -77,34 +77,40 @@ export function calcularEtapaAtual(p: Pedido): {
 
   const dadosInOk = !!p.pedido_olist;
   const arteOk = p.status_arte === "Arte Finalizada";
-  const dtfOk = !tipoIncluiDTF(tipo) || p.dtf_estampado === "Sim";
-  const silkOk = !tipoIncluiSilk(tipo) || p.silk_feito === "Sim";
+  const dtfDone = p.dtf_estampado === "Sim";
+  const silkDone = p.silk_feito === "Sim";
   const acabamentoOk = p.embalado === "Sim";
+  const producaoInputOk = notEmpty(p.arte_data);
 
   const etapas = isLisa
     ? [dadosInOk, acabamentoOk]
-    : ([dadosInOk, arteOk, tipoIncluiDTF(tipo) ? dtfOk : null, tipoIncluiSilk(tipo) ? silkOk : null, acabamentoOk].filter(
+    : ([dadosInOk, arteOk, tipoIncluiDTF(tipo) ? dtfDone : null, tipoIncluiSilk(tipo) ? silkDone : null, acabamentoOk].filter(
         (v) => v !== null,
       ) as boolean[]);
-
   const completas = etapas.filter(Boolean).length;
   const percentual = Math.round((completas / etapas.length) * 100);
 
-  let etapa = "Pendente entrada";
+  let etapa = "Aguardando entrada";
   let cor: "green" | "yellow" | "red" | "gray" | "blue" = "gray";
 
-  // "Input de produção" = campos preenchidos pela equipe de produção (não os do vendedor).
-  // tempo_producao é auto-calculado a partir do input do vendedor, então não serve como sinal.
-  const producaoInputOk = notEmpty(p.arte_data);
-
-  if (p.finalizado_em) { etapa = "Finalizado"; cor = "green"; }
-  else if (acabamentoOk) { etapa = "Enviado"; cor = "green"; }
-  else if (!dadosInOk) { etapa = "Pendente entrada"; cor = "gray"; }
-  else if (!producaoInputOk) { etapa = "Aguardando input de produção"; cor = "yellow"; }
-  else if (!isLisa && !arteOk) { etapa = "Arte em progresso"; cor = "blue"; }
-  else if (tipoIncluiDTF(tipo) && p.dtf_estampado !== "Sim") { etapa = "DTF aguardando"; cor = "yellow"; }
-  else if (tipoIncluiSilk(tipo) && p.silk_feito !== "Sim") { etapa = "Silk aguardando"; cor = "yellow"; }
-  else { etapa = "Acabamento"; cor = "blue"; }
+  if (p.finalizado_em || acabamentoOk) {
+    etapa = "Finalizado"; cor = "green";
+  } else if (!dadosInOk) {
+    etapa = "Aguardando entrada"; cor = "gray";
+  } else if (!isLisa && !producaoInputOk) {
+    etapa = "Aguardando input de produção"; cor = "yellow";
+  } else if (isLisa) {
+    etapa = "Aguardando Acabamento"; cor = "blue";
+  } else if (!arteOk) {
+    etapa = "Aguardando Arte"; cor = "blue";
+  } else {
+    const needDTF = tipoIncluiDTF(tipo) && !dtfDone;
+    const needSilk = tipoIncluiSilk(tipo) && !silkDone;
+    if (needDTF && needSilk) { etapa = "Aguardando DTF + Silk"; cor = "yellow"; }
+    else if (needDTF) { etapa = "Aguardando DTF"; cor = "yellow"; }
+    else if (needSilk) { etapa = "Aguardando Silk"; cor = "yellow"; }
+    else { etapa = "Aguardando Acabamento"; cor = "blue"; }
+  }
 
   return { etapa, percentual, cor };
 }
@@ -178,11 +184,18 @@ export function acabamentoAlgumPreenchido(p: Pedido): boolean {
   return notEmpty(p.embalado) || notEmpty(p.data_saida_juff) || notEmpty(p.responsavel_acabamento) || notEmpty((p as any).responsavel_conferencia);
 }
 
-// Visibilidade em cascata
+// Visibilidade em cascata — pedidos Lisa aparecem em todos os dashboards de processo
 export function visivelEmArte(p: Pedido): boolean { return dadosInCompletos(p); }
-export function visivelEmDTF(p: Pedido): boolean { return tipoIncluiDTF(p.tipo_estampa) && arteCompleta(p); }
-export function visivelEmSilk(p: Pedido): boolean { return tipoIncluiSilk(p.tipo_estampa) && arteCompleta(p); }
+export function visivelEmDTF(p: Pedido): boolean {
+  if (p.tipo_estampa === "Lisa") return dadosInCompletos(p);
+  return tipoIncluiDTF(p.tipo_estampa) && arteCompleta(p);
+}
+export function visivelEmSilk(p: Pedido): boolean {
+  if (p.tipo_estampa === "Lisa") return dadosInCompletos(p);
+  return tipoIncluiSilk(p.tipo_estampa) && arteCompleta(p);
+}
 export function visivelEmAcabamento(p: Pedido): boolean {
+  if (p.tipo_estampa === "Lisa") return dadosInCompletos(p);
   if (!arteCompleta(p)) return false;
   if (tipoIncluiDTF(p.tipo_estampa) && !dtfCompleto(p)) return false;
   if (tipoIncluiSilk(p.tipo_estampa) && !silkCompleto(p)) return false;

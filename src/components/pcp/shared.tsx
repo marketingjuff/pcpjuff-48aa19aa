@@ -1,8 +1,8 @@
 import type { Pedido } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { calcularEtapaAtual, type EtapaStatus } from "@/lib/pedidos";
-import { CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk, type EtapaStatus } from "@/lib/pedidos";
+import { CheckCircle2, Clock, AlertTriangle, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
