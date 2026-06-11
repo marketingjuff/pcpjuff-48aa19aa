@@ -6,19 +6,29 @@ import { CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-/** Abre o PDF do layout via edge function (sem expor URL do Supabase). */
-export async function abrirLayoutPDF(path: string) {
+/** Baixa o PDF do layout via edge function (sem expor URL do Supabase). */
+export async function baixarLayoutPDF(path: string) {
   try {
     const { data, error } = await supabase.functions.invoke("get-layout-pdf", { body: { path } });
     if (error) throw error;
     const blob = data instanceof Blob ? data : new Blob([data as ArrayBuffer], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    // Extrai nome original (path = `${uuid}-${filename}`)
+    const filename = path.replace(/^[0-9a-f-]{36}-/i, "") || "layout.pdf";
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
   } catch (e: any) {
-    toast.error(e?.message ?? "Falha ao abrir PDF");
+    toast.error(e?.message ?? "Falha ao baixar PDF");
   }
 }
+
+/** @deprecated use baixarLayoutPDF */
+export const abrirLayoutPDF = baixarLayoutPDF;
 
 export function EtapaBadge({ status, labels }: { status: EtapaStatus; labels: { pendente: string; andamento: string; concluido: string } }) {
   const cfg = status === "concluido"
