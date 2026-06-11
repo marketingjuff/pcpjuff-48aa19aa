@@ -270,8 +270,17 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <Textarea rows={3} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
               </Field>
             </div>
+            <div className="md:col-span-2 flex gap-2 pt-2">
+              <Button type="button" onClick={saveVendor} disabled={saving}>
+                <Save className="h-4 w-4 mr-1" />Salvar Input do Vendedor
+              </Button>
+              {selected && (
+                <Button type="button" variant="outline" onClick={handleNew}><X className="h-4 w-4 mr-1" />Cancelar edição</Button>
+              )}
+            </div>
           </CardContent>
         </Card>
+
 
         {/* Produção */}
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
