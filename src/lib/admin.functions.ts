@@ -37,11 +37,14 @@ export const createUserAccount = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     const uid = created.user!.id;
     await admin.from("profiles").upsert({ id: uid, email: data.email, nome: data.nome ?? null });
-    const { error: rErr } = await admin.from("user_roles").insert({
-      user_id: uid,
-      role: data.role as AppRole,
-      areas_extras: data.areas_extras ?? null,
-    });
+    const { error: rErr } = await admin.from("user_roles").upsert(
+      {
+        user_id: uid,
+        role: data.role as AppRole,
+        areas_extras: data.areas_extras ?? null,
+      },
+      { onConflict: "user_id,role" },
+    );
     if (rErr) throw new Error(rErr.message);
     return { ok: true, userId: uid };
   });
