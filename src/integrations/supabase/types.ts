@@ -14,16 +14,228 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      feriados: {
+        Row: {
+          created_at: string
+          data: string
+          descricao: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          descricao?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      pedidos: {
+        Row: {
+          acabamento_data: string | null
+          arte_data: string | null
+          arte_observacao: string | null
+          created_at: string
+          data_entrega: string | null
+          data_saida_juff: string | null
+          dtf_data_executada: string | null
+          dtf_estampado: string | null
+          dtf_executado: string | null
+          dtf_impresso: string | null
+          dtf_observacao: string | null
+          embalado: string | null
+          entrada_pedido: string | null
+          finalizado_em: string | null
+          fotolito_executado: string | null
+          fotolito_impresso: string | null
+          frete: string | null
+          id: string
+          inicio_estamparia: string | null
+          layout_url: string | null
+          necessita_vetorizacao: boolean | null
+          obs_vendedor: string | null
+          observacoes_pedido: string | null
+          orcamento: string | null
+          pedido_olist: string | null
+          qtd: number | null
+          quem_bateu_dtf: string | null
+          quem_bateu_silk: string | null
+          responsavel_acabamento: string | null
+          saida_juff: string | null
+          silk_data_executada: string | null
+          silk_feito: string | null
+          silk_observacao: string | null
+          status_arte: string | null
+          status_geral: string | null
+          tela_gravada: string | null
+          tempo_frete: number | null
+          tempo_producao: number | null
+          termino_estamparia: string | null
+          tipo_estampa: string | null
+          uf_entrega: string | null
+          updated_at: string
+          vendedor: string | null
+          vetorizacao_executada: boolean | null
+        }
+        Insert: {
+          acabamento_data?: string | null
+          arte_data?: string | null
+          arte_observacao?: string | null
+          created_at?: string
+          data_entrega?: string | null
+          data_saida_juff?: string | null
+          dtf_data_executada?: string | null
+          dtf_estampado?: string | null
+          dtf_executado?: string | null
+          dtf_impresso?: string | null
+          dtf_observacao?: string | null
+          embalado?: string | null
+          entrada_pedido?: string | null
+          finalizado_em?: string | null
+          fotolito_executado?: string | null
+          fotolito_impresso?: string | null
+          frete?: string | null
+          id?: string
+          inicio_estamparia?: string | null
+          layout_url?: string | null
+          necessita_vetorizacao?: boolean | null
+          obs_vendedor?: string | null
+          observacoes_pedido?: string | null
+          orcamento?: string | null
+          pedido_olist?: string | null
+          qtd?: number | null
+          quem_bateu_dtf?: string | null
+          quem_bateu_silk?: string | null
+          responsavel_acabamento?: string | null
+          saida_juff?: string | null
+          silk_data_executada?: string | null
+          silk_feito?: string | null
+          silk_observacao?: string | null
+          status_arte?: string | null
+          status_geral?: string | null
+          tela_gravada?: string | null
+          tempo_frete?: number | null
+          tempo_producao?: number | null
+          termino_estamparia?: string | null
+          tipo_estampa?: string | null
+          uf_entrega?: string | null
+          updated_at?: string
+          vendedor?: string | null
+          vetorizacao_executada?: boolean | null
+        }
+        Update: {
+          acabamento_data?: string | null
+          arte_data?: string | null
+          arte_observacao?: string | null
+          created_at?: string
+          data_entrega?: string | null
+          data_saida_juff?: string | null
+          dtf_data_executada?: string | null
+          dtf_estampado?: string | null
+          dtf_executado?: string | null
+          dtf_impresso?: string | null
+          dtf_observacao?: string | null
+          embalado?: string | null
+          entrada_pedido?: string | null
+          finalizado_em?: string | null
+          fotolito_executado?: string | null
+          fotolito_impresso?: string | null
+          frete?: string | null
+          id?: string
+          inicio_estamparia?: string | null
+          layout_url?: string | null
+          necessita_vetorizacao?: boolean | null
+          obs_vendedor?: string | null
+          observacoes_pedido?: string | null
+          orcamento?: string | null
+          pedido_olist?: string | null
+          qtd?: number | null
+          quem_bateu_dtf?: string | null
+          quem_bateu_silk?: string | null
+          responsavel_acabamento?: string | null
+          saida_juff?: string | null
+          silk_data_executada?: string | null
+          silk_feito?: string | null
+          silk_observacao?: string | null
+          status_arte?: string | null
+          status_geral?: string | null
+          tela_gravada?: string | null
+          tempo_frete?: number | null
+          tempo_producao?: number | null
+          termino_estamparia?: string | null
+          tipo_estampa?: string | null
+          uf_entrega?: string | null
+          updated_at?: string
+          vendedor?: string | null
+          vetorizacao_executada?: boolean | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          nome: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          nome?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          areas_extras: string[] | null
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          areas_extras?: string[] | null
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          areas_extras?: string[] | null
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "gestor" | "arte" | "dtf" | "silk" | "acabamento"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +362,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "gestor", "arte", "dtf", "silk", "acabamento"],
+    },
   },
 } as const

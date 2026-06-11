@@ -35,7 +35,7 @@ interface Props {
 const empty: Partial<Pedido> = {
   pedido_olist: "",
   orcamento: "",
-  qtd: "",
+  qtd: null,
   vendedor: "Wander",
   tipo_estampa: "DTF",
   status_geral: "Aberto",
