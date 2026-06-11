@@ -43,9 +43,9 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
 
   function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
 
-  async function abrirLayout(path: string) {
-    const { abrirLayoutPDF } = await import("./shared");
-    abrirLayoutPDF(path);
+  async function baixarLayout(path: string) {
+    const { baixarLayoutPDF } = await import("./shared");
+    baixarLayoutPDF(path);
   }
 
 
