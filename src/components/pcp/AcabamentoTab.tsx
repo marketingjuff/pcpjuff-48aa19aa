@@ -3,6 +3,7 @@ import type { Pedido } from "@/lib/pedidos";
 import { SIM_NAO_PROCESSO, RESPONSAVEIS_ACABAMENTO, modeloIncluiDTF, modeloIncluiSilk } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DateInputBR } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -118,7 +119,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
                 </Select>
               </FormField>
               <FormField label={`Data Saída Juff${form.embalado === "Sim" ? " *" : ""}`}>
-                <Input type="date" disabled={form.embalado !== "Sim"} value={form.data_saida_juff ?? ""} onChange={(e) => set("data_saida_juff", e.target.value || null)} />
+                <DateInputBR disabled={form.embalado !== "Sim"} value={form.data_saida_juff} onChange={(v) => set("data_saida_juff", v)} />
               </FormField>
               <div className="md:col-span-2">
                 <FormField label="Observações do Acabamento">

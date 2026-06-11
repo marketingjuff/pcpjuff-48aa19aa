@@ -3,6 +3,7 @@ import type { Pedido } from "@/lib/pedidos";
 import { SIM_NAO_PROCESSO, modeloIncluiSilk, QUEM_BATEU_SILK, calcularEtapaAtual } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DateInputBR } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -109,7 +110,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
                   </Select>
                 </FormField>
                 <FormField label={`Data Executada de Silk${form.silk_feito === "Sim" ? " *" : ""}`}>
-                  <Input type="date" disabled={form.silk_feito !== "Sim"} value={form.silk_data_executada ?? ""} onChange={(e) => set("silk_data_executada", e.target.value || null)} />
+                  <DateInputBR disabled={form.silk_feito !== "Sim"} value={form.silk_data_executada} onChange={(v) => set("silk_data_executada", v)} />
                 </FormField>
                 <FormField label="Quem bateu o Silk?">
                   <Select value={form.quem_bateu_silk ?? ""} onValueChange={(v) => set("quem_bateu_silk", v)}>

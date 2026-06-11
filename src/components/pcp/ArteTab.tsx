@@ -6,6 +6,7 @@ import {
 } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DateInputBR } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -101,9 +102,9 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
                     </Select>
                   </FormField>
                   <FormField label={`DTF Impresso Executado${form.dtf_impresso === "Sim" ? " *" : ""}`}>
-                    <Input type="date" disabled={form.dtf_impresso !== "Sim"}
-                      value={form.dtf_executado ?? ""}
-                      onChange={(e) => set("dtf_executado", e.target.value || null)} />
+                    <DateInputBR disabled={form.dtf_impresso !== "Sim"}
+                      value={form.dtf_executado}
+                      onChange={(v) => set("dtf_executado", v)} />
                   </FormField>
                 </>
               )}
@@ -117,9 +118,9 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
                     </Select>
                   </FormField>
                   <FormField label={`Fotolito Executado${form.fotolito_impresso === "Sim" ? " *" : ""}`}>
-                    <Input type="date" disabled={form.fotolito_impresso !== "Sim"}
-                      value={form.fotolito_executado ?? ""}
-                      onChange={(e) => set("fotolito_executado", e.target.value || null)} />
+                    <DateInputBR disabled={form.fotolito_impresso !== "Sim"}
+                      value={form.fotolito_executado}
+                      onChange={(v) => set("fotolito_executado", v)} />
                   </FormField>
                 </>
               )}

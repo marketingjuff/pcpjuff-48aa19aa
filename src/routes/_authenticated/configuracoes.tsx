@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateInputBR } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -108,7 +109,7 @@ function FeriadosTab() {
       <div className="flex gap-2 items-end">
         <div>
           <Label>Data</Label>
-          <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
+          <DateInputBR value={data} onChange={(v) => setData(v ?? "")} />
         </div>
         <div className="flex-1">
           <Label>Descrição</Label>

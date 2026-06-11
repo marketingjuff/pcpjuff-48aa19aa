@@ -3,6 +3,7 @@ import type { Pedido } from "@/lib/pedidos";
 import { SIM_NAO_PROCESSO, modeloIncluiDTF, QUEM_BATEU_DTF, calcularEtapaAtual } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DateInputBR } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -102,7 +103,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
                   </Select>
                 </FormField>
                 <FormField label={`DTF Estampado Executado${form.dtf_estampado === "Sim" ? " *" : ""}`}>
-                  <Input type="date" disabled={form.dtf_estampado !== "Sim"} value={form.dtf_data_executada ?? ""} onChange={(e) => set("dtf_data_executada", e.target.value || null)} />
+                  <DateInputBR disabled={form.dtf_estampado !== "Sim"} value={form.dtf_data_executada} onChange={(v) => set("dtf_data_executada", v)} />
                 </FormField>
                 <FormField label="Quem bateu o DTF?">
                   <Select value={form.quem_bateu_dtf ?? ""} onValueChange={(v) => set("quem_bateu_dtf", v)}>
