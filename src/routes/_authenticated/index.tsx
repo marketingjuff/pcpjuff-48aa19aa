@@ -200,6 +200,20 @@ function AppHomeInner() {
 
         </Tabs>
       </main>
+
+      <AlertDialog open={!!pendingNav} onOpenChange={(o) => { if (!o) setPendingNav(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja sair?</AlertDialogTitle>
+            <AlertDialogDescription>As alterações não foram salvas.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setPendingNav(null)}>Cancelar</Button>
+            <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => performPending(false)}>Não Salvar</Button>
+            <Button className="bg-success text-success-foreground hover:bg-success/90" onClick={() => performPending(true)}>Salvar</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
