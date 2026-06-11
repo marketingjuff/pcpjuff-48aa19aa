@@ -47,7 +47,7 @@ const empty: Partial<Pedido> = {
   necessita_vetorizacao: false,
 };
 
-export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, saving }: Props) {
+export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, saving, active = true }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>(empty);
   const [uploading, setUploading] = useState(false);
   const { feriados } = useFeriados();
@@ -57,7 +57,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     if (!isDirty) setForm(selected ?? empty);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
-  useDirtyTracker(form, selected ?? empty);
+  useDirtyTracker(form, selected ?? empty, active);
+
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
