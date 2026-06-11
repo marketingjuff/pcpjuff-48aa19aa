@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, ExternalLink } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner } from "./shared";
 import { formatDateBR } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -58,11 +58,18 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
         <Card>
           <CardHeader><CardTitle>Arte — {selected.pedido_olist}</CardTitle></CardHeader>
           <CardContent className="space-y-6">
-            {arteAtrasada && (
-              <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">
-                <AlertTriangle className="h-4 w-4" /> Arte ultrapassou a data limite ({formatDateBR(selected.arte_data)}).
-              </div>
-            )}
+            <EtapaStatusBanner
+              pendencias={[
+                !selected.entrada_pedido && "Entrada do pedido (Dados In)",
+                !selected.tipo_estampa && "Tipo de estampa (Dados In)",
+                !selected.qtd && "Quantidade (Dados In)",
+                !selected.data_entrega && "Data de entrega (Dados In)",
+                !selected.arte_data && "Prazo de arte (Dados In)",
+              ].filter(Boolean) as string[]}
+              atrasado={!!arteAtrasada}
+              atrasadoMsg={`Arte ultrapassou a data limite (${formatDateBR(selected.arte_data)}).`}
+            />
+
             <div className="grid gap-4 md:grid-cols-3">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />

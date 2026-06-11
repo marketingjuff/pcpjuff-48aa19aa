@@ -2,6 +2,46 @@ import type { Pedido } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { calcularEtapaAtual } from "@/lib/pedidos";
+import { CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+
+export function EtapaStatusBanner({
+  pendencias,
+  atrasado,
+  atrasadoMsg,
+}: {
+  pendencias: string[];
+  atrasado?: boolean;
+  atrasadoMsg?: string;
+}) {
+  if (atrasado) {
+    return (
+      <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">
+        <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+        <div>
+          <div className="font-semibold">Atrasado</div>
+          {atrasadoMsg && <div className="text-xs opacity-90 mt-0.5">{atrasadoMsg}</div>}
+        </div>
+      </div>
+    );
+  }
+  if (pendencias.length > 0) {
+    return (
+      <div className="flex items-start gap-2 p-3 rounded-md bg-warning/15 text-warning-foreground text-sm border border-warning/30">
+        <Clock className="h-4 w-4 mt-0.5 shrink-0" />
+        <div>
+          <div className="font-semibold">Pendências</div>
+          <div className="text-xs opacity-90 mt-0.5">{pendencias.join(" • ")}</div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2 p-3 rounded-md bg-success/10 text-success text-sm border border-success/30">
+      <CheckCircle2 className="h-4 w-4 shrink-0" />
+      <span className="font-medium">Sem pendências</span>
+    </div>
+  );
+}
 
 interface Props {
   pedidos: Pedido[];

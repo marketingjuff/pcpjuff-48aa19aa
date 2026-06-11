@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, Info } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner } from "./shared";
 import { formatDateBR } from "@/lib/format";
 
 interface Props {
@@ -70,21 +70,14 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
               </Badge>
             </CardHeader>
             <CardContent className="space-y-6">
-              {selected.dtf_impresso !== "Sim" && (
-                <div className="flex items-center gap-2 p-3 rounded-md bg-warning/15 text-sm border border-warning/30">
-                  <Info className="h-4 w-4" /> Arte ainda não liberou a impressão do DTF.
-                </div>
-              )}
-              {selected.tipo_estampa === "DTF+Silk" && (
-                <div className="flex items-center gap-2 p-3 rounded-md bg-info/10 text-sm border border-info/30">
-                  <Info className="h-4 w-4" /> Pedido com dependência Silk + DTF.
-                </div>
-              )}
-              {atrasado && (
-                <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">
-                  <AlertTriangle className="h-4 w-4" /> Data executada após o término previsto da estamparia.
-                </div>
-              )}
+            <EtapaStatusBanner
+              pendencias={[
+                selected.dtf_impresso !== "Sim" && "Arte ainda não liberou a impressão do DTF",
+              ].filter(Boolean) as string[]}
+              atrasado={!!atrasado}
+              atrasadoMsg="Data executada após o término previsto da estamparia."
+            />
+
               <div className="grid gap-4 md:grid-cols-2">
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
