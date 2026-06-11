@@ -1,10 +1,14 @@
 import * as React from "react";
+import { CalendarIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 /**
- * DateInputBR — input de data no formato DD/MM/AA.
+ * DateInputBR — input de data no formato DD/MM/AA com popover de calendário.
  * value/onChange usam string ISO (YYYY-MM-DD) ou "" para vazio.
- * Internamente exibe e aceita digitação como DD/MM/AA (anos 00-99 → 2000-2099).
  */
 export interface DateInputBRProps
   extends Omit<React.ComponentProps<"input">, "value" | "onChange" | "type"> {
@@ -39,36 +43,91 @@ function maskBR(input: string): string {
   return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
 }
 
+function isoToDate(iso?: string | null): Date | undefined {
+  if (!iso) return undefined;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return undefined;
+  const d = new Date(
+    parseInt(m[1], 10),
+    parseInt(m[2], 10) - 1,
+    parseInt(m[3], 10),
+  );
+  return isNaN(d.getTime()) ? undefined : d;
+}
+
+function dateToIso(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export const DateInputBR = React.forwardRef<HTMLInputElement, DateInputBRProps>(
-  ({ value, onChange, placeholder = "DD/MM/AA", onBlur, ...props }, ref) => {
+  ({ value, onChange, placeholder = "DD/MM/AA", onBlur, className, disabled, ...props }, ref) => {
     const [text, setText] = React.useState<string>(isoToBR(value));
+    const [open, setOpen] = React.useState(false);
 
     React.useEffect(() => {
       setText(isoToBR(value));
     }, [value]);
 
+    const selectedDate = isoToDate(value);
+
     return (
-      <Input
-        ref={ref}
-        type="text"
-        inputMode="numeric"
-        placeholder={placeholder}
-        maxLength={8}
-        value={text}
-        onChange={(e) => {
-          const masked = maskBR(e.target.value);
-          setText(masked);
-          const iso = brToIso(masked);
-          if (iso) onChange?.(iso);
-          else if (masked === "") onChange?.(null);
-        }}
-        onBlur={(e) => {
-          const iso = brToIso(text);
-          if (!iso && text !== "") setText(isoToBR(value));
-          onBlur?.(e);
-        }}
-        {...props}
-      />
+      <div className={cn("relative", className)}>
+        <Input
+          ref={ref}
+          type="text"
+          inputMode="numeric"
+          placeholder={placeholder}
+          maxLength={8}
+          value={text}
+          disabled={disabled}
+          className="pr-10"
+          onChange={(e) => {
+            const masked = maskBR(e.target.value);
+            setText(masked);
+            const iso = brToIso(masked);
+            if (iso) onChange?.(iso);
+            else if (masked === "") onChange?.(null);
+          }}
+          onBlur={(e) => {
+            const iso = brToIso(text);
+            if (!iso && text !== "") setText(isoToBR(value));
+            onBlur?.(e);
+          }}
+          {...props}
+        />
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              disabled={disabled}
+              className="absolute right-0 top-0 h-full w-9 text-muted-foreground hover:text-foreground"
+              tabIndex={-1}
+            >
+              <CalendarIcon className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="end">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(d) => {
+                if (d) {
+                  const iso = dateToIso(d);
+                  setText(isoToBR(iso));
+                  onChange?.(iso);
+                }
+                setOpen(false);
+              }}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
     );
   },
 );
