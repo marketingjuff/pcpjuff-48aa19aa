@@ -48,7 +48,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const [uploading, setUploading] = useState(false);
   const { feriados } = useFeriados();
 
-  useEffect(() => { setForm(selected ?? empty); }, [selected]);
+  useEffect(() => { setForm(selected ?? empty); }, [selected?.id]);
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
@@ -94,10 +94,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }
 
   async function abrirLayout(path: string) {
-    const { data, error } = await supabase.storage.from("layouts").createSignedUrl(path, 3600);
-    if (error) { toast.error(error.message); return; }
-    window.open(data.signedUrl, "_blank");
+    const { abrirLayoutPDF } = await import("./shared");
+    abrirLayoutPDF(path);
   }
+
 
   return (
     <div className="space-y-6">
