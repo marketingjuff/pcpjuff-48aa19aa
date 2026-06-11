@@ -23,7 +23,7 @@ interface Props {
   active?: boolean;
 }
 
-export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
+export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = true }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   useEffect(() => {
@@ -31,7 +31,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
     if (!isDirty) setForm(selected);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
-  useDirtyTracker(form, selected ?? {}, !!selected);
+  useDirtyTracker(form, selected ?? {}, active && !!selected);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
   function setEstampado(v: string) {
     setForm((f) => ({ ...f, dtf_estampado: v, ...(v !== "Sim" ? { dtf_data_executada: null } : {}) }));
@@ -46,7 +46,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
       dtf_observacao: form.dtf_observacao ?? null,
     });
   }
-  useRegisterSave(handleSave);
+  useRegisterSave(handleSave, active);
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
