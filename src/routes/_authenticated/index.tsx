@@ -26,11 +26,47 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 function AppHome() {
+  return (
+    <DirtyFormProvider>
+      <AppHomeInner />
+    </DirtyFormProvider>
+  );
+}
+
+function AppHomeInner() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [tab, setTab] = useState("dashboard");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const isAdmin = useIsAdmin();
+  const { isDirty, setDirty, triggerSave } = useDirtyForm();
+  const [pendingNav, setPendingNav] = useState<null | { kind: "tab"; value: string } | { kind: "logout" } | { kind: "settings" }>(null);
+
+  function requestTab(next: string) {
+    if (next === tab) return;
+    if (isDirty) setPendingNav({ kind: "tab", value: next });
+    else setTab(next);
+  }
+  function requestLogout() {
+    if (isDirty) setPendingNav({ kind: "logout" });
+    else handleLogout();
+  }
+  function requestSettings() {
+    if (isDirty) { setPendingNav({ kind: "settings" }); return false; }
+    return true;
+  }
+
+  async function performPending(save: boolean) {
+    const p = pendingNav;
+    setPendingNav(null);
+    if (save) { try { await triggerSave(); } catch { /* fica na aba */ return; } }
+    setDirty(false);
+    if (!p) return;
+    if (p.kind === "tab") setTab(p.value);
+    else if (p.kind === "logout") handleLogout();
+    else if (p.kind === "settings") navigate({ to: "/configuracoes" });
+  }
+
 
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ["pedidos"],
