@@ -91,6 +91,14 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
                 <ReadOnlyField label="QTD" value={selected.qtd} />
                 <ReadOnlyField label="Status" value={selected.status_geral} />
                 <ReadOnlyField label="DTF Impresso? (Arte)" value={selected.dtf_impresso ?? "Pendente"} />
+                <div className="space-y-1">
+                  <div className="text-xs font-medium text-muted-foreground">Layout</div>
+                  {selected.layout_url ? (
+                    <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                      <Download className="h-4 w-4 mr-1" /> Baixar layout
+                    </Button>
+                  ) : <div className="text-sm text-muted-foreground">Sem layout</div>}
+                </div>
                 <ReadOnlyField label="Início estamparia" value={formatDateBR(selected.inicio_estamparia)} />
                 <ReadOnlyField label="Término estamparia" value={formatDateBR(selected.termino_estamparia)} />
                 <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
