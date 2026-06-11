@@ -93,9 +93,12 @@ export function calcularEtapaAtual(p: Pedido): {
   let etapa = "Pendente entrada";
   let cor: "green" | "yellow" | "red" | "gray" | "blue" = "gray";
 
+  const producaoInputOk = !!p.tempo_producao;
+
   if (p.finalizado_em) { etapa = "Finalizado"; cor = "green"; }
   else if (acabamentoOk) { etapa = "Enviado"; cor = "green"; }
   else if (!dadosInOk) { etapa = "Pendente entrada"; cor = "gray"; }
+  else if (!producaoInputOk) { etapa = "Aguardando input de produção"; cor = "yellow"; }
   else if (!isLisa && !arteOk) { etapa = "Arte em progresso"; cor = "blue"; }
   else if (tipoIncluiDTF(tipo) && p.dtf_estampado !== "Sim") { etapa = "DTF aguardando"; cor = "yellow"; }
   else if (tipoIncluiSilk(tipo) && p.silk_feito !== "Sim") { etapa = "Silk aguardando"; cor = "yellow"; }
