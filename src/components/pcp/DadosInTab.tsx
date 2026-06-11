@@ -23,7 +23,7 @@ import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
 import { EtapaBadgeFromPedido } from "./shared";
-import { useDirtyTracker, useRegisterSave } from "./dirty-form-context";
+import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 interface Props {
   pedidos: Pedido[];
