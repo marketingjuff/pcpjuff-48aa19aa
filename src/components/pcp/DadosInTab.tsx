@@ -51,6 +51,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const { feriados } = useFeriados();
 
   useEffect(() => { setForm(selected ?? empty); }, [selected?.id]);
+  useDirtyTracker(form, selected ?? empty);
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
