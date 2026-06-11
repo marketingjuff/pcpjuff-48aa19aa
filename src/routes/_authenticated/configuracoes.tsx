@@ -22,6 +22,7 @@ import {
   deleteUserAccount,
 } from "@/lib/admin.functions";
 import { exportBackup, importBackup } from "@/lib/backup.functions";
+import { useAppList, useAppListMutations, type AppListKind } from "@/lib/app-lists";
 import type { AppRole, Feriado } from "@/integrations/supabase/schema-extras";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
@@ -59,14 +60,16 @@ function ConfiguracoesPage() {
         </div>
       </header>
       <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue={isAdmin ? "feriados" : "backup"}>
+        <Tabs defaultValue={isAdmin ? "feriados" : "listas"}>
           <TabsList className="mb-6">
             {isAdmin && <TabsTrigger value="feriados">Feriados</TabsTrigger>}
             {isAdmin && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
+            <TabsTrigger value="listas">Listas</TabsTrigger>
             <TabsTrigger value="backup">Backup</TabsTrigger>
           </TabsList>
           {isAdmin && <TabsContent value="feriados"><FeriadosTab /></TabsContent>}
           {isAdmin && <TabsContent value="usuarios"><UsuariosTab /></TabsContent>}
+          <TabsContent value="listas"><ListasTab /></TabsContent>
           <TabsContent value="backup"><BackupTab /></TabsContent>
         </Tabs>
       </main>
@@ -514,6 +517,110 @@ function BackupTab() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function ListasTab() {
+  const sections: { kind: AppListKind; title: string; placeholder: string }[] = [
+    { kind: "vendedor", title: "Vendedores", placeholder: "Novo vendedor" },
+    { kind: "dtf", title: "Operadores DTF", placeholder: "Novo operador DTF" },
+    { kind: "silk", title: "Operadores Silk", placeholder: "Novo operador Silk" },
+    { kind: "acabamento", title: "Responsáveis pelo Acabamento", placeholder: "Novo responsável" },
+  ];
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      {sections.map((s) => (
+        <ListaCard key={s.kind} {...s} />
+      ))}
+    </div>
+  );
+}
+
+function ListaCard({ kind, title, placeholder }: { kind: AppListKind; title: string; placeholder: string }) {
+  const { items, isLoading } = useAppList(kind);
+  const { add, rename, remove } = useAppListMutations(kind);
+  const [novo, setNovo] = useState("");
+  const [editing, setEditing] = useState<{ id: string; nome: string } | null>(null);
+
+  function handleAdd() {
+    add.mutate(novo, {
+      onSuccess: () => { setNovo(""); toast.success("Adicionado."); },
+      onError: (e: any) => toast.error(e.message ?? "Erro ao adicionar."),
+    });
+  }
+  function handleSaveEdit() {
+    if (!editing) return;
+    rename.mutate(editing, {
+      onSuccess: () => { setEditing(null); toast.success("Atualizado."); },
+      onError: (e: any) => toast.error(e.message ?? "Erro ao salvar."),
+    });
+  }
+  function handleDelete(id: string, nome: string) {
+    if (!confirm(`Excluir "${nome}"?`)) return;
+    remove.mutate(id, {
+      onSuccess: () => toast.success("Removido."),
+      onError: (e: any) => toast.error(e.message ?? "Erro ao remover."),
+    });
+  }
+
+  return (
+    <div className="border rounded-lg p-4 space-y-3">
+      <h2 className="font-semibold">{title}</h2>
+      <div className="flex gap-2">
+        <Input
+          value={novo}
+          placeholder={placeholder}
+          onChange={(e) => setNovo(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAdd(); } }}
+        />
+        <Button onClick={handleAdd} disabled={add.isPending || !novo.trim()}>
+          <Plus className="h-4 w-4 mr-1" /> Adicionar
+        </Button>
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow><TableHead>Nome</TableHead><TableHead className="w-32 text-right">Ações</TableHead></TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            <TableRow><TableCell colSpan={2}>Carregando…</TableCell></TableRow>
+          ) : items.length === 0 ? (
+            <TableRow><TableCell colSpan={2} className="text-muted-foreground">Nenhum item.</TableCell></TableRow>
+          ) : items.map((it) => (
+            <TableRow key={it.id}>
+              <TableCell>
+                {editing?.id === it.id ? (
+                  <Input
+                    value={editing.nome}
+                    autoFocus
+                    onChange={(e) => setEditing({ id: it.id, nome: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); handleSaveEdit(); }
+                      if (e.key === "Escape") setEditing(null);
+                    }}
+                  />
+                ) : it.nome}
+              </TableCell>
+              <TableCell className="text-right space-x-1">
+                {editing?.id === it.id ? (
+                  <>
+                    <Button size="sm" onClick={handleSaveEdit} disabled={rename.isPending}>Salvar</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>Cancelar</Button>
+                  </>
+                ) : (
+                  <>
+                    <Button size="sm" variant="ghost" onClick={() => setEditing({ id: it.id, nome: it.nome })}>Editar</Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleDelete(it.id, it.nome)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

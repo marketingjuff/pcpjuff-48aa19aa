@@ -1,84 +1,104 @@
-## Diagnóstico
+## Objetivo
 
-Encontrei **dois bugs** que explicam a inconsistência ao trocar o tipo de estampa (ex.: DTF+Silk → DTF):
+1. Tornar editáveis as listas de Vendedores, Operadores DTF, Operadores Silk e Responsáveis pelo Acabamento via Painel de Configurações.
+2. Bloquear os dropdowns de responsável enquanto a data vinculada estiver vazia, e limpar o valor automaticamente ao reverter (apagar a data).
+3. Garantir que o campo Vendedor nunca venha pré-selecionado, mesmo após salvar e depois reverter.
 
-### Bug 1 — Tabs sobrescrevem o tipo recém-alterado (root cause principal)
+---
 
-Em `ArteTab`, `DTFTab`, `SilkTab` e `AcabamentoTab` o `form` local é hidratado **uma única vez por pedido**:
+## 1. Banco — nova tabela `app_lists`
 
-```ts
-useEffect(() => { if (selected) setForm(selected); }, [selected?.id]);
+Migration única (com GRANTs + RLS):
+
+```sql
+CREATE TABLE public.app_lists (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  kind text NOT NULL CHECK (kind IN ('vendedor','dtf','silk','acabamento')),
+  nome text NOT NULL,
+  ordem int NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (kind, nome)
+);
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.app_lists TO authenticated;
+GRANT ALL ON public.app_lists TO service_role;
+ALTER TABLE public.app_lists ENABLE ROW LEVEL SECURITY;
+
+-- Todos os autenticados leem (dropdowns)
+CREATE POLICY app_lists_select_auth ON public.app_lists
+  FOR SELECT TO authenticated USING (true);
+
+-- Apenas admin/gestor escrevem
+CREATE POLICY app_lists_write_admin ON public.app_lists
+  FOR ALL TO authenticated
+  USING (public.has_role(auth.uid(),'admin') OR public.has_role(auth.uid(),'gestor'))
+  WITH CHECK (public.has_role(auth.uid(),'admin') OR public.has_role(auth.uid(),'gestor'));
+
+CREATE TRIGGER app_lists_updated_at BEFORE UPDATE ON public.app_lists
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 ```
 
-Quando o usuário edita `tipo_estampa` na Dados In e salva, o `pedidos` atualiza via realtime → `selected` muda, mas as outras abas continuam com `form.tipo_estampa = "DTF+Silk"` em memória. No próximo `Salvar` numa dessas abas o handler envia `{ ...form, id }` ao Supabase, **revertendo `tipo_estampa` para o valor antigo** (e todos os demais campos da aba). Mesma classe de bug acontece se duas pessoas editam o mesmo pedido em abas diferentes.
+Seed com os valores hard-coded atuais (Wander/Mirela/Gabriel; Jefferson/Sarah/Rubens; Gleisson/Marcelo; Vanessa/Patrícia/Juliana) + "Outros".
 
-### Bug 2 — Mudança de tipo não limpa campos da técnica abandonada
+---
 
-Ao trocar `DTF+Silk → DTF`, os campos de Silk preenchidos (`silk_feito`, `tela_gravada`, `fotolito_impresso`, `fotolito_executado`, `silk_data_executada`, `quem_bateu_silk`, `silk_observacao`) permanecem no banco. Como a aba Silk passa a esconder o pedido, esses dados ficam "fantasmas" e quebram cálculos de etapa/acabamento (ex.: `acabamentoCompleto` ignora Silk, mas o histórico fica sujo). Análogo nos sentidos:
+## 2. Hook `useAppList`
 
-- `DTF+Silk → Silk` → limpar DTF
-- `DTF+Silk → Lisa` → limpar DTF e Silk
-- `DTF → Silk`, `Silk → DTF`, `* → Lisa` etc.
+Novo `src/lib/app-lists.ts`:
+- `useAppList(kind)` → `useQuery(["app-lists", kind])` lendo `app_lists` ordenado por `ordem, nome`. Retorna `string[]` de nomes.
+- Helpers `addItem`, `renameItem`, `deleteItem` (mutations) com `invalidateQueries`.
 
-## Correções
+---
 
-### 1. Salvar apenas os campos editados na aba (patch, não full row)
+## 3. Configurações — nova aba "Listas"
 
-Cada aba de processo passa a salvar **apenas o subconjunto de campos pertinente** à etapa, em vez de `{ ...form, id }`:
+Em `src/routes/_authenticated/configuracoes.tsx`:
+- Adicionar `<TabsTrigger value="listas">Listas</TabsTrigger>` (visível a admin e gestor).
+- Novo componente `ListasTab` que renderiza 4 cards (Vendedores, Operadores DTF, Operadores Silk, Responsáveis pelo Acabamento). Cada card: input + botão Adicionar, tabela com nome editável inline e botão excluir. Confirmação ao excluir.
 
-- `ArteTab.handleSave` → envia `{ id, status_arte, dtf_impresso, dtf_executado, fotolito_impresso, fotolito_executado, vetorizacao_executada, arte_observacao }`.
-- `DTFTab.handleSave` → `{ id, dtf_estampado, dtf_data_executada, quem_bateu_dtf, dtf_observacao }`.
-- `SilkTab.handleSave` → `{ id, tela_gravada, silk_feito, silk_data_executada, quem_bateu_silk, silk_observacao }`.
-- `AcabamentoTab.handleSave` → `{ id, embalado, responsavel_acabamento, data_saida_juff, observacoes_pedido, finalizado_em? }`.
+---
 
-Isso elimina qualquer chance de uma aba sobrescrever `tipo_estampa` (ou outros campos fora do seu escopo) com dados stale.
+## 4. Substituir constantes hard-coded pelos hooks
 
-### 2. Re-sincronizar `form` quando `selected` muda no servidor
+Arquivos afetados:
+- `DadosInTab.tsx`: dropdown Vendedor consome `useAppList("vendedor")`.
+- `DTFTab.tsx`: "Quem bateu o DTF?" consome `useAppList("dtf")`.
+- `SilkTab.tsx`: "Quem bateu o Silk?" consome `useAppList("silk")`.
+- `AcabamentoTab.tsx`: "Responsável" consome `useAppList("acabamento")`.
+- `DashboardTab.tsx` (filtro Vendedor): também consome `useAppList("vendedor")`.
 
-Atualizar o efeito de hidratação para reagir a mudanças do registro, e não só do id, **preservando** edições locais do usuário pendentes (via `isDirty`):
+As constantes em `pedidos.ts` permanecem apenas para retrocompat de outros pontos não-dropdown (ou são removidas se não usadas).
 
-```ts
-useEffect(() => {
-  if (!selected) { setForm({}); return; }
-  if (!isDirty) setForm(selected); // só rehidrata se o usuário não tem alterações pendentes
-}, [selected, isDirty]);
-```
+---
 
-Aplicar nas 4 abas de processo e na Dados In (substituindo o `setForm(selected ?? empty)` atual pela versão guardada).
+## 5. Bloqueio + reversão automática dos dropdowns de responsável
 
-### 3. Resetar campos da técnica ao trocar `tipo_estampa` na Dados In
+Regra: o select de responsável é `disabled` quando a data vinculada está vazia, e ao limpar a data o valor do responsável vai a `null` no mesmo `set`.
 
-No `onValueChange` do Select de "Tipo de Estampa", além de `set("tipo_estampa", v)`, limpar os campos que deixam de ser aplicáveis:
+- **DTFTab**: helper `set("dtf_data_executada", v)` passa a também zerar `quem_bateu_dtf` quando `v` for vazio. `Select` recebe `disabled={!form.dtf_data_executada}`.
+- **SilkTab**: idem com `silk_data_executada` → `quem_bateu_silk`.
+- **AcabamentoTab**: trocar o gate atual (`embalado === "Sim"`) por `acabamento_data`. Ao limpar `acabamento_data`, zerar `responsavel_acabamento`. `Select` recebe `disabled={!form.acabamento_data}`.
 
-```ts
-function setTipoEstampa(v: string) {
-  setForm((f) => {
-    const next = { ...f, tipo_estampa: v };
-    if (!tipoIncluiDTF(v)) Object.assign(next, {
-      dtf_impresso: null, dtf_executado: null, dtf_estampado: null,
-      dtf_data_executada: null, quem_bateu_dtf: null, dtf_observacao: null,
-    });
-    if (!tipoIncluiSilk(v)) Object.assign(next, {
-      fotolito_impresso: null, fotolito_executado: null, tela_gravada: null,
-      silk_feito: null, silk_data_executada: null, quem_bateu_silk: null, silk_observacao: null,
-    });
-    if (v === "Lisa") Object.assign(next, { status_arte: null });
-    return next;
-  });
-}
-```
+Isso garante o comportamento de reversão pedido (campo fica em branco se a data for apagada).
 
-Assim a persistência (graças à correção 1, que envia `tipo_estampa` + esses nulls juntos) fica consistente em uma única transação.
+---
 
-## Teste após implementar
+## 6. Vendedor — nunca pré-selecionar
 
-No preview, abrir o pedido `11111`, trocar `tipo_estampa` de `DTF+Silk` → `DTF`, salvar, navegar para Arte/Silk/DTF/Acabamento e verificar via `supabase--read_query` que `tipo_estampa = 'DTF'` permanece após salvar em qualquer aba e que os campos de Silk ficaram nulos.
+Em `DadosInTab.tsx`:
+- `initialForm` remove `vendedor: "Wander"` (passa a `vendedor: null`).
+- O `<Select value={form.vendedor ?? ""} ...>` já mostra o placeholder "Selecione..." quando vazio — confirmar `SelectValue placeholder="Selecione..."`.
+- Ao reverter (limpar) um pedido salvo, o form recebe `null` e o placeholder reaparece — nenhum fallback para o primeiro item da lista.
+
+---
 
 ## Arquivos afetados
 
-- `src/components/pcp/DadosInTab.tsx` — `setTipoEstampa`, hidratação guardada por `isDirty`.
-- `src/components/pcp/ArteTab.tsx` — `handleSave` em patch + hidratação.
-- `src/components/pcp/DTFTab.tsx` — idem.
-- `src/components/pcp/SilkTab.tsx` — idem.
-- `src/components/pcp/AcabamentoTab.tsx` — idem.
-- `src/components/pcp/dirty-form-context.tsx` — expor `isDirty` consumido nas abas (já exporta).
+- migration nova (app_lists + seed)
+- `src/lib/app-lists.ts` (novo)
+- `src/routes/_authenticated/configuracoes.tsx`
+- `src/components/pcp/DadosInTab.tsx`
+- `src/components/pcp/DTFTab.tsx`
+- `src/components/pcp/SilkTab.tsx`
+- `src/components/pcp/AcabamentoTab.tsx`
+- `src/components/pcp/DashboardTab.tsx`

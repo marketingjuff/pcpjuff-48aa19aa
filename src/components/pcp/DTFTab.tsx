@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiDTF, QUEM_BATEU_DTF, visivelEmDTF } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiDTF, visivelEmDTF } from "@/lib/pedidos";
+import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -26,6 +27,7 @@ interface Props {
 export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = true }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
+  const { names: operadoresDTF } = useAppList("dtf");
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
@@ -34,7 +36,18 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   useDirtyTracker(form, selected ?? {}, active && !!selected);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
   function setEstampado(v: string) {
-    setForm((f) => ({ ...f, dtf_estampado: v, ...(v !== "Sim" ? { dtf_data_executada: null } : {}) }));
+    setForm((f) => ({
+      ...f,
+      dtf_estampado: v,
+      ...(v !== "Sim" ? { dtf_data_executada: null, quem_bateu_dtf: null } : {}),
+    }));
+  }
+  function setDataExec(v: string | null | undefined) {
+    setForm((f) => ({
+      ...f,
+      dtf_data_executada: v ?? null,
+      ...(!v ? { quem_bateu_dtf: null } : {}),
+    }));
   }
   function handleSave() {
     if (!selected) return;
@@ -126,12 +139,12 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                   </Select>
                 </FormField>
                 <FormField label={`DTF Estampado Executado${form.dtf_estampado === "Sim" ? " *" : ""}`}>
-                  <DateInputBR disabled={form.dtf_estampado !== "Sim"} value={form.dtf_data_executada} onChange={(v) => set("dtf_data_executada", v)} />
+                  <DateInputBR disabled={form.dtf_estampado !== "Sim"} value={form.dtf_data_executada} onChange={setDataExec} />
                 </FormField>
                 <FormField label="Quem bateu o DTF?">
-                  <Select value={form.quem_bateu_dtf ?? ""} onValueChange={(v) => set("quem_bateu_dtf", v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>{QUEM_BATEU_DTF.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                  <Select value={form.quem_bateu_dtf ?? ""} onValueChange={(v) => set("quem_bateu_dtf", v)} disabled={!form.dtf_data_executada}>
+                    <SelectTrigger><SelectValue placeholder={!form.dtf_data_executada ? "Preencha a data primeiro" : "Selecione..."} /></SelectTrigger>
+                    <SelectContent>{operadoresDTF.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                   </Select>
                 </FormField>
                 <div className="md:col-span-2">

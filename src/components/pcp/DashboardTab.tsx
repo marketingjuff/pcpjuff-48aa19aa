@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
-  VENDEDORES, STATUS_GERAL_OPCOES, TIPOS_ESTAMPA,
+  STATUS_GERAL_OPCOES, TIPOS_ESTAMPA,
   calcularEtapaAtual, statusPrazo, tipoIncluiDTF, tipoIncluiSilk,
 } from "@/lib/pedidos";
+import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ type Etapa = "todas" | "ativas" | "arte" | "dtf" | "silk" | "acabamento" | "fina
 
 export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props) {
   const { feriados } = useFeriados();
+  const { names: vendedores } = useAppList("vendedor");
   const [vendedor, setVendedor] = useState<string>("todos");
   const [status, setStatus] = useState<string>("todos");
   const [tipo, setTipo] = useState<string>("todos");
@@ -126,7 +128,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos vendedores</SelectItem>
-                {VENDEDORES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={status} onValueChange={setStatus}>
