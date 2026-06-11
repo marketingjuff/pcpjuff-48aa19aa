@@ -29,7 +29,7 @@ const empty: Partial<Pedido> = {
   vendedor: "Wander",
   frete: "",
   tempo_frete: "",
-  status: "Aberto",
+  status_geral: "Aberto",
   tipo_estampa: "DTF",
   entrada_pedido: new Date().toISOString().slice(0, 10),
 };
