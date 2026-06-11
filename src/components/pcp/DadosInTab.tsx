@@ -110,7 +110,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     });
   }
   function handleSave(e: React.FormEvent) { e.preventDefault(); doSave(); }
-  useRegisterSave(doSave);
+  useRegisterSave(doSave, active);
 
   function handleNew() { onSelect(null); setForm(empty); }
 
