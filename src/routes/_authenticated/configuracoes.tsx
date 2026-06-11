@@ -22,6 +22,7 @@ import {
   deleteUserAccount,
 } from "@/lib/admin.functions";
 import { exportBackup, importBackup } from "@/lib/backup.functions";
+import { useAppList, useAppListMutations, type AppListKind } from "@/lib/app-lists";
 import type { AppRole, Feriado } from "@/integrations/supabase/schema-extras";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
@@ -59,14 +60,16 @@ function ConfiguracoesPage() {
         </div>
       </header>
       <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue={isAdmin ? "feriados" : "backup"}>
+        <Tabs defaultValue={isAdmin ? "feriados" : "listas"}>
           <TabsList className="mb-6">
             {isAdmin && <TabsTrigger value="feriados">Feriados</TabsTrigger>}
             {isAdmin && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
+            <TabsTrigger value="listas">Listas</TabsTrigger>
             <TabsTrigger value="backup">Backup</TabsTrigger>
           </TabsList>
           {isAdmin && <TabsContent value="feriados"><FeriadosTab /></TabsContent>}
           {isAdmin && <TabsContent value="usuarios"><UsuariosTab /></TabsContent>}
+          <TabsContent value="listas"><ListasTab /></TabsContent>
           <TabsContent value="backup"><BackupTab /></TabsContent>
         </Tabs>
       </main>
