@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner, EtapaBadge } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
 import { formatDateBR } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -59,17 +59,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
         <Card>
           <CardHeader><CardTitle>Arte — {selected.pedido_olist}</CardTitle></CardHeader>
           <CardContent className="space-y-6">
-            <EtapaStatusBanner
-              pendencias={[
-                !selected.entrada_pedido && "Entrada do pedido (Dados In)",
-                !selected.tipo_estampa && "Tipo de estampa (Dados In)",
-                !selected.qtd && "Quantidade (Dados In)",
-                !selected.data_entrega && "Data de entrega (Dados In)",
-                !selected.arte_data && "Prazo de arte (Dados In)",
-              ].filter(Boolean) as string[]}
-              atrasado={!!arteAtrasada}
-              atrasadoMsg={`Arte ultrapassou a data limite (${formatDateBR(selected.arte_data)}).`}
-            />
+            <EtapaTopoBanner pedido={selected} tab="arte" />
 
             <div className="grid gap-4 md:grid-cols-3">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
@@ -163,7 +153,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Status","Orçamento","Pedido","Tipo","Status Arte","Frete","UF","Entrega","Etapa"].map((h) => (
+                {["Etapa","Orçamento","Pedido","Tipo","Status Arte","Frete","UF","Entrega"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -172,16 +162,14 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
               {(() => {
                 const visiveis = pedidos.filter((p) => visivelEmArte(p) && !p.finalizado_em);
                 if (visiveis.length === 0) {
-                  return <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido com Dados In completos.</td></tr>;
+                  return <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido com Dados In completos.</td></tr>;
                 }
                 return visiveis.map((p) => {
-                  const { etapa } = calcularEtapaAtual(p);
-                  const st = statusEtapa(arteCompleta(p), arteAlgumPreenchido(p));
                   return (
                     <tr key={p.id}
                       onClick={() => onSelect(p.id)}
                       className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
-                      <td className="px-3 py-2"><EtapaBadge status={st} labels={{ pendente: "Arte Pendente", andamento: "Arte em Andamento", concluido: "Arte Concluída" }} /></td>
+                      <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
                       <td className="px-3 py-2 font-medium">{p.orcamento}</td>
                       <td className="px-3 py-2">{p.pedido_olist}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
@@ -189,7 +177,6 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
                       <td className="px-3 py-2">{p.frete ?? "—"}</td>
                       <td className="px-3 py-2">{p.uf_entrega ?? "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
-                      <td className="px-3 py-2 text-xs">{etapa}</td>
                     </tr>
                   );
                 });
