@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiDTF, QUEM_BATEU_DTF, calcularEtapaAtual } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiDTF, QUEM_BATEU_DTF, calcularEtapaAtual, visivelEmDTF, dtfCompleto, dtfAlgumPreenchido, statusEtapa } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, Info } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner, EtapaBadge } from "./shared";
+
 import { formatDateBR } from "@/lib/format";
 
 interface Props {
@@ -47,7 +48,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
 
   const dashboardPedidos = useMemo(() => pedidos.filter((p) => {
     if (p.finalizado_em) return false;
-    if (!modeloIncluiDTF(p.tipo_estampa)) return false;
+    if (!visivelEmDTF(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
     if (fStatus !== "todos" && p.status_geral !== fStatus) return false;
@@ -55,6 +56,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
     if (fEstampado !== "todos" && (p.dtf_estampado ?? "") !== fEstampado) return false;
     return true;
   }), [pedidos, fOrc, fPed, fStatus, fImpresso, fEstampado]);
+
 
   return (
     <div className="space-y-6">
@@ -152,7 +154,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Orçamento","Pedido","Tipo","Status","DTF Impresso","DTF Estampado","Data Exec","Quem bateu","Etapa"].map((h) => (
+                  {["Status","Orçamento","Pedido","Tipo","DTF Impresso","DTF Estampado","Data Exec","Quem bateu","Etapa"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -160,12 +162,13 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
               <tbody>
                 {dashboardPedidos.map((p) => {
                   const { etapa } = calcularEtapaAtual(p);
+                  const st = statusEtapa(dtfCompleto(p), dtfAlgumPreenchido(p));
                   return (
                     <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                      <td className="px-3 py-2"><EtapaBadge status={st} labels={{ pendente: "DTF Pendente", andamento: "DTF em Andamento", concluido: "DTF Concluído" }} /></td>
                       <td className="px-3 py-2 font-medium">{p.orcamento}</td>
                       <td className="px-3 py-2">{p.pedido_olist}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
-                      <td className="px-3 py-2">{p.status_geral}</td>
                       <td className="px-3 py-2">{p.dtf_impresso ?? "—"}</td>
                       <td className="px-3 py-2">{p.dtf_estampado ?? "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.dtf_data_executada)}</td>
@@ -175,8 +178,9 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
                   );
                 })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido DTF.</td></tr>
+                  <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido DTF disponível (depende da Arte concluída).</td></tr>
                 )}
+
               </tbody>
             </table>
           </div>
