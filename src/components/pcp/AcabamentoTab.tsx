@@ -24,7 +24,12 @@ interface Props {
 
 export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
-  useEffect(() => { if (selected) setForm(selected); else setForm({}); }, [selected?.id]);
+  const { isDirty } = useDirtyForm();
+  useEffect(() => {
+    if (!selected) { setForm({}); return; }
+    if (!isDirty) setForm(selected);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
   useDirtyTracker(form, selected ?? {}, !!selected);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
@@ -44,7 +49,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
 
   function handleSave() {
     if (!selected) return;
-    const payload: Partial<Pedido> & { id: string } = { ...form, id: selected.id };
+    const payload: Partial<Pedido> & { id: string } = {
+      id: selected.id,
+      embalado: form.embalado ?? null,
+      responsavel_acabamento: form.responsavel_acabamento ?? null,
+      responsavel_conferencia: form.responsavel_conferencia ?? null,
+      data_saida_juff: form.data_saida_juff ?? null,
+      observacoes_pedido: form.observacoes_pedido ?? null,
+    };
     if (podeFinalizar && !selected.finalizado_em) payload.finalizado_em = new Date().toISOString();
     if (form.embalado !== "Sim" && selected.finalizado_em) payload.finalizado_em = null;
     onSave(payload);
