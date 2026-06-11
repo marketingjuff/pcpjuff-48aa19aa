@@ -322,16 +322,15 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <Textarea rows={3} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
               </Field>
             </div>
+            <div className="md:col-span-2 flex gap-2 pt-2">
+              <Button type="button" onClick={saveProducao} disabled={saving}>
+                <Save className="h-4 w-4 mr-1" />Salvar Input de Produção
+              </Button>
+            </div>
           </CardContent>
         </Card>
+      </div>
 
-        <div className="lg:col-span-2 flex gap-2">
-          <Button type="submit" disabled={saving}><Save className="h-4 w-4 mr-1" />{selected ? "Atualizar" : "Salvar"}</Button>
-          {selected && (
-            <Button type="button" variant="outline" onClick={handleNew}><X className="h-4 w-4 mr-1" />Cancelar edição</Button>
-          )}
-        </div>
-      </form>
 
       {/* Dashboard Dados In — esconde finalizados */}
       <Card>
