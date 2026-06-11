@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, AlertTriangle, ExternalLink } from "lucide-react";
+import { Save, AlertTriangle, Download } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner, EtapaBadge } from "./shared";
 import { formatDateBR } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
