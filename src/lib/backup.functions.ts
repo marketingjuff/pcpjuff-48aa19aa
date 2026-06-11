@@ -69,18 +69,16 @@ export const importBackup = createServerFn({ method: "POST" })
 
     for (const t of insertOrder) {
       const rows = data.payload.tables[t];
+      const prevDeleted = summary[t]?.deleted ?? 0;
       if (!rows || rows.length === 0) {
-        summary[t] = summary[t] ?? { inserted: 0, deleted: summary[t]?.deleted ?? 0 };
+        summary[t] = { inserted: 0, deleted: prevDeleted };
         continue;
       }
       const { error, count } = await admin
         .from(t)
         .upsert(rows, { onConflict: "id", count: "exact" });
       if (error) throw new Error(`Erro ao importar ${t}: ${error.message}`);
-      summary[t] = {
-        inserted: count ?? rows.length,
-        deleted: summary[t]?.deleted ?? 0,
-      };
+      summary[t] = { inserted: count ?? rows.length, deleted: prevDeleted };
     }
 
     return { ok: true, summary };
