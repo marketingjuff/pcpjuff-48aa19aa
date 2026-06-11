@@ -247,25 +247,23 @@ function UsuariosTab() {
                 return (
                   <TableRow key={u.id}>
                     <TableCell>
-                      {editingName?.id === u.id ? (() => {
-                        const en = editingName;
-                        return (
-                          <div className="flex gap-1">
-                            <Input
-                              value={en.nome}
-                              autoFocus
-                              className="h-8"
-                              onChange={(e) => setEditingName({ id: u.id, nome: e.target.value })}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") { e.preventDefault(); if (en.nome.trim()) rename.mutate({ userId: u.id, nome: en.nome.trim() }); }
-                                if (e.key === "Escape") setEditingName(null);
-                              }}
-                            />
-                            <Button size="sm" onClick={() => { if (en.nome.trim()) rename.mutate({ userId: u.id, nome: en.nome.trim() }); }} disabled={rename.isPending}>Salvar</Button>
-                            <Button size="sm" variant="ghost" onClick={() => setEditingName(null)}>Cancelar</Button>
-                          </div>
-                        );
-                      })() : (
+                      {editingName && editingName.id === u.id ? (
+                        <div className="flex gap-1">
+                          <Input
+                            value={editingName.nome}
+                            autoFocus
+                            className="h-8"
+                            onChange={(e) => setEditingName({ id: u.id, nome: e.target.value })}
+                            onKeyDown={(e) => {
+                              const nm = editingName?.nome.trim() ?? "";
+                              if (e.key === "Enter") { e.preventDefault(); if (nm) rename.mutate({ userId: u.id, nome: nm }); }
+                              if (e.key === "Escape") setEditingName(null);
+                            }}
+                          />
+                          <Button size="sm" onClick={() => { const nm = editingName?.nome.trim() ?? ""; if (nm) rename.mutate({ userId: u.id, nome: nm }); }} disabled={rename.isPending}>Salvar</Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingName(null)}>Cancelar</Button>
+                        </div>
+                      ) : (
                         <button type="button" className="text-left hover:underline" onClick={() => setEditingName({ id: u.id, nome: u.nome ?? "" })}>
                           {u.nome ?? "—"}
                         </button>
