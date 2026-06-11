@@ -1,41 +1,84 @@
-## 1. Aviso de "alterações não salvas" ao trocar de aba
+## Diagnóstico
 
-Criar um contexto global de "dirty form" em `src/routes/_authenticated/index.tsx`:
+Encontrei **dois bugs** que explicam a inconsistência ao trocar o tipo de estampa (ex.: DTF+Silk → DTF):
 
-- Novo `DirtyFormContext` exporta `{ isDirty, setDirty, registerSave }`.
-- Cada aba de edição (DadosIn, Arte, DTF, Silk, Acabamento) chama `setDirty(true)` no `onChange` dos campos e `setDirty(false)` após salvar / selecionar outro pedido / cancelar. Cada aba também registra sua função `handleSave` via `registerSave` enquanto está montada.
-- No `Tabs onValueChange` interceptamos a troca: se `isDirty`, abrimos um `AlertDialog` (shadcn) com a mensagem **"Tem certeza que deseja sair? As alterações não foram salvas."** e dois botões:
-  - **Salvar** — verde (`bg-success text-success-foreground`): chama `registerSave()`, aguarda, limpa dirty e troca a aba.
-  - **Não Salvar** — vermelho (`bg-destructive text-destructive-foreground`): limpa dirty e troca a aba.
-  - (mantém um "Cancelar" implícito ao fechar o dialog, sem trocar de aba.)
-- Mesma proteção aplicada ao botão "Sair" do header e ao link "Configurações".
+### Bug 1 — Tabs sobrescrevem o tipo recém-alterado (root cause principal)
 
-## 2. Padronizar últimas duas colunas dos dashboards
+Em `ArteTab`, `DTFTab`, `SilkTab` e `AcabamentoTab` o `form` local é hidratado **uma única vez por pedido**:
 
-Em **todos** os dashboards (`DashboardTab`, `DadosInTab`, `ArteTab`, `DTFTab`, `SilkTab`, `AcabamentoTab`) as duas últimas colunas da tabela devem ser, nesta ordem: **Saída Juff** (`data_saida_juff`) e **Data Entrega** (`data_entrega`). Coluna "Ações" passa a vir antes dessas duas (ou movemos as ações para o início conforme o padrão atual — manteremos Ações imediatamente antes para não perder o acesso). Resultado final por linha:
-
-```
-... colunas da aba ... | Ações | Saída Juff | Data Entrega
+```ts
+useEffect(() => { if (selected) setForm(selected); }, [selected?.id]);
 ```
 
-Aplicar formatação com `formatDateBR` e `whitespace-nowrap`. Atualizar também os `colSpan` dos estados de "Carregando" / "Nenhum pedido".
+Quando o usuário edita `tipo_estampa` na Dados In e salva, o `pedidos` atualiza via realtime → `selected` muda, mas as outras abas continuam com `form.tipo_estampa = "DTF+Silk"` em memória. No próximo `Salvar` numa dessas abas o handler envia `{ ...form, id }` ao Supabase, **revertendo `tipo_estampa` para o valor antigo** (e todos os demais campos da aba). Mesma classe de bug acontece se duas pessoas editam o mesmo pedido em abas diferentes.
 
-No `DashboardTab` o sort por "Data Entrega" continua disponível (ícone no header da nova posição).
+### Bug 2 — Mudança de tipo não limpa campos da técnica abandonada
 
-## 3. Visibilidade: todos os pedidos abertos em todas as abas
+Ao trocar `DTF+Silk → DTF`, os campos de Silk preenchidos (`silk_feito`, `tela_gravada`, `fotolito_impresso`, `fotolito_executado`, `silk_data_executada`, `quem_bateu_silk`, `silk_observacao`) permanecem no banco. Como a aba Silk passa a esconder o pedido, esses dados ficam "fantasmas" e quebram cálculos de etapa/acabamento (ex.: `acabamentoCompleto` ignora Silk, mas o histórico fica sujo). Análogo nos sentidos:
 
-Ajustar `src/lib/pedidos.ts` e as listagens das abas:
+- `DTF+Silk → Silk` → limpar DTF
+- `DTF+Silk → Lisa` → limpar DTF e Silk
+- `DTF → Silk`, `Silk → DTF`, `* → Lisa` etc.
 
-- `visivelEmArte`, `visivelEmAcabamento`, e os filtros internos do `DashboardTab` passam a retornar `true` para **qualquer pedido não finalizado** (`!p.finalizado_em`). O gating por `dadosInCompletos` / `arteCompleta` deixa de esconder.
-- `visivelEmDTF` continua condicionado a `tipoIncluiDTF(tipo) || tipo === "Lisa"` apenas quando o tipo já estiver definido; se `tipo_estampa` ainda estiver vazio, o pedido também aparece (área precisa enxergar o que está por vir).
-- `visivelEmSilk` análogo: aparece se `tipoIncluiSilk(tipo) || tipo === "Lisa"` ou se `tipo_estampa` vazio.
-- Em cada aba (`ArteTab`, `DTFTab`, `SilkTab`, `AcabamentoTab`, `DadosInTab`) o dashboard interno (lista de pedidos para seleção) usa essas novas funções, então listará todos os pedidos em aberto, marcando com a `Etapa` atual para a área saber o que já passou e o que está por vir.
-- A lógica de **cascata** (banners "Aguardando…", bloqueios de edição de campos, mensagem "Pedido Lisa — sem estampa") **permanece** dentro do editor de cada aba — só a visibilidade dos pedidos no dashboard da aba muda.
-- `Finalizados` continua exclusivo para `p.finalizado_em != null`.
+## Correções
+
+### 1. Salvar apenas os campos editados na aba (patch, não full row)
+
+Cada aba de processo passa a salvar **apenas o subconjunto de campos pertinente** à etapa, em vez de `{ ...form, id }`:
+
+- `ArteTab.handleSave` → envia `{ id, status_arte, dtf_impresso, dtf_executado, fotolito_impresso, fotolito_executado, vetorizacao_executada, arte_observacao }`.
+- `DTFTab.handleSave` → `{ id, dtf_estampado, dtf_data_executada, quem_bateu_dtf, dtf_observacao }`.
+- `SilkTab.handleSave` → `{ id, tela_gravada, silk_feito, silk_data_executada, quem_bateu_silk, silk_observacao }`.
+- `AcabamentoTab.handleSave` → `{ id, embalado, responsavel_acabamento, data_saida_juff, observacoes_pedido, finalizado_em? }`.
+
+Isso elimina qualquer chance de uma aba sobrescrever `tipo_estampa` (ou outros campos fora do seu escopo) com dados stale.
+
+### 2. Re-sincronizar `form` quando `selected` muda no servidor
+
+Atualizar o efeito de hidratação para reagir a mudanças do registro, e não só do id, **preservando** edições locais do usuário pendentes (via `isDirty`):
+
+```ts
+useEffect(() => {
+  if (!selected) { setForm({}); return; }
+  if (!isDirty) setForm(selected); // só rehidrata se o usuário não tem alterações pendentes
+}, [selected, isDirty]);
+```
+
+Aplicar nas 4 abas de processo e na Dados In (substituindo o `setForm(selected ?? empty)` atual pela versão guardada).
+
+### 3. Resetar campos da técnica ao trocar `tipo_estampa` na Dados In
+
+No `onValueChange` do Select de "Tipo de Estampa", além de `set("tipo_estampa", v)`, limpar os campos que deixam de ser aplicáveis:
+
+```ts
+function setTipoEstampa(v: string) {
+  setForm((f) => {
+    const next = { ...f, tipo_estampa: v };
+    if (!tipoIncluiDTF(v)) Object.assign(next, {
+      dtf_impresso: null, dtf_executado: null, dtf_estampado: null,
+      dtf_data_executada: null, quem_bateu_dtf: null, dtf_observacao: null,
+    });
+    if (!tipoIncluiSilk(v)) Object.assign(next, {
+      fotolito_impresso: null, fotolito_executado: null, tela_gravada: null,
+      silk_feito: null, silk_data_executada: null, quem_bateu_silk: null, silk_observacao: null,
+    });
+    if (v === "Lisa") Object.assign(next, { status_arte: null });
+    return next;
+  });
+}
+```
+
+Assim a persistência (graças à correção 1, que envia `tipo_estampa` + esses nulls juntos) fica consistente em uma única transação.
+
+## Teste após implementar
+
+No preview, abrir o pedido `11111`, trocar `tipo_estampa` de `DTF+Silk` → `DTF`, salvar, navegar para Arte/Silk/DTF/Acabamento e verificar via `supabase--read_query` que `tipo_estampa = 'DTF'` permanece após salvar em qualquer aba e que os campos de Silk ficaram nulos.
 
 ## Arquivos afetados
 
-- `src/routes/_authenticated/index.tsx` — contexto dirty + AlertDialog + interceptação do `Tabs`.
-- `src/components/pcp/DadosInTab.tsx`, `ArteTab.tsx`, `DTFTab.tsx`, `SilkTab.tsx`, `AcabamentoTab.tsx` — registrar dirty/save, reordenar colunas, usar novas funções de visibilidade.
-- `src/components/pcp/DashboardTab.tsx` — reordenar colunas (Saída Juff + Data Entrega como últimas).
-- `src/lib/pedidos.ts` — afrouxar `visivelEm*` para mostrar todos os pedidos em aberto.
+- `src/components/pcp/DadosInTab.tsx` — `setTipoEstampa`, hidratação guardada por `isDirty`.
+- `src/components/pcp/ArteTab.tsx` — `handleSave` em patch + hidratação.
+- `src/components/pcp/DTFTab.tsx` — idem.
+- `src/components/pcp/SilkTab.tsx` — idem.
+- `src/components/pcp/AcabamentoTab.tsx` — idem.
+- `src/components/pcp/dirty-form-context.tsx` — expor `isDirty` consumido nas abas (já exporta).
