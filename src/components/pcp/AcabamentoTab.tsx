@@ -79,22 +79,21 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
             <Badge variant="outline" className={status.color}>{status.label}</Badge>
           </CardHeader>
           <CardContent className="space-y-6">
-            {(!dtfOk || !silkOk) && (
-              <div className="flex items-center gap-2 p-3 rounded-md bg-info/10 text-sm border border-info/30">
-                <Info className="h-4 w-4" />
-                Aguardando etapa: {[!dtfOk && "DTF", !silkOk && "Silk Screen"].filter(Boolean).join(" + ")}.
-              </div>
-            )}
-            {atrasado && (
-              <div className="flex items-center gap-2 p-3 rounded-md bg-warning/15 text-sm border border-warning/30">
-                <AlertTriangle className="h-4 w-4" /> Saída ocorrida após o prazo previsto.
-              </div>
-            )}
+            <EtapaStatusBanner
+              pendencias={[
+                selected.status_arte !== "Arte Finalizada" && "Arte ainda não foi finalizada",
+                temDTF && !dtfOk && "Aguardando DTF",
+                temSilk && !silkOk && "Aguardando Silk Screen",
+              ].filter(Boolean) as string[]}
+              atrasado={!!atrasado}
+              atrasadoMsg="Saída ocorrida após o prazo previsto."
+            />
             {podeFinalizar && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-success/10 text-success text-sm border border-success/30">
                 <CheckCircle2 className="h-4 w-4" /> Ao salvar, este pedido será marcado como Finalizado.
               </div>
             )}
+
             <div className="grid gap-4 md:grid-cols-2">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
