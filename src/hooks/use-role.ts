@@ -4,22 +4,31 @@ import { supabase } from "@/integrations/supabase/client";
 import type { AppRole, UserRoleRow } from "@/integrations/supabase/schema-extras";
 
 export function useCurrentUser() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const [state, setState] = useState<{ userId: string | null; isLoading: boolean }>({
+    userId: null,
+    isLoading: true,
+  });
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      setUserId(s?.user?.id ?? null);
+    let active = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (active) setState({ userId: data.user?.id ?? null, isLoading: false });
     });
-    return () => { sub.subscription.unsubscribe(); };
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setState({ userId: s?.user?.id ?? null, isLoading: false });
+    });
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
-  return userId;
+  return state;
 }
 
 export function useMyRoles() {
-  const userId = useCurrentUser();
-  return useQuery({
+  const { userId, isLoading: isUserLoading } = useCurrentUser();
+  const query = useQuery({
     queryKey: ["my-roles", userId],
-    enabled: !!userId,
+    enabled: !isUserLoading && !!userId,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("user_roles")
@@ -29,6 +38,11 @@ export function useMyRoles() {
       return (data ?? []) as Pick<UserRoleRow, "role" | "areas_extras">[];
     },
   });
+  return {
+    ...query,
+    isLoading: isUserLoading || (!!userId && query.isLoading),
+    isPending: isUserLoading || (!!userId && query.isPending),
+  };
 }
 
 export function useIsAdmin() {
