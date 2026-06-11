@@ -5,16 +5,20 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 const TABLES = ["pedidos", "feriados", "profiles", "user_roles"] as const;
 type TableName = (typeof TABLES)[number];
 
-async function assertAdmin(supabase: any, userId: string) {
-  const { data, error } = await supabase.rpc("is_admin", { _user_id: userId });
+async function assertAdminOrGestor(supabase: any, userId: string) {
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .in("role", ["admin", "gestor"]);
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Forbidden: admin required");
+  if (!data || data.length === 0) throw new Error("Forbidden: admin or gestor required");
 }
 
 export const exportBackup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertAdminOrGestor(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
     const result: Record<string, any[]> = {};
@@ -44,7 +48,7 @@ export const importBackup = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertAdminOrGestor(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
 

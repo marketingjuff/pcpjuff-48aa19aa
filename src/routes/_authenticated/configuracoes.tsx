@@ -11,6 +11,7 @@ import { formatDateBR } from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Trash2, Plus, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useMyRoles } from "@/hooks/use-role";
@@ -33,15 +34,17 @@ function ConfiguracoesPage() {
   const navigate = useNavigate();
   const { data: roles = [], isLoading } = useMyRoles();
   const isAdmin = roles.some((r) => r.role === "admin");
+  const isGestor = roles.some((r) => r.role === "gestor");
+  const canAccess = isAdmin || isGestor;
 
   useEffect(() => {
-    if (!isLoading && !isAdmin) {
-      toast.error("Acesso restrito a administradores.");
+    if (!isLoading && !canAccess) {
+      toast.error("Acesso restrito a administradores e gestores.");
       navigate({ to: "/" });
     }
-  }, [isAdmin, isLoading, navigate]);
+  }, [canAccess, isLoading, navigate]);
 
-  if (isLoading || !isAdmin) {
+  if (isLoading || !canAccess) {
     return <div className="p-8 text-sm text-muted-foreground">Carregando…</div>;
   }
 
@@ -56,14 +59,14 @@ function ConfiguracoesPage() {
         </div>
       </header>
       <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="feriados">
+        <Tabs defaultValue={isAdmin ? "feriados" : "backup"}>
           <TabsList className="mb-6">
-            <TabsTrigger value="feriados">Feriados</TabsTrigger>
-            <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+            {isAdmin && <TabsTrigger value="feriados">Feriados</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
             <TabsTrigger value="backup">Backup</TabsTrigger>
           </TabsList>
-          <TabsContent value="feriados"><FeriadosTab /></TabsContent>
-          <TabsContent value="usuarios"><UsuariosTab /></TabsContent>
+          {isAdmin && <TabsContent value="feriados"><FeriadosTab /></TabsContent>}
+          {isAdmin && <TabsContent value="usuarios"><UsuariosTab /></TabsContent>}
           <TabsContent value="backup"><BackupTab /></TabsContent>
         </Tabs>
       </main>
@@ -257,54 +260,191 @@ function BackupTab() {
   const importFn = useServerFn(importBackup);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
-  const fileRef = useState<HTMLInputElement | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState("");
+  const [summary, setSummary] = useState<string | null>(null);
+  const fileInputRef = useState<HTMLInputElement | null>(null);
 
   async function handleExport() {
     setExporting(true);
+    setProgress(0);
+    setSummary(null);
+    setProgressLabel("Coletando dados do banco…");
     try {
-      const data = await exportFn();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const JSZipMod = (await import("jszip")).default;
+      const zip = new JSZipMod();
+
+      const dados = await exportFn();
+      zip.file("dados.json", JSON.stringify(dados, null, 2));
+
+      const paths: string[] = Array.from(
+        new Set(
+          ((dados.tables?.pedidos ?? []) as any[])
+            .map((p) => p.layout_url)
+            .filter((p): p is string => typeof p === "string" && p.length > 0),
+        ),
+      );
+
+      const total = paths.length;
+      let done = 0;
+      let arquivosOk = 0;
+      let arquivosFalha = 0;
+
+      const layoutsFolder = zip.folder("layouts");
+      if (!layoutsFolder) throw new Error("Falha ao criar pasta layouts.");
+
+      setProgressLabel(total > 0 ? `Baixando layouts (0/${total})…` : "Gerando ZIP…");
+      setProgress(total > 0 ? 5 : 50);
+
+      // Baixa em pequenas levas para não saturar conexões.
+      const CONCURRENCY = 4;
+      for (let i = 0; i < paths.length; i += CONCURRENCY) {
+        const batch = paths.slice(i, i + CONCURRENCY);
+        await Promise.all(
+          batch.map(async (path) => {
+            try {
+              const { data: signed, error: sErr } = await supabase.storage
+                .from("layouts")
+                .createSignedUrl(path, 3600);
+              if (sErr || !signed?.signedUrl) throw new Error(sErr?.message ?? "URL inválida");
+              const res = await fetch(signed.signedUrl);
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              const buf = await res.arrayBuffer();
+              layoutsFolder.file(path, buf);
+              arquivosOk += 1;
+            } catch {
+              arquivosFalha += 1;
+            } finally {
+              done += 1;
+              const pct = Math.round(5 + (done / total) * 85);
+              setProgress(Math.min(90, pct));
+              setProgressLabel(`Baixando layouts (${done}/${total})…`);
+            }
+          }),
+        );
+      }
+
+      setProgressLabel("Compactando ZIP…");
+      setProgress(95);
+      const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+
+      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
       a.href = url;
-      a.download = `backup-${ts}.json`;
+      a.download = `backup-${ts}.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
+      setProgress(100);
+      const totalRegistros = Object.values(dados.tables ?? {}).reduce(
+        (acc: number, arr: any) => acc + (Array.isArray(arr) ? arr.length : 0),
+        0,
+      );
+      setSummary(
+        `Backup gerado. ${totalRegistros} registros, ${arquivosOk} layouts incluídos` +
+          (arquivosFalha ? ` (${arquivosFalha} falharam)` : "") +
+          ".",
+      );
       toast.success("Backup exportado.");
     } catch (e: any) {
       toast.error(e.message ?? "Erro ao exportar.");
     } finally {
       setExporting(false);
+      setProgressLabel("");
     }
   }
 
   async function handleFile(file: File) {
-    let payload: any;
-    try {
-      payload = JSON.parse(await file.text());
-    } catch {
-      toast.error("Arquivo JSON inválido.");
-      return;
-    }
-    if (!payload || typeof payload !== "object" || !payload.tables) {
-      toast.error("Estrutura de backup inválida (esperado { tables: {...} }).");
-      return;
-    }
-    const replace = confirm(
-      "Deseja SUBSTITUIR os dados existentes?\n\n" +
-        "OK = Apagar dados atuais e restaurar do backup.\n" +
-        "Cancelar = Mesclar (upsert por id, mantendo registros não presentes no backup).",
-    );
     setImporting(true);
+    setProgress(0);
+    setSummary(null);
+    setProgressLabel("Lendo arquivo ZIP…");
     try {
+      const JSZipMod = (await import("jszip")).default;
+      const zip = await JSZipMod.loadAsync(file);
+      const dadosEntry = zip.file("dados.json");
+      if (!dadosEntry) {
+        throw new Error("Arquivo dados.json não encontrado no ZIP.");
+      }
+      const payload = JSON.parse(await dadosEntry.async("string"));
+      if (!payload?.tables) {
+        throw new Error("Estrutura inválida em dados.json (esperado { tables: {...} }).");
+      }
+
+      const replace = confirm(
+        "Deseja SUBSTITUIR os dados existentes?\n\n" +
+          "OK = Apagar dados atuais e restaurar do backup.\n" +
+          "Cancelar = Mesclar (upsert por id, mantendo registros não presentes no backup).",
+      );
+
+      setProgressLabel("Restaurando registros no banco…");
+      setProgress(10);
       const res = await importFn({ data: { replace, payload } });
-      const linhas = Object.entries(res.summary)
+      const totalRegistros = Object.values(res.summary).reduce(
+        (acc, s) => acc + (s?.inserted ?? 0),
+        0,
+      );
+
+      // Coleta arquivos de layouts/ no ZIP.
+      const layoutEntries: { path: string; entry: typeof dadosEntry }[] = [];
+      zip.forEach((relativePath, entry) => {
+        if (entry.dir) return;
+        if (!relativePath.startsWith("layouts/")) return;
+        const path = relativePath.slice("layouts/".length);
+        if (!path) return;
+        layoutEntries.push({ path, entry });
+      });
+
+      const totalArquivos = layoutEntries.length;
+      let arquivosOk = 0;
+      let arquivosFalha = 0;
+      let processados = 0;
+
+      if (totalArquivos > 0) {
+        setProgressLabel(`Enviando layouts (0/${totalArquivos})…`);
+        setProgress(30);
+        const CONCURRENCY = 3;
+        for (let i = 0; i < layoutEntries.length; i += CONCURRENCY) {
+          const batch = layoutEntries.slice(i, i + CONCURRENCY);
+          await Promise.all(
+            batch.map(async ({ path, entry }) => {
+              try {
+                const blob = await entry.async("blob");
+                const file = new File([blob], path.split("/").pop() ?? "layout.pdf", {
+                  type: "application/pdf",
+                });
+                const { error } = await supabase.storage
+                  .from("layouts")
+                  .upload(path, file, { contentType: "application/pdf", upsert: true });
+                if (error) throw error;
+                arquivosOk += 1;
+              } catch {
+                arquivosFalha += 1;
+              } finally {
+                processados += 1;
+                const pct = Math.round(30 + (processados / totalArquivos) * 65);
+                setProgress(Math.min(95, pct));
+                setProgressLabel(`Enviando layouts (${processados}/${totalArquivos})…`);
+              }
+            }),
+          );
+        }
+      }
+
+      setProgress(100);
+      setProgressLabel("");
+      const detalhes = Object.entries(res.summary)
         .map(([t, s]) => `${t}: +${s.inserted}${s.deleted ? ` / -${s.deleted}` : ""}`)
         .join(" • ");
-      toast.success(`Backup importado. ${linhas}`);
+      setSummary(
+        `Restaurados ${totalRegistros} registros e ${arquivosOk} arquivos de layout` +
+          (arquivosFalha ? ` (${arquivosFalha} falharam)` : "") +
+          `. ${detalhes}`,
+      );
+      toast.success("Backup importado.");
     } catch (e: any) {
       toast.error(e.message ?? "Erro ao importar.");
     } finally {
@@ -312,14 +452,17 @@ function BackupTab() {
     }
   }
 
+  const busy = exporting || importing;
+
   return (
     <div className="max-w-2xl space-y-6">
       <div className="border rounded-lg p-4 space-y-3">
         <h2 className="font-semibold">Exportar Backup</h2>
         <p className="text-sm text-muted-foreground">
-          Baixa um arquivo JSON com todos os registros do banco (pedidos, feriados, perfis e papéis).
+          Gera um arquivo ZIP contendo <code>dados.json</code> (todos os registros) e a pasta{" "}
+          <code>layouts/</code> com todos os PDFs do bucket privado, preservando os caminhos originais.
         </p>
-        <Button onClick={handleExport} disabled={exporting}>
+        <Button onClick={handleExport} disabled={busy}>
           <Download className="h-4 w-4 mr-1" />
           {exporting ? "Exportando…" : "Exportar Backup"}
         </Button>
@@ -328,13 +471,14 @@ function BackupTab() {
       <div className="border rounded-lg p-4 space-y-3">
         <h2 className="font-semibold">Importar Backup</h2>
         <p className="text-sm text-muted-foreground">
-          Restaura os dados a partir de um arquivo JSON gerado pela exportação. Você poderá optar por
-          substituir os dados existentes ou mesclar.
+          Aceita o arquivo ZIP gerado pela exportação. Restaura os dados do banco (perguntando antes
+          se deve substituir) e envia automaticamente os PDFs de volta para o bucket{" "}
+          <code>layouts</code>, mantendo os caminhos originais.
         </p>
         <input
-          ref={(el) => { fileRef[1](el); }}
+          ref={(el) => { fileInputRef[1](el); }}
           type="file"
-          accept="application/json,.json"
+          accept=".zip,application/zip"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
@@ -344,13 +488,32 @@ function BackupTab() {
         />
         <Button
           variant="outline"
-          onClick={() => fileRef[0]?.click()}
-          disabled={importing}
+          onClick={() => fileInputRef[0]?.click()}
+          disabled={busy}
         >
           <Upload className="h-4 w-4 mr-1" />
           {importing ? "Importando…" : "Importar Backup"}
         </Button>
       </div>
+
+      {(busy || progress > 0 || summary) && (
+        <div className="border rounded-lg p-4 space-y-3">
+          {(busy || progress > 0) && (
+            <>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {progressLabel || (progress >= 100 ? "Concluído." : "")}
+                </span>
+                <span className="font-medium tabular-nums">{progress}%</span>
+              </div>
+              <Progress value={progress} />
+            </>
+          )}
+          {summary && !busy && (
+            <p className="text-sm text-foreground">{summary}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
