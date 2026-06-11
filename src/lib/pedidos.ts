@@ -93,7 +93,9 @@ export function calcularEtapaAtual(p: Pedido): {
   let etapa = "Pendente entrada";
   let cor: "green" | "yellow" | "red" | "gray" | "blue" = "gray";
 
-  const producaoInputOk = !!p.tempo_producao;
+  // "Input de produção" = campos preenchidos pela equipe de produção (não os do vendedor).
+  // tempo_producao é auto-calculado a partir do input do vendedor, então não serve como sinal.
+  const producaoInputOk = notEmpty(p.arte_data);
 
   if (p.finalizado_em) { etapa = "Finalizado"; cor = "green"; }
   else if (acabamentoOk) { etapa = "Enviado"; cor = "green"; }
