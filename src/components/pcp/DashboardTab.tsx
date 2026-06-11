@@ -171,22 +171,23 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                   <TableHead>Tipo</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[140px]">% Conclusão</TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={toggleSortEntrega}>
-                    <span className="inline-flex items-center gap-1">Data Entrega <ArrowUpDown className="h-3 w-3" /></span>
-                  </TableHead>
                   <TableHead>Frete</TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={toggleSortDias}>
                     <span className="inline-flex items-center gap-1">Dias <ArrowUpDown className="h-3 w-3" /></span>
                   </TableHead>
                   <TableHead>Prazo</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
+                  <TableHead>Saída Juff</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={toggleSortEntrega}>
+                    <span className="inline-flex items-center gap-1">Data Entrega <ArrowUpDown className="h-3 w-3" /></span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={13} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={14} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
                 ) : filtrados.length === 0 ? (
-                  <TableRow><TableCell colSpan={13} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={14} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
                 ) : (
                   filtrados.map((p) => {
                     const { etapa: et, percentual, cor } = calcularEtapaAtual(p);
@@ -209,7 +210,6 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                             <span className="text-xs tabular-nums">{percentual}%</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs whitespace-nowrap">{formatDateBR(p.data_entrega)}</TableCell>
                         <TableCell className="text-xs">{p.frete ?? "—"}</TableCell>
                         <TableCell className="text-xs tabular-nums">{dias ?? "—"}</TableCell>
                         <TableCell>
@@ -223,6 +223,8 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TableCell>
+                        <TableCell className="text-xs whitespace-nowrap">{formatDateBR(p.saida_juff)}</TableCell>
+                        <TableCell className="text-xs whitespace-nowrap">{formatDateBR(p.data_entrega)}</TableCell>
                       </TableRow>
                     );
                   })

@@ -23,6 +23,7 @@ import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
 import { EtapaBadgeFromPedido } from "./shared";
+import { useDirtyTracker, useRegisterSave } from "./dirty-form-context";
 
 interface Props {
   pedidos: Pedido[];
@@ -50,6 +51,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const { feriados } = useFeriados();
 
   useEffect(() => { setForm(selected ?? empty); }, [selected?.id]);
+  useDirtyTracker(form, selected ?? empty);
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
@@ -64,8 +66,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     return diasUteisEntre(form.entrada_pedido, saidaJuffCalc, feriados);
   }, [form.entrada_pedido, saidaJuffCalc, feriados]);
 
-  function handleSave(e: React.FormEvent) {
-    e.preventDefault();
+  function doSave() {
     if (!form.pedido_olist || !form.orcamento || !form.qtd || !form.vendedor || !form.tipo_estampa || !form.entrada_pedido) {
       toast.error("Preencha os campos obrigatórios.");
       return;
@@ -76,6 +77,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
     });
   }
+  function handleSave(e: React.FormEvent) { e.preventDefault(); doSave(); }
+  useRegisterSave(doSave);
 
   function handleNew() { onSelect(null); setForm(empty); }
 
@@ -259,7 +262,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Etapa","Pedido","Orçamento","QTD","Vendedor","Frete","Tempo Frete","Status","Estampa","Entrada","Arte","Início Estamp.","Término Estamp.","Acabamento","Saída","Data Entrega","Tempo Prod.","Dias"].map((h) => (
+                {["Etapa","Pedido","Orçamento","QTD","Vendedor","Frete","Tempo Frete","Status","Estampa","Entrada","Arte","Início Estamp.","Término Estamp.","Acabamento","Tempo Prod.","Dias","Saída Juff","Data Entrega"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -285,10 +288,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                     <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.inicio_estamparia)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.termino_estamparia)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.acabamento_data)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
                     <td className="px-3 py-2">{p.tempo_producao ?? "—"}</td>
                     <td className="px-3 py-2 tabular-nums">{dias ?? "—"}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
                   </tr>
                 );
               })}

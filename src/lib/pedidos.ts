@@ -184,23 +184,22 @@ export function acabamentoAlgumPreenchido(p: Pedido): boolean {
   return notEmpty(p.embalado) || notEmpty(p.data_saida_juff) || notEmpty(p.responsavel_acabamento) || notEmpty((p as any).responsavel_conferencia);
 }
 
-// Visibilidade em cascata — pedidos Lisa aparecem em todos os dashboards de processo
-export function visivelEmArte(p: Pedido): boolean { return dadosInCompletos(p); }
+// Visibilidade nos dashboards das abas:
+// Todos os pedidos em aberto aparecem em todas as áreas — as áreas precisam enxergar
+// o que está por vir e o que já passou. Só DTF e Silk podem excluir pedidos pelo
+// tipo_estampa (quando já estiver definido e não incluir aquela técnica).
+export function visivelEmArte(_p: Pedido): boolean { return true; }
 export function visivelEmDTF(p: Pedido): boolean {
-  if (p.tipo_estampa === "Lisa") return dadosInCompletos(p);
-  return tipoIncluiDTF(p.tipo_estampa) && arteCompleta(p);
+  if (!p.tipo_estampa) return true; // tipo ainda não definido — mostrar
+  if (p.tipo_estampa === "Lisa") return true;
+  return tipoIncluiDTF(p.tipo_estampa);
 }
 export function visivelEmSilk(p: Pedido): boolean {
-  if (p.tipo_estampa === "Lisa") return dadosInCompletos(p);
-  return tipoIncluiSilk(p.tipo_estampa) && arteCompleta(p);
+  if (!p.tipo_estampa) return true;
+  if (p.tipo_estampa === "Lisa") return true;
+  return tipoIncluiSilk(p.tipo_estampa);
 }
-export function visivelEmAcabamento(p: Pedido): boolean {
-  if (p.tipo_estampa === "Lisa") return dadosInCompletos(p);
-  if (!arteCompleta(p)) return false;
-  if (tipoIncluiDTF(p.tipo_estampa) && !dtfCompleto(p)) return false;
-  if (tipoIncluiSilk(p.tipo_estampa) && !silkCompleto(p)) return false;
-  return true;
-}
+export function visivelEmAcabamento(_p: Pedido): boolean { return true; }
 
 export type EtapaStatus = "pendente" | "andamento" | "concluido";
 export function statusEtapa(completo: boolean, algumPreenchido: boolean): EtapaStatus {

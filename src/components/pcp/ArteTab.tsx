@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, Download } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
+import { useDirtyTracker, useRegisterSave } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -27,7 +28,8 @@ interface Props {
 
 export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
-  useEffect(() => { if (selected) setForm(selected); }, [selected?.id]);
+  useEffect(() => { if (selected) setForm(selected); else setForm({}); }, [selected?.id]);
+  useDirtyTracker(form, selected ?? {}, !!selected);
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
@@ -41,6 +43,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
   }
 
   function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
+  useRegisterSave(handleSave);
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
@@ -152,7 +155,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Etapa","Orçamento","Pedido","Tipo","Status Arte","Frete","UF","Entrega"].map((h) => (
+                {["Etapa","Orçamento","Pedido","Tipo","Status Arte","Frete","UF","Saída Juff","Data Entrega"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -161,7 +164,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
               {(() => {
                 const visiveis = pedidos.filter((p) => visivelEmArte(p) && !p.finalizado_em);
                 if (visiveis.length === 0) {
-                  return <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido com Dados In completos.</td></tr>;
+                  return <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido em aberto.</td></tr>;
                 }
                 return visiveis.map((p) => {
                   return (
@@ -175,6 +178,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
                       <td className="px-3 py-2">{p.status_arte ?? "—"}</td>
                       <td className="px-3 py-2">{p.frete ?? "—"}</td>
                       <td className="px-3 py-2">{p.uf_entrega ?? "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
                     </tr>
                   );

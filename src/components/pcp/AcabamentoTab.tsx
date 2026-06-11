@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, Download } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
+import { useDirtyTracker, useRegisterSave } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 
 
@@ -23,7 +24,8 @@ interface Props {
 
 export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
-  useEffect(() => { if (selected) setForm(selected); }, [selected?.id]);
+  useEffect(() => { if (selected) setForm(selected); else setForm({}); }, [selected?.id]);
+  useDirtyTracker(form, selected ?? {}, !!selected);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
   function setEmbalado(v: string) {
@@ -47,6 +49,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
     if (form.embalado !== "Sim" && selected.finalizado_em) payload.finalizado_em = null;
     onSave(payload);
   }
+  useRegisterSave(handleSave);
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
@@ -169,7 +172,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Etapa","Orçamento","Pedido","Tipo","DTF Est.","Silk Est.","Embalado","Saída Juff","Data Entrega","Responsável"].map((h) => (
+                  {["Etapa","Orçamento","Pedido","Tipo","DTF Est.","Silk Est.","Embalado","Responsável","Saída Juff","Data Entrega"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -185,9 +188,9 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
                       <td className="px-3 py-2">{modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"}</td>
                       <td className="px-3 py-2">{modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"}</td>
                       <td className="px-3 py-2">{p.embalado ?? "—"}</td>
+                      <td className="px-3 py-2">{p.responsavel_acabamento ?? "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
-                      <td className="px-3 py-2">{p.responsavel_acabamento ?? "—"}</td>
                     </tr>
                   );
                 })}

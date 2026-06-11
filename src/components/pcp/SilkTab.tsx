@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
+import { useDirtyTracker, useRegisterSave } from "./dirty-form-context";
 
 import { formatDateBR } from "@/lib/format";
 
@@ -23,12 +24,14 @@ interface Props {
 
 export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
-  useEffect(() => { if (selected) setForm(selected); }, [selected?.id]);
+  useEffect(() => { if (selected) setForm(selected); else setForm({}); }, [selected?.id]);
+  useDirtyTracker(form, selected ?? {}, !!selected);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
   function setSilkFeito(v: string) {
     setForm((f) => ({ ...f, silk_feito: v, ...(v !== "Sim" ? { silk_data_executada: null } : {}) }));
   }
   function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
+  useRegisterSave(handleSave);
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
@@ -170,7 +173,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Etapa","Orçamento","Pedido","Tipo","Fotolito","Tela Gravada","Silk Feito","Data Silk","Quem bateu"].map((h) => (
+                  {["Etapa","Orçamento","Pedido","Tipo","Fotolito","Tela Gravada","Silk Feito","Data Silk","Quem bateu","Saída Juff","Data Entrega"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -188,11 +191,13 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
                       <td className="px-3 py-2">{p.silk_feito ?? "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.silk_data_executada)}</td>
                       <td className="px-3 py-2">{p.quem_bateu_silk ?? "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
                     </tr>
                   );
                 })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk disponível.</td></tr>
+                  <tr><td colSpan={11} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk disponível.</td></tr>
                 )}
 
               </tbody>

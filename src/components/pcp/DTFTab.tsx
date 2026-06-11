@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
+import { useDirtyTracker, useRegisterSave } from "./dirty-form-context";
 
 import { formatDateBR } from "@/lib/format";
 
@@ -23,12 +24,14 @@ interface Props {
 
 export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
-  useEffect(() => { if (selected) setForm(selected); }, [selected?.id]);
+  useEffect(() => { if (selected) setForm(selected); else setForm({}); }, [selected?.id]);
+  useDirtyTracker(form, selected ?? {}, !!selected);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
   function setEstampado(v: string) {
     setForm((f) => ({ ...f, dtf_estampado: v, ...(v !== "Sim" ? { dtf_data_executada: null } : {}) }));
   }
   function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
+  useRegisterSave(handleSave);
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
@@ -164,7 +167,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Etapa","Orçamento","Pedido","Tipo","DTF Impresso","DTF Estampado","Data Exec","Quem bateu"].map((h) => (
+                  {["Etapa","Orçamento","Pedido","Tipo","DTF Impresso","DTF Estampado","Data Exec","Quem bateu","Saída Juff","Data Entrega"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -181,11 +184,13 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
                       <td className="px-3 py-2">{p.dtf_estampado ?? "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.dtf_data_executada)}</td>
                       <td className="px-3 py-2">{p.quem_bateu_dtf ?? "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
                     </tr>
                   );
                 })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido DTF disponível.</td></tr>
+                  <tr><td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido DTF disponível.</td></tr>
                 )}
 
               </tbody>
