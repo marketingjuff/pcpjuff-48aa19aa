@@ -246,7 +246,28 @@ function UsuariosTab() {
                 const currentRole = (u.roles?.[0]?.role ?? "gestor") as AppRole;
                 return (
                   <TableRow key={u.id}>
-                    <TableCell>{u.nome ?? "—"}</TableCell>
+                    <TableCell>
+                      {editingName?.id === u.id ? (
+                        <div className="flex gap-1">
+                          <Input
+                            value={editingName.nome}
+                            autoFocus
+                            className="h-8"
+                            onChange={(e) => setEditingName({ id: u.id, nome: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") { e.preventDefault(); if (editingName.nome.trim()) rename.mutate({ userId: u.id, nome: editingName.nome.trim() }); }
+                              if (e.key === "Escape") setEditingName(null);
+                            }}
+                          />
+                          <Button size="sm" onClick={() => { if (editingName.nome.trim()) rename.mutate({ userId: u.id, nome: editingName.nome.trim() }); }} disabled={rename.isPending}>Salvar</Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingName(null)}>Cancelar</Button>
+                        </div>
+                      ) : (
+                        <button type="button" className="text-left hover:underline" onClick={() => setEditingName({ id: u.id, nome: u.nome ?? "" })}>
+                          {u.nome ?? "—"}
+                        </button>
+                      )}
+                    </TableCell>
                     <TableCell>{u.email}</TableCell>
                     <TableCell>
                       <Select value={currentRole} onValueChange={(v) => update.mutate({ userId: u.id, role: v as AppRole })}>
