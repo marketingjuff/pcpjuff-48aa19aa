@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_lists: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feriados: {
         Row: {
           created_at: string
