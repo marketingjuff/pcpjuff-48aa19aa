@@ -11,7 +11,7 @@ import { formatDateBR } from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useMyRoles } from "@/hooks/use-role";
 import {
@@ -20,6 +20,7 @@ import {
   updateUserRole,
   deleteUserAccount,
 } from "@/lib/admin.functions";
+import { exportBackup, importBackup } from "@/lib/backup.functions";
 import type { AppRole, Feriado } from "@/integrations/supabase/schema-extras";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
@@ -59,9 +60,11 @@ function ConfiguracoesPage() {
           <TabsList className="mb-6">
             <TabsTrigger value="feriados">Feriados</TabsTrigger>
             <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+            <TabsTrigger value="backup">Backup</TabsTrigger>
           </TabsList>
           <TabsContent value="feriados"><FeriadosTab /></TabsContent>
           <TabsContent value="usuarios"><UsuariosTab /></TabsContent>
+          <TabsContent value="backup"><BackupTab /></TabsContent>
         </Tabs>
       </main>
     </div>
