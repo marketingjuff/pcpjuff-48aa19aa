@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { VENDEDORES, STATUS_OPCOES, MODELOS_ESTAMPA, calcularEtapaAtual, statusPrazo, diasAte } from "@/lib/pedidos";
+import {
+  VENDEDORES, STATUS_GERAL_OPCOES, TIPOS_ESTAMPA,
+  calcularEtapaAtual, statusPrazo, tipoIncluiDTF, tipoIncluiSilk,
+} from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Pencil, Eye, ListChecks, Activity, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Pencil, Eye, ListChecks, AlertCircle, Palette, Printer, Brush, Package, ArrowUpDown,
+} from "lucide-react";
+import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
+import { useFeriados } from "@/hooks/use-feriados";
+import { formatDateBR } from "@/lib/format";
 
 interface Props {
   pedidos: Pedido[];
@@ -17,44 +25,90 @@ interface Props {
   onViewProgress: (id: string) => void;
 }
 
+type Etapa = "todas" | "ativas" | "arte" | "dtf" | "silk" | "acabamento" | "finalizados";
+
 export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props) {
+  const { feriados } = useFeriados();
   const [vendedor, setVendedor] = useState<string>("todos");
   const [status, setStatus] = useState<string>("todos");
-  const [modelo, setModelo] = useState<string>("todos");
+  const [tipo, setTipo] = useState<string>("todos");
+  const [etapa, setEtapa] = useState<Etapa>("ativas");
+  const [dataEntrega, setDataEntrega] = useState("");
+  const [frete, setFrete] = useState("");
   const [search, setSearch] = useState("");
+  const [sortDiasDir, setSortDiasDir] = useState<"asc" | "desc" | null>(null);
+
+  function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
+    if (e === "todas") return true;
+    if (e === "ativas") return !p.finalizado_em;
+    if (e === "finalizados") return !!p.finalizado_em;
+    if (p.finalizado_em) return false;
+    if (e === "arte") return p.status_arte !== "Arte Finalizada";
+    if (e === "dtf") return tipoIncluiDTF(p.tipo_estampa) && p.dtf_estampado !== "Sim";
+    if (e === "silk") return tipoIncluiSilk(p.tipo_estampa) && p.silk_feito !== "Sim";
+    if (e === "acabamento") return p.status_arte === "Arte Finalizada"
+      && (!tipoIncluiDTF(p.tipo_estampa) || p.dtf_estampado === "Sim")
+      && (!tipoIncluiSilk(p.tipo_estampa) || p.silk_feito === "Sim")
+      && p.embalado !== "Sim";
+    return true;
+  }
 
   const filtrados = useMemo(() => {
-    return pedidos.filter((p) => {
+    const arr = pedidos.filter((p) => {
+      if (!pedidoEmEtapa(p, etapa)) return false;
       if (vendedor !== "todos" && p.vendedor !== vendedor) return false;
       if (status !== "todos" && p.status_geral !== status) return false;
-      if (modelo !== "todos" && p.tipo_estampa !== modelo) return false;
+      if (tipo !== "todos" && p.tipo_estampa !== tipo) return false;
+      if (dataEntrega && p.data_entrega !== dataEntrega) return false;
+      if (frete && !String(p.frete ?? "").toLowerCase().includes(frete.toLowerCase())) return false;
       if (search && !`${p.pedido_olist} ${p.orcamento}`.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [pedidos, vendedor, status, modelo, search]);
+    if (sortDiasDir) {
+      arr.sort((a, b) => {
+        const da = a.data_entrega ? diasUteisEntre(new Date().toISOString().slice(0,10), a.data_entrega, feriados) ?? 9999 : 9999;
+        const db = b.data_entrega ? diasUteisEntre(new Date().toISOString().slice(0,10), b.data_entrega, feriados) ?? 9999 : 9999;
+        return sortDiasDir === "asc" ? da - db : db - da;
+      });
+    }
+    return arr;
+  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, frete, search, sortDiasDir, feriados]);
 
   const stats = useMemo(() => {
-    const total = pedidos.length;
-    const abertos = pedidos.filter((p) => p.status_geral === "Aberto").length;
-    const completos = pedidos.filter((p) => p.status_geral === "Completo").length;
-    const atrasados = pedidos.filter((p) => statusPrazo(p) === "atrasado" && p.embalado !== "Sim").length;
-    return { total, abertos, completos, atrasados };
+    const ativos = pedidos.filter((p) => !p.finalizado_em);
+    return {
+      total: ativos.length,
+      atrasados: ativos.filter((p) => statusPrazo(p) === "atrasado").length,
+      arte: ativos.filter((p) => p.status_arte !== "Arte Finalizada").length,
+      dtf: ativos.filter((p) => tipoIncluiDTF(p.tipo_estampa) && p.dtf_estampado !== "Sim").length,
+      silk: ativos.filter((p) => tipoIncluiSilk(p.tipo_estampa) && p.silk_feito !== "Sim").length,
+      acabamento: ativos.filter((p) => p.status_arte === "Arte Finalizada"
+        && (!tipoIncluiDTF(p.tipo_estampa) || p.dtf_estampado === "Sim")
+        && (!tipoIncluiSilk(p.tipo_estampa) || p.silk_feito === "Sim")
+        && p.embalado !== "Sim").length,
+    };
   }, [pedidos]);
+
+  function toggleSortDias() {
+    setSortDiasDir((d) => d === null ? "asc" : d === "asc" ? "desc" : null);
+  }
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Total" value={stats.total} icon={<ListChecks className="h-4 w-4" />} />
-        <StatCard label="Abertos" value={stats.abertos} icon={<Activity className="h-4 w-4" />} accent="info" />
-        <StatCard label="Completos" value={stats.completos} icon={<CheckCircle2 className="h-4 w-4" />} accent="success" />
-        <StatCard label="Atrasados" value={stats.atrasados} icon={<AlertCircle className="h-4 w-4" />} accent="destructive" />
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+        <StatCard label="Total ativos" value={stats.total} icon={<ListChecks className="h-4 w-4" />} onClick={() => setEtapa("ativas")} active={etapa === "ativas"} />
+        <StatCard label="Atrasados" value={stats.atrasados} icon={<AlertCircle className="h-4 w-4" />} accent="destructive" onClick={() => setEtapa("ativas")} />
+        <StatCard label="Arte" value={stats.arte} icon={<Palette className="h-4 w-4" />} accent="info" onClick={() => setEtapa("arte")} active={etapa === "arte"} />
+        <StatCard label="DTF" value={stats.dtf} icon={<Printer className="h-4 w-4" />} accent="info" onClick={() => setEtapa("dtf")} active={etapa === "dtf"} />
+        <StatCard label="Silk" value={stats.silk} icon={<Brush className="h-4 w-4" />} accent="info" onClick={() => setEtapa("silk")} active={etapa === "silk"} />
+        <StatCard label="Acabamento" value={stats.acabamento} icon={<Package className="h-4 w-4" />} accent="info" onClick={() => setEtapa("acabamento")} active={etapa === "acabamento"} />
       </div>
 
       <Card>
         <CardHeader><CardTitle>Pedidos</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-4">
-            <Input placeholder="Buscar pedido ou orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
+            <Input placeholder="Buscar pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
             <Select value={vendedor} onValueChange={setVendedor}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -66,16 +120,32 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos status</SelectItem>
-                {STATUS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                {STATUS_GERAL_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={modelo} onValueChange={setModelo}>
+            <Select value={tipo} onValueChange={setTipo}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todos modelos</SelectItem>
-                {MODELOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                <SelectItem value="todos">Todos tipos</SelectItem>
+                {TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Select value={etapa} onValueChange={(v) => setEtapa(v as Etapa)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ativas">Todas (menos finalizados)</SelectItem>
+                <SelectItem value="todas">Todas as etapas</SelectItem>
+                <SelectItem value="arte">Arte pendente</SelectItem>
+                <SelectItem value="dtf">DTF pendente</SelectItem>
+                <SelectItem value="silk">Silk pendente</SelectItem>
+                <SelectItem value="acabamento">Acabamento pendente</SelectItem>
+                <SelectItem value="finalizados">Finalizados</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input type="date" value={dataEntrega} onChange={(e) => setDataEntrega(e.target.value)} placeholder="Data Entrega" />
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <Input placeholder="Filtrar por frete..." value={frete} onChange={(e) => setFrete(e.target.value)} />
           </div>
 
           <div className="rounded-md border overflow-x-auto">
@@ -86,26 +156,29 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                   <TableHead>Orçamento</TableHead>
                   <TableHead>QTD</TableHead>
                   <TableHead>Vendedor</TableHead>
-                  <TableHead>Modelo</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[140px]">% Conclusão</TableHead>
                   <TableHead>Etapa</TableHead>
-                  <TableHead>Saída</TableHead>
-                  <TableHead>Dias</TableHead>
+                  <TableHead>Data Entrega</TableHead>
+                  <TableHead>Frete</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={toggleSortDias}>
+                    <span className="inline-flex items-center gap-1">Dias <ArrowUpDown className="h-3 w-3" /></span>
+                  </TableHead>
                   <TableHead>Prazo</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={12} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={13} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
                 ) : filtrados.length === 0 ? (
-                  <TableRow><TableCell colSpan={12} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={13} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
                 ) : (
                   filtrados.map((p) => {
-                    const { etapa, percentual, cor } = calcularEtapaAtual(p);
+                    const { etapa: et, percentual, cor } = calcularEtapaAtual(p);
                     const prazo = statusPrazo(p);
-                    const dias = diasAte(p.saida_juff);
+                    const dias = p.data_entrega ? diasUteisEntre(new Date().toISOString().slice(0,10), p.data_entrega, feriados) : null;
                     return (
                       <TableRow key={p.id}>
                         <TableCell className="font-medium">{p.pedido_olist}</TableCell>
@@ -122,8 +195,9 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                             <span className="text-xs tabular-nums">{percentual}%</span>
                           </div>
                         </TableCell>
-                        <TableCell><Badge className={etapaCorClass(cor)} variant="outline">{etapa}</Badge></TableCell>
-                        <TableCell className="text-xs">{p.saida_juff ?? "—"}</TableCell>
+                        <TableCell><Badge className={etapaCorClass(cor)} variant="outline">{et}</Badge></TableCell>
+                        <TableCell className="text-xs whitespace-nowrap">{formatDateBR(p.data_entrega)}</TableCell>
+                        <TableCell className="text-xs">{p.frete ?? "—"}</TableCell>
                         <TableCell className="text-xs tabular-nums">{dias ?? "—"}</TableCell>
                         <TableCell>
                           <span className={prazoClass(prazo)}>{prazoLabel(prazo)}</span>
@@ -149,14 +223,14 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
   );
 }
 
-function StatCard({ label, value, icon, accent }: { label: string; value: number; icon: React.ReactNode; accent?: "info" | "success" | "destructive" }) {
+function StatCard({ label, value, icon, accent, onClick, active }: { label: string; value: number; icon: React.ReactNode; accent?: "info" | "success" | "destructive"; onClick?: () => void; active?: boolean }) {
   const accentClass =
     accent === "info" ? "text-info" :
     accent === "success" ? "text-success" :
     accent === "destructive" ? "text-destructive" :
     "text-primary";
   return (
-    <Card>
+    <Card onClick={onClick} className={`cursor-pointer transition ${active ? "ring-2 ring-primary" : "hover:bg-accent/30"}`}>
       <CardContent className="pt-6">
         <div className="flex items-center justify-between">
           <div>

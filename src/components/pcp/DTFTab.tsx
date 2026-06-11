@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiDTF, diasAte } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiDTF, QUEM_BATEU_DTF, calcularEtapaAtual } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, Info } from "lucide-react";
-import { PedidoSelector, ReadOnlyField, FormField, EmptyState } from "./shared";
+import { ReadOnlyField, FormField, EmptyState } from "./shared";
+import { formatDateBR } from "@/lib/format";
 
 interface Props {
   pedidos: Pedido[];
@@ -22,9 +23,11 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
   useEffect(() => { if (selected) setForm(selected); }, [selected]);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
+  function setEstampado(v: string) {
+    setForm((f) => ({ ...f, dtf_estampado: v, ...(v !== "Sim" ? { dtf_data_executada: null } : {}) }));
+  }
   function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
 
-  const dias = selected ? diasAte(selected.termino_estamparia) : null;
   const atrasado = selected?.termino_estamparia && form.dtf_data_executada &&
     new Date(form.dtf_data_executada) > new Date(selected.termino_estamparia);
 
@@ -34,8 +37,26 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
     ? "bg-warning/15 text-warning-foreground border-warning/30"
     : "bg-muted text-muted-foreground border-border";
 
+  // Dashboard filters
+  const [fOrc, setFOrc] = useState("");
+  const [fPed, setFPed] = useState("");
+  const [fStatus, setFStatus] = useState("todos");
+  const [fImpresso, setFImpresso] = useState("todos");
+  const [fEstampado, setFEstampado] = useState("todos");
+
+  const dashboardPedidos = useMemo(() => pedidos.filter((p) => {
+    if (p.finalizado_em) return false;
+    if (!modeloIncluiDTF(p.tipo_estampa)) return false;
+    if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
+    if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
+    if (fStatus !== "todos" && p.status_geral !== fStatus) return false;
+    if (fImpresso !== "todos" && (p.dtf_impresso ?? "") !== fImpresso) return false;
+    if (fEstampado !== "todos" && (p.dtf_estampado ?? "") !== fEstampado) return false;
+    return true;
+  }), [pedidos, fOrc, fPed, fStatus, fImpresso, fEstampado]);
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+    <div className="space-y-6">
       {selected ? (
         !modeloIncluiDTF(selected.tipo_estampa) ? (
           <EmptyState>Este pedido não inclui DTF (modelo: {selected.tipo_estampa}).</EmptyState>
@@ -48,9 +69,14 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
               </Badge>
             </CardHeader>
             <CardContent className="space-y-6">
-              {!selected.dtf_executado && (
+              {selected.dtf_impresso !== "Sim" && (
                 <div className="flex items-center gap-2 p-3 rounded-md bg-warning/15 text-sm border border-warning/30">
-                  <Info className="h-4 w-4" /> Arte ainda não liberou impressão DTF.
+                  <Info className="h-4 w-4" /> Arte ainda não liberou a impressão do DTF.
+                </div>
+              )}
+              {selected.tipo_estampa === "DTF+Silk" && (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-info/10 text-sm border border-info/30">
+                  <Info className="h-4 w-4" /> Pedido com dependência Silk + DTF.
                 </div>
               )}
               {atrasado && (
@@ -63,25 +89,29 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
                 <ReadOnlyField label="QTD" value={selected.qtd} />
                 <ReadOnlyField label="Status" value={selected.status_geral} />
-                <ReadOnlyField label="Início estamparia" value={selected.inicio_estamparia} />
-                <ReadOnlyField label="Término estamparia" value={
-                  <>{selected.termino_estamparia}{dias !== null && <span className="text-xs ml-2 opacity-70">({dias} dias)</span>}</>
-                } />
-                <ReadOnlyField label="DTF impresso? (Arte)" value={selected.dtf_executado ?? "Pendente"} />
-                <ReadOnlyField label="Saída Juff" value={selected.saida_juff} />
+                <ReadOnlyField label="DTF Impresso? (Arte)" value={selected.dtf_impresso ?? "Pendente"} />
+                <ReadOnlyField label="Início estamparia" value={formatDateBR(selected.inicio_estamparia)} />
+                <ReadOnlyField label="Término estamparia" value={formatDateBR(selected.termino_estamparia)} />
+                <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
               </div>
               <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
                 <FormField label="DTF Estampado?">
-                  <Select value={form.dtf_estampado ?? ""} onValueChange={(v) => set("dtf_estampado", v)}>
+                  <Select value={form.dtf_estampado ?? ""} onValueChange={setEstampado}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>{SIM_NAO_PROCESSO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                   </Select>
                 </FormField>
-                <FormField label={`Data Executada${form.dtf_estampado === "Sim" ? " *" : ""}`}>
-                  <Input type="date" value={form.dtf_data_executada ?? ""} onChange={(e) => set("dtf_data_executada", e.target.value || null)} />
+                <FormField label={`DTF Estampado Executado${form.dtf_estampado === "Sim" ? " *" : ""}`}>
+                  <Input type="date" disabled={form.dtf_estampado !== "Sim"} value={form.dtf_data_executada ?? ""} onChange={(e) => set("dtf_data_executada", e.target.value || null)} />
+                </FormField>
+                <FormField label="Quem bateu o DTF?">
+                  <Select value={form.quem_bateu_dtf ?? ""} onValueChange={(v) => set("quem_bateu_dtf", v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>{QUEM_BATEU_DTF.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                  </Select>
                 </FormField>
                 <div className="md:col-span-2">
-                  <FormField label="Observação">
+                  <FormField label="Observações do DTF">
                     <Textarea value={form.dtf_observacao ?? ""} onChange={(e) => set("dtf_observacao", e.target.value)} rows={2} />
                   </FormField>
                 </div>
@@ -91,9 +121,73 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
           </Card>
         )
       ) : (
-        <EmptyState>Selecione um pedido DTF na lista ao lado.</EmptyState>
+        <EmptyState>Selecione um pedido DTF no dashboard abaixo.</EmptyState>
       )}
-      <PedidoSelector pedidos={pedidos} selectedId={selected?.id ?? null} onSelect={onSelect} filter={(p) => modeloIncluiDTF(p.tipo_estampa)} />
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Dashboard — DTF</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid gap-2 md:grid-cols-5">
+            <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />
+            <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
+            <Select value={fStatus} onValueChange={setFStatus}>
+              <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos status</SelectItem>
+                <SelectItem value="Aberto">Aberto</SelectItem>
+                <SelectItem value="Completo">Completo</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={fImpresso} onValueChange={setFImpresso}>
+              <SelectTrigger><SelectValue placeholder="DTF Impresso" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">DTF Impresso (todos)</SelectItem>
+                <SelectItem value="Sim">Sim</SelectItem>
+                <SelectItem value="Não">Não</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={fEstampado} onValueChange={setFEstampado}>
+              <SelectTrigger><SelectValue placeholder="DTF Estampado" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">DTF Estampado (todos)</SelectItem>
+                {SIM_NAO_PROCESSO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="rounded-md border overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-xs uppercase">
+                <tr>
+                  {["Orçamento","Pedido","Tipo","Status","DTF Impresso","DTF Estampado","Data Exec","Quem bateu","Etapa"].map((h) => (
+                    <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {dashboardPedidos.map((p) => {
+                  const { etapa } = calcularEtapaAtual(p);
+                  return (
+                    <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                      <td className="px-3 py-2 font-medium">{p.orcamento}</td>
+                      <td className="px-3 py-2">{p.pedido_olist}</td>
+                      <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                      <td className="px-3 py-2">{p.status_geral}</td>
+                      <td className="px-3 py-2">{p.dtf_impresso ?? "—"}</td>
+                      <td className="px-3 py-2">{p.dtf_estampado ?? "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.dtf_data_executada)}</td>
+                      <td className="px-3 py-2">{p.quem_bateu_dtf ?? "—"}</td>
+                      <td className="px-3 py-2 text-xs">{etapa}</td>
+                    </tr>
+                  );
+                })}
+                {dashboardPedidos.length === 0 && (
+                  <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido DTF.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

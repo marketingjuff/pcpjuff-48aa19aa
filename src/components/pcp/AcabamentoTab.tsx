@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { OK_OPCOES, SIM_NAO_PROCESSO, RESPONSAVEIS, modeloIncluiDTF, modeloIncluiSilk } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, RESPONSAVEIS_ACABAMENTO, modeloIncluiDTF, modeloIncluiSilk } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, AlertTriangle, Ban } from "lucide-react";
-import { PedidoSelector, ReadOnlyField, FormField, EmptyState } from "./shared";
+import { Save, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ReadOnlyField, FormField, EmptyState } from "./shared";
+import { formatDateBR } from "@/lib/format";
 
 interface Props {
   pedidos: Pedido[];
@@ -22,27 +23,54 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
   const [form, setForm] = useState<Partial<Pedido>>({});
   useEffect(() => { if (selected) setForm(selected); }, [selected]);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
-  function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
+
+  function setEmbalado(v: string) {
+    setForm((f) => ({
+      ...f,
+      embalado: v,
+      ...(v !== "Sim" ? { data_saida_juff: null, responsavel_acabamento: null, responsavel_conferencia: null } : {}),
+    }));
+  }
 
   const temDTF = selected && modeloIncluiDTF(selected.tipo_estampa);
   const temSilk = selected && modeloIncluiSilk(selected.tipo_estampa);
-  const dtfDisponivel = selected?.dtf_estampado === "Sim";
-  const silkDisponivel = selected?.silk_feito === "Sim";
+  const dtfOk = !temDTF || selected?.dtf_estampado === "Sim";
+  const silkOk = !temSilk || selected?.silk_feito === "Sim";
+  const podeFinalizar = dtfOk && silkOk && form.embalado === "Sim" && !!form.data_saida_juff && !!form.responsavel_acabamento;
 
-  const rejeitado = form.dtf_ok === "Não" || form.silk_ok === "Não";
-  const atrasado = selected?.saida_juff && form.data_saida_juff &&
-    new Date(form.data_saida_juff) > new Date(selected.saida_juff);
+  function handleSave() {
+    if (!selected) return;
+    const payload: Partial<Pedido> & { id: string } = { ...form, id: selected.id };
+    if (podeFinalizar && !selected.finalizado_em) payload.finalizado_em = new Date().toISOString();
+    if (form.embalado !== "Sim" && selected.finalizado_em) payload.finalizado_em = null;
+    onSave(payload);
+  }
 
-  const status = rejeitado
-    ? { label: "Rejeitado", color: "bg-destructive/15 text-destructive border-destructive/30" }
-    : form.embalado === "Sim" && atrasado
+  const atrasado = selected?.saida_juff && form.data_saida_juff && new Date(form.data_saida_juff) > new Date(selected.saida_juff);
+
+  const status = form.embalado === "Sim" && atrasado
     ? { label: "Saiu atrasado", color: "bg-warning/15 text-warning-foreground border-warning/30" }
     : form.embalado === "Sim"
     ? { label: "Embalado", color: "bg-success/15 text-success border-success/30" }
     : { label: "Pendente", color: "bg-muted text-muted-foreground border-border" };
 
+  // Dashboard
+  const [fOrc, setFOrc] = useState("");
+  const [fPed, setFPed] = useState("");
+  const [fDtf, setFDtf] = useState("todos");
+  const [fSilk, setFSilk] = useState("todos");
+
+  const dashboardPedidos = useMemo(() => pedidos.filter((p) => {
+    if (p.finalizado_em) return false;
+    if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
+    if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
+    if (fDtf !== "todos" && (p.dtf_estampado ?? "") !== fDtf) return false;
+    if (fSilk !== "todos" && (p.silk_feito ?? "") !== fSilk) return false;
+    return true;
+  }), [pedidos, fOrc, fPed, fDtf, fSilk]);
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+    <div className="space-y-6">
       {selected ? (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -50,56 +78,44 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
             <Badge variant="outline" className={status.color}>{status.label}</Badge>
           </CardHeader>
           <CardContent className="space-y-6">
-            {rejeitado && (
-              <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">
-                <Ban className="h-4 w-4" /> Produto rejeitado — revisar antes de liberar saída.
-              </div>
-            )}
             {atrasado && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-warning/15 text-sm border border-warning/30">
                 <AlertTriangle className="h-4 w-4" /> Saída ocorrida após o prazo previsto.
               </div>
             )}
+            {podeFinalizar && (
+              <div className="flex items-center gap-2 p-3 rounded-md bg-success/10 text-success text-sm border border-success/30">
+                <CheckCircle2 className="h-4 w-4" /> Ao salvar, este pedido será marcado como Finalizado.
+              </div>
+            )}
             <div className="grid gap-4 md:grid-cols-2">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
-              <ReadOnlyField label="Modelo" value={selected.tipo_estampa} />
+              <ReadOnlyField label="Tipo de Estampa" value={selected.tipo_estampa} />
               <ReadOnlyField label="Status" value={selected.status_geral} />
-              <ReadOnlyField label="Acabamento previsto" value={selected.acabamento_data} />
-              <ReadOnlyField label="Saída Juff (prazo)" value={selected.saida_juff} />
-              <ReadOnlyField label="DTF Estampado?" value={selected.dtf_estampado ?? "—"} />
-              <ReadOnlyField label="Silk feito?" value={selected.silk_feito ?? "—"} />
+              <ReadOnlyField label="Data de Entrega" value={formatDateBR(selected.data_entrega)} />
+              <ReadOnlyField label="Saída Juff (prazo)" value={formatDateBR(selected.saida_juff)} />
+              <ReadOnlyField label="DTF Estampado?" value={temDTF ? (selected.dtf_estampado ?? "—") : "N/A"} />
+              <ReadOnlyField label="Silk Estampado?" value={temSilk ? (selected.silk_feito ?? "—") : "N/A"} />
             </div>
             <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
-              <FormField label="DTF ok?">
-                <Select value={form.dtf_ok ?? ""} onValueChange={(v) => set("dtf_ok", v)} disabled={!temDTF || !dtfDisponivel}>
-                  <SelectTrigger><SelectValue placeholder={!temDTF || !dtfDisponivel ? "N/A" : "Selecione..."} /></SelectTrigger>
-                  <SelectContent>{OK_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                </Select>
-              </FormField>
-              <FormField label="Silk OK?">
-                <Select value={form.silk_ok ?? ""} onValueChange={(v) => set("silk_ok", v)} disabled={!temSilk || !silkDisponivel}>
-                  <SelectTrigger><SelectValue placeholder={!temSilk || !silkDisponivel ? "N/A" : "Selecione..."} /></SelectTrigger>
-                  <SelectContent>{OK_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                </Select>
-              </FormField>
               <FormField label="EMBALADO?">
-                <Select value={form.embalado ?? ""} onValueChange={(v) => set("embalado", v)} disabled={rejeitado}>
-                  <SelectTrigger><SelectValue placeholder={rejeitado ? "Bloqueado — revisar" : "Selecione..."} /></SelectTrigger>
+                <Select value={form.embalado ?? ""} onValueChange={setEmbalado}>
+                  <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>{SIM_NAO_PROCESSO.slice(0, 2).map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                 </Select>
               </FormField>
-              <FormField label="Responsável Conferência">
-                <Select value={form.responsavel_conferencia ?? ""} onValueChange={(v) => set("responsavel_conferencia", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                  <SelectContent>{RESPONSAVEIS.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+              <FormField label="Responsável pelo Acabamento">
+                <Select value={form.responsavel_acabamento ?? ""} onValueChange={(v) => set("responsavel_acabamento", v)} disabled={form.embalado !== "Sim"}>
+                  <SelectTrigger><SelectValue placeholder={form.embalado !== "Sim" ? "Embale primeiro" : "Selecione..."} /></SelectTrigger>
+                  <SelectContent>{RESPONSAVEIS_ACABAMENTO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                 </Select>
               </FormField>
               <FormField label={`Data Saída Juff${form.embalado === "Sim" ? " *" : ""}`}>
-                <Input type="date" value={form.data_saida_juff ?? ""} onChange={(e) => set("data_saida_juff", e.target.value || null)} />
+                <Input type="date" disabled={form.embalado !== "Sim"} value={form.data_saida_juff ?? ""} onChange={(e) => set("data_saida_juff", e.target.value || null)} />
               </FormField>
               <div className="md:col-span-2">
-                <FormField label="Observações do pedido">
+                <FormField label="Observações do Acabamento">
                   <Textarea value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} rows={3} />
                 </FormField>
               </div>
@@ -108,9 +124,61 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
           </CardContent>
         </Card>
       ) : (
-        <EmptyState>Selecione um pedido na lista ao lado.</EmptyState>
+        <EmptyState>Selecione um pedido no dashboard abaixo.</EmptyState>
       )}
-      <PedidoSelector pedidos={pedidos} selectedId={selected?.id ?? null} onSelect={onSelect} />
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Dashboard — Acabamento</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid gap-2 md:grid-cols-4">
+            <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />
+            <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
+            <Select value={fDtf} onValueChange={setFDtf}>
+              <SelectTrigger><SelectValue placeholder="DTF Estampado" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">DTF Estampado (todos)</SelectItem>
+                {SIM_NAO_PROCESSO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={fSilk} onValueChange={setFSilk}>
+              <SelectTrigger><SelectValue placeholder="Silk Estampado" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Silk Estampado (todos)</SelectItem>
+                {SIM_NAO_PROCESSO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="rounded-md border overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-xs uppercase">
+                <tr>
+                  {["Orçamento","Pedido","Tipo","DTF Est.","Silk Est.","Embalado","Saída Juff","Data Entrega","Responsável"].map((h) => (
+                    <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {dashboardPedidos.map((p) => (
+                  <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                    <td className="px-3 py-2 font-medium">{p.orcamento}</td>
+                    <td className="px-3 py-2">{p.pedido_olist}</td>
+                    <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                    <td className="px-3 py-2">{modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"}</td>
+                    <td className="px-3 py-2">{modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"}</td>
+                    <td className="px-3 py-2">{p.embalado ?? "—"}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
+                    <td className="px-3 py-2">{p.responsavel_acabamento ?? "—"}</td>
+                  </tr>
+                ))}
+                {dashboardPedidos.length === 0 && (
+                  <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido em acabamento.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
