@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiSilk, QUEM_BATEU_SILK, calcularEtapaAtual } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiSilk, QUEM_BATEU_SILK, calcularEtapaAtual, visivelEmSilk, silkCompleto, silkAlgumPreenchido, statusEtapa } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, Info } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner, EtapaBadge } from "./shared";
+
 import { formatDateBR } from "@/lib/format";
 
 interface Props {
@@ -48,7 +49,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
 
   const dashboardPedidos = useMemo(() => pedidos.filter((p) => {
     if (p.finalizado_em) return false;
-    if (!modeloIncluiSilk(p.tipo_estampa)) return false;
+    if (!visivelEmSilk(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
     if (fStatus !== "todos" && p.status_geral !== fStatus) return false;
@@ -56,6 +57,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
     if (fSilk !== "todos" && (p.silk_feito ?? "") !== fSilk) return false;
     return true;
   }), [pedidos, fOrc, fPed, fStatus, fTela, fSilk]);
+
 
   return (
     <div className="space-y-6">
@@ -159,7 +161,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Orçamento","Pedido","Tipo","Status","Fotolito","Tela Gravada","Silk Feito","Data Silk","Quem bateu","Etapa"].map((h) => (
+                  {["Status","Orçamento","Pedido","Tipo","Fotolito","Tela Gravada","Silk Feito","Data Silk","Quem bateu","Etapa"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -167,12 +169,13 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
               <tbody>
                 {dashboardPedidos.map((p) => {
                   const { etapa } = calcularEtapaAtual(p);
+                  const st = statusEtapa(silkCompleto(p), silkAlgumPreenchido(p));
                   return (
                     <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                      <td className="px-3 py-2"><EtapaBadge status={st} labels={{ pendente: "Silk Pendente", andamento: "Silk em Andamento", concluido: "Silk Concluído" }} /></td>
                       <td className="px-3 py-2 font-medium">{p.orcamento}</td>
                       <td className="px-3 py-2">{p.pedido_olist}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
-                      <td className="px-3 py-2">{p.status_geral}</td>
                       <td className="px-3 py-2">{p.fotolito_impresso ?? "—"}</td>
                       <td className="px-3 py-2">{p.tela_gravada ?? "—"}</td>
                       <td className="px-3 py-2">{p.silk_feito ?? "—"}</td>
@@ -183,8 +186,9 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
                   );
                 })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk.</td></tr>
+                  <tr><td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk disponível (depende da Arte concluída).</td></tr>
                 )}
+
               </tbody>
             </table>
           </div>
