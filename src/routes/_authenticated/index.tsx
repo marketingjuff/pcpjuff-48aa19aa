@@ -124,7 +124,7 @@ function AppHome() {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        <PendenciasBanner pedidos={pedidos} />
+        {tab !== "dados" && <PendenciasBanner pedidos={pedidos} />}
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid w-full grid-cols-7 mb-6">
             <TabsTrigger value="dashboard">Dashboard Master</TabsTrigger>
