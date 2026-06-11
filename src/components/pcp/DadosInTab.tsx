@@ -294,6 +294,29 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   );
 }
 
+function PedidoStatusInline({ pedido }: { pedido: Pedido }) {
+  const { etapa, cor } = calcularEtapaAtual(pedido);
+  const aguardando = cor === "yellow" || cor === "blue" || cor === "gray";
+  const finalizado = !!pedido.finalizado_em;
+  const bg = finalizado
+    ? "bg-success/10 border-success/30 text-success"
+    : aguardando
+    ? "bg-warning/15 border-warning/30 text-warning-foreground"
+    : "bg-info/10 border-info/30 text-info";
+  const label = finalizado
+    ? "Pedido finalizado"
+    : aguardando
+    ? `Aguardando etapa: ${etapa}`
+    : `Etapa atual: ${etapa}`;
+  return (
+    <div className={`flex items-center gap-2 p-3 rounded-md border text-sm ${bg}`}>
+      <span className="font-medium">{label}</span>
+    </div>
+  );
+}
+
+
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
