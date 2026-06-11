@@ -49,6 +49,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
     if (form.embalado !== "Sim" && selected.finalizado_em) payload.finalizado_em = null;
     onSave(payload);
   }
+  useRegisterSave(handleSave);
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
