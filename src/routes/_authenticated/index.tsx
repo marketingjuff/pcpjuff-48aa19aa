@@ -4,6 +4,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Factory, LogOut, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { useIsAdmin } from "@/hooks/use-role";
@@ -15,6 +19,7 @@ import { SilkTab } from "@/components/pcp/SilkTab";
 import { AcabamentoTab } from "@/components/pcp/AcabamentoTab";
 import { DashboardTab } from "@/components/pcp/DashboardTab";
 import { FinalizadosTab } from "@/components/pcp/FinalizadosTab";
+import { DirtyFormProvider, useDirtyForm } from "@/components/pcp/dirty-form-context";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: AppHome,
