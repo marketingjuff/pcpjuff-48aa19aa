@@ -4,10 +4,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Factory, LogOut, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { useIsAdmin } from "@/hooks/use-role";
@@ -19,7 +15,7 @@ import { SilkTab } from "@/components/pcp/SilkTab";
 import { AcabamentoTab } from "@/components/pcp/AcabamentoTab";
 import { DashboardTab } from "@/components/pcp/DashboardTab";
 import { FinalizadosTab } from "@/components/pcp/FinalizadosTab";
-import { DirtyFormProvider, useDirtyForm } from "@/components/pcp/dirty-form-context";
+import { DirtyFormProvider } from "@/components/pcp/dirty-form-context";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: AppHome,
@@ -39,33 +35,8 @@ function AppHomeInner() {
   const [tab, setTab] = useState("dashboard");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const isAdmin = useIsAdmin();
-  const { isDirty, setDirty, triggerSave } = useDirtyForm();
-  const [pendingNav, setPendingNav] = useState<null | { kind: "tab"; value: string } | { kind: "logout" } | { kind: "settings" }>(null);
 
-  function requestTab(next: string) {
-    if (next === tab) return;
-    if (isDirty) setPendingNav({ kind: "tab", value: next });
-    else setTab(next);
-  }
-  function requestLogout() {
-    if (isDirty) setPendingNav({ kind: "logout" });
-    else handleLogout();
-  }
-  function requestSettings() {
-    if (isDirty) { setPendingNav({ kind: "settings" }); return false; }
-    return true;
-  }
 
-  async function performPending(save: boolean) {
-    const p = pendingNav;
-    setPendingNav(null);
-    if (save) { try { await triggerSave(); } catch { /* fica na aba */ return; } }
-    setDirty(false);
-    if (!p) return;
-    if (p.kind === "tab") setTab(p.value);
-    else if (p.kind === "logout") handleLogout();
-    else if (p.kind === "settings") navigate({ to: "/configuracoes" });
-  }
 
 
   const { data: pedidos = [], isLoading } = useQuery({
@@ -134,9 +105,9 @@ function AppHomeInner() {
 
   function goToTabWithPedido(t: string, id: string) {
     setSelectedId(id);
-    if (isDirty) setPendingNav({ kind: "tab", value: t });
-    else setTab(t);
+    setTab(t);
   }
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -153,11 +124,11 @@ function AppHomeInner() {
           </div>
           <div className="flex items-center gap-2">
             {isAdmin && (
-              <Button variant="ghost" size="sm" onClick={() => { if (requestSettings()) navigate({ to: "/configuracoes" }); }}>
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes" })}>
                 <Settings className="h-4 w-4 mr-1" /> Configurações
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={requestLogout}>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-1" /> Sair
             </Button>
           </div>
@@ -165,7 +136,7 @@ function AppHomeInner() {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        <Tabs value={tab} onValueChange={requestTab}>
+        <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid w-full grid-cols-7 mb-6">
             <TabsTrigger value="dashboard">Dashboard Master</TabsTrigger>
             <TabsTrigger value="dados">Dados In</TabsTrigger>
@@ -201,20 +172,7 @@ function AppHomeInner() {
 
         </Tabs>
       </main>
-
-      <AlertDialog open={!!pendingNav} onOpenChange={(o) => { if (!o) setPendingNav(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza que deseja sair?</AlertDialogTitle>
-            <AlertDialogDescription>As alterações não foram salvas.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setPendingNav(null)}>Cancelar</Button>
-            <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => performPending(false)}>Não Salvar</Button>
-            <Button className="bg-success text-success-foreground hover:bg-success/90" onClick={() => performPending(true)}>Salvar</Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
+
