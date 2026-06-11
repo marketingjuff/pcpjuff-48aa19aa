@@ -30,6 +30,11 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
   }
   function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
 
+  async function baixarLayout(path: string) {
+    const { baixarLayoutPDF } = await import("./shared");
+    baixarLayoutPDF(path);
+  }
+
   const atrasado = selected?.termino_estamparia && form.silk_data_executada &&
     new Date(form.silk_data_executada) > new Date(selected.termino_estamparia);
 
