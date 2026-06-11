@@ -24,6 +24,13 @@ import {
 } from "@/lib/admin.functions";
 import { exportBackup, importBackup } from "@/lib/backup.functions";
 import { useAppList, useAppListMutations, type AppListKind } from "@/lib/app-lists";
+import {
+  anosSugeridos,
+  fetchFeriadosNacionais,
+  sugestoesCapitalSP,
+  sugestoesEstadoSP,
+  type Sugestao,
+} from "@/lib/feriados-sugestoes";
 import type { AppRole, Feriado } from "@/integrations/supabase/schema-extras";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
