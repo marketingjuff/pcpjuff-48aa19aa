@@ -19,6 +19,7 @@ import {
   createUserAccount,
   listUsers,
   updateUserRole,
+  updateUserName,
   deleteUserAccount,
 } from "@/lib/admin.functions";
 import { exportBackup, importBackup } from "@/lib/backup.functions";
@@ -158,12 +159,14 @@ function UsuariosTab() {
   const listFn = useServerFn(listUsers);
   const createFn = useServerFn(createUserAccount);
   const updateFn = useServerFn(updateUserRole);
+  const renameFn = useServerFn(updateUserName);
   const deleteFn = useServerFn(deleteUserAccount);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
   const [role, setRole] = useState<AppRole>("gestor");
+  const [editingName, setEditingName] = useState<{ id: string; nome: string } | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -185,6 +188,16 @@ function UsuariosTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast.success("Papel atualizado.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const rename = useMutation({
+    mutationFn: (v: { userId: string; nome: string }) => renameFn({ data: v }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      setEditingName(null);
+      toast.success("Nome atualizado.");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -233,7 +246,29 @@ function UsuariosTab() {
                 const currentRole = (u.roles?.[0]?.role ?? "gestor") as AppRole;
                 return (
                   <TableRow key={u.id}>
-                    <TableCell>{u.nome ?? "—"}</TableCell>
+                    <TableCell>
+                      {editingName && editingName.id === u.id ? (
+                        <div className="flex gap-1">
+                          <Input
+                            value={editingName.nome}
+                            autoFocus
+                            className="h-8"
+                            onChange={(e) => setEditingName({ id: u.id, nome: e.target.value })}
+                            onKeyDown={(e) => {
+                              const nm = editingName?.nome.trim() ?? "";
+                              if (e.key === "Enter") { e.preventDefault(); if (nm) rename.mutate({ userId: u.id, nome: nm }); }
+                              if (e.key === "Escape") setEditingName(null);
+                            }}
+                          />
+                          <Button size="sm" onClick={() => { const nm = editingName?.nome.trim() ?? ""; if (nm) rename.mutate({ userId: u.id, nome: nm }); }} disabled={rename.isPending}>Salvar</Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingName(null)}>Cancelar</Button>
+                        </div>
+                      ) : (
+                        <button type="button" className="text-left hover:underline" onClick={() => setEditingName({ id: u.id, nome: u.nome ?? "" })}>
+                          {u.nome ?? "—"}
+                        </button>
+                      )}
+                    </TableCell>
                     <TableCell>{u.email}</TableCell>
                     <TableCell>
                       <Select value={currentRole} onValueChange={(v) => update.mutate({ userId: u.id, role: v as AppRole })}>
