@@ -211,7 +211,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
 
 
-      <form onSubmit={handleSave} className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* Vendedor */}
         <Card className="border-l-4 border-l-green-500 bg-green-50/40 dark:bg-green-950/10">
           <CardHeader><CardTitle className="text-base text-green-700 dark:text-green-400">Input do Vendedor</CardTitle></CardHeader>
