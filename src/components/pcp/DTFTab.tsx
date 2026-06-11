@@ -164,18 +164,16 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Status","Orçamento","Pedido","Tipo","DTF Impresso","DTF Estampado","Data Exec","Quem bateu","Etapa"].map((h) => (
+                  {["Etapa","Orçamento","Pedido","Tipo","DTF Impresso","DTF Estampado","Data Exec","Quem bateu"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {dashboardPedidos.map((p) => {
-                  const { etapa } = calcularEtapaAtual(p);
-                  const st = statusEtapa(dtfCompleto(p), dtfAlgumPreenchido(p));
                   return (
                     <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
-                      <td className="px-3 py-2"><EtapaBadge status={st} labels={{ pendente: "DTF Pendente", andamento: "DTF em Andamento", concluido: "DTF Concluído" }} /></td>
+                      <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
                       <td className="px-3 py-2 font-medium">{p.orcamento}</td>
                       <td className="px-3 py-2">{p.pedido_olist}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
@@ -183,12 +181,11 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
                       <td className="px-3 py-2">{p.dtf_estampado ?? "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.dtf_data_executada)}</td>
                       <td className="px-3 py-2">{p.quem_bateu_dtf ?? "—"}</td>
-                      <td className="px-3 py-2 text-xs">{etapa}</td>
                     </tr>
                   );
                 })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido DTF disponível (depende da Arte concluída).</td></tr>
+                  <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido DTF disponível.</td></tr>
                 )}
 
               </tbody>
