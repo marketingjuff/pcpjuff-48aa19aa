@@ -1,7 +1,42 @@
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
-export type Pedido = Tables<"pedidos">;
-export type PedidoInsert = TablesInsert<"pedidos">;
+// Tipo Pedido reflete o schema após Phase 2 (DB renomeado e colunas extras).
+// `types.ts` é gerado automaticamente — fazemos o merge aqui até regenerar.
+type PedidoBase = Omit<Tables<"pedidos">, "modelo_estampa" | "status">;
+export type Pedido = PedidoBase & {
+  tipo_estampa: string;
+  status_geral: string;
+  data_entrega: string | null;
+  uf_entrega: string | null;
+  necessita_vetorizacao: boolean | null;
+  vetorizacao_executada: boolean | null;
+  obs_vendedor: string | null;
+  layout_url: string | null;
+  status_arte: string | null;
+  quem_bateu_dtf: string | null;
+  quem_bateu_silk: string | null;
+  responsavel_acabamento: string | null;
+  finalizado_em: string | null;
+  tempo_producao: number | null;
+};
+
+type PedidoInsertBase = Omit<TablesInsert<"pedidos">, "modelo_estampa" | "status">;
+export type PedidoInsert = PedidoInsertBase & {
+  tipo_estampa: string;
+  status_geral?: string;
+  data_entrega?: string | null;
+  uf_entrega?: string | null;
+  necessita_vetorizacao?: boolean | null;
+  vetorizacao_executada?: boolean | null;
+  obs_vendedor?: string | null;
+  layout_url?: string | null;
+  status_arte?: string | null;
+  quem_bateu_dtf?: string | null;
+  quem_bateu_silk?: string | null;
+  responsavel_acabamento?: string | null;
+  finalizado_em?: string | null;
+  tempo_producao?: number | null;
+};
 
 export const VENDEDORES = ["Wander", "Mirela", "Gabriel", "Outros"] as const;
 export const STATUS_GERAL_OPCOES = ["Aberto", "Completo"] as const;
@@ -17,13 +52,18 @@ export const UFS = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
 ] as const;
 
+// Aliases para retrocompatibilidade com abas ainda não migradas.
+export const STATUS_OPCOES = STATUS_GERAL_OPCOES;
+export const MODELOS_ESTAMPA = TIPOS_ESTAMPA;
+export const RESPONSAVEIS = RESPONSAVEIS_ACABAMENTO;
+export const PEDIDO_OK_OPCOES = STATUS_ARTE_OPCOES;
+
 export function tipoIncluiDTF(tipo: string | null | undefined) {
   return tipo === "DTF" || tipo === "DTF+Silk";
 }
 export function tipoIncluiSilk(tipo: string | null | undefined) {
   return tipo === "Silk" || tipo === "DTF+Silk";
 }
-// Backwards-compat (algumas abas ainda importam estes nomes)
 export const modeloIncluiDTF = tipoIncluiDTF;
 export const modeloIncluiSilk = tipoIncluiSilk;
 
