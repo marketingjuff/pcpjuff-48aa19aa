@@ -194,6 +194,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                     const dias = p.data_entrega ? diasUteisEntre(new Date().toISOString().slice(0,10), p.data_entrega, feriados) : null;
                     return (
                       <TableRow key={p.id}>
+                        <TableCell><Badge className={etapaCorClass(cor)} variant="outline">{et}</Badge></TableCell>
                         <TableCell className="font-medium">{p.pedido_olist}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{p.orcamento}</TableCell>
                         <TableCell>{p.qtd}</TableCell>
@@ -208,7 +209,6 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                             <span className="text-xs tabular-nums">{percentual}%</span>
                           </div>
                         </TableCell>
-                        <TableCell><Badge className={etapaCorClass(cor)} variant="outline">{et}</Badge></TableCell>
                         <TableCell className="text-xs whitespace-nowrap">{formatDateBR(p.data_entrega)}</TableCell>
                         <TableCell className="text-xs">{p.frete ?? "—"}</TableCell>
                         <TableCell className="text-xs tabular-nums">{dias ?? "—"}</TableCell>
