@@ -32,7 +32,9 @@ interface Props {
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
   onDelete: (id: string) => void;
   saving: boolean;
+  active?: boolean;
 }
+
 
 const empty: Partial<Pedido> = {
   pedido_olist: "",
