@@ -82,6 +82,8 @@ function FeriadosTab() {
   const qc = useQueryClient();
   const [data, setData] = useState("");
   const [descricao, setDescricao] = useState("");
+  const anos = anosSugeridos();
+  const [anoSel, setAnoSel] = useState<number>(anos[0]);
 
   const { data: feriados = [], isLoading } = useQuery({
     queryKey: ["feriados"],
@@ -91,6 +93,8 @@ function FeriadosTab() {
       return (data ?? []) as Feriado[];
     },
   });
+
+  const datasCadastradas = new Set(feriados.map((f) => f.data));
 
   const add = useMutation({
     mutationFn: async () => {
@@ -106,6 +110,33 @@ function FeriadosTab() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const addSugestao = useMutation({
+    mutationFn: async (s: Sugestao) => {
+      const { error } = await (supabase as any).from("feriados").insert({ data: s.data, descricao: s.descricao });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["feriados"] }),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const addLote = useMutation({
+    mutationFn: async (lista: Sugestao[]) => {
+      const pendentes = lista.filter((s) => !datasCadastradas.has(s.data));
+      if (pendentes.length === 0) return 0;
+      const { error } = await (supabase as any).from("feriados").insert(
+        pendentes.map((s) => ({ data: s.data, descricao: s.descricao })),
+      );
+      if (error) throw error;
+      return pendentes.length;
+    },
+    onSuccess: (n) => {
+      qc.invalidateQueries({ queryKey: ["feriados"] });
+      if (n && n > 0) toast.success(`${n} feriado(s) adicionado(s).`);
+      else toast.info("Nada para adicionar.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const del = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await (supabase as any).from("feriados").delete().eq("id", id);
@@ -115,8 +146,18 @@ function FeriadosTab() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const nacionaisQ = useQuery({
+    queryKey: ["sugestoes-nacionais", anoSel],
+    queryFn: () => fetchFeriadosNacionais(anoSel),
+    staleTime: 1000 * 60 * 60 * 24,
+    retry: 1,
+  });
+
+  const estadoSP = sugestoesEstadoSP(anoSel);
+  const capitalSP = sugestoesCapitalSP(anoSel);
+
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-3xl">
       <div className="flex gap-2 items-end">
         <div>
           <Label>Data</Label>
@@ -130,6 +171,56 @@ function FeriadosTab() {
           <Plus className="h-4 w-4 mr-1" /> Adicionar
         </Button>
       </div>
+
+      <div className="border rounded-lg p-4 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="font-semibold">Sugestões de feriados</h2>
+          <div className="flex gap-1">
+            {anos.map((a) => (
+              <Button
+                key={a}
+                size="sm"
+                variant={a === anoSel ? "default" : "outline"}
+                onClick={() => setAnoSel(a)}
+              >
+                {a}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <SugestoesGrupo
+          titulo="Nacionais"
+          itens={nacionaisQ.data ?? []}
+          loading={nacionaisQ.isLoading}
+          erro={nacionaisQ.isError ? "Não foi possível carregar os feriados nacionais." : null}
+          cadastradas={datasCadastradas}
+          onAdd={(s) => addSugestao.mutate(s)}
+          onAddAll={(lista) => addLote.mutate(lista)}
+          busy={addSugestao.isPending || addLote.isPending}
+        />
+        <SugestoesGrupo
+          titulo="Estado de São Paulo"
+          itens={estadoSP}
+          loading={false}
+          erro={null}
+          cadastradas={datasCadastradas}
+          onAdd={(s) => addSugestao.mutate(s)}
+          onAddAll={(lista) => addLote.mutate(lista)}
+          busy={addSugestao.isPending || addLote.isPending}
+        />
+        <SugestoesGrupo
+          titulo="Capital de São Paulo"
+          itens={capitalSP}
+          loading={false}
+          erro={null}
+          cadastradas={datasCadastradas}
+          onAdd={(s) => addSugestao.mutate(s)}
+          onAddAll={(lista) => addLote.mutate(lista)}
+          busy={addSugestao.isPending || addLote.isPending}
+        />
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow><TableHead>Data</TableHead><TableHead>Descrição</TableHead><TableHead></TableHead></TableRow>
@@ -153,6 +244,65 @@ function FeriadosTab() {
     </div>
   );
 }
+
+function SugestoesGrupo({
+  titulo, itens, loading, erro, cadastradas, onAdd, onAddAll, busy,
+}: {
+  titulo: string;
+  itens: Sugestao[];
+  loading: boolean;
+  erro: string | null;
+  cadastradas: Set<string>;
+  onAdd: (s: Sugestao) => void;
+  onAddAll: (lista: Sugestao[]) => void;
+  busy: boolean;
+}) {
+  const ordenadas = [...itens].sort((a, b) => a.data.localeCompare(b.data));
+  const pendentes = ordenadas.filter((s) => !cadastradas.has(s.data));
+  return (
+    <div className="border rounded-md">
+      <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+        <div className="text-sm font-medium">
+          {titulo} <span className="text-muted-foreground">({pendentes.length} pendente{pendentes.length === 1 ? "" : "s"})</span>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={busy || pendentes.length === 0}
+          onClick={() => onAddAll(ordenadas)}
+        >
+          <Plus className="h-3 w-3 mr-1" /> Adicionar todos
+        </Button>
+      </div>
+      <div className="divide-y">
+        {loading ? (
+          <div className="px-3 py-2 text-sm text-muted-foreground">Carregando…</div>
+        ) : erro ? (
+          <div className="px-3 py-2 text-sm text-destructive">{erro}</div>
+        ) : ordenadas.length === 0 ? (
+          <div className="px-3 py-2 text-sm text-muted-foreground">Nenhuma sugestão.</div>
+        ) : ordenadas.map((s) => {
+          const jaTem = cadastradas.has(s.data);
+          return (
+            <div key={s.data + s.descricao} className="px-3 py-1.5 flex items-center justify-between gap-3">
+              <div className={"text-sm " + (jaTem ? "text-muted-foreground line-through" : "")}>
+                <span className="tabular-nums">{formatDateBR(s.data)}</span> — {s.descricao}
+              </div>
+              {jaTem ? (
+                <span className="text-xs text-muted-foreground">já adicionado</span>
+              ) : (
+                <Button size="sm" variant="ghost" disabled={busy} onClick={() => onAdd(s)}>
+                  <Plus className="h-3 w-3 mr-1" /> Adicionar
+                </Button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 
 function UsuariosTab() {
   const qc = useQueryClient();
