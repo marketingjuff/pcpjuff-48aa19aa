@@ -101,8 +101,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }, [form.entrada_pedido, saidaJuffCalc, feriados]);
 
   function doSave() {
-    if (!form.pedido_olist || !form.orcamento || !form.qtd || !form.vendedor || !form.tipo_estampa || !form.entrada_pedido) {
-      toast.error("Preencha os campos obrigatórios.");
+    if (!form.pedido_olist || !form.orcamento || !form.qtd || !form.vendedor || !form.entrada_pedido) {
+      toast.error("Preencha os campos obrigatórios do Input do Vendedor.");
       return;
     }
     onSave({
