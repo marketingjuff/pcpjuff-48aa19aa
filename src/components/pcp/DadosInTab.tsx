@@ -245,7 +245,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               </Select>
             </Field>
             <Field label="Tipo de Estampa *">
-              <Select value={form.tipo_estampa ?? ""} onValueChange={(v) => set("tipo_estampa", v)}>
+              <Select value={form.tipo_estampa ?? ""} onValueChange={setTipoEstampa}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
