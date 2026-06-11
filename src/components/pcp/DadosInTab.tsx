@@ -262,7 +262,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Etapa","Pedido","Orçamento","QTD","Vendedor","Frete","Tempo Frete","Status","Estampa","Entrada","Arte","Início Estamp.","Término Estamp.","Acabamento","Saída","Data Entrega","Tempo Prod.","Dias"].map((h) => (
+                {["Etapa","Pedido","Orçamento","QTD","Vendedor","Frete","Tempo Frete","Status","Estampa","Entrada","Arte","Início Estamp.","Término Estamp.","Acabamento","Tempo Prod.","Dias","Saída Juff","Data Entrega"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
