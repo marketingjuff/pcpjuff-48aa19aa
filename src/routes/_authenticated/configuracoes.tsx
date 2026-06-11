@@ -129,12 +129,18 @@ function FeriadosTab() {
   const addLote = useMutation({
     mutationFn: async (lista: Sugestao[]) => {
       const pendentes = lista.filter((s) => !datasCadastradas.has(s.data));
-      if (pendentes.length === 0) return 0;
-      const { error } = await (supabase as any).from("feriados").insert(
-        pendentes.map((s) => ({ data: s.data, descricao: s.descricao })),
-      );
+      // Dedup por data dentro do próprio lote (ex.: Páscoa e Tiradentes em 21/04/2030).
+      // Concatena descrições quando coincidir.
+      const porData = new Map<string, string>();
+      for (const s of pendentes) {
+        const atual = porData.get(s.data);
+        porData.set(s.data, atual ? `${atual} / ${s.descricao}` : s.descricao);
+      }
+      if (porData.size === 0) return 0;
+      const rows = Array.from(porData, ([data, descricao]) => ({ data, descricao }));
+      const { error } = await (supabase as any).from("feriados").insert(rows);
       if (error) throw error;
-      return pendentes.length;
+      return rows.length;
     },
     onSuccess: (n) => {
       qc.invalidateQueries({ queryKey: ["feriados"] });
