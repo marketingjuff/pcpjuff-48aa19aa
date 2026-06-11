@@ -286,18 +286,19 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
           <CardHeader><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
-            <Field label="Status Geral *">
+            <Field label="Status Geral *" invalid={missingProd.has("status_geral")}>
               <Select value={form.status_geral ?? ""} onValueChange={(v) => set("status_geral", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{STATUS_GERAL_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Tipo de Estampa *">
+            <Field label="Tipo de Estampa *" invalid={missingProd.has("tipo_estampa")}>
               <Select value={form.tipo_estampa ?? ""} onValueChange={setTipoEstampa}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
+
             <Field label="Arte (limite)">
               <DateInputBR value={form.arte_data} onChange={(v) => set("arte_data", v)} />
             </Field>
