@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
-  SIM_NAO, STATUS_ARTE_OPCOES, tipoIncluiDTF, tipoIncluiSilk,
-  calcularEtapaAtual, visivelEmArte, arteCompleta, arteAlgumPreenchido, statusEtapa,
+  SIM_NAO, STATUS_ARTE_OPCOES, tipoIncluiDTF, tipoIncluiSilk, visivelEmArte,
 } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
