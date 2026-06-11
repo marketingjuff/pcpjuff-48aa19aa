@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Save, AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState } from "./shared";
 import { formatDateBR } from "@/lib/format";
 
