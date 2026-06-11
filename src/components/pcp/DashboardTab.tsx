@@ -147,12 +147,10 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ativas">Todas (menos finalizados)</SelectItem>
-                <SelectItem value="todas">Todas as etapas</SelectItem>
-                <SelectItem value="arte">Arte pendente</SelectItem>
-                <SelectItem value="dtf">DTF pendente</SelectItem>
-                <SelectItem value="silk">Silk pendente</SelectItem>
-                <SelectItem value="acabamento">Acabamento pendente</SelectItem>
-                <SelectItem value="finalizados">Finalizados</SelectItem>
+                <SelectItem value="arte">Aguardando Arte</SelectItem>
+                <SelectItem value="dtf">Aguardando DTF</SelectItem>
+                <SelectItem value="silk">Aguardando Silk</SelectItem>
+                <SelectItem value="acabamento">Aguardando Acabamento</SelectItem>
               </SelectContent>
             </Select>
             <DateInputBR value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
@@ -165,6 +163,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Etapa</TableHead>
                   <TableHead>Pedido</TableHead>
                   <TableHead>Orçamento</TableHead>
                   <TableHead>QTD</TableHead>
@@ -172,8 +171,9 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                   <TableHead>Tipo</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[140px]">% Conclusão</TableHead>
-                  <TableHead>Etapa</TableHead>
-                  <TableHead>Data Entrega</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={toggleSortEntrega}>
+                    <span className="inline-flex items-center gap-1">Data Entrega <ArrowUpDown className="h-3 w-3" /></span>
+                  </TableHead>
                   <TableHead>Frete</TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={toggleSortDias}>
                     <span className="inline-flex items-center gap-1">Dias <ArrowUpDown className="h-3 w-3" /></span>
