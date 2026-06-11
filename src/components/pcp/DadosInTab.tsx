@@ -186,8 +186,9 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   )}
                 </div>
                 {form.layout_url && (
-                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                    <FileText className="h-3 w-3" /> Arquivo anexado
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1 truncate">
+                    <FileText className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{form.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</span>
                   </div>
                 )}
               </Field>

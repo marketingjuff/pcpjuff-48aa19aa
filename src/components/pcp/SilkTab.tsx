@@ -96,9 +96,12 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
                 <div className="space-y-1">
                   <div className="text-xs font-medium text-muted-foreground">Layout</div>
                   {selected.layout_url ? (
-                    <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
-                      <Download className="h-4 w-4 mr-1" /> Baixar layout
-                    </Button>
+                    <div className="space-y-1">
+                      <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                        <Download className="h-4 w-4 mr-1" /> Baixar layout
+                      </Button>
+                      <div className="text-xs text-muted-foreground truncate">{selected.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</div>
+                    </div>
                   ) : <div className="text-sm text-muted-foreground">Sem layout</div>}
                 </div>
                 <ReadOnlyField label="Início estamparia" value={formatDateBR(selected.inicio_estamparia)} />

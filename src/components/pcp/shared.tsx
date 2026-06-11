@@ -30,6 +30,12 @@ export async function baixarLayoutPDF(path: string) {
 /** @deprecated use baixarLayoutPDF */
 export const abrirLayoutPDF = baixarLayoutPDF;
 
+/** Extrai nome original do arquivo (path = `${uuid}-${filename}`). */
+export function nomeArquivoLayout(path: string | null | undefined): string {
+  if (!path) return "";
+  return path.replace(/^[0-9a-f-]{36}-/i, "") || path;
+}
+
 export function EtapaBadge({ status, labels }: { status: EtapaStatus; labels: { pendente: string; andamento: string; concluido: string } }) {
   const cfg = status === "concluido"
     ? { cls: "bg-success/15 text-success border-success/30", icon: "🟢", text: labels.concluido }
