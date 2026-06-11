@@ -172,7 +172,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Etapa","Orçamento","Pedido","Tipo","DTF Est.","Silk Est.","Embalado","Saída Juff","Data Entrega","Responsável"].map((h) => (
+                  {["Etapa","Orçamento","Pedido","Tipo","DTF Est.","Silk Est.","Embalado","Responsável","Saída Juff","Data Entrega"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
