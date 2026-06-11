@@ -66,6 +66,7 @@ export type Database = {
           quem_bateu_dtf: string | null
           quem_bateu_silk: string | null
           responsavel_acabamento: string | null
+          responsavel_conferencia: string | null
           saida_juff: string | null
           silk_data_executada: string | null
           silk_feito: string | null
@@ -112,6 +113,7 @@ export type Database = {
           quem_bateu_dtf?: string | null
           quem_bateu_silk?: string | null
           responsavel_acabamento?: string | null
+          responsavel_conferencia?: string | null
           saida_juff?: string | null
           silk_data_executada?: string | null
           silk_feito?: string | null
@@ -158,6 +160,7 @@ export type Database = {
           quem_bateu_dtf?: string | null
           quem_bateu_silk?: string | null
           responsavel_acabamento?: string | null
+          responsavel_conferencia?: string | null
           saida_juff?: string | null
           silk_data_executada?: string | null
           silk_feito?: string | null
