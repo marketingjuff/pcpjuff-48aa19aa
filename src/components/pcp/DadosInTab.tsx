@@ -32,7 +32,9 @@ interface Props {
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
   onDelete: (id: string) => void;
   saving: boolean;
+  active?: boolean;
 }
+
 
 const empty: Partial<Pedido> = {
   pedido_olist: "",
@@ -45,7 +47,7 @@ const empty: Partial<Pedido> = {
   necessita_vetorizacao: false,
 };
 
-export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, saving }: Props) {
+export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, saving, active = true }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>(empty);
   const [uploading, setUploading] = useState(false);
   const { feriados } = useFeriados();
@@ -55,7 +57,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     if (!isDirty) setForm(selected ?? empty);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
-  useDirtyTracker(form, selected ?? empty);
+  useDirtyTracker(form, selected ?? empty, active);
+
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
@@ -107,7 +110,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     });
   }
   function handleSave(e: React.FormEvent) { e.preventDefault(); doSave(); }
-  useRegisterSave(doSave);
+  useRegisterSave(doSave, active);
 
   function handleNew() { onSelect(null); setForm(empty); }
 

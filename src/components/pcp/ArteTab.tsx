@@ -24,9 +24,10 @@ interface Props {
   onSelect: (id: string | null) => void;
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
   saving: boolean;
+  active?: boolean;
 }
 
-export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
+export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = true }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   useEffect(() => {
@@ -34,7 +35,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
     if (!isDirty) setForm(selected);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
-  useDirtyTracker(form, selected ?? {}, !!selected);
+  useDirtyTracker(form, selected ?? {}, active && !!selected);
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
@@ -60,7 +61,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
       arte_observacao: form.arte_observacao ?? null,
     });
   }
-  useRegisterSave(handleSave);
+  useRegisterSave(handleSave, active);
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
