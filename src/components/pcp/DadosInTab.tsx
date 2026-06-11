@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
   VENDEDORES, STATUS_GERAL_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS,
+  calcularEtapaAtual,
 } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -128,6 +129,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           </div>
         </CardContent>
       </Card>
+
+      {selected && <PedidoStatusInline pedido={selected} />}
+
+
 
       <form onSubmit={handleSave} className="grid gap-6 lg:grid-cols-2">
         {/* Vendedor */}
