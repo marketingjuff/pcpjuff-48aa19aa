@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Save, AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState } from "./shared";
 import { formatDateBR } from "@/lib/format";
 
@@ -78,6 +78,12 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
             <Badge variant="outline" className={status.color}>{status.label}</Badge>
           </CardHeader>
           <CardContent className="space-y-6">
+            {(!dtfOk || !silkOk) && (
+              <div className="flex items-center gap-2 p-3 rounded-md bg-info/10 text-sm border border-info/30">
+                <Info className="h-4 w-4" />
+                Aguardando etapa: {[!dtfOk && "DTF", !silkOk && "Silk Screen"].filter(Boolean).join(" + ")}.
+              </div>
+            )}
             {atrasado && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-warning/15 text-sm border border-warning/30">
                 <AlertTriangle className="h-4 w-4" /> Saída ocorrida após o prazo previsto.
