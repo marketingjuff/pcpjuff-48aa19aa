@@ -1,8 +1,8 @@
 import type { Pedido } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { calcularEtapaAtual, type EtapaStatus } from "@/lib/pedidos";
-import { CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk, type EtapaStatus } from "@/lib/pedidos";
+import { CheckCircle2, Clock, AlertTriangle, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -43,6 +43,49 @@ export function EtapaBadge({ status, labels }: { status: EtapaStatus; labels: { 
     ? { cls: "bg-warning/15 text-warning-foreground border-warning/30", icon: "🟡", text: labels.andamento }
     : { cls: "bg-destructive/15 text-destructive border-destructive/30", icon: "🔴", text: labels.pendente };
   return <Badge variant="outline" className={`${cfg.cls} whitespace-nowrap`}>{cfg.icon} {cfg.text}</Badge>;
+}
+
+/** Badge mostrando a Etapa atual do pedido — consistente em todos os dashboards. */
+export function EtapaBadgeFromPedido({ pedido }: { pedido: Pedido }) {
+  const { etapa, cor } = calcularEtapaAtual(pedido);
+  const cls =
+    cor === "green" ? "bg-success/15 text-success border-success/30" :
+    cor === "yellow" ? "bg-warning/15 text-warning-foreground border-warning/30" :
+    cor === "blue" ? "bg-info/15 text-info border-info/30" :
+    cor === "red" ? "bg-destructive/15 text-destructive border-destructive/30" :
+    "bg-muted text-muted-foreground border-border";
+  return <Badge variant="outline" className={`${cls} whitespace-nowrap`}>{etapa}</Badge>;
+}
+
+/** Banner do topo de cada aba mostrando a etapa atual do pedido. */
+export function EtapaTopoBanner({ pedido, tab }: { pedido: Pedido; tab: "arte" | "dtf" | "silk" | "acabamento" | "dadosin" }) {
+  const { etapa, cor } = calcularEtapaAtual(pedido);
+  const tipo = pedido.tipo_estampa;
+  let msg = etapa;
+  let tone: "green" | "yellow" | "blue" | "gray" = cor === "red" ? "yellow" : (cor as any);
+
+  if (tipo === "Lisa" && (tab === "arte" || tab === "dtf" || tab === "silk")) {
+    msg = "Pedido Lisa — sem estampa. Aguardando Acabamento";
+    tone = "blue";
+  } else if (tab === "dtf" && !tipoIncluiDTF(tipo) && tipo !== "Lisa") {
+    msg = etapa === "Aguardando Silk" || etapa === "Aguardando DTF + Silk" ? "Aguardando Silk" : "Aguardando Acabamento";
+  } else if (tab === "silk" && !tipoIncluiSilk(tipo) && tipo !== "Lisa") {
+    msg = etapa === "Aguardando DTF" || etapa === "Aguardando DTF + Silk" ? "Aguardando DTF" : "Aguardando Acabamento";
+  }
+
+  const cls =
+    tone === "green" ? "bg-success/10 text-success border-success/30" :
+    tone === "yellow" ? "bg-warning/15 text-warning-foreground border-warning/30" :
+    tone === "blue" ? "bg-info/10 text-info border-info/30" :
+    "bg-muted text-muted-foreground border-border";
+  const Icon = tone === "green" ? CheckCircle2 : tone === "blue" ? Info : Clock;
+
+  return (
+    <div className={`flex items-center gap-2 p-3 rounded-md border text-sm ${cls}`}>
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="font-medium">Etapa: {msg}</span>
+    </div>
+  );
 }
 
 

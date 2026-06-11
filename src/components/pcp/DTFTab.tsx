@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiDTF, QUEM_BATEU_DTF, calcularEtapaAtual, visivelEmDTF, dtfCompleto, dtfAlgumPreenchido, statusEtapa } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiDTF, QUEM_BATEU_DTF, visivelEmDTF } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, AlertTriangle, Info, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner, EtapaBadge } from "./shared";
+import { Save, Download } from "lucide-react";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
 
 import { formatDateBR } from "@/lib/format";
 
@@ -77,13 +77,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
               </Badge>
             </CardHeader>
             <CardContent className="space-y-6">
-            <EtapaStatusBanner
-              pendencias={[
-                selected.dtf_impresso !== "Sim" && "Arte ainda não liberou a impressão do DTF",
-              ].filter(Boolean) as string[]}
-              atrasado={!!atrasado}
-              atrasadoMsg="Data executada após o término previsto da estamparia."
-            />
+            <EtapaTopoBanner pedido={selected} tab="dtf" />
 
               <div className="grid gap-4 md:grid-cols-2">
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
@@ -170,18 +164,16 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Status","Orçamento","Pedido","Tipo","DTF Impresso","DTF Estampado","Data Exec","Quem bateu","Etapa"].map((h) => (
+                  {["Etapa","Orçamento","Pedido","Tipo","DTF Impresso","DTF Estampado","Data Exec","Quem bateu"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {dashboardPedidos.map((p) => {
-                  const { etapa } = calcularEtapaAtual(p);
-                  const st = statusEtapa(dtfCompleto(p), dtfAlgumPreenchido(p));
                   return (
                     <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
-                      <td className="px-3 py-2"><EtapaBadge status={st} labels={{ pendente: "DTF Pendente", andamento: "DTF em Andamento", concluido: "DTF Concluído" }} /></td>
+                      <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
                       <td className="px-3 py-2 font-medium">{p.orcamento}</td>
                       <td className="px-3 py-2">{p.pedido_olist}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
@@ -189,12 +181,11 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
                       <td className="px-3 py-2">{p.dtf_estampado ?? "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.dtf_data_executada)}</td>
                       <td className="px-3 py-2">{p.quem_bateu_dtf ?? "—"}</td>
-                      <td className="px-3 py-2 text-xs">{etapa}</td>
                     </tr>
                   );
                 })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido DTF disponível (depende da Arte concluída).</td></tr>
+                  <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido DTF disponível.</td></tr>
                 )}
 
               </tbody>

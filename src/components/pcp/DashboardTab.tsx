@@ -38,16 +38,17 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
   const [frete, setFrete] = useState("");
   const [search, setSearch] = useState("");
   const [sortDiasDir, setSortDiasDir] = useState<"asc" | "desc" | null>(null);
+  const [sortEntregaDir, setSortEntregaDir] = useState<"asc" | "desc" | null>(null);
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
-    if (e === "todas") return true;
-    if (e === "ativas") return !p.finalizado_em;
+    // Pedidos finalizados nunca aparecem nos dashboards (vão para a aba Finalizados)
     if (e === "finalizados") return !!p.finalizado_em;
     if (p.finalizado_em) return false;
-    if (e === "arte") return p.status_arte !== "Arte Finalizada";
+    if (e === "todas" || e === "ativas") return true;
+    if (e === "arte") return p.status_arte !== "Arte Finalizada" && p.tipo_estampa !== "Lisa";
     if (e === "dtf") return tipoIncluiDTF(p.tipo_estampa) && p.dtf_estampado !== "Sim";
     if (e === "silk") return tipoIncluiSilk(p.tipo_estampa) && p.silk_feito !== "Sim";
-    if (e === "acabamento") return p.status_arte === "Arte Finalizada"
+    if (e === "acabamento") return (p.tipo_estampa === "Lisa" || p.status_arte === "Arte Finalizada")
       && (!tipoIncluiDTF(p.tipo_estampa) || p.dtf_estampado === "Sim")
       && (!tipoIncluiSilk(p.tipo_estampa) || p.silk_feito === "Sim")
       && p.embalado !== "Sim";
@@ -71,19 +72,25 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
         const db = b.data_entrega ? diasUteisEntre(new Date().toISOString().slice(0,10), b.data_entrega, feriados) ?? 9999 : 9999;
         return sortDiasDir === "asc" ? da - db : db - da;
       });
+    } else if (sortEntregaDir) {
+      arr.sort((a, b) => {
+        const da = a.data_entrega ?? "9999-12-31";
+        const db = b.data_entrega ?? "9999-12-31";
+        return sortEntregaDir === "asc" ? da.localeCompare(db) : db.localeCompare(da);
+      });
     }
     return arr;
-  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, frete, search, sortDiasDir, feriados]);
+  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, frete, search, sortDiasDir, sortEntregaDir, feriados]);
 
   const stats = useMemo(() => {
     const ativos = pedidos.filter((p) => !p.finalizado_em);
     return {
       total: ativos.length,
       atrasados: ativos.filter((p) => statusPrazo(p) === "atrasado").length,
-      arte: ativos.filter((p) => p.status_arte !== "Arte Finalizada").length,
+      arte: ativos.filter((p) => p.tipo_estampa !== "Lisa" && p.status_arte !== "Arte Finalizada").length,
       dtf: ativos.filter((p) => tipoIncluiDTF(p.tipo_estampa) && p.dtf_estampado !== "Sim").length,
       silk: ativos.filter((p) => tipoIncluiSilk(p.tipo_estampa) && p.silk_feito !== "Sim").length,
-      acabamento: ativos.filter((p) => p.status_arte === "Arte Finalizada"
+      acabamento: ativos.filter((p) => (p.tipo_estampa === "Lisa" || p.status_arte === "Arte Finalizada")
         && (!tipoIncluiDTF(p.tipo_estampa) || p.dtf_estampado === "Sim")
         && (!tipoIncluiSilk(p.tipo_estampa) || p.silk_feito === "Sim")
         && p.embalado !== "Sim").length,
@@ -91,7 +98,12 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
   }, [pedidos]);
 
   function toggleSortDias() {
+    setSortEntregaDir(null);
     setSortDiasDir((d) => d === null ? "asc" : d === "asc" ? "desc" : null);
+  }
+  function toggleSortEntrega() {
+    setSortDiasDir(null);
+    setSortEntregaDir((d) => d === null ? "asc" : d === "asc" ? "desc" : null);
   }
 
   return (
@@ -135,12 +147,10 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ativas">Todas (menos finalizados)</SelectItem>
-                <SelectItem value="todas">Todas as etapas</SelectItem>
-                <SelectItem value="arte">Arte pendente</SelectItem>
-                <SelectItem value="dtf">DTF pendente</SelectItem>
-                <SelectItem value="silk">Silk pendente</SelectItem>
-                <SelectItem value="acabamento">Acabamento pendente</SelectItem>
-                <SelectItem value="finalizados">Finalizados</SelectItem>
+                <SelectItem value="arte">Aguardando Arte</SelectItem>
+                <SelectItem value="dtf">Aguardando DTF</SelectItem>
+                <SelectItem value="silk">Aguardando Silk</SelectItem>
+                <SelectItem value="acabamento">Aguardando Acabamento</SelectItem>
               </SelectContent>
             </Select>
             <DateInputBR value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
@@ -153,6 +163,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Etapa</TableHead>
                   <TableHead>Pedido</TableHead>
                   <TableHead>Orçamento</TableHead>
                   <TableHead>QTD</TableHead>
@@ -160,8 +171,9 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                   <TableHead>Tipo</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[140px]">% Conclusão</TableHead>
-                  <TableHead>Etapa</TableHead>
-                  <TableHead>Data Entrega</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={toggleSortEntrega}>
+                    <span className="inline-flex items-center gap-1">Data Entrega <ArrowUpDown className="h-3 w-3" /></span>
+                  </TableHead>
                   <TableHead>Frete</TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={toggleSortDias}>
                     <span className="inline-flex items-center gap-1">Dias <ArrowUpDown className="h-3 w-3" /></span>
@@ -182,6 +194,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                     const dias = p.data_entrega ? diasUteisEntre(new Date().toISOString().slice(0,10), p.data_entrega, feriados) : null;
                     return (
                       <TableRow key={p.id}>
+                        <TableCell><Badge className={etapaCorClass(cor)} variant="outline">{et}</Badge></TableCell>
                         <TableCell className="font-medium">{p.pedido_olist}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{p.orcamento}</TableCell>
                         <TableCell>{p.qtd}</TableCell>
@@ -196,7 +209,6 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                             <span className="text-xs tabular-nums">{percentual}%</span>
                           </div>
                         </TableCell>
-                        <TableCell><Badge className={etapaCorClass(cor)} variant="outline">{et}</Badge></TableCell>
                         <TableCell className="text-xs whitespace-nowrap">{formatDateBR(p.data_entrega)}</TableCell>
                         <TableCell className="text-xs">{p.frete ?? "—"}</TableCell>
                         <TableCell className="text-xs tabular-nums">{dias ?? "—"}</TableCell>

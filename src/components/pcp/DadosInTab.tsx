@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
+import { EtapaBadgeFromPedido } from "./shared";
 
 interface Props {
   pedidos: Pedido[];
@@ -37,8 +38,8 @@ const empty: Partial<Pedido> = {
   orcamento: "",
   qtd: null,
   vendedor: "Wander",
-  tipo_estampa: "DTF",
-  status_geral: "Aberto",
+  tipo_estampa: "",
+  status_geral: "",
   entrada_pedido: new Date().toISOString().slice(0, 10),
   necessita_vetorizacao: false,
 };
@@ -207,13 +208,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           <CardContent className="grid gap-4 md:grid-cols-2">
             <Field label="Status Geral *">
               <Select value={form.status_geral ?? ""} onValueChange={(v) => set("status_geral", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{STATUS_GERAL_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
             <Field label="Tipo de Estampa *">
               <Select value={form.tipo_estampa ?? ""} onValueChange={(v) => set("tipo_estampa", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
@@ -251,25 +252,26 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         </div>
       </form>
 
-      {/* Dashboard Dados In */}
+      {/* Dashboard Dados In — esconde finalizados */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Dashboard — Dados In ({pedidos.length})</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Dashboard — Dados In</CardTitle></CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Pedido","Orçamento","QTD","Vendedor","Frete","Tempo Frete","Status","Estampa","Entrada","Arte","Início Estamp.","Término Estamp.","Acabamento","Saída","Data Entrega","Tempo Prod.","Dias"].map((h) => (
+                {["Etapa","Pedido","Orçamento","QTD","Vendedor","Frete","Tempo Frete","Status","Estampa","Entrada","Arte","Início Estamp.","Término Estamp.","Acabamento","Saída","Data Entrega","Tempo Prod.","Dias"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {pedidos.map((p) => {
+              {pedidos.filter((p) => !p.finalizado_em).map((p) => {
                 const dias = p.data_entrega ? diasUteisEntre(new Date().toISOString().slice(0,10), p.data_entrega, feriados) : null;
                 return (
                   <tr key={p.id}
                     onClick={() => onSelect(p.id)}
                     className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                    <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
                     <td className="px-3 py-2 font-medium">{p.pedido_olist}</td>
                     <td className="px-3 py-2">{p.orcamento}</td>
                     <td className="px-3 py-2">{p.qtd}</td>
@@ -290,8 +292,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   </tr>
                 );
               })}
-              {pedidos.length === 0 && (
-                <tr><td colSpan={17} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido.</td></tr>
+              {pedidos.filter((p) => !p.finalizado_em).length === 0 && (
+                <tr><td colSpan={18} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido ativo.</td></tr>
               )}
             </tbody>
           </table>
