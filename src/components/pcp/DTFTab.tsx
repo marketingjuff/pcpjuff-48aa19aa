@@ -24,12 +24,14 @@ interface Props {
 
 export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
-  useEffect(() => { if (selected) setForm(selected); }, [selected?.id]);
+  useEffect(() => { if (selected) setForm(selected); else setForm({}); }, [selected?.id]);
+  useDirtyTracker(form, selected ?? {}, !!selected);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
   function setEstampado(v: string) {
     setForm((f) => ({ ...f, dtf_estampado: v, ...(v !== "Sim" ? { dtf_data_executada: null } : {}) }));
   }
   function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
+  useRegisterSave(handleSave);
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
