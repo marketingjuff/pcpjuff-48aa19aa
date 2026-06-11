@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
-import { useDirtyTracker, useRegisterSave } from "./dirty-form-context";
+import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 import { formatDateBR } from "@/lib/format";
 
@@ -24,13 +24,28 @@ interface Props {
 
 export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
-  useEffect(() => { if (selected) setForm(selected); else setForm({}); }, [selected?.id]);
+  const { isDirty } = useDirtyForm();
+  useEffect(() => {
+    if (!selected) { setForm({}); return; }
+    if (!isDirty) setForm(selected);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
   useDirtyTracker(form, selected ?? {}, !!selected);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
   function setSilkFeito(v: string) {
     setForm((f) => ({ ...f, silk_feito: v, ...(v !== "Sim" ? { silk_data_executada: null } : {}) }));
   }
-  function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
+  function handleSave() {
+    if (!selected) return;
+    onSave({
+      id: selected.id,
+      tela_gravada: form.tela_gravada ?? null,
+      silk_feito: form.silk_feito ?? null,
+      silk_data_executada: form.silk_data_executada ?? null,
+      quem_bateu_silk: form.quem_bateu_silk ?? null,
+      silk_observacao: form.silk_observacao ?? null,
+    });
+  }
   useRegisterSave(handleSave);
 
   async function baixarLayout(path: string) {

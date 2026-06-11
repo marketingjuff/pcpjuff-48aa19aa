@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
   VENDEDORES, STATUS_GERAL_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS,
-  calcularEtapaAtual,
+  calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk,
 } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,7 @@ import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
 import { EtapaBadgeFromPedido } from "./shared";
-import { useDirtyTracker, useRegisterSave } from "./dirty-form-context";
+import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 interface Props {
   pedidos: Pedido[];
@@ -49,11 +49,40 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const [form, setForm] = useState<Partial<Pedido>>(empty);
   const [uploading, setUploading] = useState(false);
   const { feriados } = useFeriados();
+  const { isDirty } = useDirtyForm();
 
-  useEffect(() => { setForm(selected ?? empty); }, [selected?.id]);
+  useEffect(() => {
+    if (!isDirty) setForm(selected ?? empty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
   useDirtyTracker(form, selected ?? empty);
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
+
+  function setTipoEstampa(v: string) {
+    setForm((f) => {
+      const next: Partial<Pedido> = { ...f, tipo_estampa: v };
+      if (!tipoIncluiDTF(v)) {
+        next.dtf_impresso = null;
+        next.dtf_executado = null;
+        next.dtf_estampado = null;
+        next.dtf_data_executada = null;
+        next.quem_bateu_dtf = null;
+        next.dtf_observacao = null;
+      }
+      if (!tipoIncluiSilk(v)) {
+        next.fotolito_impresso = null;
+        next.fotolito_executado = null;
+        next.tela_gravada = null;
+        next.silk_feito = null;
+        next.silk_data_executada = null;
+        next.quem_bateu_silk = null;
+        next.silk_observacao = null;
+      }
+      if (v === "Lisa") next.status_arte = null;
+      return next;
+    });
+  }
 
   // Cálculos automáticos
   const tempoFreteNum = Number(form.tempo_frete ?? 0) || 0;
@@ -216,7 +245,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               </Select>
             </Field>
             <Field label="Tipo de Estampa *">
-              <Select value={form.tipo_estampa ?? ""} onValueChange={(v) => set("tipo_estampa", v)}>
+              <Select value={form.tipo_estampa ?? ""} onValueChange={setTipoEstampa}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
