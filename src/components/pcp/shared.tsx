@@ -1,8 +1,34 @@
 import type { Pedido } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { calcularEtapaAtual } from "@/lib/pedidos";
+import { calcularEtapaAtual, type EtapaStatus } from "@/lib/pedidos";
 import { CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+/** Abre o PDF do layout via edge function (sem expor URL do Supabase). */
+export async function abrirLayoutPDF(path: string) {
+  try {
+    const { data, error } = await supabase.functions.invoke("get-layout-pdf", { body: { path } });
+    if (error) throw error;
+    const blob = data instanceof Blob ? data : new Blob([data as ArrayBuffer], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } catch (e: any) {
+    toast.error(e?.message ?? "Falha ao abrir PDF");
+  }
+}
+
+export function EtapaBadge({ status, labels }: { status: EtapaStatus; labels: { pendente: string; andamento: string; concluido: string } }) {
+  const cfg = status === "concluido"
+    ? { cls: "bg-success/15 text-success border-success/30", icon: "🟢", text: labels.concluido }
+    : status === "andamento"
+    ? { cls: "bg-warning/15 text-warning-foreground border-warning/30", icon: "🟡", text: labels.andamento }
+    : { cls: "bg-destructive/15 text-destructive border-destructive/30", icon: "🔴", text: labels.pendente };
+  return <Badge variant="outline" className={`${cfg.cls} whitespace-nowrap`}>{cfg.icon} {cfg.text}</Badge>;
+}
+
 
 export function EtapaStatusBanner({
   pendencias,
