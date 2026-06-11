@@ -247,35 +247,40 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Orçamento","Pedido Olist","QTD","Vendedor","Tipo","UF","Entrada","Entrega","Saída Juff","Tempo Prod","Status","Etapa"].map((h) => (
+                {["Pedido","Orçamento","QTD","Vendedor","Frete","Tempo Frete","Status","Estampa","Entrada","Arte","Início Estamp.","Término Estamp.","Acabamento","Saída","Data Entrega","Tempo Prod.","Dias"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {pedidos.map((p) => {
-                const { etapa } = calcularEtapaAtual(p);
+                const dias = p.data_entrega ? diasUteisEntre(new Date().toISOString().slice(0,10), p.data_entrega, feriados) : null;
                 return (
                   <tr key={p.id}
                     onClick={() => onSelect(p.id)}
                     className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
-                    <td className="px-3 py-2 font-medium">{p.orcamento}</td>
-                    <td className="px-3 py-2">{p.pedido_olist}</td>
+                    <td className="px-3 py-2 font-medium">{p.pedido_olist}</td>
+                    <td className="px-3 py-2">{p.orcamento}</td>
                     <td className="px-3 py-2">{p.qtd}</td>
                     <td className="px-3 py-2">{p.vendedor}</td>
-                    <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
-                    <td className="px-3 py-2">{p.uf_entrega ?? "—"}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.entrada_pedido)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                    <td className="px-3 py-2">{p.tempo_producao ?? "—"}</td>
+                    <td className="px-3 py-2">{p.frete ?? "—"}</td>
+                    <td className="px-3 py-2">{p.tempo_frete ?? "—"}</td>
                     <td className="px-3 py-2"><Badge variant={p.status_geral === "Completo" ? "default" : "secondary"}>{p.status_geral}</Badge></td>
-                    <td className="px-3 py-2 text-xs">{etapa}</td>
+                    <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.entrada_pedido)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.arte_data)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.inicio_estamparia)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.termino_estamparia)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.acabamento_data)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
+                    <td className="px-3 py-2">{p.tempo_producao ?? "—"}</td>
+                    <td className="px-3 py-2 tabular-nums">{dias ?? "—"}</td>
                   </tr>
                 );
               })}
               {pedidos.length === 0 && (
-                <tr><td colSpan={12} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido.</td></tr>
+                <tr><td colSpan={17} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido.</td></tr>
               )}
             </tbody>
           </table>
