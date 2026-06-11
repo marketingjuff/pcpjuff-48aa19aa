@@ -251,25 +251,26 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         </div>
       </form>
 
-      {/* Dashboard Dados In */}
+      {/* Dashboard Dados In — esconde finalizados */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Dashboard — Dados In ({pedidos.length})</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Dashboard — Dados In</CardTitle></CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Pedido","Orçamento","QTD","Vendedor","Frete","Tempo Frete","Status","Estampa","Entrada","Arte","Início Estamp.","Término Estamp.","Acabamento","Saída","Data Entrega","Tempo Prod.","Dias"].map((h) => (
+                {["Etapa","Pedido","Orçamento","QTD","Vendedor","Frete","Tempo Frete","Status","Estampa","Entrada","Arte","Início Estamp.","Término Estamp.","Acabamento","Saída","Data Entrega","Tempo Prod.","Dias"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {pedidos.map((p) => {
+              {pedidos.filter((p) => !p.finalizado_em).map((p) => {
                 const dias = p.data_entrega ? diasUteisEntre(new Date().toISOString().slice(0,10), p.data_entrega, feriados) : null;
                 return (
                   <tr key={p.id}
                     onClick={() => onSelect(p.id)}
                     className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                    <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
                     <td className="px-3 py-2 font-medium">{p.pedido_olist}</td>
                     <td className="px-3 py-2">{p.orcamento}</td>
                     <td className="px-3 py-2">{p.qtd}</td>
@@ -290,8 +291,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   </tr>
                 );
               })}
-              {pedidos.length === 0 && (
-                <tr><td colSpan={17} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido.</td></tr>
+              {pedidos.filter((p) => !p.finalizado_em).length === 0 && (
+                <tr><td colSpan={18} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido ativo.</td></tr>
               )}
             </tbody>
           </table>
