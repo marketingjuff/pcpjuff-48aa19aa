@@ -83,8 +83,8 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
               <div className="space-y-1">
                 <div className="text-xs font-medium text-muted-foreground">Layout</div>
                 {selected.layout_url ? (
-                  <Button variant="outline" size="sm" onClick={() => abrirLayout(selected.layout_url!)}>
-                    <ExternalLink className="h-4 w-4 mr-1" /> Abrir PDF
+                  <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                    <Download className="h-4 w-4 mr-1" /> Baixar PDF
                   </Button>
                 ) : <div className="text-sm text-muted-foreground">Sem layout</div>}
               </div>
