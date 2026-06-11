@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, ExternalLink } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner } from "./shared";
 import { formatDateBR } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
