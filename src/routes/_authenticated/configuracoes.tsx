@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
+import { useMyRoles } from "@/hooks/use-role";
 import {
   createUserAccount,
   listUsers,
@@ -28,8 +28,8 @@ const ROLES: AppRole[] = ["admin", "gestor", "arte", "dtf", "silk", "acabamento"
 
 function ConfiguracoesPage() {
   const navigate = useNavigate();
-  const { isLoading } = useMyRoles();
-  const isAdmin = useIsAdmin();
+  const { data: roles = [], isLoading } = useMyRoles();
+  const isAdmin = roles.some((r) => r.role === "admin");
 
   useEffect(() => {
     if (!isLoading && !isAdmin) {
