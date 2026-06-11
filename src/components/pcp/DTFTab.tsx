@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiDTF, QUEM_BATEU_DTF, calcularEtapaAtual, visivelEmDTF, dtfCompleto, dtfAlgumPreenchido, statusEtapa } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiDTF, QUEM_BATEU_DTF, visivelEmDTF } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, AlertTriangle, Info, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner, EtapaBadge } from "./shared";
+import { Save, Download } from "lucide-react";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
 
 import { formatDateBR } from "@/lib/format";
 
@@ -77,13 +77,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
               </Badge>
             </CardHeader>
             <CardContent className="space-y-6">
-            <EtapaStatusBanner
-              pendencias={[
-                selected.dtf_impresso !== "Sim" && "Arte ainda não liberou a impressão do DTF",
-              ].filter(Boolean) as string[]}
-              atrasado={!!atrasado}
-              atrasadoMsg="Data executada após o término previsto da estamparia."
-            />
+            <EtapaTopoBanner pedido={selected} tab="dtf" />
 
               <div className="grid gap-4 md:grid-cols-2">
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
