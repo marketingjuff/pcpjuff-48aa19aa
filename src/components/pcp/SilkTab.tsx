@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiSilk, QUEM_BATEU_SILK, calcularEtapaAtual, visivelEmSilk, silkCompleto, silkAlgumPreenchido, statusEtapa } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiSilk, QUEM_BATEU_SILK, visivelEmSilk } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, AlertTriangle, Info, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner, EtapaBadge } from "./shared";
+import { Save, Download } from "lucide-react";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
 
 import { formatDateBR } from "@/lib/format";
 
@@ -78,14 +78,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
               </Badge>
             </CardHeader>
             <CardContent className="space-y-6">
-            <EtapaStatusBanner
-              pendencias={[
-                selected.fotolito_impresso !== "Sim" && "Arte ainda não liberou o fotolito",
-                form.tela_gravada !== "Sim" && "Tela ainda não foi gravada",
-              ].filter(Boolean) as string[]}
-              atrasado={!!atrasado}
-              atrasadoMsg="Data executada após o limite de estamparia."
-            />
+            <EtapaTopoBanner pedido={selected} tab="silk" />
 
               <div className="grid gap-4 md:grid-cols-2">
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
@@ -177,18 +170,16 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Status","Orçamento","Pedido","Tipo","Fotolito","Tela Gravada","Silk Feito","Data Silk","Quem bateu","Etapa"].map((h) => (
+                  {["Etapa","Orçamento","Pedido","Tipo","Fotolito","Tela Gravada","Silk Feito","Data Silk","Quem bateu"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {dashboardPedidos.map((p) => {
-                  const { etapa } = calcularEtapaAtual(p);
-                  const st = statusEtapa(silkCompleto(p), silkAlgumPreenchido(p));
                   return (
                     <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
-                      <td className="px-3 py-2"><EtapaBadge status={st} labels={{ pendente: "Silk Pendente", andamento: "Silk em Andamento", concluido: "Silk Concluído" }} /></td>
+                      <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
                       <td className="px-3 py-2 font-medium">{p.orcamento}</td>
                       <td className="px-3 py-2">{p.pedido_olist}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
@@ -197,12 +188,11 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
                       <td className="px-3 py-2">{p.silk_feito ?? "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.silk_data_executada)}</td>
                       <td className="px-3 py-2">{p.quem_bateu_silk ?? "—"}</td>
-                      <td className="px-3 py-2 text-xs">{etapa}</td>
                     </tr>
                   );
                 })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk disponível (depende da Arte concluída).</td></tr>
+                  <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk disponível.</td></tr>
                 )}
 
               </tbody>
