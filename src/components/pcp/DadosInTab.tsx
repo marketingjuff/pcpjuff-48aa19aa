@@ -37,8 +37,8 @@ const empty: Partial<Pedido> = {
   orcamento: "",
   qtd: null,
   vendedor: "Wander",
-  tipo_estampa: "DTF",
-  status_geral: "Aberto",
+  tipo_estampa: "",
+  status_geral: "",
   entrada_pedido: new Date().toISOString().slice(0, 10),
   necessita_vetorizacao: false,
 };
@@ -207,13 +207,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           <CardContent className="grid gap-4 md:grid-cols-2">
             <Field label="Status Geral *">
               <Select value={form.status_geral ?? ""} onValueChange={(v) => set("status_geral", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{STATUS_GERAL_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
             <Field label="Tipo de Estampa *">
               <Select value={form.tipo_estampa ?? ""} onValueChange={(v) => set("tipo_estampa", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
