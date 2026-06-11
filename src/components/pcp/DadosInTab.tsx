@@ -66,8 +66,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     return diasUteisEntre(form.entrada_pedido, saidaJuffCalc, feriados);
   }, [form.entrada_pedido, saidaJuffCalc, feriados]);
 
-  function handleSave(e: React.FormEvent) {
-    e.preventDefault();
+  function doSave() {
     if (!form.pedido_olist || !form.orcamento || !form.qtd || !form.vendedor || !form.tipo_estampa || !form.entrada_pedido) {
       toast.error("Preencha os campos obrigatórios.");
       return;
@@ -78,6 +77,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
     });
   }
+  function handleSave(e: React.FormEvent) { e.preventDefault(); doSave(); }
+  useRegisterSave(doSave);
 
   function handleNew() { onSelect(null); setForm(empty); }
 
