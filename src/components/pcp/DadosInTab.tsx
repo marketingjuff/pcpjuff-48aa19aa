@@ -100,8 +100,20 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     return diasUteisEntre(form.entrada_pedido, saidaJuffCalc, feriados);
   }, [form.entrada_pedido, saidaJuffCalc, feriados]);
 
-  function doSave() {
-    if (!form.pedido_olist || !form.orcamento || !form.qtd || !form.vendedor || !form.entrada_pedido) {
+  const VENDOR_REQUIRED: (keyof Pedido)[] = ["pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido"];
+  const PROD_REQUIRED: (keyof Pedido)[] = ["status_geral", "tipo_estampa"];
+  const [missingVendor, setMissingVendor] = useState<Set<string>>(new Set());
+  const [missingProd, setMissingProd] = useState<Set<string>>(new Set());
+
+  function isEmpty(v: any) { return v === null || v === undefined || v === ""; }
+  function findMissing(keys: (keyof Pedido)[]) {
+    return new Set(keys.filter((k) => isEmpty((form as any)[k])).map(String));
+  }
+
+  function saveVendor() {
+    const miss = findMissing(VENDOR_REQUIRED);
+    setMissingVendor(miss);
+    if (miss.size > 0) {
       toast.error("Preencha os campos obrigatórios do Input do Vendedor.");
       return;
     }
@@ -111,8 +123,29 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
     });
   }
-  function handleSave(e: React.FormEvent) { e.preventDefault(); doSave(); }
-  useRegisterSave(doSave, active);
+  function saveProducao() {
+    const missP = findMissing(PROD_REQUIRED);
+    setMissingProd(missP);
+    if (missP.size > 0) {
+      toast.error("Preencha os campos obrigatórios do Input de Produção.");
+      return;
+    }
+    // Se ainda não existe pedido, exige também os obrigatórios do vendedor para criar
+    if (!selected?.id) {
+      const missV = findMissing(VENDOR_REQUIRED);
+      setMissingVendor(missV);
+      if (missV.size > 0) {
+        toast.error("Para criar o pedido, preencha também os obrigatórios do Input do Vendedor.");
+        return;
+      }
+    }
+    onSave({
+      ...form,
+      saida_juff: saidaJuffCalc ?? form.saida_juff ?? null,
+      tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
+    });
+  }
+  useRegisterSave(saveVendor, active);
 
   function handleNew() { onSelect(null); setForm(empty); }
 
