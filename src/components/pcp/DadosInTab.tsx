@@ -100,8 +100,20 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     return diasUteisEntre(form.entrada_pedido, saidaJuffCalc, feriados);
   }, [form.entrada_pedido, saidaJuffCalc, feriados]);
 
-  function doSave() {
-    if (!form.pedido_olist || !form.orcamento || !form.qtd || !form.vendedor || !form.entrada_pedido) {
+  const VENDOR_REQUIRED: (keyof Pedido)[] = ["pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido"];
+  const PROD_REQUIRED: (keyof Pedido)[] = ["status_geral", "tipo_estampa"];
+  const [missingVendor, setMissingVendor] = useState<Set<string>>(new Set());
+  const [missingProd, setMissingProd] = useState<Set<string>>(new Set());
+
+  function isEmpty(v: any) { return v === null || v === undefined || v === ""; }
+  function findMissing(keys: (keyof Pedido)[]) {
+    return new Set(keys.filter((k) => isEmpty((form as any)[k])).map(String));
+  }
+
+  function saveVendor() {
+    const miss = findMissing(VENDOR_REQUIRED);
+    setMissingVendor(miss);
+    if (miss.size > 0) {
       toast.error("Preencha os campos obrigatórios do Input do Vendedor.");
       return;
     }
@@ -111,8 +123,29 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
     });
   }
-  function handleSave(e: React.FormEvent) { e.preventDefault(); doSave(); }
-  useRegisterSave(doSave, active);
+  function saveProducao() {
+    const missP = findMissing(PROD_REQUIRED);
+    setMissingProd(missP);
+    if (missP.size > 0) {
+      toast.error("Preencha os campos obrigatórios do Input de Produção.");
+      return;
+    }
+    // Se ainda não existe pedido, exige também os obrigatórios do vendedor para criar
+    if (!selected?.id) {
+      const missV = findMissing(VENDOR_REQUIRED);
+      setMissingVendor(missV);
+      if (missV.size > 0) {
+        toast.error("Para criar o pedido, preencha também os obrigatórios do Input do Vendedor.");
+        return;
+      }
+    }
+    onSave({
+      ...form,
+      saida_juff: saidaJuffCalc ?? form.saida_juff ?? null,
+      tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
+    });
+  }
+  useRegisterSave(saveVendor, active);
 
   function handleNew() { onSelect(null); setForm(empty); }
 
@@ -178,15 +211,15 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
 
 
-      <form onSubmit={handleSave} className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* Vendedor */}
         <Card className="border-l-4 border-l-green-500 bg-green-50/40 dark:bg-green-950/10">
           <CardHeader><CardTitle className="text-base text-green-700 dark:text-green-400">Input do Vendedor</CardTitle></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
-            <Field label="Pedido Olist *"><Input value={form.pedido_olist ?? ""} onChange={(e) => set("pedido_olist", e.target.value)} required /></Field>
-            <Field label="Orçamento Comercial *"><Input value={form.orcamento ?? ""} onChange={(e) => set("orcamento", e.target.value)} required /></Field>
-            <Field label="Quantas peças *"><Input value={form.qtd ?? ""} onChange={(e) => set("qtd", e.target.value)} required /></Field>
-            <Field label="Vendedor *">
+            <Field label="Pedido Olist *" invalid={missingVendor.has("pedido_olist")}><Input value={form.pedido_olist ?? ""} onChange={(e) => set("pedido_olist", e.target.value)} /></Field>
+            <Field label="Orçamento Comercial *" invalid={missingVendor.has("orcamento")}><Input value={form.orcamento ?? ""} onChange={(e) => set("orcamento", e.target.value)} /></Field>
+            <Field label="Quantas peças *" invalid={missingVendor.has("qtd")}><Input value={form.qtd ?? ""} onChange={(e) => set("qtd", e.target.value)} /></Field>
+            <Field label="Vendedor *" invalid={missingVendor.has("vendedor")}>
               <Select value={form.vendedor ?? ""} onValueChange={(v) => set("vendedor", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
@@ -200,9 +233,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <SelectContent>{UFS.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Entrada do pedido *">
-              <DateInputBR value={form.entrada_pedido} onChange={(v) => set("entrada_pedido", v ?? "")} required />
+            <Field label="Entrada do pedido *" invalid={missingVendor.has("entrada_pedido")}>
+              <DateInputBR value={form.entrada_pedido} onChange={(v) => set("entrada_pedido", v ?? "")} />
             </Field>
+
             <Field label="Data de Entrega">
               <DateInputBR value={form.data_entrega} onChange={(v) => set("data_entrega", v)} />
             </Field>
@@ -236,25 +270,35 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <Textarea rows={3} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
               </Field>
             </div>
+            <div className="md:col-span-2 flex gap-2 pt-2">
+              <Button type="button" onClick={saveVendor} disabled={saving}>
+                <Save className="h-4 w-4 mr-1" />Salvar Input do Vendedor
+              </Button>
+              {selected && (
+                <Button type="button" variant="outline" onClick={handleNew}><X className="h-4 w-4 mr-1" />Cancelar edição</Button>
+              )}
+            </div>
           </CardContent>
         </Card>
+
 
         {/* Produção */}
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
           <CardHeader><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
-            <Field label="Status Geral *">
+            <Field label="Status Geral *" invalid={missingProd.has("status_geral")}>
               <Select value={form.status_geral ?? ""} onValueChange={(v) => set("status_geral", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{STATUS_GERAL_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Tipo de Estampa *">
+            <Field label="Tipo de Estampa *" invalid={missingProd.has("tipo_estampa")}>
               <Select value={form.tipo_estampa ?? ""} onValueChange={setTipoEstampa}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
+
             <Field label="Arte (limite)">
               <DateInputBR value={form.arte_data} onChange={(v) => set("arte_data", v)} />
             </Field>
@@ -278,16 +322,15 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <Textarea rows={3} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
               </Field>
             </div>
+            <div className="md:col-span-2 flex gap-2 pt-2">
+              <Button type="button" onClick={saveProducao} disabled={saving}>
+                <Save className="h-4 w-4 mr-1" />Salvar Input de Produção
+              </Button>
+            </div>
           </CardContent>
         </Card>
+      </div>
 
-        <div className="lg:col-span-2 flex gap-2">
-          <Button type="submit" disabled={saving}><Save className="h-4 w-4 mr-1" />{selected ? "Atualizar" : "Salvar"}</Button>
-          {selected && (
-            <Button type="button" variant="outline" onClick={handleNew}><X className="h-4 w-4 mr-1" />Cancelar edição</Button>
-          )}
-        </div>
-      </form>
 
       {/* Dashboard Dados In — esconde finalizados */}
       <Card>
@@ -363,11 +406,12 @@ function PedidoStatusInline({ pedido }: { pedido: Pedido }) {
 
 
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, invalid, children }: { label: string; invalid?: boolean; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <Label className="text-xs font-medium">{label}</Label>
+    <div className={`space-y-1.5 ${invalid ? "rounded-md ring-2 ring-destructive/60 p-1 -m-1" : ""}`}>
+      <Label className={`text-xs font-medium ${invalid ? "text-destructive" : ""}`}>{label}{invalid ? " — obrigatório" : ""}</Label>
       {children}
     </div>
   );
 }
+

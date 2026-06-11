@@ -1,19 +1,17 @@
-## Problema
+Vou separar o salvamento da aba Dados In em dois fluxos independentes:
 
-A aba **Configurações → Listas** mostra "Nenhum item." em todos os quadros (Vendedores, Operadores DTF, Operadores Silk, Responsáveis pelo Acabamento), mesmo com os dados existindo no banco (15 registros em `app_lists`).
-
-## Causa raiz
-
-As políticas de SELECT de `app_lists`, `pedidos` e `feriados` usam a função `public.is_team_member()`, mas essa função **não tem permissão de EXECUTE para o papel `authenticated`**. Resultado: quando o usuário logado consulta a tabela, a checagem de RLS falha silenciosamente e a query retorna vazio.
-
-A função irmã `has_role` tem o grant correto; só `is_team_member` ficou sem.
-
-## Correção (uma migration)
-
-```sql
-GRANT EXECUTE ON FUNCTION public.is_team_member() TO authenticated;
-```
-
-Depois disso, os 15 itens já populados aparecem normalmente na aba Listas, e as tabelas `pedidos` / `feriados` voltam a respeitar a política `is_team_member()` corretamente.
-
-Nenhuma alteração de UI ou de código de frontend é necessária.
+1. **Input do Vendedor**
+  - Adicionar um botão próprio dentro do card “Input do Vendedor”.
+  - Esse botão vai validar somente os campos obrigatórios do vendedor: Pedido Olist, Orçamento, Quantidade, Vendedor e Entrada do pedido.
+  - Ele poderá criar ou atualizar o pedido sem exigir Status Geral ou Tipo de Estampa.
+  - sinalizar quais campos obrigatorios nao foram preenchidos.
+2. **Input de Produção**
+  - Adicionar um botão próprio dentro do card “Input de Produção”.
+  - Esse botão vai validar somente os campos obrigatórios de produção: Status Geral e Tipo de Estampa.
+  - Para salvar produção, ele exigirá que o pedido já exista ou que os dados mínimos do vendedor necessários para criar o pedido também estejam presentes.
+  - sinalizar quais campos obrigatorios nao foram preenchidos.
+3. **Remover o salvamento único do final do formulário**
+  - Retirar o botão único “Salvar/Atualizar” que hoje mistura as duas áreas.
+  - Evitar que uma área bloqueie o salvamento da outra.
+4. **Ajustar o atalho/salvamento global da aba**
+  - O salvamento registrado para a aba Dados In passará a salvar o Input do Vendedor por padrão, para não travar por causa dos campos de produção.
