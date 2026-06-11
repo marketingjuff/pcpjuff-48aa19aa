@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
-import { useDirtyTracker, useRegisterSave } from "./dirty-form-context";
+import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 import { formatDateBR } from "@/lib/format";
 
