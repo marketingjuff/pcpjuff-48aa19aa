@@ -191,11 +191,13 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
                       <td className="px-3 py-2">{p.silk_feito ?? "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.silk_data_executada)}</td>
                       <td className="px-3 py-2">{p.quem_bateu_silk ?? "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
                     </tr>
                   );
                 })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk disponível.</td></tr>
+                  <tr><td colSpan={11} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk disponível.</td></tr>
                 )}
 
               </tbody>
