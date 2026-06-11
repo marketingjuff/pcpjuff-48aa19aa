@@ -28,7 +28,12 @@ interface Props {
 
 export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
-  useEffect(() => { if (selected) setForm(selected); else setForm({}); }, [selected?.id]);
+  const { isDirty } = useDirtyForm();
+  useEffect(() => {
+    if (!selected) { setForm({}); return; }
+    if (!isDirty) setForm(selected);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
   useDirtyTracker(form, selected ?? {}, !!selected);
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
@@ -42,7 +47,19 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
     }));
   }
 
-  function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
+  function handleSave() {
+    if (!selected) return;
+    onSave({
+      id: selected.id,
+      status_arte: form.status_arte ?? null,
+      dtf_impresso: form.dtf_impresso ?? null,
+      dtf_executado: form.dtf_executado ?? null,
+      fotolito_impresso: form.fotolito_impresso ?? null,
+      fotolito_executado: form.fotolito_executado ?? null,
+      vetorizacao_executada: form.vetorizacao_executada ?? null,
+      arte_observacao: form.arte_observacao ?? null,
+    });
+  }
   useRegisterSave(handleSave);
 
   async function baixarLayout(path: string) {
