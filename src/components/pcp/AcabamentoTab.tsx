@@ -111,6 +111,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
               <ReadOnlyField label="Saída Juff (prazo)" value={formatDateBR(selected.saida_juff)} />
               <ReadOnlyField label="DTF Estampado?" value={temDTF ? (selected.dtf_estampado ?? "—") : "N/A"} />
               <ReadOnlyField label="Silk Estampado?" value={temSilk ? (selected.silk_feito ?? "—") : "N/A"} />
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-muted-foreground">Layout</div>
+                {selected.layout_url ? (
+                  <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                    <Download className="h-4 w-4 mr-1" /> Baixar layout
+                  </Button>
+                ) : <div className="text-sm text-muted-foreground">Sem layout</div>}
+              </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
               <FormField label="EMBALADO?">
