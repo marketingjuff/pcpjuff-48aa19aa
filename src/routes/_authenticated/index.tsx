@@ -105,9 +105,9 @@ function AppHomeInner() {
 
   function goToTabWithPedido(t: string, id: string) {
     setSelectedId(id);
-    if (isDirty) setPendingNav({ kind: "tab", value: t });
-    else setTab(t);
+    setTab(t);
   }
+
 
   return (
     <div className="min-h-screen bg-background">
