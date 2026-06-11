@@ -251,3 +251,106 @@ function UsuariosTab() {
     </div>
   );
 }
+
+function BackupTab() {
+  const exportFn = useServerFn(exportBackup);
+  const importFn = useServerFn(importBackup);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileRef = useState<HTMLInputElement | null>(null);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const data = await exportFn();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      a.href = url;
+      a.download = `backup-${ts}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Backup exportado.");
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao exportar.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleFile(file: File) {
+    let payload: any;
+    try {
+      payload = JSON.parse(await file.text());
+    } catch {
+      toast.error("Arquivo JSON inválido.");
+      return;
+    }
+    if (!payload || typeof payload !== "object" || !payload.tables) {
+      toast.error("Estrutura de backup inválida (esperado { tables: {...} }).");
+      return;
+    }
+    const replace = confirm(
+      "Deseja SUBSTITUIR os dados existentes?\n\n" +
+        "OK = Apagar dados atuais e restaurar do backup.\n" +
+        "Cancelar = Mesclar (upsert por id, mantendo registros não presentes no backup).",
+    );
+    setImporting(true);
+    try {
+      const res = await importFn({ data: { replace, payload } });
+      const linhas = Object.entries(res.summary)
+        .map(([t, s]) => `${t}: +${s.inserted}${s.deleted ? ` / -${s.deleted}` : ""}`)
+        .join(" • ");
+      toast.success(`Backup importado. ${linhas}`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao importar.");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="border rounded-lg p-4 space-y-3">
+        <h2 className="font-semibold">Exportar Backup</h2>
+        <p className="text-sm text-muted-foreground">
+          Baixa um arquivo JSON com todos os registros do banco (pedidos, feriados, perfis e papéis).
+        </p>
+        <Button onClick={handleExport} disabled={exporting}>
+          <Download className="h-4 w-4 mr-1" />
+          {exporting ? "Exportando…" : "Exportar Backup"}
+        </Button>
+      </div>
+
+      <div className="border rounded-lg p-4 space-y-3">
+        <h2 className="font-semibold">Importar Backup</h2>
+        <p className="text-sm text-muted-foreground">
+          Restaura os dados a partir de um arquivo JSON gerado pela exportação. Você poderá optar por
+          substituir os dados existentes ou mesclar.
+        </p>
+        <input
+          ref={(el) => { fileRef[1](el); }}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+            e.target.value = "";
+          }}
+        />
+        <Button
+          variant="outline"
+          onClick={() => fileRef[0]?.click()}
+          disabled={importing}
+        >
+          <Upload className="h-4 w-4 mr-1" />
+          {importing ? "Importando…" : "Importar Backup"}
+        </Button>
+      </div>
+    </div>
+  );
+}
