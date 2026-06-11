@@ -20,6 +20,7 @@ interface Props {
   onSelect: (id: string | null) => void;
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
   saving: boolean;
+  active?: boolean;
 }
 
 export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
