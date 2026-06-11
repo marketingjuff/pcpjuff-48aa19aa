@@ -42,7 +42,7 @@ export function FinalizadosTab({ pedidos }: { pedidos: Pedido[] }) {
                     <TableCell className="max-w-[200px] truncate">{p.orcamento}</TableCell>
                     <TableCell>{p.qtd}</TableCell>
                     <TableCell>{p.vendedor}</TableCell>
-                    <TableCell><Badge variant="outline">{p.modelo_estampa}</Badge></TableCell>
+                    <TableCell><Badge variant="outline">{p.tipo_estampa}</Badge></TableCell>
                     <TableCell className="text-xs">{p.saida_juff ?? "—"}</TableCell>
                     <TableCell className="text-xs">{p.data_saida_juff ?? "—"}</TableCell>
                     <TableCell className="text-xs">{p.responsavel_conferencia ?? "—"}</TableCell>

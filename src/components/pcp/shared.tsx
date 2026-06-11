@@ -27,7 +27,7 @@ export function PedidoSelector({ pedidos, selectedId, onSelect, filter }: Props)
               >
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-sm truncate">{p.pedido_olist}</span>
-                  <Badge variant="outline" className="text-xs">{p.modelo_estampa}</Badge>
+                  <Badge variant="outline" className="text-xs">{p.tipo_estampa}</Badge>
                 </div>
                 <div className="text-xs text-muted-foreground truncate">{p.orcamento}</div>
                 <div className="text-xs text-muted-foreground mt-1">{etapa}</div>

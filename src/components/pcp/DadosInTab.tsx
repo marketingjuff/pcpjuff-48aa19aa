@@ -30,7 +30,7 @@ const empty: Partial<Pedido> = {
   frete: "",
   tempo_frete: "",
   status: "Aberto",
-  modelo_estampa: "DTF",
+  tipo_estampa: "DTF",
   entrada_pedido: new Date().toISOString().slice(0, 10),
 };
 
@@ -45,7 +45,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.pedido_olist || !form.orcamento || !form.qtd || !form.vendedor || !form.modelo_estampa || !form.entrada_pedido) return;
+    if (!form.pedido_olist || !form.orcamento || !form.qtd || !form.vendedor || !form.tipo_estampa || !form.entrada_pedido) return;
     onSave(form);
   }
 
@@ -104,13 +104,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             <Field label="Frete"><Input value={form.frete ?? ""} onChange={(e) => set("frete", e.target.value)} /></Field>
             <Field label="Tempo de frete *"><Input value={form.tempo_frete ?? ""} onChange={(e) => set("tempo_frete", e.target.value)} /></Field>
             <Field label="Status *">
-              <Select value={form.status ?? ""} onValueChange={(v) => set("status", v)}>
+              <Select value={form.status_geral ?? ""} onValueChange={(v) => set("status_geral", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{STATUS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
             <Field label="Modelo de estampa *">
-              <Select value={form.modelo_estampa ?? ""} onValueChange={(v) => set("modelo_estampa", v)}>
+              <Select value={form.tipo_estampa ?? ""} onValueChange={(v) => set("tipo_estampa", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{MODELOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
@@ -140,10 +140,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 className={`cursor-pointer px-4 py-3 hover:bg-accent transition-colors ${selected?.id === p.id ? "bg-accent" : ""}`}>
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-sm truncate">{p.pedido_olist}</span>
-                  <Badge variant={p.status === "Completo" ? "default" : "secondary"} className="text-xs">{p.status}</Badge>
+                  <Badge variant={p.status_geral === "Completo" ? "default" : "secondary"} className="text-xs">{p.status_geral}</Badge>
                 </div>
                 <div className="text-xs text-muted-foreground truncate">{p.orcamento}</div>
-                <div className="text-xs text-muted-foreground mt-1">{p.modelo_estampa} · {p.qtd} pç · {p.vendedor}</div>
+                <div className="text-xs text-muted-foreground mt-1">{p.tipo_estampa} · {p.qtd} pç · {p.vendedor}</div>
               </li>
             ))}
             {pedidos.length === 0 && (

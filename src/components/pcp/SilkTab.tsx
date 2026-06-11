@@ -39,8 +39,8 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       {selected ? (
-        !modeloIncluiSilk(selected.modelo_estampa) ? (
-          <EmptyState>Este pedido não inclui Silk (modelo: {selected.modelo_estampa}).</EmptyState>
+        !modeloIncluiSilk(selected.tipo_estampa) ? (
+          <EmptyState>Este pedido não inclui Silk (modelo: {selected.tipo_estampa}).</EmptyState>
         ) : (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -64,7 +64,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
                 <ReadOnlyField label="QTD" value={selected.qtd} />
-                <ReadOnlyField label="Status" value={selected.status} />
+                <ReadOnlyField label="Status" value={selected.status_geral} />
                 <ReadOnlyField label="Início estamparia" value={selected.inicio_estamparia} />
                 <ReadOnlyField label="Limite estamparia" value={
                   <>{selected.termino_estamparia}{dias !== null && <span className="text-xs ml-2 opacity-70">({dias} dias)</span>}</>
@@ -101,7 +101,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
       ) : (
         <EmptyState>Selecione um pedido Silk na lista ao lado.</EmptyState>
       )}
-      <PedidoSelector pedidos={pedidos} selectedId={selected?.id ?? null} onSelect={onSelect} filter={(p) => modeloIncluiSilk(p.modelo_estampa)} />
+      <PedidoSelector pedidos={pedidos} selectedId={selected?.id ?? null} onSelect={onSelect} filter={(p) => modeloIncluiSilk(p.tipo_estampa)} />
     </div>
   );
 }

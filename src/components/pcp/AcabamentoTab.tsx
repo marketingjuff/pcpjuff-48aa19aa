@@ -24,8 +24,8 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
   function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
 
-  const temDTF = selected && modeloIncluiDTF(selected.modelo_estampa);
-  const temSilk = selected && modeloIncluiSilk(selected.modelo_estampa);
+  const temDTF = selected && modeloIncluiDTF(selected.tipo_estampa);
+  const temSilk = selected && modeloIncluiSilk(selected.tipo_estampa);
   const dtfDisponivel = selected?.dtf_estampado === "Sim";
   const silkDisponivel = selected?.silk_feito === "Sim";
 
@@ -63,8 +63,8 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
             <div className="grid gap-4 md:grid-cols-2">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
-              <ReadOnlyField label="Modelo" value={selected.modelo_estampa} />
-              <ReadOnlyField label="Status" value={selected.status} />
+              <ReadOnlyField label="Modelo" value={selected.tipo_estampa} />
+              <ReadOnlyField label="Status" value={selected.status_geral} />
               <ReadOnlyField label="Acabamento previsto" value={selected.acabamento_data} />
               <ReadOnlyField label="Saída Juff (prazo)" value={selected.saida_juff} />
               <ReadOnlyField label="DTF Estampado?" value={selected.dtf_estampado ?? "—"} />

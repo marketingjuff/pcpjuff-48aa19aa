@@ -23,8 +23,8 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
   function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
 
-  const showDTF = selected && modeloIncluiDTF(selected.modelo_estampa);
-  const showSilk = selected && modeloIncluiSilk(selected.modelo_estampa);
+  const showDTF = selected && modeloIncluiDTF(selected.tipo_estampa);
+  const showSilk = selected && modeloIncluiSilk(selected.tipo_estampa);
   const arteAtrasada = selected?.arte_data && new Date(selected.arte_data) < new Date() && form.pedido_ok !== "OK";
 
   return (
@@ -41,8 +41,8 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
             <div className="grid gap-4 md:grid-cols-2">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
-              <ReadOnlyField label="Status" value={selected.status} />
-              <ReadOnlyField label="Modelo de estampa" value={selected.modelo_estampa} />
+              <ReadOnlyField label="Status" value={selected.status_geral} />
+              <ReadOnlyField label="Modelo de estampa" value={selected.tipo_estampa} />
               <ReadOnlyField label="Entrada pedido" value={selected.entrada_pedido} />
               <ReadOnlyField label="Entrega arte (limite)" value={selected.arte_data} />
             </div>
