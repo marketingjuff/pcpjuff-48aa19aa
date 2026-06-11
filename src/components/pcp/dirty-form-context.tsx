@@ -53,11 +53,12 @@ export function useDirtyTracker(form: unknown, baseline: unknown, enabled = true
   useEffect(() => () => { setDirty(false); }, [setDirty]);
 }
 
-/** Register a save handler for the dirty-form prompt. */
-export function useRegisterSave(fn: SaveHandler) {
+/** Register a save handler for the dirty-form prompt. Only the active tab should register. */
+export function useRegisterSave(fn: SaveHandler, enabled = true) {
   const { registerSave } = useDirtyForm();
   useEffect(() => {
+    if (!enabled) return;
     registerSave(fn);
     return () => registerSave(null);
-  }, [fn, registerSave]);
+  }, [fn, enabled, registerSave]);
 }
