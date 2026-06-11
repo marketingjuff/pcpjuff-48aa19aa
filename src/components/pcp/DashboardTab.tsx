@@ -185,9 +185,9 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={13} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={14} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
                 ) : filtrados.length === 0 ? (
-                  <TableRow><TableCell colSpan={13} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={14} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
                 ) : (
                   filtrados.map((p) => {
                     const { etapa: et, percentual, cor } = calcularEtapaAtual(p);
@@ -210,7 +210,6 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                             <span className="text-xs tabular-nums">{percentual}%</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs whitespace-nowrap">{formatDateBR(p.data_entrega)}</TableCell>
                         <TableCell className="text-xs">{p.frete ?? "—"}</TableCell>
                         <TableCell className="text-xs tabular-nums">{dias ?? "—"}</TableCell>
                         <TableCell>
@@ -224,6 +223,8 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TableCell>
+                        <TableCell className="text-xs whitespace-nowrap">{formatDateBR(p.saida_juff)}</TableCell>
+                        <TableCell className="text-xs whitespace-nowrap">{formatDateBR(p.data_entrega)}</TableCell>
                       </TableRow>
                     );
                   })
