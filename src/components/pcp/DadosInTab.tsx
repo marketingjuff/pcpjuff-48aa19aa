@@ -49,11 +49,40 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const [form, setForm] = useState<Partial<Pedido>>(empty);
   const [uploading, setUploading] = useState(false);
   const { feriados } = useFeriados();
+  const { isDirty } = useDirtyForm();
 
-  useEffect(() => { setForm(selected ?? empty); }, [selected?.id]);
+  useEffect(() => {
+    if (!isDirty) setForm(selected ?? empty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
   useDirtyTracker(form, selected ?? empty);
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
+
+  function setTipoEstampa(v: string) {
+    setForm((f) => {
+      const next: Partial<Pedido> = { ...f, tipo_estampa: v };
+      if (!tipoIncluiDTF(v)) {
+        next.dtf_impresso = null;
+        next.dtf_executado = null;
+        next.dtf_estampado = null;
+        next.dtf_data_executada = null;
+        next.quem_bateu_dtf = null;
+        next.dtf_observacao = null;
+      }
+      if (!tipoIncluiSilk(v)) {
+        next.fotolito_impresso = null;
+        next.fotolito_executado = null;
+        next.tela_gravada = null;
+        next.silk_feito = null;
+        next.silk_data_executada = null;
+        next.quem_bateu_silk = null;
+        next.silk_observacao = null;
+      }
+      if (v === "Lisa") next.status_arte = null;
+      return next;
+    });
+  }
 
   // Cálculos automáticos
   const tempoFreteNum = Number(form.tempo_frete ?? 0) || 0;
