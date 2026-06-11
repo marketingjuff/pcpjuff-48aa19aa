@@ -87,15 +87,20 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       const { error } = await supabase.storage.from("layouts").upload(path, file, { contentType: "application/pdf" });
       if (error) throw error;
       set("layout_url", path);
+      // Persiste imediatamente se o pedido já existe, para não perder ao trocar de aba
+      if (selected?.id) {
+        const { error: updErr } = await supabase.from("pedidos").update({ layout_url: path }).eq("id", selected.id);
+        if (updErr) throw updErr;
+      }
       toast.success("Layout enviado.");
     } catch (e: any) {
       toast.error(e.message ?? "Falha no upload");
     } finally { setUploading(false); }
   }
 
-  async function abrirLayout(path: string) {
-    const { abrirLayoutPDF } = await import("./shared");
-    abrirLayoutPDF(path);
+  async function baixarLayout(path: string) {
+    const { baixarLayoutPDF } = await import("./shared");
+    baixarLayoutPDF(path);
   }
 
 
