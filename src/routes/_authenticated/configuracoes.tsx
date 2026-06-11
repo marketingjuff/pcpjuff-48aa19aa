@@ -159,12 +159,14 @@ function UsuariosTab() {
   const listFn = useServerFn(listUsers);
   const createFn = useServerFn(createUserAccount);
   const updateFn = useServerFn(updateUserRole);
+  const renameFn = useServerFn(updateUserName);
   const deleteFn = useServerFn(deleteUserAccount);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
   const [role, setRole] = useState<AppRole>("gestor");
+  const [editingName, setEditingName] = useState<{ id: string; nome: string } | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -186,6 +188,16 @@ function UsuariosTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast.success("Papel atualizado.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const rename = useMutation({
+    mutationFn: (v: { userId: string; nome: string }) => renameFn({ data: v }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      setEditingName(null);
+      toast.success("Nome atualizado.");
     },
     onError: (e: any) => toast.error(e.message),
   });
