@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
   SIM_NAO, STATUS_ARTE_OPCOES, tipoIncluiDTF, tipoIncluiSilk,
-  calcularEtapaAtual,
+  calcularEtapaAtual, visivelEmArte, arteCompleta, arteAlgumPreenchido, statusEtapa,
 } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,10 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, ExternalLink } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner, EtapaBadge } from "./shared";
 import { formatDateBR } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
 
 interface Props {
   pedidos: Pedido[];
@@ -159,37 +160,42 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Orçamento","Pedido","Tipo","Status Arte","Frete","Tempo Frete","UF","Entrega","Etapa"].map((h) => (
+                {["Status","Orçamento","Pedido","Tipo","Status Arte","Frete","UF","Entrega","Etapa"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {pedidos.map((p) => {
-                const { etapa } = calcularEtapaAtual(p);
-                return (
-                  <tr key={p.id}
-                    onClick={() => onSelect(p.id)}
-                    className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
-                    <td className="px-3 py-2 font-medium">{p.orcamento}</td>
-                    <td className="px-3 py-2">{p.pedido_olist}</td>
-                    <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
-                    <td className="px-3 py-2">{p.status_arte ?? "—"}</td>
-                    <td className="px-3 py-2">{p.frete ?? "—"}</td>
-                    <td className="px-3 py-2">{p.tempo_frete ?? "—"}</td>
-                    <td className="px-3 py-2">{p.uf_entrega ?? "—"}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
-                    <td className="px-3 py-2 text-xs">{etapa}</td>
-                  </tr>
-                );
-              })}
-              {pedidos.length === 0 && (
-                <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido.</td></tr>
-              )}
+              {(() => {
+                const visiveis = pedidos.filter((p) => visivelEmArte(p) && !p.finalizado_em);
+                if (visiveis.length === 0) {
+                  return <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido com Dados In completos.</td></tr>;
+                }
+                return visiveis.map((p) => {
+                  const { etapa } = calcularEtapaAtual(p);
+                  const st = statusEtapa(arteCompleta(p), arteAlgumPreenchido(p));
+                  return (
+                    <tr key={p.id}
+                      onClick={() => onSelect(p.id)}
+                      className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                      <td className="px-3 py-2"><EtapaBadge status={st} labels={{ pendente: "Arte Pendente", andamento: "Arte em Andamento", concluido: "Arte Concluída" }} /></td>
+                      <td className="px-3 py-2 font-medium">{p.orcamento}</td>
+                      <td className="px-3 py-2">{p.pedido_olist}</td>
+                      <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                      <td className="px-3 py-2">{p.status_arte ?? "—"}</td>
+                      <td className="px-3 py-2">{p.frete ?? "—"}</td>
+                      <td className="px-3 py-2">{p.uf_entrega ?? "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
+                      <td className="px-3 py-2 text-xs">{etapa}</td>
+                    </tr>
+                  );
+                });
+              })()}
             </tbody>
           </table>
         </CardContent>
       </Card>
+
     </div>
   );
 }
