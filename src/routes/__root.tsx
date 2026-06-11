@@ -81,10 +81,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "PCP Juff — Controle de Produção" },
       { name: "description", content: "Sistema PCP Juff: Dados In, Arte, DTF, Silk, Acabamento e Finalizados." },
-      { property: "og:title", content: "PCP Juff" },
-      { property: "og:description", content: "Controle de produção Juff." },
+      { property: "og:title", content: "PCP Juff — Controle de Produção" },
+      { property: "og:description", content: "Sistema PCP Juff: Dados In, Arte, DTF, Silk, Acabamento e Finalizados." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "PCP Juff — Controle de Produção" },
+      { name: "twitter:description", content: "Sistema PCP Juff: Dados In, Arte, DTF, Silk, Acabamento e Finalizados." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/L0OZWy83Njawch35Tb7CRogLoLg2/social-images/social-1781221246409-logoazuloficial.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/L0OZWy83Njawch35Tb7CRogLoLg2/social-images/social-1781221246409-logoazuloficial.webp" },
     ],
     links: [
       {
