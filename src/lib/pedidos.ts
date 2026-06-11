@@ -124,3 +124,70 @@ export function diasAte(date: string | null | undefined): number | null {
   const d = new Date(date + "T00:00:00");
   return Math.round((d.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
 }
+
+// ---------- Helpers de completude por etapa ----------
+
+function notEmpty(v: any) {
+  return v !== null && v !== undefined && v !== "";
+}
+
+export function dadosInCompletos(p: Pedido): boolean {
+  return (
+    notEmpty(p.pedido_olist) && notEmpty(p.orcamento) && notEmpty(p.qtd) &&
+    notEmpty(p.vendedor) && notEmpty(p.frete) && notEmpty(p.tempo_frete) &&
+    notEmpty(p.tipo_estampa) && notEmpty(p.entrada_pedido) && notEmpty(p.uf_entrega)
+  );
+}
+
+export function arteCompleta(p: Pedido): boolean {
+  if (p.status_arte !== "Arte Finalizada") return false;
+  if (tipoIncluiDTF(p.tipo_estampa) && (p.dtf_impresso !== "Sim" || !notEmpty(p.dtf_executado))) return false;
+  if (tipoIncluiSilk(p.tipo_estampa) && (p.fotolito_impresso !== "Sim" || !notEmpty(p.fotolito_executado))) return false;
+  if (p.necessita_vetorizacao && !p.vetorizacao_executada) return false;
+  return true;
+}
+export function arteAlgumPreenchido(p: Pedido): boolean {
+  return notEmpty(p.status_arte) || notEmpty(p.dtf_impresso) || notEmpty(p.fotolito_impresso) ||
+    notEmpty(p.dtf_executado) || notEmpty(p.fotolito_executado) || notEmpty(p.arte_observacao) ||
+    !!p.vetorizacao_executada;
+}
+
+export function dtfCompleto(p: Pedido): boolean {
+  return p.dtf_estampado === "Sim" && notEmpty(p.dtf_data_executada) && notEmpty(p.quem_bateu_dtf);
+}
+export function dtfAlgumPreenchido(p: Pedido): boolean {
+  return notEmpty(p.dtf_estampado) || notEmpty(p.dtf_data_executada) || notEmpty(p.quem_bateu_dtf) || notEmpty(p.dtf_observacao);
+}
+
+export function silkCompleto(p: Pedido): boolean {
+  return p.tela_gravada === "Sim" && p.silk_feito === "Sim" && notEmpty(p.silk_data_executada) && notEmpty(p.quem_bateu_silk);
+}
+export function silkAlgumPreenchido(p: Pedido): boolean {
+  return notEmpty(p.tela_gravada) || notEmpty(p.silk_feito) || notEmpty(p.silk_data_executada) || notEmpty(p.quem_bateu_silk) || notEmpty(p.silk_observacao);
+}
+
+export function acabamentoCompleto(p: Pedido): boolean {
+  return p.embalado === "Sim" && notEmpty(p.data_saida_juff) && notEmpty(p.responsavel_acabamento) && !!p.finalizado_em;
+}
+export function acabamentoAlgumPreenchido(p: Pedido): boolean {
+  return notEmpty(p.embalado) || notEmpty(p.data_saida_juff) || notEmpty(p.responsavel_acabamento) || notEmpty((p as any).responsavel_conferencia);
+}
+
+// Visibilidade em cascata
+export function visivelEmArte(p: Pedido): boolean { return dadosInCompletos(p); }
+export function visivelEmDTF(p: Pedido): boolean { return tipoIncluiDTF(p.tipo_estampa) && arteCompleta(p); }
+export function visivelEmSilk(p: Pedido): boolean { return tipoIncluiSilk(p.tipo_estampa) && arteCompleta(p); }
+export function visivelEmAcabamento(p: Pedido): boolean {
+  if (!arteCompleta(p)) return false;
+  if (tipoIncluiDTF(p.tipo_estampa) && !dtfCompleto(p)) return false;
+  if (tipoIncluiSilk(p.tipo_estampa) && !silkCompleto(p)) return false;
+  return true;
+}
+
+export type EtapaStatus = "pendente" | "andamento" | "concluido";
+export function statusEtapa(completo: boolean, algumPreenchido: boolean): EtapaStatus {
+  if (completo) return "concluido";
+  if (algumPreenchido) return "andamento";
+  return "pendente";
+}
+

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, RESPONSAVEIS_ACABAMENTO, modeloIncluiDTF, modeloIncluiSilk } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, RESPONSAVEIS_ACABAMENTO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento, acabamentoCompleto, acabamentoAlgumPreenchido, statusEtapa } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, CheckCircle2, Info } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner, EtapaBadge } from "./shared";
 import { formatDateBR } from "@/lib/format";
+
 
 interface Props {
   pedidos: Pedido[];
@@ -22,7 +23,7 @@ interface Props {
 
 export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
-  useEffect(() => { if (selected) setForm(selected); }, [selected]);
+  useEffect(() => { if (selected) setForm(selected); }, [selected?.id]);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
   function setEmbalado(v: string) {
@@ -63,12 +64,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
 
   const dashboardPedidos = useMemo(() => pedidos.filter((p) => {
     if (p.finalizado_em) return false;
+    if (!visivelEmAcabamento(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
     if (fDtf !== "todos" && (p.dtf_estampado ?? "") !== fDtf) return false;
     if (fSilk !== "todos" && (p.silk_feito ?? "") !== fSilk) return false;
     return true;
   }), [pedidos, fOrc, fPed, fDtf, fSilk]);
+
 
   return (
     <div className="space-y-6">
@@ -158,28 +161,33 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Orçamento","Pedido","Tipo","DTF Est.","Silk Est.","Embalado","Saída Juff","Data Entrega","Responsável"].map((h) => (
+                  {["Status","Orçamento","Pedido","Tipo","DTF Est.","Silk Est.","Embalado","Saída Juff","Data Entrega","Responsável"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {dashboardPedidos.map((p) => (
-                  <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
-                    <td className="px-3 py-2 font-medium">{p.orcamento}</td>
-                    <td className="px-3 py-2">{p.pedido_olist}</td>
-                    <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
-                    <td className="px-3 py-2">{modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"}</td>
-                    <td className="px-3 py-2">{modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"}</td>
-                    <td className="px-3 py-2">{p.embalado ?? "—"}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
-                    <td className="px-3 py-2">{p.responsavel_acabamento ?? "—"}</td>
-                  </tr>
-                ))}
+                {dashboardPedidos.map((p) => {
+                  const st = statusEtapa(acabamentoCompleto(p), acabamentoAlgumPreenchido(p));
+                  return (
+                    <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                      <td className="px-3 py-2"><EtapaBadge status={st} labels={{ pendente: "Acabamento Pendente", andamento: "Acabamento em Andamento", concluido: "Pronto para Expedir" }} /></td>
+                      <td className="px-3 py-2 font-medium">{p.orcamento}</td>
+                      <td className="px-3 py-2">{p.pedido_olist}</td>
+                      <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                      <td className="px-3 py-2">{modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"}</td>
+                      <td className="px-3 py-2">{modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"}</td>
+                      <td className="px-3 py-2">{p.embalado ?? "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
+                      <td className="px-3 py-2">{p.responsavel_acabamento ?? "—"}</td>
+                    </tr>
+                  );
+                })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido em acabamento.</td></tr>
+                  <tr><td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido pronto para acabamento (depende de Arte/DTF/Silk).</td></tr>
                 )}
+
               </tbody>
             </table>
           </div>
