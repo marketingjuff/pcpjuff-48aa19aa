@@ -35,7 +35,7 @@ function AppHome() {
         .select("*")
         .order("entrada_pedido", { ascending: false });
       if (error) throw error;
-      return data as Pedido[];
+      return data as unknown as Pedido[];
     },
   });
 

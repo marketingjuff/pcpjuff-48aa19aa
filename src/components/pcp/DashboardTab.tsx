@@ -26,8 +26,8 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
   const filtrados = useMemo(() => {
     return pedidos.filter((p) => {
       if (vendedor !== "todos" && p.vendedor !== vendedor) return false;
-      if (status !== "todos" && p.status !== status) return false;
-      if (modelo !== "todos" && p.modelo_estampa !== modelo) return false;
+      if (status !== "todos" && p.status_geral !== status) return false;
+      if (modelo !== "todos" && p.tipo_estampa !== modelo) return false;
       if (search && !`${p.pedido_olist} ${p.orcamento}`.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
@@ -35,8 +35,8 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
 
   const stats = useMemo(() => {
     const total = pedidos.length;
-    const abertos = pedidos.filter((p) => p.status === "Aberto").length;
-    const completos = pedidos.filter((p) => p.status === "Completo").length;
+    const abertos = pedidos.filter((p) => p.status_geral === "Aberto").length;
+    const completos = pedidos.filter((p) => p.status_geral === "Completo").length;
     const atrasados = pedidos.filter((p) => statusPrazo(p) === "atrasado" && p.embalado !== "Sim").length;
     return { total, abertos, completos, atrasados };
   }, [pedidos]);
@@ -112,9 +112,9 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                         <TableCell className="max-w-[200px] truncate">{p.orcamento}</TableCell>
                         <TableCell>{p.qtd}</TableCell>
                         <TableCell>{p.vendedor}</TableCell>
-                        <TableCell><Badge variant="outline">{p.modelo_estampa}</Badge></TableCell>
+                        <TableCell><Badge variant="outline">{p.tipo_estampa}</Badge></TableCell>
                         <TableCell>
-                          <Badge variant={p.status === "Completo" ? "default" : "secondary"}>{p.status}</Badge>
+                          <Badge variant={p.status_geral === "Completo" ? "default" : "secondary"}>{p.status_geral}</Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
