@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { DateInputBR } from "@/components/ui/date-input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -142,7 +143,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                 <SelectItem value="finalizados">Finalizados</SelectItem>
               </SelectContent>
             </Select>
-            <Input type="date" value={dataEntrega} onChange={(e) => setDataEntrega(e.target.value)} placeholder="Data Entrega" />
+            <DateInputBR value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             <Input placeholder="Filtrar por frete..." value={frete} onChange={(e) => setFrete(e.target.value)} />

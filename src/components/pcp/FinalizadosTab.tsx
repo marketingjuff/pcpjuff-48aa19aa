@@ -3,6 +3,7 @@ import type { Pedido } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { DateInputBR } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RotateCcw } from "lucide-react";
@@ -52,8 +53,8 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
           </Select>
           {periodo === "custom" && (
             <>
-              <Input type="date" value={de} onChange={(e) => setDe(e.target.value)} />
-              <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} />
+              <DateInputBR value={de} onChange={(v) => setDe(v ?? "")} />
+              <DateInputBR value={ate} onChange={(v) => setAte(v ?? "")} />
             </>
           )}
         </div>

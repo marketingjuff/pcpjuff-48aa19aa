@@ -6,6 +6,7 @@ import {
 } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DateInputBR } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -157,10 +158,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               </Select>
             </Field>
             <Field label="Entrada do pedido *">
-              <Input type="date" value={form.entrada_pedido ?? ""} onChange={(e) => set("entrada_pedido", e.target.value)} required />
+              <DateInputBR value={form.entrada_pedido} onChange={(v) => set("entrada_pedido", v ?? "")} required />
             </Field>
             <Field label="Data de Entrega">
-              <Input type="date" value={form.data_entrega ?? ""} onChange={(e) => set("data_entrega", e.target.value || null)} />
+              <DateInputBR value={form.data_entrega} onChange={(v) => set("data_entrega", v)} />
             </Field>
             <Field label="É necessário vetorização?">
               <Select value={form.necessita_vetorizacao ? "Sim" : "Não"} onValueChange={(v) => set("necessita_vetorizacao", v === "Sim")}>
@@ -211,16 +212,16 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               </Select>
             </Field>
             <Field label="Arte (limite)">
-              <Input type="date" value={form.arte_data ?? ""} onChange={(e) => set("arte_data", e.target.value || null)} />
+              <DateInputBR value={form.arte_data} onChange={(v) => set("arte_data", v)} />
             </Field>
             <Field label="Início Estamparia">
-              <Input type="date" value={form.inicio_estamparia ?? ""} onChange={(e) => set("inicio_estamparia", e.target.value || null)} />
+              <DateInputBR value={form.inicio_estamparia} onChange={(v) => set("inicio_estamparia", v)} />
             </Field>
             <Field label="Término Estamparia">
-              <Input type="date" value={form.termino_estamparia ?? ""} onChange={(e) => set("termino_estamparia", e.target.value || null)} />
+              <DateInputBR value={form.termino_estamparia} onChange={(v) => set("termino_estamparia", v)} />
             </Field>
             <Field label="Acabamento">
-              <Input type="date" value={form.acabamento_data ?? ""} onChange={(e) => set("acabamento_data", e.target.value || null)} />
+              <DateInputBR value={form.acabamento_data} onChange={(v) => set("acabamento_data", v)} />
             </Field>
             <Field label="Saída Juff (calculado)">
               <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{saidaJuffCalc ? formatDateBR(saidaJuffCalc) : "—"}</div>
