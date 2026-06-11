@@ -48,6 +48,11 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
     onSave(payload);
   }
 
+  async function baixarLayout(path: string) {
+    const { baixarLayoutPDF } = await import("./shared");
+    baixarLayoutPDF(path);
+  }
+
   const atrasado = selected?.saida_juff && form.data_saida_juff && new Date(form.data_saida_juff) > new Date(selected.saida_juff);
 
   const status = form.embalado === "Sim" && atrasado
