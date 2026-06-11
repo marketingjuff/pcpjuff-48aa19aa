@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
   VENDEDORES, STATUS_GERAL_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS,
+  calcularEtapaAtual,
 } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -128,6 +129,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           </div>
         </CardContent>
       </Card>
+
+      {selected && <PedidoStatusInline pedido={selected} />}
+
+
 
       <form onSubmit={handleSave} className="grid gap-6 lg:grid-cols-2">
         {/* Vendedor */}
@@ -288,6 +293,29 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     </div>
   );
 }
+
+function PedidoStatusInline({ pedido }: { pedido: Pedido }) {
+  const { etapa, cor } = calcularEtapaAtual(pedido);
+  const aguardando = cor === "yellow" || cor === "blue" || cor === "gray";
+  const finalizado = !!pedido.finalizado_em;
+  const bg = finalizado
+    ? "bg-success/10 border-success/30 text-success"
+    : aguardando
+    ? "bg-warning/15 border-warning/30 text-warning-foreground"
+    : "bg-info/10 border-info/30 text-info";
+  const label = finalizado
+    ? "Pedido finalizado"
+    : aguardando
+    ? `Aguardando etapa: ${etapa}`
+    : `Etapa atual: ${etapa}`;
+  return (
+    <div className={`flex items-center gap-2 p-3 rounded-md border text-sm ${bg}`}>
+      <span className="font-medium">{label}</span>
+    </div>
+  );
+}
+
+
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
