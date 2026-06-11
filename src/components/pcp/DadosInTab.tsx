@@ -406,11 +406,12 @@ function PedidoStatusInline({ pedido }: { pedido: Pedido }) {
 
 
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, invalid, children }: { label: string; invalid?: boolean; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <Label className="text-xs font-medium">{label}</Label>
+    <div className={`space-y-1.5 ${invalid ? "rounded-md ring-2 ring-destructive/60 p-1 -m-1" : ""}`}>
+      <Label className={`text-xs font-medium ${invalid ? "text-destructive" : ""}`}>{label}{invalid ? " — obrigatório" : ""}</Label>
       {children}
     </div>
   );
 }
+
