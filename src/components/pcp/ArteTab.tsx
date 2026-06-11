@@ -155,7 +155,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Etapa","Orçamento","Pedido","Tipo","Status Arte","Frete","UF","Entrega"].map((h) => (
+                {["Etapa","Orçamento","Pedido","Tipo","Status Arte","Frete","UF","Saída Juff","Data Entrega"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
