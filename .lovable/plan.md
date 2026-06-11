@@ -1,104 +1,44 @@
-## Objetivo
+## Sugestões de feriados (nacionais + SP estado + SP capital)
 
-1. Tornar editáveis as listas de Vendedores, Operadores DTF, Operadores Silk e Responsáveis pelo Acabamento via Painel de Configurações.
-2. Bloquear os dropdowns de responsável enquanto a data vinculada estiver vazia, e limpar o valor automaticamente ao reverter (apagar a data).
-3. Garantir que o campo Vendedor nunca venha pré-selecionado, mesmo após salvar e depois reverter.
+Adicionar uma seção de **Sugestões** dentro da aba "Feriados" em Configurações, mantendo a adição manual exatamente como está hoje.
 
----
+### Fontes
 
-## 1. Banco — nova tabela `app_lists`
+- **Nacionais**: BrasilAPI — `https://brasilapi.com.br/api/feriados/v1/{ano}` (gratuita, sem chave). Busca para o **ano atual + 5 próximos** (ex.: 2026, 2027, 2028,2029,2030,2031).
+- **Estado de SP**: lista fixa no código (data móvel calculada quando necessário):
+  - 09/jul — Revolução Constitucionalista de 1932
+- **Capital SP**: lista fixa no código:
+  - 25/jan — Aniversário de São Paulo
+  - Sexta-feira Santa (móvel — calculada a partir da Páscoa)
+  - Corpus Christi (móvel — calculada a partir da Páscoa)
+  - 20/nov — Consciência Negra (já é nacional desde 2024, será deduplicado)
 
-Migration única (com GRANTs + RLS):
+Datas móveis são calculadas com algoritmo de Gauss para a Páscoa — sem API extra.
 
-```sql
-CREATE TABLE public.app_lists (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  kind text NOT NULL CHECK (kind IN ('vendedor','dtf','silk','acabamento')),
-  nome text NOT NULL,
-  ordem int NOT NULL DEFAULT 0,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (kind, nome)
-);
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.app_lists TO authenticated;
-GRANT ALL ON public.app_lists TO service_role;
-ALTER TABLE public.app_lists ENABLE ROW LEVEL SECURITY;
+### UI dentro da aba Feriados
 
--- Todos os autenticados leem (dropdowns)
-CREATE POLICY app_lists_select_auth ON public.app_lists
-  FOR SELECT TO authenticated USING (true);
+1. Formulário manual atual **permanece igual** no topo.
+2. Tabela de feriados cadastrados **permanece igual** abaixo.
+3. Nova seção "Sugestões" entre o formulário e a tabela, com 3 grupos colapsáveis:
+  - Nacionais (BrasilAPI)
+  - Estado de São Paulo
+  - Capital de São Paulo
+4. Cada item da sugestão mostra **data + descrição** e:
+  - Botão "Adicionar" individual (some/fica desabilitado quando a data já existe na tabela).
+  - Botão "Adicionar todos os pendentes" no topo de cada grupo (insere em lote os que ainda não estão cadastrados).
+5. Itens já cadastrados aparecem riscados/com badge "já adicionado".
+6. Filtro por ano (chips: 2026 / 2027 / 2028) no topo da seção de sugestões.
 
--- Apenas admin/gestor escrevem
-CREATE POLICY app_lists_write_admin ON public.app_lists
-  FOR ALL TO authenticated
-  USING (public.has_role(auth.uid(),'admin') OR public.has_role(auth.uid(),'gestor'))
-  WITH CHECK (public.has_role(auth.uid(),'admin') OR public.has_role(auth.uid(),'gestor'));
+### Comportamento técnico
 
-CREATE TRIGGER app_lists_updated_at BEFORE UPDATE ON public.app_lists
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-```
+- Fetch direto do navegador para BrasilAPI via `useQuery` (sem server function — endpoint público, CORS liberado).
+- Estado de erro: se a BrasilAPI falhar, mostrar aviso discreto "Não foi possível carregar feriados nacionais" e manter as listas SP (que são offline).
+- Inserção reaproveita o mesmo `INSERT` em `feriados` já usado pelo formulário manual.
+- Deduplicação por `data` (única chave já existente na tabela hoje, comparada após carregar `feriados`).
 
-Seed com os valores hard-coded atuais (Wander/Mirela/Gabriel; Jefferson/Sarah/Rubens; Gleisson/Marcelo; Vanessa/Patrícia/Juliana) + "Outros".
+### Arquivos afetados
 
----
+- `src/routes/_authenticated/configuracoes.tsx` — adicionar `SugestoesFeriados` dentro de `FeriadosTab`.
+- `src/lib/feriados-sugestoes.ts` (novo) — listas estáticas SP + cálculo de Páscoa/Sexta Santa/Corpus Christi + fetch BrasilAPI.
 
-## 2. Hook `useAppList`
-
-Novo `src/lib/app-lists.ts`:
-- `useAppList(kind)` → `useQuery(["app-lists", kind])` lendo `app_lists` ordenado por `ordem, nome`. Retorna `string[]` de nomes.
-- Helpers `addItem`, `renameItem`, `deleteItem` (mutations) com `invalidateQueries`.
-
----
-
-## 3. Configurações — nova aba "Listas"
-
-Em `src/routes/_authenticated/configuracoes.tsx`:
-- Adicionar `<TabsTrigger value="listas">Listas</TabsTrigger>` (visível a admin e gestor).
-- Novo componente `ListasTab` que renderiza 4 cards (Vendedores, Operadores DTF, Operadores Silk, Responsáveis pelo Acabamento). Cada card: input + botão Adicionar, tabela com nome editável inline e botão excluir. Confirmação ao excluir.
-
----
-
-## 4. Substituir constantes hard-coded pelos hooks
-
-Arquivos afetados:
-- `DadosInTab.tsx`: dropdown Vendedor consome `useAppList("vendedor")`.
-- `DTFTab.tsx`: "Quem bateu o DTF?" consome `useAppList("dtf")`.
-- `SilkTab.tsx`: "Quem bateu o Silk?" consome `useAppList("silk")`.
-- `AcabamentoTab.tsx`: "Responsável" consome `useAppList("acabamento")`.
-- `DashboardTab.tsx` (filtro Vendedor): também consome `useAppList("vendedor")`.
-
-As constantes em `pedidos.ts` permanecem apenas para retrocompat de outros pontos não-dropdown (ou são removidas se não usadas).
-
----
-
-## 5. Bloqueio + reversão automática dos dropdowns de responsável
-
-Regra: o select de responsável é `disabled` quando a data vinculada está vazia, e ao limpar a data o valor do responsável vai a `null` no mesmo `set`.
-
-- **DTFTab**: helper `set("dtf_data_executada", v)` passa a também zerar `quem_bateu_dtf` quando `v` for vazio. `Select` recebe `disabled={!form.dtf_data_executada}`.
-- **SilkTab**: idem com `silk_data_executada` → `quem_bateu_silk`.
-- **AcabamentoTab**: trocar o gate atual (`embalado === "Sim"`) por `acabamento_data`. Ao limpar `acabamento_data`, zerar `responsavel_acabamento`. `Select` recebe `disabled={!form.acabamento_data}`.
-
-Isso garante o comportamento de reversão pedido (campo fica em branco se a data for apagada).
-
----
-
-## 6. Vendedor — nunca pré-selecionar
-
-Em `DadosInTab.tsx`:
-- `initialForm` remove `vendedor: "Wander"` (passa a `vendedor: null`).
-- O `<Select value={form.vendedor ?? ""} ...>` já mostra o placeholder "Selecione..." quando vazio — confirmar `SelectValue placeholder="Selecione..."`.
-- Ao reverter (limpar) um pedido salvo, o form recebe `null` e o placeholder reaparece — nenhum fallback para o primeiro item da lista.
-
----
-
-## Arquivos afetados
-
-- migration nova (app_lists + seed)
-- `src/lib/app-lists.ts` (novo)
-- `src/routes/_authenticated/configuracoes.tsx`
-- `src/components/pcp/DadosInTab.tsx`
-- `src/components/pcp/DTFTab.tsx`
-- `src/components/pcp/SilkTab.tsx`
-- `src/components/pcp/AcabamentoTab.tsx`
-- `src/components/pcp/DashboardTab.tsx`
+Nenhuma alteração de schema, nenhuma migration.
