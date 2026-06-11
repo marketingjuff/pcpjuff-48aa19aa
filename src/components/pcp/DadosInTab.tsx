@@ -288,10 +288,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                     <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.inicio_estamparia)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.termino_estamparia)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.acabamento_data)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
                     <td className="px-3 py-2">{p.tempo_producao ?? "—"}</td>
                     <td className="px-3 py-2 tabular-nums">{dias ?? "—"}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
                   </tr>
                 );
               })}
