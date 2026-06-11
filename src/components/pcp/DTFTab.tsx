@@ -24,13 +24,27 @@ interface Props {
 
 export function DTFTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
-  useEffect(() => { if (selected) setForm(selected); else setForm({}); }, [selected?.id]);
+  const { isDirty } = useDirtyForm();
+  useEffect(() => {
+    if (!selected) { setForm({}); return; }
+    if (!isDirty) setForm(selected);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
   useDirtyTracker(form, selected ?? {}, !!selected);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
   function setEstampado(v: string) {
     setForm((f) => ({ ...f, dtf_estampado: v, ...(v !== "Sim" ? { dtf_data_executada: null } : {}) }));
   }
-  function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
+  function handleSave() {
+    if (!selected) return;
+    onSave({
+      id: selected.id,
+      dtf_estampado: form.dtf_estampado ?? null,
+      dtf_data_executada: form.dtf_data_executada ?? null,
+      quem_bateu_dtf: form.quem_bateu_dtf ?? null,
+      dtf_observacao: form.dtf_observacao ?? null,
+    });
+  }
   useRegisterSave(handleSave);
 
   async function baixarLayout(path: string) {
