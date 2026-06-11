@@ -171,15 +171,16 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                   <TableHead>Tipo</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[140px]">% Conclusão</TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={toggleSortEntrega}>
-                    <span className="inline-flex items-center gap-1">Data Entrega <ArrowUpDown className="h-3 w-3" /></span>
-                  </TableHead>
                   <TableHead>Frete</TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={toggleSortDias}>
                     <span className="inline-flex items-center gap-1">Dias <ArrowUpDown className="h-3 w-3" /></span>
                   </TableHead>
                   <TableHead>Prazo</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
+                  <TableHead>Saída Juff</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={toggleSortEntrega}>
+                    <span className="inline-flex items-center gap-1">Data Entrega <ArrowUpDown className="h-3 w-3" /></span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
