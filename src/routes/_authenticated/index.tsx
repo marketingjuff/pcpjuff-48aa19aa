@@ -153,11 +153,11 @@ function AppHomeInner() {
           </div>
           <div className="flex items-center gap-2">
             {isAdmin && (
-              <Link to="/configuracoes">
-                <Button variant="ghost" size="sm"><Settings className="h-4 w-4 mr-1" /> Configurações</Button>
-              </Link>
+              <Button variant="ghost" size="sm" onClick={() => { if (requestSettings()) navigate({ to: "/configuracoes" }); }}>
+                <Settings className="h-4 w-4 mr-1" /> Configurações
+              </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
+            <Button variant="ghost" size="sm" onClick={requestLogout}>
               <LogOut className="h-4 w-4 mr-1" /> Sair
             </Button>
           </div>
@@ -165,7 +165,7 @@ function AppHomeInner() {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        <Tabs value={tab} onValueChange={setTab}>
+        <Tabs value={tab} onValueChange={requestTab}>
           <TabsList className="grid w-full grid-cols-7 mb-6">
             <TabsTrigger value="dashboard">Dashboard Master</TabsTrigger>
             <TabsTrigger value="dados">Dados In</TabsTrigger>
