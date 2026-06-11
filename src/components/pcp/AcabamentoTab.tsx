@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, RESPONSAVEIS_ACABAMENTO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento, acabamentoCompleto, acabamentoAlgumPreenchido, statusEtapa } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, RESPONSAVEIS_ACABAMENTO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, AlertTriangle, CheckCircle2, Info, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner, EtapaBadge } from "./shared";
+import { Save, CheckCircle2, Download } from "lucide-react";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
 import { formatDateBR } from "@/lib/format";
 
 
@@ -87,15 +87,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
             <Badge variant="outline" className={status.color}>{status.label}</Badge>
           </CardHeader>
           <CardContent className="space-y-6">
-            <EtapaStatusBanner
-              pendencias={[
-                selected.status_arte !== "Arte Finalizada" && "Arte ainda não foi finalizada",
-                temDTF && !dtfOk && "Aguardando DTF",
-                temSilk && !silkOk && "Aguardando Silk Screen",
-              ].filter(Boolean) as string[]}
-              atrasado={!!atrasado}
-              atrasadoMsg="Saída ocorrida após o prazo previsto."
-            />
+            <EtapaTopoBanner pedido={selected} tab="acabamento" />
             {podeFinalizar && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-success/10 text-success text-sm border border-success/30">
                 <CheckCircle2 className="h-4 w-4" /> Ao salvar, este pedido será marcado como Finalizado.
@@ -177,17 +169,16 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Status","Orçamento","Pedido","Tipo","DTF Est.","Silk Est.","Embalado","Saída Juff","Data Entrega","Responsável"].map((h) => (
+                  {["Etapa","Orçamento","Pedido","Tipo","DTF Est.","Silk Est.","Embalado","Saída Juff","Data Entrega","Responsável"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {dashboardPedidos.map((p) => {
-                  const st = statusEtapa(acabamentoCompleto(p), acabamentoAlgumPreenchido(p));
                   return (
                     <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
-                      <td className="px-3 py-2"><EtapaBadge status={st} labels={{ pendente: "Acabamento Pendente", andamento: "Acabamento em Andamento", concluido: "Pronto para Expedir" }} /></td>
+                      <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
                       <td className="px-3 py-2 font-medium">{p.orcamento}</td>
                       <td className="px-3 py-2">{p.pedido_olist}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
@@ -201,7 +192,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
                   );
                 })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido pronto para acabamento (depende de Arte/DTF/Silk).</td></tr>
+                  <tr><td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido pronto para acabamento.</td></tr>
                 )}
 
               </tbody>
