@@ -108,7 +108,7 @@ function FeriadosTab() {
       <div className="flex gap-2 items-end">
         <div>
           <Label>Data</Label>
-          <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
+          <DateInputBR value={data} onChange={(v) => setData(v ?? "")} />
         </div>
         <div className="flex-1">
           <Label>Descrição</Label>
