@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, AlertTriangle, Info } from "lucide-react";
+import { Save, AlertTriangle, Info, Download } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner, EtapaBadge } from "./shared";
 
 import { formatDateBR } from "@/lib/format";
@@ -29,6 +29,11 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
     setForm((f) => ({ ...f, silk_feito: v, ...(v !== "Sim" ? { silk_data_executada: null } : {}) }));
   }
   function handleSave() { if (!selected) return; onSave({ ...form, id: selected.id }); }
+
+  async function baixarLayout(path: string) {
+    const { baixarLayoutPDF } = await import("./shared");
+    baixarLayoutPDF(path);
+  }
 
   const atrasado = selected?.termino_estamparia && form.silk_data_executada &&
     new Date(form.silk_data_executada) > new Date(selected.termino_estamparia);
@@ -88,6 +93,14 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
                 <ReadOnlyField label="QTD" value={selected.qtd} />
                 <ReadOnlyField label="Status" value={selected.status_geral} />
                 <ReadOnlyField label="Fotolito Impresso? (Arte)" value={selected.fotolito_impresso ?? "Pendente"} />
+                <div className="space-y-1">
+                  <div className="text-xs font-medium text-muted-foreground">Layout</div>
+                  {selected.layout_url ? (
+                    <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                      <Download className="h-4 w-4 mr-1" /> Baixar layout
+                    </Button>
+                  ) : <div className="text-sm text-muted-foreground">Sem layout</div>}
+                </div>
                 <ReadOnlyField label="Início estamparia" value={formatDateBR(selected.inicio_estamparia)} />
                 <ReadOnlyField label="Limite estamparia" value={formatDateBR(selected.termino_estamparia)} />
                 <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />

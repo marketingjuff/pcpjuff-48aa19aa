@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, AlertTriangle, CheckCircle2, Info } from "lucide-react";
+import { Save, AlertTriangle, CheckCircle2, Info, Download } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaStatusBanner, EtapaBadge } from "./shared";
 import { formatDateBR } from "@/lib/format";
 
@@ -46,6 +46,11 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
     if (podeFinalizar && !selected.finalizado_em) payload.finalizado_em = new Date().toISOString();
     if (form.embalado !== "Sim" && selected.finalizado_em) payload.finalizado_em = null;
     onSave(payload);
+  }
+
+  async function baixarLayout(path: string) {
+    const { baixarLayoutPDF } = await import("./shared");
+    baixarLayoutPDF(path);
   }
 
   const atrasado = selected?.saida_juff && form.data_saida_juff && new Date(form.data_saida_juff) > new Date(selected.saida_juff);
@@ -106,6 +111,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: P
               <ReadOnlyField label="Saída Juff (prazo)" value={formatDateBR(selected.saida_juff)} />
               <ReadOnlyField label="DTF Estampado?" value={temDTF ? (selected.dtf_estampado ?? "—") : "N/A"} />
               <ReadOnlyField label="Silk Estampado?" value={temSilk ? (selected.silk_feito ?? "—") : "N/A"} />
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-muted-foreground">Layout</div>
+                {selected.layout_url ? (
+                  <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                    <Download className="h-4 w-4 mr-1" /> Baixar layout
+                  </Button>
+                ) : <div className="text-sm text-muted-foreground">Sem layout</div>}
+              </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
               <FormField label="EMBALADO?">

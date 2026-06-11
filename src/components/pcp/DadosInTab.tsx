@@ -181,7 +181,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                     onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
                   {form.layout_url && (
                     <Button type="button" variant="outline" size="sm" onClick={() => baixarLayout(form.layout_url!)}>
-                      <Download className="h-4 w-4 mr-1" /> Baixar
+                      <Download className="h-4 w-4 mr-1" /> Baixar layout
                     </Button>
                   )}
                 </div>
