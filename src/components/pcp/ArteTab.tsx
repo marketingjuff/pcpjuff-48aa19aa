@@ -164,7 +164,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
               {(() => {
                 const visiveis = pedidos.filter((p) => visivelEmArte(p) && !p.finalizado_em);
                 if (visiveis.length === 0) {
-                  return <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido com Dados In completos.</td></tr>;
+                  return <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido em aberto.</td></tr>;
                 }
                 return visiveis.map((p) => {
                   return (
@@ -178,6 +178,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving }: Props) 
                       <td className="px-3 py-2">{p.status_arte ?? "—"}</td>
                       <td className="px-3 py-2">{p.frete ?? "—"}</td>
                       <td className="px-3 py-2">{p.uf_entrega ?? "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
                     </tr>
                   );
