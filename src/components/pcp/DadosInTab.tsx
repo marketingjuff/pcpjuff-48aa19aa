@@ -135,38 +135,37 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         <Card className="border-l-4 border-l-green-500 bg-green-50/40 dark:bg-green-950/10">
           <CardHeader><CardTitle className="text-base text-green-700 dark:text-green-400">Input do Vendedor</CardTitle></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
-            <Field label="Orçamento *"><Input value={form.orcamento ?? ""} onChange={(e) => set("orcamento", e.target.value)} required /></Field>
             <Field label="Pedido Olist *"><Input value={form.pedido_olist ?? ""} onChange={(e) => set("pedido_olist", e.target.value)} required /></Field>
-            <Field label="QTD peças *"><Input value={form.qtd ?? ""} onChange={(e) => set("qtd", e.target.value)} required /></Field>
+            <Field label="Orçamento Comercial *"><Input value={form.orcamento ?? ""} onChange={(e) => set("orcamento", e.target.value)} required /></Field>
+            <Field label="Quantas peças *"><Input value={form.qtd ?? ""} onChange={(e) => set("qtd", e.target.value)} required /></Field>
             <Field label="Vendedor *">
               <Select value={form.vendedor ?? ""} onValueChange={(v) => set("vendedor", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{VENDEDORES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Tipo de estampa *">
-              <Select value={form.tipo_estampa ?? ""} onValueChange={(v) => set("tipo_estampa", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-              </Select>
-            </Field>
-            <Field label="Data de Entrega">
-              <Input type="date" value={form.data_entrega ?? ""} onChange={(e) => set("data_entrega", e.target.value || null)} />
-            </Field>
-            <Field label="UF de entrega">
+            <Field label="Frete (transportadora)"><Input value={form.frete ?? ""} onChange={(e) => set("frete", e.target.value)} /></Field>
+            <Field label="Tempo de frete (dias úteis)"><Input type="number" min="0" value={form.tempo_frete ?? ""} onChange={(e) => set("tempo_frete", e.target.value)} /></Field>
+            <Field label="UF de Entrega">
               <Select value={form.uf_entrega ?? ""} onValueChange={(v) => set("uf_entrega", v)}>
                 <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
                 <SelectContent>{UFS.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Necessita vetorização?">
+            <Field label="Entrada do pedido *">
+              <Input type="date" value={form.entrada_pedido ?? ""} onChange={(e) => set("entrada_pedido", e.target.value)} required />
+            </Field>
+            <Field label="Data de Entrega">
+              <Input type="date" value={form.data_entrega ?? ""} onChange={(e) => set("data_entrega", e.target.value || null)} />
+            </Field>
+            <Field label="É necessário vetorização?">
               <Select value={form.necessita_vetorizacao ? "Sim" : "Não"} onValueChange={(v) => set("necessita_vetorizacao", v === "Sim")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
             <div className="md:col-span-2">
-              <Field label="Layout (PDF)">
+              <Field label="Layout (PDF até 30MB)">
                 <div className="flex items-center gap-2">
                   <Input type="file" accept="application/pdf" disabled={uploading}
                     onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
@@ -195,16 +194,29 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
           <CardHeader><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
-            <Field label="Frete (transportadora)"><Input value={form.frete ?? ""} onChange={(e) => set("frete", e.target.value)} /></Field>
-            <Field label="Tempo de frete (dias úteis)"><Input type="number" min="0" value={form.tempo_frete ?? ""} onChange={(e) => set("tempo_frete", e.target.value)} /></Field>
             <Field label="Status Geral *">
               <Select value={form.status_geral ?? ""} onValueChange={(v) => set("status_geral", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{STATUS_GERAL_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Entrada do pedido *">
-              <Input type="date" value={form.entrada_pedido ?? ""} onChange={(e) => set("entrada_pedido", e.target.value)} required />
+            <Field label="Tipo de Estampa *">
+              <Select value={form.tipo_estampa ?? ""} onValueChange={(v) => set("tipo_estampa", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+              </Select>
+            </Field>
+            <Field label="Arte (limite)">
+              <Input type="date" value={form.arte_data ?? ""} onChange={(e) => set("arte_data", e.target.value || null)} />
+            </Field>
+            <Field label="Início Estamparia">
+              <Input type="date" value={form.inicio_estamparia ?? ""} onChange={(e) => set("inicio_estamparia", e.target.value || null)} />
+            </Field>
+            <Field label="Término Estamparia">
+              <Input type="date" value={form.termino_estamparia ?? ""} onChange={(e) => set("termino_estamparia", e.target.value || null)} />
+            </Field>
+            <Field label="Acabamento">
+              <Input type="date" value={form.acabamento_data ?? ""} onChange={(e) => set("acabamento_data", e.target.value || null)} />
             </Field>
             <Field label="Saída Juff (calculado)">
               <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{saidaJuffCalc ? formatDateBR(saidaJuffCalc) : "—"}</div>
