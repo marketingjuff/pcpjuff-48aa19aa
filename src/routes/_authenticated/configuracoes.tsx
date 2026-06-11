@@ -19,6 +19,7 @@ import {
   createUserAccount,
   listUsers,
   updateUserRole,
+  updateUserName,
   deleteUserAccount,
 } from "@/lib/admin.functions";
 import { exportBackup, importBackup } from "@/lib/backup.functions";
