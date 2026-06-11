@@ -124,11 +124,11 @@ function AppHomeInner() {
           </div>
           <div className="flex items-center gap-2">
             {isAdmin && (
-              <Button variant="ghost" size="sm" onClick={() => { if (requestSettings()) navigate({ to: "/configuracoes" }); }}>
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes" })}>
                 <Settings className="h-4 w-4 mr-1" /> Configurações
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={requestLogout}>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-1" /> Sair
             </Button>
           </div>
@@ -136,7 +136,7 @@ function AppHomeInner() {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        <Tabs value={tab} onValueChange={requestTab}>
+        <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid w-full grid-cols-7 mb-6">
             <TabsTrigger value="dashboard">Dashboard Master</TabsTrigger>
             <TabsTrigger value="dados">Dados In</TabsTrigger>
@@ -172,20 +172,7 @@ function AppHomeInner() {
 
         </Tabs>
       </main>
-
-      <AlertDialog open={!!pendingNav} onOpenChange={(o) => { if (!o) setPendingNav(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza que deseja sair?</AlertDialogTitle>
-            <AlertDialogDescription>As alterações não foram salvas.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setPendingNav(null)}>Cancelar</Button>
-            <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => performPending(false)}>Não Salvar</Button>
-            <Button className="bg-success text-success-foreground hover:bg-success/90" onClick={() => performPending(true)}>Salvar</Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
+
