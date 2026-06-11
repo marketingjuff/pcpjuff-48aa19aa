@@ -95,6 +95,21 @@ export const updateUserRole = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const updateUserName = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ userId: z.string().uuid(), nome: z.string().trim().min(1).max(120) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+    const { error } = await admin.from("profiles").update({ nome: data.nome }).eq("id", data.userId);
+    if (error) throw new Error(error.message);
+    await admin.auth.admin.updateUserById(data.userId, { user_metadata: { nome: data.nome } });
+    return { ok: true };
+  });
+
 export const deleteUserAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
