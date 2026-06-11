@@ -24,7 +24,8 @@ interface Props {
 
 export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
-  useEffect(() => { if (selected) setForm(selected); }, [selected?.id]);
+  useEffect(() => { if (selected) setForm(selected); else setForm({}); }, [selected?.id]);
+  useDirtyTracker(form, selected ?? {}, !!selected);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
   function setEmbalado(v: string) {
