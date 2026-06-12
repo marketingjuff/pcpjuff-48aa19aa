@@ -1,7 +1,45 @@
 // Tipos auxiliares para tabelas/colunas adicionadas via migration recente.
 // `types.ts` é regenerado automaticamente; até atualizar usamos estes.
 
-export type AppRole = "admin" | "gestor" | "arte" | "dtf" | "silk" | "acabamento";
+export type AppRole = "admin" | "gestor" | "operador";
+
+// Áreas usadas no checkbox de permissões (configurações > usuários).
+// Operador NÃO pode ter "expedicao".
+export type AppArea =
+  | "dados_in_vendedor"
+  | "dados_in_producao"
+  | "arte"
+  | "dtf"
+  | "silk"
+  | "acabamento"
+  | "expedicao";
+
+export const APP_AREAS_GESTOR: AppArea[] = [
+  "dados_in_vendedor",
+  "dados_in_producao",
+  "arte",
+  "dtf",
+  "silk",
+  "acabamento",
+  "expedicao",
+];
+export const APP_AREAS_OPERADOR: AppArea[] = [
+  "dados_in_vendedor",
+  "dados_in_producao",
+  "arte",
+  "dtf",
+  "silk",
+  "acabamento",
+];
+export const APP_AREA_LABEL: Record<AppArea, string> = {
+  dados_in_vendedor: "Dados In — Input de Vendedor",
+  dados_in_producao: "Dados In — Input de Produção",
+  arte: "Arte",
+  dtf: "DTF",
+  silk: "Silk Screen",
+  acabamento: "Acabamento",
+  expedicao: "Expedição",
+};
 
 export type Profile = {
   id: string;
@@ -40,4 +78,16 @@ export type PedidoExtras = {
   status_arte: string | null;
   status_geral: string | null;
   tipo_estampa: string | null;
+
+  // Novos v2
+  forma_pagamento: string | null;
+  nf_emitida: boolean | null;
+  expedicao_entrou_em: string | null;
+  exp_cobranca_pagamento: boolean | null;
+  exp_pagamento: boolean | null;
+  exp_etiqueta: boolean | null;
+  exp_frete_solicitado: boolean | null;
+  exp_despachado: boolean | null;
+  exp_despachado_em: string | null;
+  exp_observacoes: string | null;
 };
