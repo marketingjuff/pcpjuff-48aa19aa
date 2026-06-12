@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
-  STATUS_GERAL_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS,
+  STATUS_GERAL_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS, FORMAS_PAGAMENTO,
   calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk,
 } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
@@ -17,7 +17,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Save, X, Upload, FileText, Download } from "lucide-react";
+import { Plus, Trash2, Save, X, FileText, Download, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
@@ -36,16 +36,17 @@ interface Props {
   active?: boolean;
 }
 
-
 const empty: Partial<Pedido> = {
   pedido_olist: "",
   orcamento: "",
   qtd: null,
   vendedor: null,
   tipo_estampa: "",
-  status_geral: "",
+  status_geral: "aberto",
   entrada_pedido: new Date().toISOString().slice(0, 10),
   necessita_vetorizacao: false,
+  forma_pagamento: null,
+  nf_emitida: null,
 };
 
 export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, saving, active = true }: Props) {
@@ -54,6 +55,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const { feriados } = useFeriados();
   const { isDirty } = useDirtyForm();
   const { names: vendedores } = useAppList("vendedor");
+  const { names: fretes } = useAppList("frete");
 
   useEffect(() => {
     if (!isDirty) setForm(selected ?? empty);
@@ -61,43 +63,41 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }, [selected]);
   useDirtyTracker(form, selected ?? empty, active);
 
-
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
   function setTipoEstampa(v: string) {
     setForm((f) => {
       const next: Partial<Pedido> = { ...f, tipo_estampa: v };
       if (!tipoIncluiDTF(v)) {
-        next.dtf_impresso = null;
-        next.dtf_executado = null;
-        next.dtf_estampado = null;
-        next.dtf_data_executada = null;
-        next.quem_bateu_dtf = null;
-        next.dtf_observacao = null;
+        next.dtf_impresso = null; next.dtf_executado = null; next.dtf_estampado = null;
+        next.dtf_data_executada = null; next.quem_bateu_dtf = null; next.dtf_observacao = null;
       }
       if (!tipoIncluiSilk(v)) {
-        next.fotolito_impresso = null;
-        next.fotolito_executado = null;
-        next.tela_gravada = null;
-        next.silk_feito = null;
-        next.silk_data_executada = null;
-        next.quem_bateu_silk = null;
-        next.silk_observacao = null;
+        next.fotolito_impresso = null; next.fotolito_executado = null; next.tela_gravada = null;
+        next.silk_feito = null; next.silk_data_executada = null; next.quem_bateu_silk = null; next.silk_observacao = null;
       }
       if (v === "Lisa") next.status_arte = null;
       return next;
     });
   }
 
-  // Cálculos automáticos
+  // Cálculos automáticos — regras v2:
+  // Frete: reservar tempo_frete dias úteis VAZIOS — a data de entrega NÃO conta.
+  //   => Saída Juff = (dia útil anterior à entrega) menos (tempo_frete-1) dias úteis.
+  // Produção: dia da Saída Juff NÃO conta como dia útil disponível.
+  //   => tempo_producao = dias úteis entre entrada e o dia útil anterior à saída.
   const tempoFreteNum = Number(form.tempo_frete ?? 0) || 0;
   const saidaJuffCalc = useMemo(() => {
     if (!form.data_entrega || !tempoFreteNum) return null;
+    // Recua 1 dia útil para "não contar" a data de entrega, depois os demais dias de frete.
     return addDiasUteis(form.data_entrega, -tempoFreteNum, feriados);
   }, [form.data_entrega, tempoFreteNum, feriados]);
   const tempoProducaoCalc = useMemo(() => {
     if (!form.entrada_pedido || !saidaJuffCalc) return null;
-    return diasUteisEntre(form.entrada_pedido, saidaJuffCalc, feriados);
+    // "Dia da saída não conta" — diasUteisEntre é exclusivo do início e inclusivo do fim,
+    // então recuamos 1 dia útil para excluir o próprio dia da saída.
+    const ultimoDiaProducao = addDiasUteis(saidaJuffCalc, -1, feriados);
+    return diasUteisEntre(form.entrada_pedido, ultimoDiaProducao, feriados);
   }, [form.entrada_pedido, saidaJuffCalc, feriados]);
 
   const VENDOR_REQUIRED: (keyof Pedido)[] = ["pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido"];
@@ -110,11 +110,24 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     return new Set(keys.filter((k) => isEmpty((form as any)[k])).map(String));
   }
 
-  function saveVendor() {
+  async function checkDuplicado(pedidoOlist: string, currentId?: string): Promise<boolean> {
+    if (!pedidoOlist) return false;
+    const { data, error } = await supabase
+      .from("pedidos").select("id").eq("pedido_olist", pedidoOlist).maybeSingle();
+    if (error) { console.error(error); return false; }
+    if (!data) return false;
+    return data.id !== currentId;
+  }
+
+  async function saveVendor() {
     const miss = findMissing(VENDOR_REQUIRED);
     setMissingVendor(miss);
     if (miss.size > 0) {
       toast.error("Preencha os campos obrigatórios do Input do Vendedor.");
+      return;
+    }
+    if (await checkDuplicado(String(form.pedido_olist ?? ""), selected?.id)) {
+      toast.error(`Já existe um pedido com o número Olist "${form.pedido_olist}".`);
       return;
     }
     onSave({
@@ -123,19 +136,22 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
     });
   }
-  function saveProducao() {
+  async function saveProducao() {
     const missP = findMissing(PROD_REQUIRED);
     setMissingProd(missP);
     if (missP.size > 0) {
       toast.error("Preencha os campos obrigatórios do Input de Produção.");
       return;
     }
-    // Se ainda não existe pedido, exige também os obrigatórios do vendedor para criar
     if (!selected?.id) {
       const missV = findMissing(VENDOR_REQUIRED);
       setMissingVendor(missV);
       if (missV.size > 0) {
         toast.error("Para criar o pedido, preencha também os obrigatórios do Input do Vendedor.");
+        return;
+      }
+      if (await checkDuplicado(String(form.pedido_olist ?? ""))) {
+        toast.error(`Já existe um pedido com o número Olist "${form.pedido_olist}".`);
         return;
       }
     }
@@ -158,7 +174,6 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       const { error } = await supabase.storage.from("layouts").upload(path, file, { contentType: "application/pdf" });
       if (error) throw error;
       set("layout_url", path);
-      // Persiste imediatamente se o pedido já existe, para não perder ao trocar de aba
       if (selected?.id) {
         const { error: updErr } = await supabase.from("pedidos").update({ layout_url: path }).eq("id", selected.id);
         if (updErr) throw updErr;
@@ -174,10 +189,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     baixarLayoutPDF(path);
   }
 
-
   return (
     <div className="space-y-6">
-      {/* Orçamento em destaque */}
       <Card className="border-primary/30">
         <CardContent className="py-4 flex items-center justify-between">
           <div>
@@ -209,8 +222,6 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
       {selected && <PedidoStatusInline pedido={selected} />}
 
-
-
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Vendedor */}
         <Card className="border-l-4 border-l-green-500 bg-green-50/40 dark:bg-green-950/10">
@@ -225,7 +236,24 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <SelectContent>{vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Frete (transportadora)"><Input value={form.frete ?? ""} onChange={(e) => set("frete", e.target.value)} /></Field>
+            <Field label="Forma de pagamento">
+              <Select value={form.forma_pagamento ?? ""} onValueChange={(v) => set("forma_pagamento", v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>{FORMAS_PAGAMENTO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+              </Select>
+            </Field>
+            <Field label="Nota Fiscal Emitida">
+              <Select value={form.nf_emitida === null || form.nf_emitida === undefined ? "" : form.nf_emitida ? "Sim" : "Não"} onValueChange={(v) => set("nf_emitida", v === "Sim")}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+              </Select>
+            </Field>
+            <Field label="Frete">
+              <Select value={form.frete ?? ""} onValueChange={(v) => set("frete", v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>{fretes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+              </Select>
+            </Field>
             <Field label="Tempo de frete (dias úteis)"><Input type="number" min="0" value={form.tempo_frete ?? ""} onChange={(e) => set("tempo_frete", e.target.value)} /></Field>
             <Field label="UF de Entrega">
               <Select value={form.uf_entrega ?? ""} onValueChange={(v) => set("uf_entrega", v)}>
@@ -236,7 +264,6 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             <Field label="Entrada do pedido *" invalid={missingVendor.has("entrada_pedido")}>
               <DateInputBR value={form.entrada_pedido} onChange={(v) => set("entrada_pedido", v ?? "")} />
             </Field>
-
             <Field label="Data de Entrega">
               <DateInputBR value={form.data_entrega} onChange={(v) => set("data_entrega", v)} />
             </Field>
@@ -281,15 +308,14 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           </CardContent>
         </Card>
 
-
         {/* Produção */}
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
           <CardHeader><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
-            <Field label="Status Geral *" invalid={missingProd.has("status_geral")}>
+            <Field label="Status do pedido *" invalid={missingProd.has("status_geral")}>
               <Select value={form.status_geral ?? ""} onValueChange={(v) => set("status_geral", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>{STATUS_GERAL_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                <SelectContent>{STATUS_GERAL_OPCOES.map((v) => <SelectItem key={v} value={v}>{v.charAt(0).toUpperCase()+v.slice(1)}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
             <Field label="Tipo de Estampa *" invalid={missingProd.has("tipo_estampa")}>
@@ -298,19 +324,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <SelectContent>{TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-
-            <Field label="Arte (limite)">
-              <DateInputBR value={form.arte_data} onChange={(v) => set("arte_data", v)} />
-            </Field>
-            <Field label="Início Estamparia">
-              <DateInputBR value={form.inicio_estamparia} onChange={(v) => set("inicio_estamparia", v)} />
-            </Field>
-            <Field label="Término Estamparia">
-              <DateInputBR value={form.termino_estamparia} onChange={(v) => set("termino_estamparia", v)} />
-            </Field>
-            <Field label="Acabamento">
-              <DateInputBR value={form.acabamento_data} onChange={(v) => set("acabamento_data", v)} />
-            </Field>
+            <Field label="Arte (limite)"><DateInputBR value={form.arte_data} onChange={(v) => set("arte_data", v)} /></Field>
+            <Field label="Início Estamparia"><DateInputBR value={form.inicio_estamparia} onChange={(v) => set("inicio_estamparia", v)} /></Field>
+            <Field label="Término Estamparia"><DateInputBR value={form.termino_estamparia} onChange={(v) => set("termino_estamparia", v)} /></Field>
+            <Field label="Acabamento"><DateInputBR value={form.acabamento_data} onChange={(v) => set("acabamento_data", v)} /></Field>
             <Field label="Saída Juff (calculado)">
               <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{saidaJuffCalc ? formatDateBR(saidaJuffCalc) : "—"}</div>
             </Field>
@@ -331,49 +348,40 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         </Card>
       </div>
 
-
-      {/* Dashboard Dados In — esconde finalizados */}
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — Dados In</CardTitle></CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Etapa","Pedido","Orçamento","QTD","Vendedor","Frete","Tempo Frete","Status","Estampa","Entrada","Arte","Início Estamp.","Término Estamp.","Acabamento","Tempo Prod.","Dias","Saída Juff","Data Entrega"].map((h) => (
+                {["Etapa","Pedido","Orçamento","QTD","Vendedor","Forma Pgto","NF","Frete","Tempo Frete","Status do pedido","Estampa","Entrada","Saída Juff","Data Entrega"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {pedidos.filter((p) => !p.finalizado_em).map((p) => {
-                const dias = p.data_entrega ? diasUteisEntre(new Date().toISOString().slice(0,10), p.data_entrega, feriados) : null;
-                return (
-                  <tr key={p.id}
-                    onClick={() => onSelect(p.id)}
-                    className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
-                    <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
-                    <td className="px-3 py-2 font-medium">{p.pedido_olist}</td>
-                    <td className="px-3 py-2">{p.orcamento}</td>
-                    <td className="px-3 py-2">{p.qtd}</td>
-                    <td className="px-3 py-2">{p.vendedor}</td>
-                    <td className="px-3 py-2">{p.frete ?? "—"}</td>
-                    <td className="px-3 py-2">{p.tempo_frete ?? "—"}</td>
-                    <td className="px-3 py-2"><Badge variant={p.status_geral === "Completo" ? "default" : "secondary"}>{p.status_geral}</Badge></td>
-                    <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.entrada_pedido)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.arte_data)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.inicio_estamparia)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.termino_estamparia)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.acabamento_data)}</td>
-                    <td className="px-3 py-2">{p.tempo_producao ?? "—"}</td>
-                    <td className="px-3 py-2 tabular-nums">{dias ?? "—"}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
-                  </tr>
-                );
-              })}
-              {pedidos.filter((p) => !p.finalizado_em).length === 0 && (
-                <tr><td colSpan={18} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido ativo.</td></tr>
+              {pedidos.filter((p) => !p.finalizado_em && !p.expedicao_entrou_em).map((p) => (
+                <tr key={p.id}
+                  onClick={() => onSelect(p.id)}
+                  className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                  <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
+                  <td className="px-3 py-2 font-medium">{p.pedido_olist}</td>
+                  <td className="px-3 py-2">{p.orcamento}</td>
+                  <td className="px-3 py-2">{p.qtd}</td>
+                  <td className="px-3 py-2">{p.vendedor}</td>
+                  <td className="px-3 py-2">{p.forma_pagamento ?? "—"}</td>
+                  <td className="px-3 py-2">{p.nf_emitida === null || p.nf_emitida === undefined ? "—" : p.nf_emitida ? "Sim" : "Não"}</td>
+                  <td className="px-3 py-2">{p.frete ?? "—"}</td>
+                  <td className="px-3 py-2">{p.tempo_frete ?? "—"}</td>
+                  <td className="px-3 py-2"><Badge variant={p.status_geral === "completo" ? "default" : "secondary"}>{p.status_geral}</Badge></td>
+                  <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                  <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.entrada_pedido)}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
+                </tr>
+              ))}
+              {pedidos.filter((p) => !p.finalizado_em && !p.expedicao_entrou_em).length === 0 && (
+                <tr><td colSpan={14} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido ativo.</td></tr>
               )}
             </tbody>
           </table>
@@ -387,6 +395,7 @@ function PedidoStatusInline({ pedido }: { pedido: Pedido }) {
   const { etapa, cor } = calcularEtapaAtual(pedido);
   const aguardando = cor === "yellow" || cor === "blue" || cor === "gray";
   const finalizado = !!pedido.finalizado_em;
+  const incompleto = !!pedido.arte_data && pedido.status_geral !== "completo";
   const bg = finalizado
     ? "bg-success/10 border-success/30 text-success"
     : aguardando
@@ -398,13 +407,20 @@ function PedidoStatusInline({ pedido }: { pedido: Pedido }) {
     ? `Aguardando etapa: ${etapa}`
     : `Etapa atual: ${etapa}`;
   return (
-    <div className={`flex items-center gap-2 p-3 rounded-md border text-sm ${bg}`}>
-      <span className="font-medium">{label}</span>
+    <div className="space-y-2">
+      {incompleto && (
+        <div className="flex items-center gap-2 p-3 rounded-md border text-sm bg-destructive/10 border-destructive/40 text-destructive">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span className="font-semibold">Pedido Incompleto</span>
+          <span className="text-xs opacity-80">— Status do pedido ainda está "aberto".</span>
+        </div>
+      )}
+      <div className={`flex items-center gap-2 p-3 rounded-md border text-sm ${bg}`}>
+        <span className="font-medium">{label}</span>
+      </div>
     </div>
   );
 }
-
-
 
 function Field({ label, invalid, children }: { label: string; invalid?: boolean; children: React.ReactNode }) {
   return (
@@ -414,4 +430,3 @@ function Field({ label, invalid, children }: { label: string; invalid?: boolean;
     </div>
   );
 }
-
