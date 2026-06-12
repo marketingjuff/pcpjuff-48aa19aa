@@ -130,7 +130,12 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             <EtapaTopoBanner pedido={selected} tab="acabamento" />
             {podeFinalizar && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-success/10 text-success text-sm border border-success/30">
-                <CheckCircle2 className="h-4 w-4" /> Ao salvar, este pedido será marcado como Finalizado.
+                <CheckCircle2 className="h-4 w-4" /> Pronto para Expedição. Clique em "Enviar para Expedição" abaixo.
+              </div>
+            )}
+            {selected.status_geral !== "completo" && selected.arte_data && (
+              <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">
+                <CheckCircle2 className="h-4 w-4" /> <span className="font-semibold">Pedido Incompleto</span> — Status do pedido ainda está "aberto".
               </div>
             )}
 
