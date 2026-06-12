@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 
@@ -143,7 +143,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
               <ReadOnlyField label="Tipo de Estampa" value={selected.tipo_estampa} />
-              <ReadOnlyField label="Status" value={selected.status_geral} />
+              <ReadOnlyField label="Status do pedido" value={selected.status_geral} />
               <ReadOnlyField label="Data de Entrega" value={formatDateBR(selected.data_entrega)} />
               <ReadOnlyField label="Saída Juff (prazo)" value={formatDateBR(selected.saida_juff)} />
               <ReadOnlyField label="DTF Estampado?" value={temDTF ? (selected.dtf_estampado ?? "—") : "N/A"} />
@@ -219,7 +219,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Etapa","Orçamento","Pedido","Tipo","DTF Est.","Silk Est.","Embalado","Responsável","Saída Juff","Data Entrega"].map((h) => (
+                  {["Etapa","Orçamento","Pedido","Tipo","QTD","Status do pedido","DTF Est.","Silk Est.","Embalado","Responsável","Saída Juff","Data Entrega"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -232,6 +232,8 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                       <td className="px-3 py-2 font-medium">{p.orcamento}</td>
                       <td className="px-3 py-2">{p.pedido_olist}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                      <td className="px-3 py-2">{p.qtd ?? "—"}</td>
+                      <td className="px-3 py-2"><StatusPedidoBadge pedido={p} /></td>
                       <td className="px-3 py-2">{modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"}</td>
                       <td className="px-3 py-2">{modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"}</td>
                       <td className="px-3 py-2">{p.embalado ?? "—"}</td>
@@ -242,7 +244,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                   );
                 })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido pronto para acabamento.</td></tr>
+                  <tr><td colSpan={12} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido pronto para acabamento.</td></tr>
                 )}
 
               </tbody>

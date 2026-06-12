@@ -31,7 +31,9 @@ import {
   sugestoesEstadoSP,
   type Sugestao,
 } from "@/lib/feriados-sugestoes";
-import type { AppRole, Feriado } from "@/integrations/supabase/schema-extras";
+import type { AppRole, AppArea, Feriado } from "@/integrations/supabase/schema-extras";
+import { APP_AREAS_GESTOR, APP_AREAS_OPERADOR, APP_AREA_LABEL } from "@/integrations/supabase/schema-extras";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: ConfiguracoesPage,
@@ -329,6 +331,7 @@ function UsuariosTab() {
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
   const [role, setRole] = useState<AppRole>("gestor");
+  const [areas, setAreas] = useState<AppArea[]>([]);
   const [editingName, setEditingName] = useState<{ id: string; nome: string } | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
@@ -337,9 +340,9 @@ function UsuariosTab() {
   });
 
   const create = useMutation({
-    mutationFn: () => createFn({ data: { email, password, nome, role } }),
+    mutationFn: () => createFn({ data: { email, password, nome, role, areas_extras: areas } }),
     onSuccess: () => {
-      setEmail(""); setPassword(""); setNome("");
+      setEmail(""); setPassword(""); setNome(""); setAreas([]);
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast.success("Usuário criado.");
     },
@@ -347,7 +350,7 @@ function UsuariosTab() {
   });
 
   const update = useMutation({
-    mutationFn: (v: { userId: string; role: AppRole }) => updateFn({ data: v }),
+    mutationFn: (v: { userId: string; role: AppRole; areas_extras?: string[] }) => updateFn({ data: v }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast.success("Papel atualizado.");
@@ -383,8 +386,8 @@ function UsuariosTab() {
           <div><Label>E-mail</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
           <div><Label>Senha inicial</Label><Input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mín. 8 caracteres" /></div>
           <div>
-            <Label>Área (papel)</Label>
-            <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
+            <Label>Papel</Label>
+            <Select value={role} onValueChange={(v) => { setRole(v as AppRole); setAreas([]); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
@@ -392,6 +395,13 @@ function UsuariosTab() {
             </Select>
           </div>
         </div>
+        {role !== "admin" && (
+          <AreasCheckboxes
+            value={areas}
+            onChange={setAreas}
+            options={role === "gestor" ? APP_AREAS_GESTOR : APP_AREAS_OPERADOR}
+          />
+        )}
         <Button onClick={() => create.mutate()} disabled={create.isPending || !email || !password}>
           <Plus className="h-4 w-4 mr-1" /> Criar usuário
         </Button>
@@ -401,15 +411,16 @@ function UsuariosTab() {
         <h2 className="font-semibold mb-3">Usuários cadastrados</h2>
         <Table>
           <TableHeader>
-            <TableRow><TableHead>Nome</TableHead><TableHead>E-mail</TableHead><TableHead>Papel</TableHead><TableHead></TableHead></TableRow>
+            <TableRow><TableHead>Nome</TableHead><TableHead>E-mail</TableHead><TableHead>Papel / Áreas</TableHead><TableHead></TableHead></TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={4}>Carregando…</TableCell></TableRow>
               : (users as any[]).map((u) => {
-                const currentRole = (u.roles?.[0]?.role ?? "gestor") as AppRole;
+                const currentRole = (u.roles?.[0]?.role ?? "operador") as AppRole;
+                const currentAreas = ((u.roles?.[0]?.areas_extras ?? []) as string[]) as AppArea[];
                 return (
                   <TableRow key={u.id}>
-                    <TableCell>
+                    <TableCell className="align-top">
                       {editingName && editingName.id === u.id ? (
                         <div className="flex gap-1">
                           <Input
@@ -432,16 +443,25 @@ function UsuariosTab() {
                         </button>
                       )}
                     </TableCell>
-                    <TableCell>{u.email}</TableCell>
+                    <TableCell className="align-top">{u.email}</TableCell>
                     <TableCell>
-                      <Select value={currentRole} onValueChange={(v) => update.mutate({ userId: u.id, role: v as AppRole })}>
-                        <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <div className="space-y-2">
+                        <Select value={currentRole} onValueChange={(v) => update.mutate({ userId: u.id, role: v as AppRole, areas_extras: v === "admin" ? [] : currentAreas })}>
+                          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        {currentRole !== "admin" && (
+                          <AreasCheckboxes
+                            value={currentAreas}
+                            onChange={(next) => update.mutate({ userId: u.id, role: currentRole, areas_extras: next })}
+                            options={currentRole === "gestor" ? APP_AREAS_GESTOR : APP_AREAS_OPERADOR}
+                          />
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right align-top">
                       <Button variant="ghost" size="icon" onClick={() => { if (confirm("Excluir este usuário?")) del.mutate(u.id); }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -452,6 +472,24 @@ function UsuariosTab() {
           </TableBody>
         </Table>
       </div>
+    </div>
+  );
+}
+
+function AreasCheckboxes({ value, onChange, options }: { value: AppArea[]; onChange: (next: AppArea[]) => void; options: AppArea[] }) {
+  function toggle(a: AppArea, checked: boolean) {
+    const set = new Set(value);
+    if (checked) set.add(a); else set.delete(a);
+    onChange(options.filter((o) => set.has(o)));
+  }
+  return (
+    <div className="grid grid-cols-2 gap-1.5 p-2 rounded-md border bg-muted/20">
+      {options.map((a) => (
+        <label key={a} className="flex items-center gap-2 text-xs cursor-pointer">
+          <Checkbox checked={value.includes(a)} onCheckedChange={(c) => toggle(a, !!c)} />
+          <span>{APP_AREA_LABEL[a]}</span>
+        </label>
+      ))}
     </div>
   );
 }

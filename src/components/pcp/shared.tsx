@@ -45,16 +45,32 @@ export function EtapaBadge({ status, labels }: { status: EtapaStatus; labels: { 
   return <Badge variant="outline" className={`${cfg.cls} whitespace-nowrap`}>{cfg.icon} {cfg.text}</Badge>;
 }
 
+/** Paleta por etapa — combina com as áreas (Arte=índigo, DTF=teal, Silk=roxo, Acabamento=âmbar, Expedição=rosa). */
+export function etapaPaletteClass(etapa: string): string {
+  if (etapa === "Finalizado") return "bg-success/15 text-success border-success/30";
+  if (etapa.includes("DTF + Silk")) return "bg-purple-500/15 text-purple-700 border-purple-500/30 dark:text-purple-300";
+  if (etapa.includes("Arte")) return "bg-indigo-500/15 text-indigo-700 border-indigo-500/30 dark:text-indigo-300";
+  if (etapa.includes("DTF")) return "bg-teal-500/15 text-teal-700 border-teal-500/30 dark:text-teal-300";
+  if (etapa.includes("Silk")) return "bg-purple-500/15 text-purple-700 border-purple-500/30 dark:text-purple-300";
+  if (etapa.includes("Acabamento")) return "bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-300";
+  if (etapa.includes("Expedição")) return "bg-pink-500/15 text-pink-700 border-pink-500/30 dark:text-pink-300";
+  if (etapa.includes("produção")) return "bg-warning/15 text-warning-foreground border-warning/30";
+  return "bg-muted text-muted-foreground border-border";
+}
+
 /** Badge mostrando a Etapa atual do pedido — consistente em todos os dashboards. */
 export function EtapaBadgeFromPedido({ pedido }: { pedido: Pedido }) {
-  const { etapa, cor } = calcularEtapaAtual(pedido);
-  const cls =
-    cor === "green" ? "bg-success/15 text-success border-success/30" :
-    cor === "yellow" ? "bg-warning/15 text-warning-foreground border-warning/30" :
-    cor === "blue" ? "bg-info/15 text-info border-info/30" :
-    cor === "red" ? "bg-destructive/15 text-destructive border-destructive/30" :
-    "bg-muted text-muted-foreground border-border";
-  return <Badge variant="outline" className={`${cls} whitespace-nowrap`}>{etapa}</Badge>;
+  const { etapa } = calcularEtapaAtual(pedido);
+  return <Badge variant="outline" className={`${etapaPaletteClass(etapa)} whitespace-nowrap`}>{etapa}</Badge>;
+}
+
+/** Badge do status do pedido — destaca "Incompleto" quando aberto após arte. */
+export function StatusPedidoBadge({ pedido }: { pedido: Pedido }) {
+  const incompleto = pedido.status_geral === "aberto" && !!pedido.arte_data;
+  if (incompleto) {
+    return <Badge variant="outline" className="bg-destructive/15 text-destructive border-destructive/30 whitespace-nowrap">Incompleto</Badge>;
+  }
+  return <Badge variant={pedido.status_geral === "completo" ? "default" : "secondary"}>{pedido.status_geral ?? "—"}</Badge>;
 }
 
 /** Banner do topo de cada aba mostrando a etapa atual do pedido. */

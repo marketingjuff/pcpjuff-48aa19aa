@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
@@ -173,7 +173,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Etapa","Orçamento","Pedido","Tipo","Status Arte","Frete","UF","Saída Juff","Data Entrega"].map((h) => (
+                {["Etapa","Orçamento","Pedido","Tipo","QTD","Status do pedido","Status Arte","Frete","UF","Saída Juff","Data Entrega"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -182,7 +182,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               {(() => {
                 const visiveis = pedidos.filter((p) => visivelEmArte(p) && !p.finalizado_em && !p.expedicao_entrou_em);
                 if (visiveis.length === 0) {
-                  return <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido em aberto.</td></tr>;
+                  return <tr><td colSpan={11} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido em aberto.</td></tr>;
                 }
                 return visiveis.map((p) => {
                   return (
@@ -193,6 +193,8 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       <td className="px-3 py-2 font-medium">{p.orcamento}</td>
                       <td className="px-3 py-2">{p.pedido_olist}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                      <td className="px-3 py-2">{p.qtd ?? "—"}</td>
+                      <td className="px-3 py-2"><StatusPedidoBadge pedido={p} /></td>
                       <td className="px-3 py-2">{p.status_arte ?? "—"}</td>
                       <td className="px-3 py-2">{p.frete ?? "—"}</td>
                       <td className="px-3 py-2">{p.uf_entrega ?? "—"}</td>
