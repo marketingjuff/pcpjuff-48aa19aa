@@ -46,6 +46,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
     // Pedidos finalizados nunca aparecem nos dashboards (vão para a aba Finalizados)
     if (e === "finalizados") return !!p.finalizado_em;
     if (p.finalizado_em) return false;
+    if (p.expedicao_entrou_em) return false;
     if (e === "todas" || e === "ativas") return true;
     if (e === "arte") return p.status_arte !== "Arte Finalizada" && p.tipo_estampa !== "Lisa";
     if (e === "dtf") return tipoIncluiDTF(p.tipo_estampa) && p.dtf_estampado !== "Sim";
