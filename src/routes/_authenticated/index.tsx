@@ -168,6 +168,10 @@ function AppHomeInner() {
             <AcabamentoTab active={tab === "acab"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
           </TabsContent>
 
+          <TabsContent value="exp" forceMount hidden={tab !== "exp"}>
+            <ExpedicaoTab pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
+          </TabsContent>
+
           <TabsContent value="fin" forceMount hidden={tab !== "fin"}>
             <FinalizadosTab pedidos={pedidos} onReabrir={(id) => upsert.mutate({ id, finalizado_em: null })} />
           </TabsContent>
