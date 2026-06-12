@@ -15,6 +15,7 @@ import { SilkTab } from "@/components/pcp/SilkTab";
 import { AcabamentoTab } from "@/components/pcp/AcabamentoTab";
 import { DashboardTab } from "@/components/pcp/DashboardTab";
 import { FinalizadosTab } from "@/components/pcp/FinalizadosTab";
+import { ExpedicaoTab } from "@/components/pcp/ExpedicaoTab";
 import { DirtyFormProvider } from "@/components/pcp/dirty-form-context";
 
 export const Route = createFileRoute("/_authenticated/")({
