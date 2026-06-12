@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: ConfiguracoesPage,
 });
 
-const ROLES: AppRole[] = ["admin", "gestor", "arte", "dtf", "silk", "acabamento"];
+const ROLES: AppRole[] = ["admin", "gestor", "operador"];
 
 function ConfiguracoesPage() {
   const navigate = useNavigate();
