@@ -173,7 +173,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                   <TableHead>QTD</TableHead>
                   <TableHead>Vendedor</TableHead>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Status do pedido</TableHead>
                   <TableHead className="min-w-[140px]">% Conclusão</TableHead>
                   <TableHead>Frete</TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={toggleSortDias}>
@@ -199,15 +199,13 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                     const dias = p.data_entrega ? diasUteisEntre(new Date().toISOString().slice(0,10), p.data_entrega, feriados) : null;
                     return (
                       <TableRow key={p.id}>
-                        <TableCell><Badge className={etapaCorClass(cor)} variant="outline">{et}</Badge></TableCell>
+                        <TableCell><Badge className={etapaPaletteClass(et)} variant="outline">{et}</Badge></TableCell>
                         <TableCell className="font-medium">{p.pedido_olist}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{p.orcamento}</TableCell>
                         <TableCell>{p.qtd}</TableCell>
                         <TableCell>{p.vendedor}</TableCell>
                         <TableCell><Badge variant="outline">{p.tipo_estampa}</Badge></TableCell>
-                        <TableCell>
-                          <Badge variant={p.status_geral === "Completo" ? "default" : "secondary"}>{p.status_geral}</Badge>
-                        </TableCell>
+                        <TableCell><StatusPedidoBadge pedido={p} /></TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Progress value={percentual} className="h-2 w-20" />
