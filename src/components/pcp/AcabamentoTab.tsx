@@ -108,6 +108,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
 
   const dashboardPedidos = useMemo(() => pedidos.filter((p) => {
     if (p.finalizado_em) return false;
+    if (p.expedicao_entrou_em) return false;
     if (!visivelEmAcabamento(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
