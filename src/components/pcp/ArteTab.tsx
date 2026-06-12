@@ -180,7 +180,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             </thead>
             <tbody>
               {(() => {
-                const visiveis = pedidos.filter((p) => visivelEmArte(p) && !p.finalizado_em);
+                const visiveis = pedidos.filter((p) => visivelEmArte(p) && !p.finalizado_em && !p.expedicao_entrou_em);
                 if (visiveis.length === 0) {
                   return <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido em aberto.</td></tr>;
                 }
