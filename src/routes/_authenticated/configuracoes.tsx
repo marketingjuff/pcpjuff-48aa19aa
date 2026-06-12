@@ -386,8 +386,8 @@ function UsuariosTab() {
           <div><Label>E-mail</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
           <div><Label>Senha inicial</Label><Input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mín. 8 caracteres" /></div>
           <div>
-            <Label>Área (papel)</Label>
-            <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
+            <Label>Papel</Label>
+            <Select value={role} onValueChange={(v) => { setRole(v as AppRole); setAreas([]); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
@@ -395,6 +395,13 @@ function UsuariosTab() {
             </Select>
           </div>
         </div>
+        {role !== "admin" && (
+          <AreasCheckboxes
+            value={areas}
+            onChange={setAreas}
+            options={role === "gestor" ? APP_AREAS_GESTOR : APP_AREAS_OPERADOR}
+          />
+        )}
         <Button onClick={() => create.mutate()} disabled={create.isPending || !email || !password}>
           <Plus className="h-4 w-4 mr-1" /> Criar usuário
         </Button>
