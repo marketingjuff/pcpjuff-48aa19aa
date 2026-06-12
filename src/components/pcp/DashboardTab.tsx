@@ -86,7 +86,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
   }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, frete, search, sortDiasDir, sortEntregaDir, feriados]);
 
   const stats = useMemo(() => {
-    const ativos = pedidos.filter((p) => !p.finalizado_em);
+    const ativos = pedidos.filter((p) => !p.finalizado_em && !p.expedicao_entrou_em);
     return {
       total: ativos.length,
       atrasados: ativos.filter((p) => statusPrazo(p) === "atrasado").length,
