@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 import { formatDateBR } from "@/lib/format";
@@ -112,12 +112,17 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
             </CardHeader>
             <CardContent className="space-y-6">
             <EtapaTopoBanner pedido={selected} tab="silk" />
+            {selected.status_geral !== "completo" && selected.arte_data && (
+              <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">
+                <span className="font-semibold">Pedido Incompleto</span> — Status do pedido ainda está "aberto".
+              </div>
+            )}
 
               <div className="grid gap-4 md:grid-cols-2">
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
                 <ReadOnlyField label="QTD" value={selected.qtd} />
-                <ReadOnlyField label="Status" value={selected.status_geral} />
+                <ReadOnlyField label="Status do pedido" value={selected.status_geral} />
                 <ReadOnlyField label="Fotolito Impresso? (Arte)" value={selected.fotolito_impresso ?? "Pendente"} />
                 <div className="space-y-1">
                   <div className="text-xs font-medium text-muted-foreground">Layout</div>
@@ -180,8 +185,8 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
               <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos status</SelectItem>
-                <SelectItem value="Aberto">Aberto</SelectItem>
-                <SelectItem value="Completo">Completo</SelectItem>
+                <SelectItem value="aberto">Aberto</SelectItem>
+                <SelectItem value="completo">Completo</SelectItem>
               </SelectContent>
             </Select>
             <Select value={fTela} onValueChange={setFTela}>
@@ -203,7 +208,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Etapa","Orçamento","Pedido","Tipo","Fotolito","Tela Gravada","Silk Feito","Data Silk","Quem bateu","Saída Juff","Data Entrega"].map((h) => (
+                  {["Etapa","Orçamento","Pedido","Tipo","QTD","Status do pedido","Fotolito","Tela Gravada","Silk Feito","Data Silk","Quem bateu","Saída Juff","Data Entrega"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -216,6 +221,8 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       <td className="px-3 py-2 font-medium">{p.orcamento}</td>
                       <td className="px-3 py-2">{p.pedido_olist}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                      <td className="px-3 py-2">{p.qtd ?? "—"}</td>
+                      <td className="px-3 py-2"><StatusPedidoBadge pedido={p} /></td>
                       <td className="px-3 py-2">{p.fotolito_impresso ?? "—"}</td>
                       <td className="px-3 py-2">{p.tela_gravada ?? "—"}</td>
                       <td className="px-3 py-2">{p.silk_feito ?? "—"}</td>
@@ -227,7 +234,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   );
                 })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={11} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk disponível.</td></tr>
+                  <tr><td colSpan={13} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk disponível.</td></tr>
                 )}
 
               </tbody>
