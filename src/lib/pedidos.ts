@@ -39,7 +39,8 @@ export type PedidoInsert = PedidoInsertBase & {
 };
 
 export const VENDEDORES = ["Wander", "Mirela", "Gabriel", "Outros"] as const;
-export const STATUS_GERAL_OPCOES = ["Aberto", "Completo"] as const;
+export const STATUS_GERAL_OPCOES = ["aberto", "completo"] as const;
+export const FORMAS_PAGAMENTO = ["Cartão de crédito", "50%/50%", "Boleto", "À vista"] as const;
 export const TIPOS_ESTAMPA = ["DTF", "Silk", "DTF+Silk", "Lisa"] as const;
 export const SIM_NAO_PROCESSO = ["Sim", "Não", "Em processo"] as const;
 export const SIM_NAO = ["Sim", "Não"] as const;
