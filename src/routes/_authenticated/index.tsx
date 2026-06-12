@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Factory, LogOut, Settings } from "lucide-react";
 import { toast } from "sonner";
-import { useIsAdmin } from "@/hooks/use-role";
+import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
+import type { AppArea } from "@/integrations/supabase/schema-extras";
 import type { Pedido } from "@/lib/pedidos";
 import { DadosInTab } from "@/components/pcp/DadosInTab";
 import { ArteTab } from "@/components/pcp/ArteTab";
@@ -36,6 +37,13 @@ function AppHomeInner() {
   const [tab, setTab] = useState("dashboard");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const isAdmin = useIsAdmin();
+  const { data: myRoles = [] } = useMyRoles();
+  const isGestor = myRoles.some((r) => r.role === "gestor");
+  const areas = new Set<AppArea>(
+    (myRoles.flatMap((r) => (r.areas_extras ?? []) as AppArea[])),
+  );
+  const canSee = (a: AppArea) => isAdmin || areas.has(a);
+  const isManager = isAdmin || isGestor;
 
 
 
@@ -138,43 +146,57 @@ function AppHomeInner() {
 
       <main className="container mx-auto px-4 py-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full grid-cols-8 mb-6">
-            <TabsTrigger value="dashboard">Dashboard Master</TabsTrigger>
-            <TabsTrigger value="dados">Dados In</TabsTrigger>
-            <TabsTrigger value="arte">Arte</TabsTrigger>
-            <TabsTrigger value="dtf">DTF</TabsTrigger>
-            <TabsTrigger value="silk">Silk Screen</TabsTrigger>
-            <TabsTrigger value="acab">Acabamento</TabsTrigger>
-            <TabsTrigger value="exp">Expedição</TabsTrigger>
-            <TabsTrigger value="fin">Finalizados</TabsTrigger>
+          <TabsList className="flex flex-wrap mb-6">
+            {isManager && <TabsTrigger value="dashboard">Dashboard Master</TabsTrigger>}
+            {(canSee("dados_in_vendedor") || canSee("dados_in_producao")) && <TabsTrigger value="dados">Dados In</TabsTrigger>}
+            {canSee("arte") && <TabsTrigger value="arte">Arte</TabsTrigger>}
+            {canSee("dtf") && <TabsTrigger value="dtf">DTF</TabsTrigger>}
+            {canSee("silk") && <TabsTrigger value="silk">Silk Screen</TabsTrigger>}
+            {canSee("acabamento") && <TabsTrigger value="acab">Acabamento</TabsTrigger>}
+            {canSee("expedicao") && <TabsTrigger value="exp">Expedição</TabsTrigger>}
+            {isManager && <TabsTrigger value="fin">Finalizados</TabsTrigger>}
           </TabsList>
 
-          <TabsContent value="dashboard" forceMount hidden={tab !== "dashboard"}>
-            <DashboardTab pedidos={pedidos} loading={isLoading} onEdit={(id) => goToTabWithPedido("dados", id)} onViewProgress={(id) => goToTabWithPedido("arte", id)} />
-          </TabsContent>
-          <TabsContent value="dados" forceMount hidden={tab !== "dados"}>
-            <DadosInTab active={tab === "dados"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} onDelete={(id) => remove.mutate(id)} saving={upsert.isPending} />
-          </TabsContent>
-          <TabsContent value="arte" forceMount hidden={tab !== "arte"}>
-            <ArteTab active={tab === "arte"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
-          </TabsContent>
-          <TabsContent value="dtf" forceMount hidden={tab !== "dtf"}>
-            <DTFTab active={tab === "dtf"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
-          </TabsContent>
-          <TabsContent value="silk" forceMount hidden={tab !== "silk"}>
-            <SilkTab active={tab === "silk"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
-          </TabsContent>
-          <TabsContent value="acab" forceMount hidden={tab !== "acab"}>
-            <AcabamentoTab active={tab === "acab"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
-          </TabsContent>
-
-          <TabsContent value="exp" forceMount hidden={tab !== "exp"}>
-            <ExpedicaoTab pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
-          </TabsContent>
-
-          <TabsContent value="fin" forceMount hidden={tab !== "fin"}>
-            <FinalizadosTab pedidos={pedidos} onReabrir={(id) => upsert.mutate({ id, finalizado_em: null })} />
-          </TabsContent>
+          {isManager && (
+            <TabsContent value="dashboard" forceMount hidden={tab !== "dashboard"}>
+              <DashboardTab pedidos={pedidos} loading={isLoading} onEdit={(id) => goToTabWithPedido("dados", id)} onViewProgress={(id) => goToTabWithPedido("arte", id)} />
+            </TabsContent>
+          )}
+          {(canSee("dados_in_vendedor") || canSee("dados_in_producao")) && (
+            <TabsContent value="dados" forceMount hidden={tab !== "dados"}>
+              <DadosInTab active={tab === "dados"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} onDelete={(id) => remove.mutate(id)} saving={upsert.isPending} />
+            </TabsContent>
+          )}
+          {canSee("arte") && (
+            <TabsContent value="arte" forceMount hidden={tab !== "arte"}>
+              <ArteTab active={tab === "arte"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
+            </TabsContent>
+          )}
+          {canSee("dtf") && (
+            <TabsContent value="dtf" forceMount hidden={tab !== "dtf"}>
+              <DTFTab active={tab === "dtf"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
+            </TabsContent>
+          )}
+          {canSee("silk") && (
+            <TabsContent value="silk" forceMount hidden={tab !== "silk"}>
+              <SilkTab active={tab === "silk"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
+            </TabsContent>
+          )}
+          {canSee("acabamento") && (
+            <TabsContent value="acab" forceMount hidden={tab !== "acab"}>
+              <AcabamentoTab active={tab === "acab"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
+            </TabsContent>
+          )}
+          {canSee("expedicao") && (
+            <TabsContent value="exp" forceMount hidden={tab !== "exp"}>
+              <ExpedicaoTab pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
+            </TabsContent>
+          )}
+          {isManager && (
+            <TabsContent value="fin" forceMount hidden={tab !== "fin"}>
+              <FinalizadosTab pedidos={pedidos} onReabrir={(id) => upsert.mutate({ id, finalizado_em: null })} />
+            </TabsContent>
+          )}
 
         </Tabs>
       </main>
