@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppListKind = "vendedor" | "dtf" | "silk" | "acabamento";
+export type AppListKind = "vendedor" | "dtf" | "silk" | "acabamento" | "frete";
 
 export interface AppListItem {
   id: string;
