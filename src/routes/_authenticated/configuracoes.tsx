@@ -31,7 +31,9 @@ import {
   sugestoesEstadoSP,
   type Sugestao,
 } from "@/lib/feriados-sugestoes";
-import type { AppRole, Feriado } from "@/integrations/supabase/schema-extras";
+import type { AppRole, AppArea, Feriado } from "@/integrations/supabase/schema-extras";
+import { APP_AREAS_GESTOR, APP_AREAS_OPERADOR, APP_AREA_LABEL } from "@/integrations/supabase/schema-extras";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: ConfiguracoesPage,
@@ -329,6 +331,7 @@ function UsuariosTab() {
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
   const [role, setRole] = useState<AppRole>("gestor");
+  const [areas, setAreas] = useState<AppArea[]>([]);
   const [editingName, setEditingName] = useState<{ id: string; nome: string } | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
@@ -337,9 +340,9 @@ function UsuariosTab() {
   });
 
   const create = useMutation({
-    mutationFn: () => createFn({ data: { email, password, nome, role } }),
+    mutationFn: () => createFn({ data: { email, password, nome, role, areas_extras: areas } }),
     onSuccess: () => {
-      setEmail(""); setPassword(""); setNome("");
+      setEmail(""); setPassword(""); setNome(""); setAreas([]);
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast.success("Usuário criado.");
     },
@@ -347,7 +350,7 @@ function UsuariosTab() {
   });
 
   const update = useMutation({
-    mutationFn: (v: { userId: string; role: AppRole }) => updateFn({ data: v }),
+    mutationFn: (v: { userId: string; role: AppRole; areas_extras?: string[] }) => updateFn({ data: v }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast.success("Papel atualizado.");
