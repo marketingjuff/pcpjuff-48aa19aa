@@ -15,6 +15,7 @@ import { SilkTab } from "@/components/pcp/SilkTab";
 import { AcabamentoTab } from "@/components/pcp/AcabamentoTab";
 import { DashboardTab } from "@/components/pcp/DashboardTab";
 import { FinalizadosTab } from "@/components/pcp/FinalizadosTab";
+import { ExpedicaoTab } from "@/components/pcp/ExpedicaoTab";
 import { DirtyFormProvider } from "@/components/pcp/dirty-form-context";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -137,13 +138,14 @@ function AppHomeInner() {
 
       <main className="container mx-auto px-4 py-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full grid-cols-7 mb-6">
+          <TabsList className="grid w-full grid-cols-8 mb-6">
             <TabsTrigger value="dashboard">Dashboard Master</TabsTrigger>
             <TabsTrigger value="dados">Dados In</TabsTrigger>
             <TabsTrigger value="arte">Arte</TabsTrigger>
             <TabsTrigger value="dtf">DTF</TabsTrigger>
             <TabsTrigger value="silk">Silk Screen</TabsTrigger>
             <TabsTrigger value="acab">Acabamento</TabsTrigger>
+            <TabsTrigger value="exp">Expedição</TabsTrigger>
             <TabsTrigger value="fin">Finalizados</TabsTrigger>
           </TabsList>
 
@@ -164,6 +166,10 @@ function AppHomeInner() {
           </TabsContent>
           <TabsContent value="acab" forceMount hidden={tab !== "acab"}>
             <AcabamentoTab active={tab === "acab"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
+          </TabsContent>
+
+          <TabsContent value="exp" forceMount hidden={tab !== "exp"}>
+            <ExpedicaoTab pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
           </TabsContent>
 
           <TabsContent value="fin" forceMount hidden={tab !== "fin"}>

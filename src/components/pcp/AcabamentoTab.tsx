@@ -67,9 +67,23 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
       data_saida_juff: form.data_saida_juff ?? null,
       observacoes_pedido: form.observacoes_pedido ?? null,
     };
-    if (podeFinalizar && !selected.finalizado_em) payload.finalizado_em = new Date().toISOString();
-    if (form.embalado !== "Sim" && selected.finalizado_em) payload.finalizado_em = null;
     onSave(payload);
+  }
+
+  function enviarParaExpedicao() {
+    if (!selected) return;
+    if (!podeFinalizar) {
+      // Mesmo assim deixamos enviar manualmente — Acabamento decide.
+    }
+    onSave({
+      id: selected.id,
+      embalado: form.embalado ?? selected.embalado ?? null,
+      responsavel_acabamento: form.responsavel_acabamento ?? selected.responsavel_acabamento ?? null,
+      responsavel_conferencia: form.responsavel_conferencia ?? selected.responsavel_conferencia ?? null,
+      data_saida_juff: form.data_saida_juff ?? selected.data_saida_juff ?? null,
+      observacoes_pedido: form.observacoes_pedido ?? selected.observacoes_pedido ?? null,
+      expedicao_entrou_em: new Date().toISOString(),
+    } as any);
   }
   useRegisterSave(handleSave, active);
 
@@ -94,6 +108,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
 
   const dashboardPedidos = useMemo(() => pedidos.filter((p) => {
     if (p.finalizado_em) return false;
+    if (p.expedicao_entrou_em) return false;
     if (!visivelEmAcabamento(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
@@ -115,7 +130,12 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             <EtapaTopoBanner pedido={selected} tab="acabamento" />
             {podeFinalizar && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-success/10 text-success text-sm border border-success/30">
-                <CheckCircle2 className="h-4 w-4" /> Ao salvar, este pedido será marcado como Finalizado.
+                <CheckCircle2 className="h-4 w-4" /> Pronto para Expedição. Clique em "Enviar para Expedição" abaixo.
+              </div>
+            )}
+            {selected.status_geral !== "completo" && selected.arte_data && (
+              <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">
+                <CheckCircle2 className="h-4 w-4" /> <span className="font-semibold">Pedido Incompleto</span> — Status do pedido ainda está "aberto".
               </div>
             )}
 
@@ -162,7 +182,12 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 </FormField>
               </div>
             </div>
-            <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Salvar</Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Salvar</Button>
+              <Button variant="default" onClick={enviarParaExpedicao} disabled={saving} className="bg-pink-600 hover:bg-pink-700 text-white">
+                Enviar para Expedição
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (

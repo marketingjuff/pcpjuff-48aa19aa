@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: ConfiguracoesPage,
 });
 
-const ROLES: AppRole[] = ["admin", "gestor", "arte", "dtf", "silk", "acabamento"];
+const ROLES: AppRole[] = ["admin", "gestor", "operador"];
 
 function ConfiguracoesPage() {
   const navigate = useNavigate();
@@ -722,6 +722,7 @@ function BackupTab() {
 function ListasTab() {
   const sections: { kind: AppListKind; title: string; placeholder: string }[] = [
     { kind: "vendedor", title: "Vendedores", placeholder: "Novo vendedor" },
+    { kind: "frete", title: "Frete (transportadoras)", placeholder: "Nova opção de frete" },
     { kind: "dtf", title: "Operadores DTF", placeholder: "Novo operador DTF" },
     { kind: "silk", title: "Operadores Silk", placeholder: "Novo operador Silk" },
     { kind: "acabamento", title: "Responsáveis pelo Acabamento", placeholder: "Novo responsável" },

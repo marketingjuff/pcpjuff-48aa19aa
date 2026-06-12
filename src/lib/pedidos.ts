@@ -18,6 +18,17 @@ export type Pedido = PedidoBase & {
   responsavel_acabamento: string | null;
   finalizado_em: string | null;
   tempo_producao: number | null;
+  // v2
+  forma_pagamento: string | null;
+  nf_emitida: boolean | null;
+  expedicao_entrou_em: string | null;
+  exp_cobranca_pagamento: boolean | null;
+  exp_pagamento: boolean | null;
+  exp_etiqueta: boolean | null;
+  exp_frete_solicitado: boolean | null;
+  exp_despachado: boolean | null;
+  exp_despachado_em: string | null;
+  exp_observacoes: string | null;
 };
 
 type PedidoInsertBase = Omit<TablesInsert<"pedidos">, "modelo_estampa" | "status">;
@@ -36,10 +47,21 @@ export type PedidoInsert = PedidoInsertBase & {
   responsavel_acabamento?: string | null;
   finalizado_em?: string | null;
   tempo_producao?: number | null;
+  forma_pagamento?: string | null;
+  nf_emitida?: boolean | null;
+  expedicao_entrou_em?: string | null;
+  exp_cobranca_pagamento?: boolean | null;
+  exp_pagamento?: boolean | null;
+  exp_etiqueta?: boolean | null;
+  exp_frete_solicitado?: boolean | null;
+  exp_despachado?: boolean | null;
+  exp_despachado_em?: string | null;
+  exp_observacoes?: string | null;
 };
 
 export const VENDEDORES = ["Wander", "Mirela", "Gabriel", "Outros"] as const;
-export const STATUS_GERAL_OPCOES = ["Aberto", "Completo"] as const;
+export const STATUS_GERAL_OPCOES = ["aberto", "completo"] as const;
+export const FORMAS_PAGAMENTO = ["Cartão de crédito", "50%/50%", "Boleto", "À vista"] as const;
 export const TIPOS_ESTAMPA = ["DTF", "Silk", "DTF+Silk", "Lisa"] as const;
 export const SIM_NAO_PROCESSO = ["Sim", "Não", "Em processo"] as const;
 export const SIM_NAO = ["Sim", "Não"] as const;
