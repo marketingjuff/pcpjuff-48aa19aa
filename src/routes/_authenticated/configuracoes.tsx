@@ -476,6 +476,24 @@ function UsuariosTab() {
   );
 }
 
+function AreasCheckboxes({ value, onChange, options }: { value: AppArea[]; onChange: (next: AppArea[]) => void; options: AppArea[] }) {
+  function toggle(a: AppArea, checked: boolean) {
+    const set = new Set(value);
+    if (checked) set.add(a); else set.delete(a);
+    onChange(options.filter((o) => set.has(o)));
+  }
+  return (
+    <div className="grid grid-cols-2 gap-1.5 p-2 rounded-md border bg-muted/20">
+      {options.map((a) => (
+        <label key={a} className="flex items-center gap-2 text-xs cursor-pointer">
+          <Checkbox checked={value.includes(a)} onCheckedChange={(c) => toggle(a, !!c)} />
+          <span>{APP_AREA_LABEL[a]}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
 function BackupTab() {
   const exportFn = useServerFn(exportBackup);
   const importFn = useServerFn(importBackup);
