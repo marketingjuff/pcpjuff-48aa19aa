@@ -138,13 +138,14 @@ function AppHomeInner() {
 
       <main className="container mx-auto px-4 py-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full grid-cols-7 mb-6">
+          <TabsList className="grid w-full grid-cols-8 mb-6">
             <TabsTrigger value="dashboard">Dashboard Master</TabsTrigger>
             <TabsTrigger value="dados">Dados In</TabsTrigger>
             <TabsTrigger value="arte">Arte</TabsTrigger>
             <TabsTrigger value="dtf">DTF</TabsTrigger>
             <TabsTrigger value="silk">Silk Screen</TabsTrigger>
             <TabsTrigger value="acab">Acabamento</TabsTrigger>
+            <TabsTrigger value="exp">Expedição</TabsTrigger>
             <TabsTrigger value="fin">Finalizados</TabsTrigger>
           </TabsList>
 
