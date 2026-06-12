@@ -67,9 +67,23 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
       data_saida_juff: form.data_saida_juff ?? null,
       observacoes_pedido: form.observacoes_pedido ?? null,
     };
-    if (podeFinalizar && !selected.finalizado_em) payload.finalizado_em = new Date().toISOString();
-    if (form.embalado !== "Sim" && selected.finalizado_em) payload.finalizado_em = null;
     onSave(payload);
+  }
+
+  function enviarParaExpedicao() {
+    if (!selected) return;
+    if (!podeFinalizar) {
+      // Mesmo assim deixamos enviar manualmente — Acabamento decide.
+    }
+    onSave({
+      id: selected.id,
+      embalado: form.embalado ?? selected.embalado ?? null,
+      responsavel_acabamento: form.responsavel_acabamento ?? selected.responsavel_acabamento ?? null,
+      responsavel_conferencia: form.responsavel_conferencia ?? selected.responsavel_conferencia ?? null,
+      data_saida_juff: form.data_saida_juff ?? selected.data_saida_juff ?? null,
+      observacoes_pedido: form.observacoes_pedido ?? selected.observacoes_pedido ?? null,
+      expedicao_entrou_em: new Date().toISOString(),
+    } as any);
   }
   useRegisterSave(handleSave, active);
 
