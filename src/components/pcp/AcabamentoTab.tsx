@@ -182,7 +182,12 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 </FormField>
               </div>
             </div>
-            <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Salvar</Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Salvar</Button>
+              <Button variant="default" onClick={enviarParaExpedicao} disabled={saving} className="bg-pink-600 hover:bg-pink-700 text-white">
+                Enviar para Expedição
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
