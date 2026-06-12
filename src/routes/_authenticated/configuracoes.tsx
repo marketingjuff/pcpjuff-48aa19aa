@@ -411,15 +411,16 @@ function UsuariosTab() {
         <h2 className="font-semibold mb-3">Usuários cadastrados</h2>
         <Table>
           <TableHeader>
-            <TableRow><TableHead>Nome</TableHead><TableHead>E-mail</TableHead><TableHead>Papel</TableHead><TableHead></TableHead></TableRow>
+            <TableRow><TableHead>Nome</TableHead><TableHead>E-mail</TableHead><TableHead>Papel / Áreas</TableHead><TableHead></TableHead></TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={4}>Carregando…</TableCell></TableRow>
               : (users as any[]).map((u) => {
-                const currentRole = (u.roles?.[0]?.role ?? "gestor") as AppRole;
+                const currentRole = (u.roles?.[0]?.role ?? "operador") as AppRole;
+                const currentAreas = ((u.roles?.[0]?.areas_extras ?? []) as string[]) as AppArea[];
                 return (
                   <TableRow key={u.id}>
-                    <TableCell>
+                    <TableCell className="align-top">
                       {editingName && editingName.id === u.id ? (
                         <div className="flex gap-1">
                           <Input
@@ -442,16 +443,25 @@ function UsuariosTab() {
                         </button>
                       )}
                     </TableCell>
-                    <TableCell>{u.email}</TableCell>
+                    <TableCell className="align-top">{u.email}</TableCell>
                     <TableCell>
-                      <Select value={currentRole} onValueChange={(v) => update.mutate({ userId: u.id, role: v as AppRole })}>
-                        <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <div className="space-y-2">
+                        <Select value={currentRole} onValueChange={(v) => update.mutate({ userId: u.id, role: v as AppRole, areas_extras: v === "admin" ? [] : currentAreas })}>
+                          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        {currentRole !== "admin" && (
+                          <AreasCheckboxes
+                            value={currentAreas}
+                            onChange={(next) => update.mutate({ userId: u.id, role: currentRole, areas_extras: next })}
+                            options={currentRole === "gestor" ? APP_AREAS_GESTOR : APP_AREAS_OPERADOR}
+                          />
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right align-top">
                       <Button variant="ghost" size="icon" onClick={() => { if (confirm("Excluir este usuário?")) del.mutate(u.id); }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
