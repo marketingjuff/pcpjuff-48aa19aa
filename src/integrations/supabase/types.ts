@@ -77,7 +77,16 @@ export type Database = {
           dtf_observacao: string | null
           embalado: string | null
           entrada_pedido: string | null
+          exp_cobranca_pagamento: boolean | null
+          exp_despachado: boolean | null
+          exp_despachado_em: string | null
+          exp_etiqueta: boolean | null
+          exp_frete_solicitado: boolean | null
+          exp_observacoes: string | null
+          exp_pagamento: boolean | null
+          expedicao_entrou_em: string | null
           finalizado_em: string | null
+          forma_pagamento: string | null
           fotolito_executado: string | null
           fotolito_impresso: string | null
           frete: string | null
@@ -85,6 +94,7 @@ export type Database = {
           inicio_estamparia: string | null
           layout_url: string | null
           necessita_vetorizacao: boolean | null
+          nf_emitida: boolean | null
           obs_vendedor: string | null
           observacoes_pedido: string | null
           orcamento: string | null
@@ -124,7 +134,16 @@ export type Database = {
           dtf_observacao?: string | null
           embalado?: string | null
           entrada_pedido?: string | null
+          exp_cobranca_pagamento?: boolean | null
+          exp_despachado?: boolean | null
+          exp_despachado_em?: string | null
+          exp_etiqueta?: boolean | null
+          exp_frete_solicitado?: boolean | null
+          exp_observacoes?: string | null
+          exp_pagamento?: boolean | null
+          expedicao_entrou_em?: string | null
           finalizado_em?: string | null
+          forma_pagamento?: string | null
           fotolito_executado?: string | null
           fotolito_impresso?: string | null
           frete?: string | null
@@ -132,6 +151,7 @@ export type Database = {
           inicio_estamparia?: string | null
           layout_url?: string | null
           necessita_vetorizacao?: boolean | null
+          nf_emitida?: boolean | null
           obs_vendedor?: string | null
           observacoes_pedido?: string | null
           orcamento?: string | null
@@ -171,7 +191,16 @@ export type Database = {
           dtf_observacao?: string | null
           embalado?: string | null
           entrada_pedido?: string | null
+          exp_cobranca_pagamento?: boolean | null
+          exp_despachado?: boolean | null
+          exp_despachado_em?: string | null
+          exp_etiqueta?: boolean | null
+          exp_frete_solicitado?: boolean | null
+          exp_observacoes?: string | null
+          exp_pagamento?: boolean | null
+          expedicao_entrou_em?: string | null
           finalizado_em?: string | null
+          forma_pagamento?: string | null
           fotolito_executado?: string | null
           fotolito_impresso?: string | null
           frete?: string | null
@@ -179,6 +208,7 @@ export type Database = {
           inicio_estamparia?: string | null
           layout_url?: string | null
           necessita_vetorizacao?: boolean | null
+          nf_emitida?: boolean | null
           obs_vendedor?: string | null
           observacoes_pedido?: string | null
           orcamento?: string | null
@@ -256,6 +286,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_area: { Args: { _area: string; _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -266,7 +297,7 @@ export type Database = {
       is_team_member: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "gestor" | "arte" | "dtf" | "silk" | "acabamento"
+      app_role: "admin" | "gestor" | "operador"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -394,7 +425,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "gestor", "arte", "dtf", "silk", "acabamento"],
+      app_role: ["admin", "gestor", "operador"],
     },
   },
 } as const
