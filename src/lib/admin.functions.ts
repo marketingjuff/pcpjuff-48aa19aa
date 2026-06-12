@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AppRole } from "@/integrations/supabase/schema-extras";
 
-const APP_ROLES = ["admin", "gestor", "arte", "dtf", "silk", "acabamento"] as const;
+const APP_ROLES = ["admin", "gestor", "operador"] as const;
 
 async function assertAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
