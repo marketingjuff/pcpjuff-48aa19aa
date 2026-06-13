@@ -184,7 +184,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
                   </FormField>
                 );
               })}
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2">
                 <FormField label="Observações da Expedição">
                   <Textarea
                     rows={3}
@@ -202,10 +202,10 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
             )}
 
             <div className="flex gap-2 flex-wrap">
-              <Button onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
                 <Save className="h-4 w-4 mr-1" /> Salvar
               </Button>
-              <Button variant="outline" onClick={marcarTudoSim} disabled={saving}>
+              <Button variant="outline" onClick={marcarTudoSim} disabled={saving} className="w-full sm:w-auto">
                 Marcar tudo como "Sim"
               </Button>
             </div>
