@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge, PedidoMobileCard, Chip } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 import { formatDateBR } from "@/lib/format";
@@ -104,8 +104,8 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
           <EmptyState>Este pedido não inclui Silk (modelo: {selected.tipo_estampa}).</EmptyState>
         ) : (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Silk Screen — {selected.pedido_olist}</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+              <CardTitle className="text-base sm:text-lg truncate">Silk Screen — {selected.pedido_olist}</CardTitle>
               <Badge variant="outline" className={statusColor}>
                 {form.silk_feito === "Sim" ? (atrasado ? "Atrasado" : "Concluído") : "Em andamento"}
               </Badge>
@@ -118,7 +118,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
               </div>
             )}
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
                 <ReadOnlyField label="QTD" value={selected.qtd} />
@@ -139,7 +139,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 <ReadOnlyField label="Limite estamparia" value={formatDateBR(selected.termino_estamparia)} />
                 <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
               </div>
-              <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 pt-4 border-t">
                 <FormField label="Tela gravada?">
                   <Select value={form.tela_gravada ?? ""} onValueChange={(v) => set("tela_gravada", v)}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -161,13 +161,13 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                     <SelectContent>{operadoresSilk.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                   </Select>
                 </FormField>
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2">
                   <FormField label="Observações do Silk">
                     <Textarea value={form.silk_observacao ?? ""} onChange={(e) => set("silk_observacao", e.target.value)} rows={2} />
                   </FormField>
                 </div>
               </div>
-              <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Salvar</Button>
+              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-1" />Salvar</Button>
             </CardContent>
           </Card>
         )
@@ -178,7 +178,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — Silk</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-2 md:grid-cols-5">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-5">
             <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />
             <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
             <Select value={fStatus} onValueChange={setFStatus}>
@@ -204,7 +204,21 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
               </SelectContent>
             </Select>
           </div>
-          <div className="rounded-md border overflow-x-auto">
+          <div className="md:hidden rounded-md border divide-y">
+            {dashboardPedidos.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido Silk disponível.</div>
+            ) : dashboardPedidos.map((p) => (
+              <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                <Chip label="Tipo" value={p.tipo_estampa} />
+                <Chip label="QTD" value={p.qtd} />
+                <Chip label="Status" value={p.status_geral} />
+                <Chip label="Tela" value={p.tela_gravada} />
+                <Chip label="Silk" value={p.silk_feito} />
+                <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+              </PedidoMobileCard>
+            ))}
+          </div>
+          <div className="hidden md:block rounded-md border overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>

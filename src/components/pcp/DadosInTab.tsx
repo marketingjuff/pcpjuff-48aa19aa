@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { EtapaBadgeFromPedido } from "./shared";
+import { EtapaBadgeFromPedido, PedidoMobileCard, Chip } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 interface Props {
@@ -192,12 +192,12 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   return (
     <div className="space-y-6">
       <Card className="border-primary/30">
-        <CardContent className="py-4 flex items-center justify-between">
-          <div>
+        <CardContent className="py-4 flex items-center justify-between flex-wrap gap-3">
+          <div className="min-w-0">
             <div className="text-xs uppercase text-muted-foreground tracking-wider">Orçamento Comercial</div>
-            <div className="text-4xl font-bold tabular-nums">{form.orcamento || "—"}</div>
+            <div className="text-2xl sm:text-4xl font-bold tabular-nums truncate">{form.orcamento || "—"}</div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button size="sm" variant="outline" onClick={handleNew}><Plus className="h-4 w-4 mr-1" />Novo</Button>
             {selected && (
               <AlertDialog>
@@ -226,7 +226,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         {/* Vendedor */}
         <Card className="border-l-4 border-l-green-500 bg-green-50/40 dark:bg-green-950/10">
           <CardHeader><CardTitle className="text-base text-green-700 dark:text-green-400">Input do Vendedor</CardTitle></CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
+          <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <Field label="Pedido Olist *" invalid={missingVendor.has("pedido_olist")}><Input value={form.pedido_olist ?? ""} onChange={(e) => set("pedido_olist", e.target.value)} /></Field>
             <Field label="Orçamento Comercial *" invalid={missingVendor.has("orcamento")}><Input value={form.orcamento ?? ""} onChange={(e) => set("orcamento", e.target.value)} /></Field>
             <Field label="Quantas peças *" invalid={missingVendor.has("qtd")}><Input value={form.qtd ?? ""} onChange={(e) => set("qtd", e.target.value)} /></Field>
@@ -273,7 +273,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2">
               <Field label="Layout (PDF até 30MB)">
                 <div className="flex items-center gap-2">
                   <Input type="file" accept="application/pdf" disabled={uploading}
@@ -292,12 +292,12 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 )}
               </Field>
             </div>
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2">
               <Field label="Observações do vendedor">
                 <Textarea rows={3} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
               </Field>
             </div>
-            <div className="md:col-span-2 flex gap-2 pt-2">
+            <div className="sm:col-span-2 flex gap-2 pt-2">
               <Button type="button" onClick={saveVendor} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" />Salvar Input do Vendedor
               </Button>
@@ -311,7 +311,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         {/* Produção */}
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
           <CardHeader><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
+          <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <Field label="Status do pedido *" invalid={missingProd.has("status_geral")}>
               <Select value={form.status_geral ?? ""} onValueChange={(v) => set("status_geral", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -334,12 +334,12 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             <Field label="Tempo de produção (dias úteis)">
               <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{tempoProducaoCalc ?? "—"}</div>
             </Field>
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2">
               <Field label="Observações de produção">
                 <Textarea rows={3} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
               </Field>
             </div>
-            <div className="md:col-span-2 flex gap-2 pt-2">
+            <div className="sm:col-span-2 flex gap-2 pt-2">
               <Button type="button" onClick={saveProducao} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" />Salvar Input de Produção
               </Button>
@@ -350,7 +350,26 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — Dados In</CardTitle></CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
+        <CardContent className="p-0">
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y">
+            {(() => {
+              const visiveis = pedidos.filter((p) => !p.finalizado_em && !p.expedicao_entrou_em);
+              if (visiveis.length === 0) return <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido ativo.</div>;
+              return visiveis.map((p) => (
+                <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                  <Chip label="QTD" value={p.qtd} />
+                  <Chip label="Vend" value={p.vendedor} />
+                  <Chip label="Tipo" value={p.tipo_estampa} />
+                  <Chip label="Pgto" value={p.forma_pagamento} />
+                  <Chip label="NF" value={p.nf_emitida === null || p.nf_emitida === undefined ? "—" : (p.nf_emitida ? "Sim" : "Não")} />
+                  <Chip label="Status" value={p.status_geral} />
+                  <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+                </PedidoMobileCard>
+              ));
+            })()}
+          </div>
+          <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
@@ -385,6 +404,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               )}
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
     </div>

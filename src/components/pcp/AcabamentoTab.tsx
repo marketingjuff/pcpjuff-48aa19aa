@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge, PedidoMobileCard, Chip } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 
@@ -122,8 +122,8 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
     <div className="space-y-6">
       {selected ? (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Acabamento — {selected.pedido_olist}</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+            <CardTitle className="text-base sm:text-lg truncate">Acabamento — {selected.pedido_olist}</CardTitle>
             <Badge variant="outline" className={status.color}>{status.label}</Badge>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -139,7 +139,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </div>
             )}
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
               <ReadOnlyField label="Tipo de Estampa" value={selected.tipo_estampa} />
@@ -160,7 +160,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 ) : <div className="text-sm text-muted-foreground">Sem layout</div>}
               </div>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 pt-4 border-t">
               <FormField label="EMBALADO?">
                 <Select value={form.embalado ?? ""} onValueChange={setEmbalado}>
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -176,15 +176,15 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                   <SelectContent>{responsaveis.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                 </Select>
               </FormField>
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2">
                 <FormField label="Observações do Acabamento">
                   <Textarea value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} rows={3} />
                 </FormField>
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Salvar</Button>
-              <Button variant="default" onClick={enviarParaExpedicao} disabled={saving} className="bg-pink-600 hover:bg-pink-700 text-white">
+              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-1" />Salvar</Button>
+              <Button variant="default" onClick={enviarParaExpedicao} disabled={saving} className="w-full sm:w-auto bg-pink-600 hover:bg-pink-700 text-white">
                 Enviar para Expedição
               </Button>
             </div>
@@ -197,7 +197,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — Acabamento</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-2 md:grid-cols-4">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
             <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />
             <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
             <Select value={fDtf} onValueChange={setFDtf}>
@@ -215,7 +215,22 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </SelectContent>
             </Select>
           </div>
-          <div className="rounded-md border overflow-x-auto">
+          <div className="md:hidden rounded-md border divide-y">
+            {dashboardPedidos.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido pronto para acabamento.</div>
+            ) : dashboardPedidos.map((p) => (
+              <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                <Chip label="Tipo" value={p.tipo_estampa} />
+                <Chip label="QTD" value={p.qtd} />
+                <Chip label="Status" value={p.status_geral} />
+                <Chip label="DTF" value={modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"} />
+                <Chip label="Silk" value={modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"} />
+                <Chip label="Embalado" value={p.embalado} />
+                <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+              </PedidoMobileCard>
+            ))}
+          </div>
+          <div className="hidden md:block rounded-md border overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>

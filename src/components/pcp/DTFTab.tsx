@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge, PedidoMobileCard, Chip } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 import { formatDateBR } from "@/lib/format";
@@ -102,8 +102,8 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
           <EmptyState>Este pedido não inclui DTF (modelo: {selected.tipo_estampa}).</EmptyState>
         ) : (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>DTF — {selected.pedido_olist}</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+              <CardTitle className="text-base sm:text-lg truncate">DTF — {selected.pedido_olist}</CardTitle>
               <Badge variant="outline" className={statusColor}>
                 {form.dtf_estampado === "Sim" ? (atrasado ? "Atrasado" : "Concluído") : "Em andamento"}
               </Badge>
@@ -116,7 +116,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               </div>
             )}
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
                 <ReadOnlyField label="QTD" value={selected.qtd} />
@@ -137,7 +137,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 <ReadOnlyField label="Término estamparia" value={formatDateBR(selected.termino_estamparia)} />
                 <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
               </div>
-              <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 pt-4 border-t">
                 <FormField label="DTF Estampado?">
                   <Select value={form.dtf_estampado ?? ""} onValueChange={setEstampado}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -153,13 +153,13 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                     <SelectContent>{operadoresDTF.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                   </Select>
                 </FormField>
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2">
                   <FormField label="Observações do DTF">
                     <Textarea value={form.dtf_observacao ?? ""} onChange={(e) => set("dtf_observacao", e.target.value)} rows={2} />
                   </FormField>
                 </div>
               </div>
-              <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Salvar</Button>
+              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-1" />Salvar</Button>
             </CardContent>
           </Card>
         )
@@ -170,7 +170,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — DTF</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-2 md:grid-cols-5">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-5">
             <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />
             <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
             <Select value={fStatus} onValueChange={setFStatus}>
@@ -197,7 +197,22 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               </SelectContent>
             </Select>
           </div>
-          <div className="rounded-md border overflow-x-auto">
+          {/* Mobile cards */}
+          <div className="md:hidden rounded-md border divide-y">
+            {dashboardPedidos.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido DTF disponível.</div>
+            ) : dashboardPedidos.map((p) => (
+              <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                <Chip label="Tipo" value={p.tipo_estampa} />
+                <Chip label="QTD" value={p.qtd} />
+                <Chip label="Status" value={p.status_geral} />
+                <Chip label="Impresso" value={p.dtf_impresso} />
+                <Chip label="Estampado" value={p.dtf_estampado} />
+                <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+              </PedidoMobileCard>
+            ))}
+          </div>
+          <div className="hidden md:block rounded-md border overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>

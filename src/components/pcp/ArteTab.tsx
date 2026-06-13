@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge, PedidoMobileCard, Chip } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,7 +81,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           <CardContent className="space-y-6">
             <EtapaTopoBanner pedido={selected} tab="arte" />
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
               <ReadOnlyField label="Tipo de estampa" value={selected.tipo_estampa} />
@@ -103,7 +103,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 pt-4 border-t">
               {/* Vetorização (espelho) */}
               {selected.necessita_vetorizacao && (
                 <FormField label="Vetorização executada?">
@@ -153,7 +153,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 </Select>
               </FormField>
 
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2">
                 <FormField label="Observações da Arte">
                   <Textarea value={form.arte_observacao ?? ""} onChange={(e) => set("arte_observacao", e.target.value)} rows={2} />
                 </FormField>
@@ -169,7 +169,25 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
       {/* Dashboard da Arte */}
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — Arte</CardTitle></CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
+        <CardContent className="p-0">
+          {/* Mobile */}
+          <div className="md:hidden divide-y">
+            {(() => {
+              const visiveis = pedidos.filter((p) => visivelEmArte(p) && !p.finalizado_em && !p.expedicao_entrou_em);
+              if (visiveis.length === 0) return <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido em aberto.</div>;
+              return visiveis.map((p) => (
+                <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                  <Chip label="Tipo" value={p.tipo_estampa} />
+                  <Chip label="QTD" value={p.qtd} />
+                  <Chip label="Status" value={p.status_geral} />
+                  <Chip label="Arte" value={p.status_arte} />
+                  <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+                </PedidoMobileCard>
+              ));
+            })()}
+          </div>
+          {/* Desktop */}
+          <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
@@ -206,6 +224,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               })()}
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
 

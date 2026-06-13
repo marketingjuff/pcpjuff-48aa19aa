@@ -69,6 +69,55 @@ export function StatusPedidoBadge({ pedido }: { pedido: Pedido }) {
   return <Badge variant={pedido.status_geral === "completo" ? "default" : "secondary"}>{pedido.status_geral ?? "—"}</Badge>;
 }
 
+/** Pequeno chip rótulo:valor usado nos cards mobile dos dashboards. */
+export function Chip({ label, value }: { label: string; value: React.ReactNode }) {
+  if (value === null || value === undefined || value === "" || value === "—") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 text-[11px]">
+        <span className="text-muted-foreground">{label}:</span>
+        <span>—</span>
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 text-[11px]">
+      <span className="text-muted-foreground">{label}:</span>
+      <span className="font-medium">{value}</span>
+    </span>
+  );
+}
+
+/** Card clicável de pedido para os dashboards no mobile. */
+export function PedidoMobileCard({
+  pedido, active, onClick, children, right,
+}: {
+  pedido: Pedido;
+  active?: boolean;
+  onClick?: () => void;
+  children?: React.ReactNode;
+  right?: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full text-left p-3 hover:bg-accent transition-colors ${active ? "bg-accent" : ""}`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-medium text-sm truncate">{pedido.pedido_olist ?? "—"}</div>
+          <div className="text-xs text-muted-foreground truncate">{pedido.orcamento ?? ""}</div>
+        </div>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <EtapaBadgeFromPedido pedido={pedido} />
+          {right}
+        </div>
+      </div>
+      {children && <div className="mt-2 flex flex-wrap gap-1.5">{children}</div>}
+    </button>
+  );
+}
+
 /** Banner do topo de cada aba mostrando a etapa atual do pedido. */
 export function EtapaTopoBanner({ pedido, tab }: { pedido: Pedido; tab: "arte" | "dtf" | "silk" | "acabamento" | "dadosin" }) {
   const { etapa, cor } = calcularEtapaAtual(pedido);

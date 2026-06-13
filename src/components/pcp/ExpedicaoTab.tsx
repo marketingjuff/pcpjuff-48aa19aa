@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, ArrowUp, ArrowDown } from "lucide-react";
-import { ReadOnlyField, EmptyState, FormField } from "./shared";
+import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip } from "./shared";
 import { formatDateBR } from "@/lib/format";
 
 interface Props {
@@ -144,13 +144,13 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
       {selected && selected.expedicao_entrou_em && !selected.finalizado_em ? (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
-            <CardTitle>Expedição — {selected.pedido_olist}</CardTitle>
+            <CardTitle className="text-base sm:text-lg truncate">Expedição — {selected.pedido_olist}</CardTitle>
             <Badge variant="outline" className="bg-pink-500/15 text-pink-700 border-pink-500/30 dark:text-pink-300">
               Expedição
             </Badge>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
               <ReadOnlyField label="Frete" value={selected.frete ?? "—"} />
@@ -161,7 +161,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
               <ReadOnlyField label="NF Emitida (espelho)" value={form.nf_emitida === true ? "Sim" : form.nf_emitida === false ? "Não" : "—"} />
             </div>
 
-            <div className="border-t pt-4 grid gap-4 md:grid-cols-2">
+            <div className="border-t pt-4 grid gap-4 grid-cols-1 sm:grid-cols-2">
               {itensParaForma(form.forma_pagamento ?? selected.forma_pagamento).map((key) => {
                 const val = form[key];
                 return (
@@ -184,7 +184,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
                   </FormField>
                 );
               })}
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2">
                 <FormField label="Observações da Expedição">
                   <Textarea
                     rows={3}
@@ -202,10 +202,10 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
             )}
 
             <div className="flex gap-2 flex-wrap">
-              <Button onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
                 <Save className="h-4 w-4 mr-1" /> Salvar
               </Button>
-              <Button variant="outline" onClick={marcarTudoSim} disabled={saving}>
+              <Button variant="outline" onClick={marcarTudoSim} disabled={saving} className="w-full sm:w-auto">
                 Marcar tudo como "Sim"
               </Button>
             </div>
@@ -218,7 +218,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — Expedição</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-2 md:grid-cols-4">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
             <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
             <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />
             <Input placeholder="UF" value={fUF} onChange={(e) => setFUF(e.target.value)} />
@@ -233,7 +233,26 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
               </SelectContent>
             </Select>
           </div>
-          <div className="rounded-md border overflow-x-auto">
+          {/* Mobile cards */}
+          <div className="md:hidden rounded-md border divide-y">
+            {dashboardPedidos.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido na expedição.</div>
+            ) : dashboardPedidos.map((p) => {
+              const pend = pendenciasDoPedido(p);
+              return (
+                <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                  <Chip label="UF" value={p.uf_entrega} />
+                  <Chip label="Pgto" value={p.forma_pagamento} />
+                  <Chip label="Saída" value={formatDateBR(p.saida_juff) || "—"} />
+                  <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+                  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${pend.length === 0 ? "text-success border-success/40" : "text-warning-foreground border-warning/40 bg-warning/15"}`}>
+                    {pend.length === 0 ? "Sem pendências" : `${pend.length} pendência${pend.length > 1 ? "s" : ""}`}
+                  </span>
+                </PedidoMobileCard>
+              );
+            })}
+          </div>
+          <div className="hidden md:block rounded-md border overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
