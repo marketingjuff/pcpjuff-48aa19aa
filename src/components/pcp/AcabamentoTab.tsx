@@ -160,7 +160,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 ) : <div className="text-sm text-muted-foreground">Sem layout</div>}
               </div>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 pt-4 border-t">
               <FormField label="EMBALADO?">
                 <Select value={form.embalado ?? ""} onValueChange={setEmbalado}>
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
