@@ -158,6 +158,14 @@ export function diasAte(date: string | null | undefined): number | null {
   return Math.round((d.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
 }
 
+/** Pedido visível nas áreas de produção (Dados In, Arte, DTF, Silk, Acabamento, Dashboard).
+ *  Reabertos aparecem em todas as abas mesmo se já entraram em expedição. */
+export function pedidoAtivoNasAreas(p: Pedido): boolean {
+  if (p.finalizado_em) return false;
+  if (p.status_geral === "reaberto") return true;
+  return !p.expedicao_entrou_em;
+}
+
 // ---------- Helpers de completude por etapa ----------
 
 function notEmpty(v: any) {

@@ -1,3 +1,4 @@
+import { pedidoAtivoNasAreas } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import { SIM_NAO_PROCESSO, modeloIncluiSilk, visivelEmSilk } from "@/lib/pedidos";
@@ -85,8 +86,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [fSilk, setFSilk] = useState("todos");
 
   const dashboardPedidos = useMemo(() => pedidos.filter((p) => {
-    if (p.finalizado_em) return false;
-    if (p.expedicao_entrou_em) return false;
+    if (!pedidoAtivoNasAreas(p)) return false;
     if (!visivelEmSilk(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
