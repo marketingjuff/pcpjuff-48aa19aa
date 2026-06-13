@@ -147,7 +147,44 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
             </>
           )}
         </div>
-        <div className="rounded-md border overflow-x-auto">
+        {/* Mobile cards */}
+        <div className="md:hidden rounded-md border divide-y">
+          {finalizados.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido finalizado.</div>
+          ) : finalizados.map((p) => (
+            <div key={p.id} className={`p-3 ${selectedIds.has(p.id) ? "bg-accent" : ""}`}>
+              <div className="flex items-start gap-2">
+                {isAdmin && (
+                  <Checkbox
+                    checked={selectedIds.has(p.id)}
+                    onCheckedChange={(c) => toggleOne(p.id, c === true)}
+                    aria-label={`Selecionar pedido ${p.pedido_olist}`}
+                    className="mt-1"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-medium truncate">{p.pedido_olist}</div>
+                    <Badge variant="outline" className="shrink-0">{p.tipo_estampa}</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">{p.orcamento}</div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <Chip label="QTD" value={p.qtd} />
+                    <Chip label="Vend" value={p.vendedor} />
+                    <Chip label="Resp" value={p.responsavel_acabamento} />
+                    <Chip label="Finalizado" value={formatDateBR(p.finalizado_em?.slice(0,10)) || "—"} />
+                  </div>
+                  <div className="mt-2">
+                    <Button size="sm" variant="outline" onClick={() => onReabrir(p.id)} className="w-full">
+                      <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="hidden md:block rounded-md border overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
