@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Factory, LogOut, Settings } from "lucide-react";
+import { Factory, LogOut, Settings, Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
 import type { AppArea } from "@/integrations/supabase/schema-extras";
@@ -35,6 +36,7 @@ function AppHomeInner() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [tab, setTab] = useState("dashboard");
+  const [menuOpen, setMenuOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const isAdmin = useIsAdmin();
   const { data: myRoles = [] } = useMyRoles();
@@ -44,9 +46,6 @@ function AppHomeInner() {
   );
   const canSee = (a: AppArea) => isAdmin || areas.has(a);
   const isManager = isAdmin || isGestor;
-
-
-
 
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ["pedidos"],
@@ -117,44 +116,85 @@ function AppHomeInner() {
     setTab(t);
   }
 
+  type TabDef = { value: string; label: string };
+  const tabs: TabDef[] = [
+    ...(isManager ? [{ value: "dashboard", label: "Dashboard Master" }] : []),
+    ...((canSee("dados_in_vendedor") || canSee("dados_in_producao")) ? [{ value: "dados", label: "Dados In" }] : []),
+    ...(canSee("arte") ? [{ value: "arte", label: "Arte" }] : []),
+    ...(canSee("dtf") ? [{ value: "dtf", label: "DTF" }] : []),
+    ...(canSee("silk") ? [{ value: "silk", label: "Silk Screen" }] : []),
+    ...(canSee("acabamento") ? [{ value: "acab", label: "Acabamento" }] : []),
+    ...(canSee("expedicao") ? [{ value: "exp", label: "Expedição" }] : []),
+    ...(isManager ? [{ value: "fin", label: "Finalizados" }] : []),
+  ];
+  const activeTabLabel = tabs.find((t) => t.value === tab)?.label ?? "";
+
+  function pickTab(v: string) {
+    setTab(v);
+    setMenuOpen(false);
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-30">
-        <div className="container mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
+        <div className="container mx-auto grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:px-4 sm:py-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden" aria-label="Abrir menu">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-0">
+                <SheetHeader className="p-4 border-b">
+                  <SheetTitle>PCP Juff</SheetTitle>
+                </SheetHeader>
+                <nav className="p-2 flex flex-col">
+                  {tabs.map((t) => (
+                    <button
+                      key={t.value}
+                      onClick={() => pickTab(t.value)}
+                      className={`text-left px-3 py-2 rounded-md text-sm transition-colors ${tab === t.value ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </nav>
+              </SheetContent>
+            </Sheet>
+            <div className="hidden sm:flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground shrink-0">
               <Factory className="h-5 w-5" />
             </div>
-            <div>
-              <h1 className="text-lg font-semibold leading-tight">PCP Juff</h1>
-              <p className="text-xs text-muted-foreground">Controle de produção</p>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg font-semibold leading-tight truncate">PCP Juff</h1>
+              <p className="text-[11px] sm:text-xs text-muted-foreground truncate">
+                <span className="md:hidden">{activeTabLabel}</span>
+                <span className="hidden md:inline">Controle de produção</span>
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div />
+          <div className="flex items-center gap-1 sm:gap-2">
             {isManager && (
-              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes" })}>
-                <Settings className="h-4 w-4 mr-1" /> Configurações
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes" })} aria-label="Configurações">
+                <Settings className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Configurações</span>
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-1" /> Sair
+            <Button variant="ghost" size="sm" onClick={handleLogout} aria-label="Sair">
+              <LogOut className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Sair</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="flex flex-wrap mb-6">
-            {isManager && <TabsTrigger value="dashboard">Dashboard Master</TabsTrigger>}
-            {(canSee("dados_in_vendedor") || canSee("dados_in_producao")) && <TabsTrigger value="dados">Dados In</TabsTrigger>}
-            {canSee("arte") && <TabsTrigger value="arte">Arte</TabsTrigger>}
-            {canSee("dtf") && <TabsTrigger value="dtf">DTF</TabsTrigger>}
-            {canSee("silk") && <TabsTrigger value="silk">Silk Screen</TabsTrigger>}
-            {canSee("acabamento") && <TabsTrigger value="acab">Acabamento</TabsTrigger>}
-            {canSee("expedicao") && <TabsTrigger value="exp">Expedição</TabsTrigger>}
-            {isManager && <TabsTrigger value="fin">Finalizados</TabsTrigger>}
+          <TabsList className="hidden md:flex flex-wrap mb-6">
+            {tabs.map((t) => (
+              <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>
+            ))}
           </TabsList>
 
           {isManager && (
@@ -203,4 +243,3 @@ function AppHomeInner() {
     </div>
   );
 }
-
