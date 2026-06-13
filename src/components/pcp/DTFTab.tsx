@@ -153,13 +153,13 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                     <SelectContent>{operadoresDTF.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                   </Select>
                 </FormField>
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2">
                   <FormField label="Observações do DTF">
                     <Textarea value={form.dtf_observacao ?? ""} onChange={(e) => set("dtf_observacao", e.target.value)} rows={2} />
                   </FormField>
                 </div>
               </div>
-              <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Salvar</Button>
+              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-1" />Salvar</Button>
             </CardContent>
           </Card>
         )
