@@ -350,7 +350,26 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — Dados In</CardTitle></CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
+        <CardContent className="p-0">
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y">
+            {(() => {
+              const visiveis = pedidos.filter((p) => !p.finalizado_em && !p.expedicao_entrou_em);
+              if (visiveis.length === 0) return <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido ativo.</div>;
+              return visiveis.map((p) => (
+                <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                  <Chip label="QTD" value={p.qtd} />
+                  <Chip label="Vend" value={p.vendedor} />
+                  <Chip label="Tipo" value={p.tipo_estampa} />
+                  <Chip label="Pgto" value={p.forma_pagamento} />
+                  <Chip label="NF" value={p.nf_emitida === null || p.nf_emitida === undefined ? "—" : (p.nf_emitida ? "Sim" : "Não")} />
+                  <Chip label="Status" value={p.status_geral} />
+                  <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+                </PedidoMobileCard>
+              ));
+            })()}
+          </div>
+          <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
@@ -385,6 +404,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               )}
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
     </div>
