@@ -102,8 +102,8 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
           <EmptyState>Este pedido não inclui DTF (modelo: {selected.tipo_estampa}).</EmptyState>
         ) : (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>DTF — {selected.pedido_olist}</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+              <CardTitle className="text-base sm:text-lg truncate">DTF — {selected.pedido_olist}</CardTitle>
               <Badge variant="outline" className={statusColor}>
                 {form.dtf_estampado === "Sim" ? (atrasado ? "Atrasado" : "Concluído") : "Em andamento"}
               </Badge>
