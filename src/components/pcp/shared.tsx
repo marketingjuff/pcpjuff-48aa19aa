@@ -98,23 +98,33 @@ export function PedidoMobileCard({
   right?: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className={`w-full text-left p-3 hover:bg-accent transition-colors ${active ? "bg-accent" : ""}`}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={`w-full text-left p-3 hover:bg-accent transition-colors cursor-pointer ${active ? "bg-accent" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="font-medium text-sm truncate">{pedido.pedido_olist ?? "—"}</div>
           <div className="text-xs text-muted-foreground truncate">{pedido.orcamento ?? ""}</div>
         </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
+        <div
+          className="flex flex-col items-end gap-1 shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
           <EtapaBadgeFromPedido pedido={pedido} />
           {right}
         </div>
       </div>
       {children && <div className="mt-2 flex flex-wrap gap-1.5">{children}</div>}
-    </button>
+    </div>
   );
 }
 
