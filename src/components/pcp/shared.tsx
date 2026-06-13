@@ -64,9 +64,29 @@ export function EtapaBadgeFromPedido({ pedido }: { pedido: Pedido }) {
   return <Badge variant="outline" className={`${etapaPaletteClass(etapa)} whitespace-nowrap`}>{etapa}</Badge>;
 }
 
-/** Badge do status do pedido — mesma exibição do Dados In. */
+/** Classe de cor por status geral do pedido. */
+export function statusGeralColorClass(status: string | null | undefined): string {
+  if (status === "completo") return "bg-emerald-500/15 text-emerald-700 border-emerald-500/40 dark:text-emerald-300";
+  if (status === "reaberto") return "bg-amber-500/20 text-amber-800 border-amber-500/50 dark:text-amber-300";
+  if (status === "aberto") return "bg-blue-500/15 text-blue-700 border-blue-500/40 dark:text-blue-300";
+  return "bg-muted text-muted-foreground border-border";
+}
+
+/** Badge do status do pedido — colorido por status (aberto/completo/reaberto). */
 export function StatusPedidoBadge({ pedido }: { pedido: Pedido }) {
-  return <Badge variant={pedido.status_geral === "completo" ? "default" : "secondary"}>{pedido.status_geral ?? "—"}</Badge>;
+  const s = pedido.status_geral;
+  const label = s ? s.charAt(0).toUpperCase() + s.slice(1) : "—";
+  return <Badge variant="outline" className={`${statusGeralColorClass(s)} whitespace-nowrap capitalize`}>{label}</Badge>;
+}
+
+/** Chip "Status: <badge colorido>" para os cards mobile. */
+export function StatusPedidoChip({ pedido }: { pedido: Pedido }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 text-[11px]">
+      <span className="text-muted-foreground">Status:</span>
+      <StatusPedidoBadge pedido={pedido} />
+    </span>
+  );
 }
 
 /** Pequeno chip rótulo:valor usado nos cards mobile dos dashboards. */

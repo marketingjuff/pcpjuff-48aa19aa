@@ -19,7 +19,7 @@ import {
 import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { etapaPaletteClass, StatusPedidoBadge, PedidoMobileCard, Chip } from "./shared";
+import { etapaPaletteClass, StatusPedidoBadge, StatusPedidoChip, PedidoMobileCard, Chip } from "./shared";
 
 interface Props {
   pedidos: Pedido[];
@@ -184,7 +184,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                     <Chip label="QTD" value={p.qtd} />
                     <Chip label="Vend" value={p.vendedor} />
                     <Chip label="Tipo" value={p.tipo_estampa} />
-                    <Chip label="Status" value={p.status_geral} />
+                    <StatusPedidoChip pedido={p} />
                     <Chip label="Dias" value={dias} />
                     <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
                     <span className="inline-flex items-center gap-1.5 w-full mt-1">

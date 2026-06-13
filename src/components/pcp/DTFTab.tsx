@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge, PedidoMobileCard, Chip } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge, StatusPedidoChip, PedidoMobileCard, Chip } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 import { formatDateBR } from "@/lib/format";
@@ -205,7 +205,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
                 <Chip label="Tipo" value={p.tipo_estampa} />
                 <Chip label="QTD" value={p.qtd} />
-                <Chip label="Status" value={p.status_geral} />
+                <StatusPedidoChip pedido={p} />
                 <Chip label="Impresso" value={p.dtf_impresso} />
                 <Chip label="Estampado" value={p.dtf_estampado} />
                 <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />

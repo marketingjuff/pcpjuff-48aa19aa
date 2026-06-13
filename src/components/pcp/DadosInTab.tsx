@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { EtapaBadgeFromPedido, PedidoMobileCard, Chip } from "./shared";
+import { EtapaBadgeFromPedido, PedidoMobileCard, Chip, StatusPedidoBadge, StatusPedidoChip } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 interface Props {
@@ -363,7 +363,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   <Chip label="Tipo" value={p.tipo_estampa} />
                   <Chip label="Pgto" value={p.forma_pagamento} />
                   <Chip label="NF" value={p.nf_emitida === null || p.nf_emitida === undefined ? "—" : (p.nf_emitida ? "Sim" : "Não")} />
-                  <Chip label="Status" value={p.status_geral} />
+                  <StatusPedidoChip pedido={p} />
                   <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
                 </PedidoMobileCard>
               ));
@@ -392,7 +392,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   <td className="px-3 py-2">{p.nf_emitida === null || p.nf_emitida === undefined ? "—" : p.nf_emitida ? "Sim" : "Não"}</td>
                   <td className="px-3 py-2">{p.frete ?? "—"}</td>
                   <td className="px-3 py-2">{p.tempo_frete ?? "—"}</td>
-                  <td className="px-3 py-2"><Badge variant={p.status_geral === "completo" ? "default" : "secondary"}>{p.status_geral}</Badge></td>
+                  <td className="px-3 py-2"><StatusPedidoBadge pedido={p} /></td>
                   <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                   <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.entrada_pedido)}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
