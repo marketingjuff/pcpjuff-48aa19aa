@@ -64,12 +64,8 @@ export function EtapaBadgeFromPedido({ pedido }: { pedido: Pedido }) {
   return <Badge variant="outline" className={`${etapaPaletteClass(etapa)} whitespace-nowrap`}>{etapa}</Badge>;
 }
 
-/** Badge do status do pedido — destaca "Incompleto" quando aberto após arte. */
+/** Badge do status do pedido — mesma exibição do Dados In. */
 export function StatusPedidoBadge({ pedido }: { pedido: Pedido }) {
-  const incompleto = pedido.status_geral === "aberto" && !!pedido.arte_data;
-  if (incompleto) {
-    return <Badge variant="outline" className="bg-destructive/15 text-destructive border-destructive/30 whitespace-nowrap">Incompleto</Badge>;
-  }
   return <Badge variant={pedido.status_geral === "completo" ? "default" : "secondary"}>{pedido.status_geral ?? "—"}</Badge>;
 }
 
