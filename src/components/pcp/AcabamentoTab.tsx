@@ -215,7 +215,22 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </SelectContent>
             </Select>
           </div>
-          <div className="rounded-md border overflow-x-auto">
+          <div className="md:hidden rounded-md border divide-y">
+            {dashboardPedidos.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido pronto para acabamento.</div>
+            ) : dashboardPedidos.map((p) => (
+              <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                <Chip label="Tipo" value={p.tipo_estampa} />
+                <Chip label="QTD" value={p.qtd} />
+                <Chip label="Status" value={p.status_geral} />
+                <Chip label="DTF" value={modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"} />
+                <Chip label="Silk" value={modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"} />
+                <Chip label="Embalado" value={p.embalado} />
+                <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+              </PedidoMobileCard>
+            ))}
+          </div>
+          <div className="hidden md:block rounded-md border overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
