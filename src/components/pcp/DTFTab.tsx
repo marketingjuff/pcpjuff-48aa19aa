@@ -197,7 +197,22 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               </SelectContent>
             </Select>
           </div>
-          <div className="rounded-md border overflow-x-auto">
+          {/* Mobile cards */}
+          <div className="md:hidden rounded-md border divide-y">
+            {dashboardPedidos.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido DTF disponível.</div>
+            ) : dashboardPedidos.map((p) => (
+              <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                <Chip label="Tipo" value={p.tipo_estampa} />
+                <Chip label="QTD" value={p.qtd} />
+                <Chip label="Status" value={p.status_geral} />
+                <Chip label="Impresso" value={p.dtf_impresso} />
+                <Chip label="Estampado" value={p.dtf_estampado} />
+                <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+              </PedidoMobileCard>
+            ))}
+          </div>
+          <div className="hidden md:block rounded-md border overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
