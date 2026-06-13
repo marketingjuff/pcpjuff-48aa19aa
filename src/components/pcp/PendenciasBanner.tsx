@@ -30,7 +30,7 @@ export function PendenciasBanner({ pedidos }: { pedidos: Pedido[] }) {
         </Button>
       </div>
       {open && (
-        <div className="grid gap-2 md:grid-cols-2">
+        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
           {atrasados.length > 0 && (
             <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive border border-destructive/30 text-sm">
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
