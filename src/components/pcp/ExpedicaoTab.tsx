@@ -233,7 +233,26 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
               </SelectContent>
             </Select>
           </div>
-          <div className="rounded-md border overflow-x-auto">
+          {/* Mobile cards */}
+          <div className="md:hidden rounded-md border divide-y">
+            {dashboardPedidos.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido na expedição.</div>
+            ) : dashboardPedidos.map((p) => {
+              const pend = pendenciasDoPedido(p);
+              return (
+                <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                  <Chip label="UF" value={p.uf_entrega} />
+                  <Chip label="Pgto" value={p.forma_pagamento} />
+                  <Chip label="Saída" value={formatDateBR(p.saida_juff) || "—"} />
+                  <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+                  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${pend.length === 0 ? "text-success border-success/40" : "text-warning-foreground border-warning/40 bg-warning/15"}`}>
+                    {pend.length === 0 ? "Sem pendências" : `${pend.length} pendência${pend.length > 1 ? "s" : ""}`}
+                  </span>
+                </PedidoMobileCard>
+              );
+            })}
+          </div>
+          <div className="hidden md:block rounded-md border overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
