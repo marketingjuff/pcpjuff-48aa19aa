@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, ArrowUp, ArrowDown } from "lucide-react";
-import { ReadOnlyField, EmptyState, FormField } from "./shared";
+import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip } from "./shared";
 import { formatDateBR } from "@/lib/format";
 
 interface Props {
