@@ -176,15 +176,15 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                   <SelectContent>{responsaveis.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                 </Select>
               </FormField>
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2">
                 <FormField label="Observações do Acabamento">
                   <Textarea value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} rows={3} />
                 </FormField>
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Salvar</Button>
-              <Button variant="default" onClick={enviarParaExpedicao} disabled={saving} className="bg-pink-600 hover:bg-pink-700 text-white">
+              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-1" />Salvar</Button>
+              <Button variant="default" onClick={enviarParaExpedicao} disabled={saving} className="w-full sm:w-auto bg-pink-600 hover:bg-pink-700 text-white">
                 Enviar para Expedição
               </Button>
             </div>
