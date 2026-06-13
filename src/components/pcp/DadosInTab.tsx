@@ -273,7 +273,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2">
               <Field label="Layout (PDF até 30MB)">
                 <div className="flex items-center gap-2">
                   <Input type="file" accept="application/pdf" disabled={uploading}
@@ -292,12 +292,12 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 )}
               </Field>
             </div>
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2">
               <Field label="Observações do vendedor">
                 <Textarea rows={3} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
               </Field>
             </div>
-            <div className="md:col-span-2 flex gap-2 pt-2">
+            <div className="sm:col-span-2 flex gap-2 pt-2">
               <Button type="button" onClick={saveVendor} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" />Salvar Input do Vendedor
               </Button>
@@ -311,7 +311,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         {/* Produção */}
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
           <CardHeader><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
+          <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <Field label="Status do pedido *" invalid={missingProd.has("status_geral")}>
               <Select value={form.status_geral ?? ""} onValueChange={(v) => set("status_geral", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -334,12 +334,12 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             <Field label="Tempo de produção (dias úteis)">
               <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{tempoProducaoCalc ?? "—"}</div>
             </Field>
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2">
               <Field label="Observações de produção">
                 <Textarea rows={3} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
               </Field>
             </div>
-            <div className="md:col-span-2 flex gap-2 pt-2">
+            <div className="sm:col-span-2 flex gap-2 pt-2">
               <Button type="button" onClick={saveProducao} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" />Salvar Input de Produção
               </Button>
