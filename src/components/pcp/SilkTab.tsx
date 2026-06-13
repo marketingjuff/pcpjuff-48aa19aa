@@ -1,8 +1,7 @@
+import { pedidoAtivoNasAreas } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { pedidoAtivoNasAreas } from "@/lib/pedidos";
 import { SIM_NAO_PROCESSO, modeloIncluiSilk, visivelEmSilk } from "@/lib/pedidos";
-import { pedidoAtivoNasAreas } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
