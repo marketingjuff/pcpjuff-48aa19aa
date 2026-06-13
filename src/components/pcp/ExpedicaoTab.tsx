@@ -161,7 +161,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
               <ReadOnlyField label="NF Emitida (espelho)" value={form.nf_emitida === true ? "Sim" : form.nf_emitida === false ? "Não" : "—"} />
             </div>
 
-            <div className="border-t pt-4 grid gap-4 md:grid-cols-2">
+            <div className="border-t pt-4 grid gap-4 grid-cols-1 sm:grid-cols-2">
               {itensParaForma(form.forma_pagamento ?? selected.forma_pagamento).map((key) => {
                 const val = form[key];
                 return (
