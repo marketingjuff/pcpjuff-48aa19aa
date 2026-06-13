@@ -159,7 +159,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 </FormField>
               </div>
             </div>
-            <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Salvar</Button>
+            <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Atualizar Arte</Button>
           </CardContent>
         </Card>
       ) : (
