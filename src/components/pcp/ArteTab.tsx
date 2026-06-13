@@ -169,7 +169,25 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
       {/* Dashboard da Arte */}
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — Arte</CardTitle></CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
+        <CardContent className="p-0">
+          {/* Mobile */}
+          <div className="md:hidden divide-y">
+            {(() => {
+              const visiveis = pedidos.filter((p) => visivelEmArte(p) && !p.finalizado_em && !p.expedicao_entrou_em);
+              if (visiveis.length === 0) return <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido em aberto.</div>;
+              return visiveis.map((p) => (
+                <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                  <Chip label="Tipo" value={p.tipo_estampa} />
+                  <Chip label="QTD" value={p.qtd} />
+                  <Chip label="Status" value={p.status_geral} />
+                  <Chip label="Arte" value={p.status_arte} />
+                  <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+                </PedidoMobileCard>
+              ));
+            })()}
+          </div>
+          {/* Desktop */}
+          <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
@@ -206,6 +224,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               })()}
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
 
