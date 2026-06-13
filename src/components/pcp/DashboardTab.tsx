@@ -112,7 +112,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Total ativos" value={stats.total} icon={<ListChecks className="h-4 w-4" />} onClick={() => setEtapa("ativas")} active={etapa === "ativas"} />
         <StatCard label="Atrasados" value={stats.atrasados} icon={<AlertCircle className="h-4 w-4" />} accent="destructive" onClick={() => setEtapa("ativas")} />
         <StatCard label="Arte" value={stats.arte} icon={<Palette className="h-4 w-4" />} accent="info" onClick={() => setEtapa("arte")} active={etapa === "arte"} />
@@ -124,7 +124,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
       <Card>
         <CardHeader><CardTitle>Pedidos</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
             <Input placeholder="Buscar pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
             <Select value={vendedor} onValueChange={setVendedor}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -159,11 +159,54 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
             </Select>
             <DateInputBR value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
           </div>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
             <Input placeholder="Filtrar por frete..." value={frete} onChange={(e) => setFrete(e.target.value)} />
           </div>
 
-          <div className="rounded-md border overflow-x-auto">
+          {/* Mobile: cards */}
+          <div className="md:hidden rounded-md border divide-y">
+            {loading ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">Carregando...</div>
+            ) : filtrados.length === 0 ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">Nenhum pedido.</div>
+            ) : (
+              filtrados.map((p) => {
+                const { percentual } = calcularEtapaAtual(p);
+                const prazo = statusPrazo(p);
+                const dias = p.data_entrega ? diasUteisEntre(new Date().toISOString().slice(0,10), p.data_entrega, feriados) : null;
+                return (
+                  <PedidoMobileCard
+                    key={p.id}
+                    pedido={p}
+                    onClick={() => onEdit(p.id)}
+                    right={<span className={`text-[11px] ${prazoClass(prazo)}`}>{prazoLabel(prazo)}</span>}
+                  >
+                    <Chip label="QTD" value={p.qtd} />
+                    <Chip label="Vend" value={p.vendedor} />
+                    <Chip label="Tipo" value={p.tipo_estampa} />
+                    <Chip label="Status" value={p.status_geral} />
+                    <Chip label="Dias" value={dias} />
+                    <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+                    <span className="inline-flex items-center gap-1.5 w-full mt-1">
+                      <Progress value={percentual} className="h-1.5 flex-1" />
+                      <span className="text-[11px] tabular-nums text-muted-foreground">{percentual}%</span>
+                    </span>
+                    <span className="flex items-center gap-1 ml-auto">
+                      <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); onEdit(p.id); }} title="Editar" className="h-7 w-7">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); onViewProgress(p.id); }} title="Ver progresso" className="h-7 w-7">
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                    </span>
+                  </PedidoMobileCard>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop: tabela */}
+          <div className="hidden md:block rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -248,13 +291,13 @@ function StatCard({ label, value, icon, accent, onClick, active }: { label: stri
     "text-primary";
   return (
     <Card onClick={onClick} className={`cursor-pointer transition ${active ? "ring-2 ring-primary" : "hover:bg-accent/30"}`}>
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</div>
-            <div className={`text-3xl font-bold tabular-nums mt-1 ${accentClass}`}>{value}</div>
+      <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide truncate">{label}</div>
+            <div className={`text-2xl sm:text-3xl font-bold tabular-nums mt-1 ${accentClass}`}>{value}</div>
           </div>
-          <div className={`p-2 rounded-md bg-muted ${accentClass}`}>{icon}</div>
+          <div className={`p-1.5 sm:p-2 rounded-md bg-muted ${accentClass} shrink-0`}>{icon}</div>
         </div>
       </CardContent>
     </Card>
