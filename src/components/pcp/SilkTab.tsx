@@ -104,8 +104,8 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
           <EmptyState>Este pedido não inclui Silk (modelo: {selected.tipo_estampa}).</EmptyState>
         ) : (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Silk Screen — {selected.pedido_olist}</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+              <CardTitle className="text-base sm:text-lg truncate">Silk Screen — {selected.pedido_olist}</CardTitle>
               <Badge variant="outline" className={statusColor}>
                 {form.silk_feito === "Sim" ? (atrasado ? "Atrasado" : "Concluído") : "Em andamento"}
               </Badge>
