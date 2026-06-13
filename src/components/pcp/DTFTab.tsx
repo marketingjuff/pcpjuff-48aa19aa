@@ -137,7 +137,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 <ReadOnlyField label="Término estamparia" value={formatDateBR(selected.termino_estamparia)} />
                 <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
               </div>
-              <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 pt-4 border-t">
                 <FormField label="DTF Estampado?">
                   <Select value={form.dtf_estampado ?? ""} onValueChange={setEstampado}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
