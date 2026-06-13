@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas } from "@/lib/pedidos";
 import {
   SIM_NAO, STATUS_ARTE_OPCOES, tipoIncluiDTF, tipoIncluiSilk, visivelEmArte,
 } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -173,7 +175,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           {/* Mobile */}
           <div className="md:hidden divide-y">
             {(() => {
-              const visiveis = pedidos.filter((p) => visivelEmArte(p) && !p.finalizado_em && !p.expedicao_entrou_em);
+              const visiveis = pedidos.filter((p) => visivelEmArte(p) && pedidoAtivoNasAreas(p));
               if (visiveis.length === 0) return <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido em aberto.</div>;
               return visiveis.map((p) => (
                 <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
@@ -198,7 +200,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             </thead>
             <tbody>
               {(() => {
-                const visiveis = pedidos.filter((p) => visivelEmArte(p) && !p.finalizado_em && !p.expedicao_entrou_em);
+                const visiveis = pedidos.filter((p) => visivelEmArte(p) && pedidoAtivoNasAreas(p));
                 if (visiveis.length === 0) {
                   return <tr><td colSpan={11} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido em aberto.</td></tr>;
                 }

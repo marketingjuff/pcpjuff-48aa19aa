@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas } from "@/lib/pedidos";
 import {
   STATUS_GERAL_OPCOES, TIPOS_ESTAMPA,
   calcularEtapaAtual, statusPrazo, tipoIncluiDTF, tipoIncluiSilk,
 } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -87,7 +89,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
   }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, frete, search, sortDiasDir, sortEntregaDir, feriados]);
 
   const stats = useMemo(() => {
-    const ativos = pedidos.filter((p) => !p.finalizado_em && !p.expedicao_entrou_em);
+    const ativos = pedidos.filter((p) => pedidoAtivoNasAreas(p));
     return {
       total: ativos.length,
       atrasados: ativos.filter((p) => statusPrazo(p) === "atrasado").length,
