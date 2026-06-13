@@ -159,7 +159,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                   </FormField>
                 </div>
               </div>
-              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-1" />Salvar</Button>
+              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-1" />Atualizar DTF</Button>
             </CardContent>
           </Card>
         )

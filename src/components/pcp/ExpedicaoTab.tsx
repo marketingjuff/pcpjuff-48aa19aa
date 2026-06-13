@@ -203,7 +203,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
 
             <div className="flex gap-2 flex-wrap">
               <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
-                <Save className="h-4 w-4 mr-1" /> Salvar
+                <Save className="h-4 w-4 mr-1" /> Atualizar Expedição
               </Button>
               <Button variant="outline" onClick={marcarTudoSim} disabled={saving} className="w-full sm:w-auto">
                 Marcar tudo como "Sim"
