@@ -19,7 +19,7 @@ import {
 import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { etapaPaletteClass, StatusPedidoBadge, PedidoMobileCard, Chip } from "./shared";
+import { etapaPaletteClass, StatusPedidoBadge, StatusPedidoChip, PedidoMobileCard, Chip } from "./shared";
 
 interface Props {
   pedidos: Pedido[];
