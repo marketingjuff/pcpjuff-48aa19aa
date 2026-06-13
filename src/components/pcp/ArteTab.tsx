@@ -153,7 +153,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 </Select>
               </FormField>
 
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2">
                 <FormField label="Observações da Arte">
                   <Textarea value={form.arte_observacao ?? ""} onChange={(e) => set("arte_observacao", e.target.value)} rows={2} />
                 </FormField>
