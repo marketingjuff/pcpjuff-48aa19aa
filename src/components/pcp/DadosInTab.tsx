@@ -19,7 +19,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Save, X, FileText, Download, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Save, X, FileText, Download, AlertTriangle, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { addDiasUteis, diasUteisEntre, diasUteisAteHoje } from "@/lib/dias-uteis";
