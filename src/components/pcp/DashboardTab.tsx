@@ -115,17 +115,17 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   function toggleSortSaida() {
     setSortEntregaDir(null);
     setSortDiasDir(null);
-    setSortSaidaDir((d) => d === null ? "asc" : d === "asc" ? "desc" : null);
+    setSortSaidaDir((d) => d === "asc" ? "desc" : "asc");
   }
   function toggleSortEntrega() {
     setSortSaidaDir(null);
     setSortDiasDir(null);
-    setSortEntregaDir((d) => d === null ? "asc" : d === "asc" ? "desc" : null);
+    setSortEntregaDir((d) => d === "asc" ? "desc" : "asc");
   }
   function toggleSortDias() {
     setSortSaidaDir(null);
     setSortEntregaDir(null);
-    setSortDiasDir((d) => d === null ? "asc" : d === "asc" ? "desc" : null);
+    setSortDiasDir((d) => d === "asc" ? "desc" : "asc");
   }
 
   /** Cor de fundo da linha — baseada em saida_juff e dias úteis. */
