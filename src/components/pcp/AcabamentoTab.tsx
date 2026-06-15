@@ -60,31 +60,20 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
 
   function handleSave() {
     if (!selected) return;
-    const payload: Partial<Pedido> & { id: string } = {
+    const embalado = form.embalado ?? null;
+    const payload: any = {
       id: selected.id,
-      embalado: form.embalado ?? null,
+      embalado,
       responsavel_acabamento: form.responsavel_acabamento ?? null,
       responsavel_conferencia: form.responsavel_conferencia ?? null,
       data_saida_juff: form.data_saida_juff ?? null,
       observacoes_pedido: form.observacoes_pedido ?? null,
     };
-    onSave(payload);
-  }
-
-  function enviarParaExpedicao() {
-    if (!selected) return;
-    if (!podeFinalizar) {
-      // Mesmo assim deixamos enviar manualmente — Acabamento decide.
+    // 3A: ao marcar EMBALADO=Sim, envia automaticamente para Expedição.
+    if (embalado === "Sim" && !selected.expedicao_entrou_em) {
+      payload.expedicao_entrou_em = new Date().toISOString();
     }
-    onSave({
-      id: selected.id,
-      embalado: form.embalado ?? selected.embalado ?? null,
-      responsavel_acabamento: form.responsavel_acabamento ?? selected.responsavel_acabamento ?? null,
-      responsavel_conferencia: form.responsavel_conferencia ?? selected.responsavel_conferencia ?? null,
-      data_saida_juff: form.data_saida_juff ?? selected.data_saida_juff ?? null,
-      observacoes_pedido: form.observacoes_pedido ?? selected.observacoes_pedido ?? null,
-      expedicao_entrou_em: new Date().toISOString(),
-    } as any);
+    onSave(payload);
   }
   useRegisterSave(handleSave, active);
 
@@ -117,6 +106,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
     return true;
   })), [pedidos, fOrc, fPed, fDtf, fSilk]);
 
+  const enviadoParaExpedicao = !!selected?.expedicao_entrou_em;
 
   return (
     <div className="space-y-6">
@@ -183,10 +173,20 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-1" />Atualizar Acabamento</Button>
-              <Button variant="default" onClick={enviarParaExpedicao} disabled={saving} className="w-full sm:w-auto bg-pink-600 hover:bg-pink-700 text-white">
-                Enviar para Expedição
+              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
+                <Save className="h-4 w-4 mr-1" />
+                {enviadoParaExpedicao ? "Atualizar Acabamento" : "Atualizar"}
               </Button>
+              {form.embalado === "Sim" && !enviadoParaExpedicao && (
+                <span className="text-xs text-muted-foreground self-center">
+                  Ao salvar com EMBALADO=Sim, o pedido vai automaticamente para Expedição.
+                </span>
+              )}
+              {enviadoParaExpedicao && (
+                <Badge variant="outline" className="bg-pink-500/15 text-pink-700 border-pink-500/30 dark:text-pink-300 self-center">
+                  Enviado para Expedição
+                </Badge>
+              )}
             </div>
           </CardContent>
         </Card>

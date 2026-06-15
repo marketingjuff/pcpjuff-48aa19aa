@@ -21,7 +21,7 @@ export type Pedido = PedidoBase & {
   tempo_producao: number | null;
   // v2
   forma_pagamento: string | null;
-  nf_emitida: boolean | null;
+  nf_emitida: string | null;
   expedicao_entrou_em: string | null;
   exp_cobranca_pagamento: boolean | null;
   exp_pagamento: boolean | null;
@@ -30,6 +30,9 @@ export type Pedido = PedidoBase & {
   exp_despachado: boolean | null;
   exp_despachado_em: string | null;
   exp_observacoes: string | null;
+  data_entrega_proposta: string | null;
+  data_entrega_proposta_em: string | null;
+  data_entrega_proposta_por: string | null;
 };
 
 type PedidoInsertBase = Omit<TablesInsert<"pedidos">, "modelo_estampa" | "status">;
@@ -50,7 +53,7 @@ export type PedidoInsert = PedidoInsertBase & {
   finalizado_em?: string | null;
   tempo_producao?: number | null;
   forma_pagamento?: string | null;
-  nf_emitida?: boolean | null;
+  nf_emitida?: string | null;
   expedicao_entrou_em?: string | null;
   exp_cobranca_pagamento?: boolean | null;
   exp_pagamento?: boolean | null;
@@ -59,6 +62,9 @@ export type PedidoInsert = PedidoInsertBase & {
   exp_despachado?: boolean | null;
   exp_despachado_em?: string | null;
   exp_observacoes?: string | null;
+  data_entrega_proposta?: string | null;
+  data_entrega_proposta_em?: string | null;
+  data_entrega_proposta_por?: string | null;
 };
 
 export const VENDEDORES = ["Wander", "Mirela", "Gabriel", "Outros"] as const;
@@ -118,8 +124,11 @@ export function calcularEtapaAtual(p: Pedido): {
   let etapa = "Aguardando entrada";
   let cor: "green" | "yellow" | "red" | "gray" | "blue" = "gray";
 
-  if (p.finalizado_em || acabamentoOk) {
+  if (p.finalizado_em) {
     etapa = "Finalizado"; cor = "green";
+  } else if (acabamentoOk) {
+    // Acabamento concluído → vai automaticamente para Expedição
+    etapa = "Aguardando Expedição"; cor = "blue";
   } else if (!dadosInOk) {
     etapa = "Aguardando entrada"; cor = "gray";
   } else if (!isLisa && !producaoInputOk) {
@@ -136,6 +145,9 @@ export function calcularEtapaAtual(p: Pedido): {
     else if (needSilk) { etapa = "Aguardando Silk"; cor = "yellow"; }
     else { etapa = "Aguardando Acabamento"; cor = "blue"; }
   }
+
+  // Bloco 2A: pedidos reabertos recebem asterisco (até serem finalizados novamente)
+  if (p.reaberto && etapa !== "Finalizado") etapa = `${etapa}*`;
 
   return { etapa, percentual, cor };
 }

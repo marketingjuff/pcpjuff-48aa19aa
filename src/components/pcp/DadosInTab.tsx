@@ -2,7 +2,7 @@ import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
-  STATUS_PECAS_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS, FORMAS_PAGAMENTO,
+  STATUS_PECAS_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS,
   calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk,
 } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
@@ -57,6 +57,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const { isDirty } = useDirtyForm();
   const { names: vendedores } = useAppList("vendedor");
   const { names: fretes } = useAppList("frete");
+  const { names: formasPagamento } = useAppList("pagamento");
+  const { names: nfOpcoes } = useAppList("nf");
 
   useEffect(() => {
     if (!isDirty) setForm(selected ?? empty);
@@ -240,13 +242,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             <Field label="Forma de pagamento">
               <Select value={form.forma_pagamento ?? ""} onValueChange={(v) => set("forma_pagamento", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>{FORMAS_PAGAMENTO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                <SelectContent>{formasPagamento.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Nota Fiscal Emitida">
-              <Select value={form.nf_emitida === null || form.nf_emitida === undefined ? "" : form.nf_emitida ? "Sim" : "Não"} onValueChange={(v) => set("nf_emitida", v === "Sim")}>
+            <Field label="Nota Fiscal">
+              <Select value={form.nf_emitida ?? ""} onValueChange={(v) => set("nf_emitida", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                <SelectContent>{nfOpcoes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
             <Field label="Frete">
@@ -265,9 +267,14 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             <Field label="Entrada do pedido *" invalid={missingVendor.has("entrada_pedido")}>
               <DateInputBR value={form.entrada_pedido} onChange={(v) => set("entrada_pedido", v ?? "")} />
             </Field>
-            <Field label="Data de Entrega">
-              <DateInputBR value={form.data_entrega} onChange={(v) => set("data_entrega", v)} />
-            </Field>
+            <DataEntregaField
+              form={form}
+              selected={selected}
+              onChangeDataEntrega={(v) => set("data_entrega", v)}
+              onPropostaSaved={(v) => {
+                set("data_entrega_proposta", v);
+              }}
+            />
             <Field label="É necessário vetorização?">
               <Select value={form.necessita_vetorizacao ? "Sim" : "Não"} onValueChange={(v) => set("necessita_vetorizacao", v === "Sim")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -345,6 +352,15 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <Save className="h-4 w-4 mr-1" />{selected?.id ? "Atualizar" : "Salvar"} Input de Produção
               </Button>
             </div>
+            {selected?.data_entrega_proposta && (
+              <div className="sm:col-span-2">
+                <PropostaDataAlerta
+                  pedidoId={selected.id}
+                  dataAtual={selected.data_entrega}
+                  dataProposta={selected.data_entrega_proposta}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -363,7 +379,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   <Chip label="Vend" value={p.vendedor} />
                   <Chip label="Tipo" value={p.tipo_estampa} />
                   <Chip label="Pgto" value={p.forma_pagamento} />
-                  <Chip label="NF" value={p.nf_emitida === null || p.nf_emitida === undefined ? "—" : (p.nf_emitida ? "Sim" : "Não")} />
+                  <Chip label="NF" value={p.nf_emitida ?? "—"} />
                   <StatusPecasChip pedido={p} />
                   <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
                 </PedidoMobileCard>
@@ -390,7 +406,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   <td className="px-3 py-2">{p.qtd}</td>
                   <td className="px-3 py-2">{p.vendedor}</td>
                   <td className="px-3 py-2">{p.forma_pagamento ?? "—"}</td>
-                  <td className="px-3 py-2">{p.nf_emitida === null || p.nf_emitida === undefined ? "—" : p.nf_emitida ? "Sim" : "Não"}</td>
+                  <td className="px-3 py-2">{p.nf_emitida ?? "—"}</td>
                   <td className="px-3 py-2">{p.frete ?? "—"}</td>
                   <td className="px-3 py-2">{p.tempo_frete ?? "—"}</td>
                   <td className="px-3 py-2"><StatusPecasBadge pedido={p} /></td>
@@ -448,6 +464,141 @@ function Field({ label, invalid, children }: { label: string; invalid?: boolean;
     <div className={`space-y-1.5 ${invalid ? "rounded-md ring-2 ring-destructive/60 p-1 -m-1" : ""}`}>
       <Label className={`text-xs font-medium ${invalid ? "text-destructive" : ""}`}>{label}{invalid ? " — obrigatório" : ""}</Label>
       {children}
+    </div>
+  );
+}
+
+/** Bloco 4: campo Data de Entrega com fluxo de "Solicitar alteração" quando produção já tem input. */
+function DataEntregaField({
+  form, selected, onChangeDataEntrega, onPropostaSaved,
+}: {
+  form: Partial<Pedido>;
+  selected: Pedido | null;
+  onChangeDataEntrega: (v: string | null) => void;
+  onPropostaSaved: (v: string) => void;
+}) {
+  const [solicitando, setSolicitando] = useState(false);
+  const [novaData, setNovaData] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const producaoPreenchida = !!selected?.arte_data;
+  const temDataEntrega = !!selected?.data_entrega;
+  const exigeSolicitacao = !!selected?.id && producaoPreenchida && temDataEntrega;
+
+  if (!exigeSolicitacao) {
+    return (
+      <Field label="Data de Entrega">
+        <DateInputBR value={form.data_entrega} onChange={onChangeDataEntrega} />
+      </Field>
+    );
+  }
+
+  async function salvarSolicitacao() {
+    if (!selected || !novaData) {
+      toast.error("Informe a nova data proposta.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("pedidos")
+        .update({
+          data_entrega_proposta: novaData,
+          data_entrega_proposta_em: new Date().toISOString(),
+          data_entrega_proposta_por: userData.user?.id ?? null,
+        } as any)
+        .eq("id", selected.id);
+      if (error) throw error;
+      onPropostaSaved(novaData);
+      toast.success("Solicitação enviada para a produção.");
+      setSolicitando(false);
+      setNovaData(null);
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao enviar solicitação.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Field label="Data de Entrega">
+      <div className="space-y-2">
+        <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">
+          {formatDateBR(selected?.data_entrega) || "—"}
+        </div>
+        {selected?.data_entrega_proposta && !solicitando && (
+          <div className="text-xs text-amber-700 dark:text-amber-300">
+            Já existe uma solicitação pendente para {formatDateBR(selected.data_entrega_proposta)}.
+          </div>
+        )}
+        {!solicitando ? (
+          <Button type="button" variant="outline" size="sm" onClick={() => { setSolicitando(true); setNovaData(selected?.data_entrega_proposta ?? null); }}>
+            <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+            Solicitar Alteração de Data de Entrega
+          </Button>
+        ) : (
+          <div className="space-y-2 p-2 rounded-md border border-amber-500/40 bg-amber-50/50 dark:bg-amber-950/20">
+            <Label className="text-xs">Nova data proposta</Label>
+            <DateInputBR value={novaData} onChange={(v) => setNovaData(v ?? null)} />
+            <div className="flex gap-2">
+              <Button type="button" size="sm" onClick={salvarSolicitacao} disabled={saving}>
+                <Save className="h-3.5 w-3.5 mr-1" /> Salvar
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => { setSolicitando(false); setNovaData(null); }}>
+                <X className="h-3.5 w-3.5 mr-1" /> Cancelar
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </Field>
+  );
+}
+
+/** Bloco 4: alerta na produção com botão Aprovar. */
+function PropostaDataAlerta({
+  pedidoId, dataAtual, dataProposta,
+}: {
+  pedidoId: string;
+  dataAtual: string | null;
+  dataProposta: string;
+}) {
+  const [aprovando, setAprovando] = useState(false);
+  async function aprovar() {
+    setAprovando(true);
+    try {
+      const { error } = await supabase
+        .from("pedidos")
+        .update({
+          data_entrega: dataProposta,
+          data_entrega_proposta: null,
+          data_entrega_proposta_em: null,
+          data_entrega_proposta_por: null,
+        } as any)
+        .eq("id", pedidoId);
+      if (error) throw error;
+      toast.success("Nova data de entrega aprovada.");
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao aprovar.");
+    } finally {
+      setAprovando(false);
+    }
+  }
+  return (
+    <div className="flex items-start gap-2 p-3 rounded-md border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/20 text-sm">
+      <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-700 dark:text-amber-300" />
+      <div className="flex-1">
+        <div className="font-semibold text-amber-800 dark:text-amber-200">
+          Solicitação de alteração de data de entrega para {formatDateBR(dataProposta)}
+        </div>
+        <div className="text-xs text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+          Data atual: {formatDateBR(dataAtual) || "—"}
+        </div>
+      </div>
+      <Button type="button" size="sm" onClick={aprovar} disabled={aprovando}>
+        Aprovar
+      </Button>
     </div>
   );
 }

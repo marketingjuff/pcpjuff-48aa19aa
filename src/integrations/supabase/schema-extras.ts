@@ -82,7 +82,7 @@ export type PedidoExtras = {
 
   // Novos v2
   forma_pagamento: string | null;
-  nf_emitida: boolean | null;
+  nf_emitida: string | null;
   expedicao_entrou_em: string | null;
   exp_cobranca_pagamento: boolean | null;
   exp_pagamento: boolean | null;
