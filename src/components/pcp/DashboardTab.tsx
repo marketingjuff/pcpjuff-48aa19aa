@@ -41,7 +41,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const [tipo, setTipo] = useState<string>("todos");
   const [etapa, setEtapa] = useState<Etapa>("ativas");
   const [dataEntrega, setDataEntrega] = useState("");
-  const [frete, setFrete] = useState("");
+  
   const [search, setSearch] = useState("");
   const [sortSaidaDir, setSortSaidaDir] = useState<"asc" | "desc" | null>("asc");
   const [sortEntregaDir, setSortEntregaDir] = useState<"asc" | "desc" | null>(null);
@@ -70,7 +70,6 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       if (status !== "todos" && p.status_pecas !== status) return false;
       if (tipo !== "todos" && p.tipo_estampa !== tipo) return false;
       if (dataEntrega && p.data_entrega !== dataEntrega) return false;
-      if (frete && !String(p.frete ?? "").toLowerCase().includes(frete.toLowerCase())) return false;
       if (search && !`${p.pedido_olist} ${p.orcamento}`.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
@@ -94,7 +93,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       });
     }
     return arr;
-  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, frete, search, sortSaidaDir, sortEntregaDir, sortDiasDir, feriados]);
+  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, search, sortSaidaDir, sortEntregaDir, sortDiasDir, feriados]);
 
   const stats = useMemo(() => {
     const ativos = pedidos.filter((p) => pedidoAtivoNasAreas(p));
@@ -171,43 +170,58 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-            <Input placeholder="Buscar pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
-            <Select value={vendedor} onValueChange={setVendedor}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos vendedores</SelectItem>
-                {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos status</SelectItem>
-                {STATUS_PECAS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={tipo} onValueChange={setTipo}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos tipos</SelectItem>
-                {TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={etapa} onValueChange={(v) => setEtapa(v as Etapa)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ativas">Todas (menos finalizados)</SelectItem>
-                <SelectItem value="arte">Aguardando Arte</SelectItem>
-                <SelectItem value="dtf">Aguardando DTF</SelectItem>
-                <SelectItem value="silk">Aguardando Silk</SelectItem>
-                <SelectItem value="acabamento">Aguardando Acabamento</SelectItem>
-                <SelectItem value="expedicao">Em Expedição</SelectItem>
-              </SelectContent>
-            </Select>
-            <DateInputBR value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
-          </div>
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-            <Input placeholder="Filtrar por frete..." value={frete} onChange={(e) => setFrete(e.target.value)} />
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground font-medium">Buscar</label>
+              <Input placeholder="Pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground font-medium">Vendedor</label>
+              <Select value={vendedor} onValueChange={setVendedor}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos vendedores</SelectItem>
+                  {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground font-medium">Status Peças</label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos status</SelectItem>
+                  {STATUS_PECAS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground font-medium">Tipo Estampa</label>
+              <Select value={tipo} onValueChange={setTipo}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos tipos</SelectItem>
+                  {TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground font-medium">Etapa</label>
+              <Select value={etapa} onValueChange={(v) => setEtapa(v as Etapa)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativas">Todas (menos finalizados)</SelectItem>
+                  <SelectItem value="arte">Aguardando Arte</SelectItem>
+                  <SelectItem value="dtf">Aguardando DTF</SelectItem>
+                  <SelectItem value="silk">Aguardando Silk</SelectItem>
+                  <SelectItem value="acabamento">Aguardando Acabamento</SelectItem>
+                  <SelectItem value="expedicao">Em Expedição</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground font-medium">Data Entrega</label>
+              <DateInputBR value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
+            </div>
           </div>
 
           {/* Mobile: cards */}
