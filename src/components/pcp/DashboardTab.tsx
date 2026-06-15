@@ -286,13 +286,6 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   );
 }
 
-function EtapaInline({ pedido }: { pedido: Pedido }) {
-  // Reaproveita o cálculo do calcularEtapaAtual para badge consistente
-  // Importado dinamicamente para evitar ciclo
-  const { calcularEtapaAtual } = require("@/lib/pedidos") as typeof import("@/lib/pedidos");
-  const { etapa } = calcularEtapaAtual(pedido);
-  return <Badge variant="outline" className={`${etapaPaletteClass(etapa)} text-[11px]`}>{etapa}</Badge>;
-}
 
 function StatCard({ label, value, icon, accent, onClick, active }: { label: string; value: number; icon: React.ReactNode; accent?: "info" | "success" | "destructive"; onClick?: () => void; active?: boolean }) {
   const tone =
