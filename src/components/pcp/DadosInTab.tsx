@@ -193,9 +193,9 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <Card className="border-primary/30">
-        <CardContent className="py-4 flex items-center justify-between flex-wrap gap-3">
+        <CardContent className="py-2 flex items-center justify-between flex-wrap gap-3">
           <div className="min-w-0">
             <div className="text-xs uppercase text-muted-foreground tracking-wider">Orçamento Comercial</div>
             <div className="text-2xl sm:text-4xl font-bold tabular-nums truncate">{form.orcamento || "—"}</div>

@@ -1,17 +1,13 @@
-## Security Fix: pedidos_delete_team Policy Role
+Ajustar o espaçamento da aba "Dados In" para reduzir os espaços entrelinhas e apertar o layout como um todo.
 
-### Problem
-The `pedidos_delete_team` RLS policy on the `pedidos` table is scoped to the `public` role (which includes unauthenticated/anonymous users), while all other pedidos policies (SELECT, INSERT, UPDATE) are correctly scoped to `authenticated`. Although the policy's `USING` condition calls `is_team_member()`, which currently blocks unauthenticated requests, this violates least-privilege principles and could become exploitable if `is_team_member()` ever changes.
+**Mudanças propostas:**
+1. Reduzir o `space-y` do container principal de `space-y-6` para `space-y-3`.
+2. Reduzir o padding do card de orçamento de `py-4` para `py-2`.
+3. Reduzir o `gap` entre as duas colunas de `gap-6` para `gap-4`.
+4. Reduzir o `gap` dos grids internos dos cards (Input do Vendedor e Input de Produção) de `gap-4` para `gap-2`.
+5. Reduzir o `space-y` dentro do componente `Field` de `space-y-1.5` para `space-y-1`.
+6. Reduzir as textareas de `rows={3}` para `rows={2}` em ambos os lados.
+7. Remover `pt-2` dos botões de salvar.
+8. Reduzir o `space-y` do `PedidoStatusInline` de `space-y-2` para `space-y-1`.
 
-### Fix
-1. **Database Migration**: Drop the existing `pedidos_delete_team` policy and recreate it with `TO authenticated` to match all other pedidos policies.
-
-   ```sql
-   DROP POLICY IF EXISTS pedidos_delete_team ON public.pedidos;
-   CREATE POLICY pedidos_delete_team ON public.pedidos FOR DELETE TO authenticated USING (public.is_team_member());
-   ```
-
-2. **Mark Finding as Fixed**: After migration approval and execution, mark the `supabase_lov` security finding (`pedidos_delete_public_role`) as resolved.
-
-### Verification
-- Query `pg_policies` to confirm `pedidos_delete_team` now shows `roles: {authenticated}` instead of `roles: {public}`.
+Todas as alterações ficam restritas ao arquivo `src/components/pcp/DadosInTab.tsx`.
