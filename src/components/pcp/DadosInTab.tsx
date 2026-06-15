@@ -193,9 +193,9 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <Card className="border-primary/30">
-        <CardContent className="py-4 flex items-center justify-between flex-wrap gap-3">
+        <CardContent className="py-2 flex items-center justify-between flex-wrap gap-3">
           <div className="min-w-0">
             <div className="text-xs uppercase text-muted-foreground tracking-wider">Orçamento Comercial</div>
             <div className="text-2xl sm:text-4xl font-bold tabular-nums truncate">{form.orcamento || "—"}</div>
@@ -225,11 +225,11 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
       {selected && <PedidoStatusInline pedido={selected} />}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         {/* Vendedor */}
         <Card className="border-l-4 border-l-green-500 bg-green-50/40 dark:bg-green-950/10">
-          <CardHeader><CardTitle className="text-base text-green-700 dark:text-green-400">Input do Vendedor</CardTitle></CardHeader>
-          <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+          <CardHeader className="py-3"><CardTitle className="text-base text-green-700 dark:text-green-400">Input do Vendedor</CardTitle></CardHeader>
+          <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2">
             <Field label="Pedido Olist *" invalid={missingVendor.has("pedido_olist")}><Input value={form.pedido_olist ?? ""} onChange={(e) => set("pedido_olist", e.target.value)} /></Field>
             <Field label="Orçamento Comercial *" invalid={missingVendor.has("orcamento")}><Input value={form.orcamento ?? ""} onChange={(e) => set("orcamento", e.target.value)} /></Field>
             <Field label="Quantas peças *" invalid={missingVendor.has("qtd")}><Input value={form.qtd ?? ""} onChange={(e) => set("qtd", e.target.value)} /></Field>
@@ -302,10 +302,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             </div>
             <div className="sm:col-span-2">
               <Field label="Observações do vendedor">
-                <Textarea rows={3} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
+                <Textarea rows={2} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
               </Field>
             </div>
-            <div className="sm:col-span-2 flex gap-2 pt-2">
+            <div className="sm:col-span-2 flex gap-2">
               <Button type="button" onClick={saveVendor} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" />{selected?.id ? "Atualizar" : "Salvar"} Input do Vendedor
               </Button>
@@ -318,8 +318,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
         {/* Produção */}
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
-          <CardHeader><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
-          <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+          <CardHeader className="py-3"><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
+          <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2">
             <Field label="Status de Peças *" invalid={missingProd.has("status_pecas")}>
               <Select value={form.status_pecas ?? ""} onValueChange={(v) => set("status_pecas", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -344,10 +344,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             </Field>
             <div className="sm:col-span-2">
               <Field label="Observações de produção">
-                <Textarea rows={3} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
+                <Textarea rows={2} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
               </Field>
             </div>
-            <div className="sm:col-span-2 flex gap-2 pt-2">
+            <div className="sm:col-span-2 flex gap-2">
               <Button type="button" onClick={saveProducao} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" />{selected?.id ? "Atualizar" : "Salvar"} Input de Produção
               </Button>
@@ -453,7 +453,7 @@ function PedidoStatusInline({ pedido }: { pedido: Pedido }) {
     ? `Aguardando etapa: ${etapa}`
     : `Etapa atual: ${etapa}`;
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {incompleto && (
         <div className="flex items-center gap-2 p-3 rounded-md border text-sm bg-destructive/10 border-destructive/40 text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -470,7 +470,7 @@ function PedidoStatusInline({ pedido }: { pedido: Pedido }) {
 
 function Field({ label, invalid, children }: { label: string; invalid?: boolean; children: React.ReactNode }) {
   return (
-    <div className={`space-y-1.5 ${invalid ? "rounded-md ring-2 ring-destructive/60 p-1 -m-1" : ""}`}>
+    <div className={`space-y-1 ${invalid ? "rounded-md ring-2 ring-destructive/60 p-1 -m-1" : ""}`}>
       <Label className={`text-xs font-medium ${invalid ? "text-destructive" : ""}`}>{label}{invalid ? " — obrigatório" : ""}</Label>
       {children}
     </div>
