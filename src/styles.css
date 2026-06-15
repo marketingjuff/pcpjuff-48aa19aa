@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Google Sans Flex";
+  src: url("/__l5e/assets-v1/db1b5793-4f91-4a82-b6de-b9acd5abb3b9/GoogleSansFlex-VariableFont.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
