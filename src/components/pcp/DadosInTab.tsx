@@ -358,6 +358,15 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   pedidoId={selected.id}
                   dataAtual={selected.data_entrega}
                   dataProposta={selected.data_entrega_proposta}
+                  onAprovar={(novaData) =>
+                    onSave({
+                      id: selected.id,
+                      data_entrega: novaData,
+                      data_entrega_proposta: null,
+                      data_entrega_proposta_em: null,
+                      data_entrega_proposta_por: null,
+                    } as any)
+                  }
                 />
               </div>
             )}
