@@ -125,7 +125,14 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Pedidos</CardTitle></CardHeader>
+        <CardHeader className="pb-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <CardTitle className="font-display text-lg tracking-tight">Pedidos</CardTitle>
+            <span className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground tabular-nums">
+              {filtrados.length} {filtrados.length === 1 ? "registro" : "registros"}
+            </span>
+          </div>
+        </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
             <Input placeholder="Buscar pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -209,7 +216,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
           </div>
 
           {/* Desktop: tabela */}
-          <div className="hidden md:block rounded-md border overflow-x-auto">
+          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -287,25 +294,40 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
 }
 
 function StatCard({ label, value, icon, accent, onClick, active }: { label: string; value: number; icon: React.ReactNode; accent?: "info" | "success" | "destructive"; onClick?: () => void; active?: boolean }) {
-  const accentClass =
-    accent === "info" ? "text-info" :
-    accent === "success" ? "text-success" :
-    accent === "destructive" ? "text-destructive" :
-    "text-primary";
+  const tone =
+    accent === "destructive"
+      ? { num: "text-destructive", icon: "bg-destructive/10 text-destructive ring-destructive/20" }
+      : accent === "success"
+      ? { num: "text-success", icon: "bg-success/10 text-success ring-success/20" }
+      : accent === "info"
+      ? { num: "text-info", icon: "bg-info/10 text-info ring-info/20" }
+      : { num: "text-foreground", icon: "bg-primary-soft text-primary ring-primary/15" };
   return (
-    <Card onClick={onClick} className={`cursor-pointer transition ${active ? "ring-2 ring-primary" : "hover:bg-accent/30"}`}>
-      <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <div className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide truncate">{label}</div>
-            <div className={`text-2xl sm:text-3xl font-bold tabular-nums mt-1 ${accentClass}`}>{value}</div>
+    <Card
+      onClick={onClick}
+      className={`group cursor-pointer transition-all duration-200 hover:-translate-y-px hover:shadow-sm ${
+        active ? "ring-2 ring-primary/25 border-primary/40 shadow-sm" : ""
+      }`}
+    >
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1.5">
+            <div className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.08em] truncate">
+              {label}
+            </div>
+            <div className={`font-display text-3xl sm:text-[2rem] font-semibold tabular-nums tracking-tight leading-none ${tone.num}`}>
+              {value}
+            </div>
           </div>
-          <div className={`p-1.5 sm:p-2 rounded-md bg-muted ${accentClass} shrink-0`}>{icon}</div>
+          <div className={`flex h-9 w-9 items-center justify-center rounded-full ring-1 ${tone.icon} shrink-0 transition-transform group-hover:scale-105`}>
+            {icon}
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 }
+
 
 function etapaCorClass(cor: "green" | "yellow" | "red" | "gray" | "blue") {
   switch (cor) {

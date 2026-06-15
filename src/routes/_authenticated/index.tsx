@@ -136,9 +136,9 @@ function AppHomeInner() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-30">
-        <div className="container mx-auto grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:px-4 sm:py-3">
-          <div className="flex items-center gap-2 min-w-0">
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-card/85 backdrop-blur supports-[backdrop-filter]:bg-card/70">
+        <div className="container mx-auto grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
+          <div className="flex items-center gap-2.5 min-w-0">
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden" aria-label="Abrir menu">
@@ -162,11 +162,11 @@ function AppHomeInner() {
                 </nav>
               </SheetContent>
             </Sheet>
-            <div className="hidden sm:flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground shrink-0">
+            <div className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary ring-1 ring-primary/15 shrink-0">
               <Factory className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-base sm:text-lg font-semibold leading-tight truncate">PCP Juff</h1>
+              <h1 className="font-display text-base sm:text-lg font-semibold leading-tight tracking-tight truncate">PCP Juff</h1>
               <p className="text-[11px] sm:text-xs text-muted-foreground truncate">
                 <span className="md:hidden">{activeTabLabel}</span>
                 <span className="hidden md:inline">Controle de produção</span>
@@ -188,6 +188,7 @@ function AppHomeInner() {
           </div>
         </div>
       </header>
+
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <Tabs value={tab} onValueChange={setTab}>
