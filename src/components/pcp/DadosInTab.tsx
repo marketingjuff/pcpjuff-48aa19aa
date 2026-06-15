@@ -2,7 +2,7 @@ import { pedidoAtivoNasAreas } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
-  STATUS_GERAL_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS, FORMAS_PAGAMENTO,
+  STATUS_PECAS_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS, FORMAS_PAGAMENTO,
   calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk,
 } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { EtapaBadgeFromPedido, PedidoMobileCard, Chip, StatusPedidoBadge, StatusPedidoChip } from "./shared";
+import { EtapaBadgeFromPedido, PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 interface Props {
@@ -43,7 +43,7 @@ const empty: Partial<Pedido> = {
   qtd: null,
   vendedor: null,
   tipo_estampa: "",
-  status_geral: "aberto",
+  status_pecas: "aberto",
   entrada_pedido: new Date().toISOString().slice(0, 10),
   necessita_vetorizacao: false,
   forma_pagamento: null,
@@ -102,7 +102,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }, [form.entrada_pedido, saidaJuffCalc, feriados]);
 
   const VENDOR_REQUIRED: (keyof Pedido)[] = ["pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido"];
-  const PROD_REQUIRED: (keyof Pedido)[] = ["status_geral", "tipo_estampa"];
+  const PROD_REQUIRED: (keyof Pedido)[] = ["status_pecas", "tipo_estampa"];
   const [missingVendor, setMissingVendor] = useState<Set<string>>(new Set());
   const [missingProd, setMissingProd] = useState<Set<string>>(new Set());
 
@@ -313,10 +313,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
           <CardHeader><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
           <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-            <Field label="Status do pedido *" invalid={missingProd.has("status_geral")}>
-              <Select value={form.status_geral ?? ""} onValueChange={(v) => set("status_geral", v)}>
+            <Field label="Status de Peças *" invalid={missingProd.has("status_pecas")}>
+              <Select value={form.status_pecas ?? ""} onValueChange={(v) => set("status_pecas", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>{STATUS_GERAL_OPCOES.map((v) => <SelectItem key={v} value={v}>{v.charAt(0).toUpperCase()+v.slice(1)}</SelectItem>)}</SelectContent>
+                <SelectContent>{STATUS_PECAS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v.charAt(0).toUpperCase()+v.slice(1)}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
             <Field label="Tipo de Estampa *" invalid={missingProd.has("tipo_estampa")}>
@@ -364,7 +364,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   <Chip label="Tipo" value={p.tipo_estampa} />
                   <Chip label="Pgto" value={p.forma_pagamento} />
                   <Chip label="NF" value={p.nf_emitida === null || p.nf_emitida === undefined ? "—" : (p.nf_emitida ? "Sim" : "Não")} />
-                  <StatusPedidoChip pedido={p} />
+                  <StatusPecasChip pedido={p} />
                   <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
                 </PedidoMobileCard>
               ));
@@ -374,7 +374,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Etapa","Pedido","Orçamento","QTD","Vendedor","Forma Pgto","NF","Frete","Tempo Frete","Status do pedido","Estampa","Entrada","Saída Juff","Data Entrega"].map((h) => (
+                {["Etapa","Pedido","Orçamento","QTD","Vendedor","Forma Pgto","NF","Frete","Tempo Frete","Status de Peças","Estampa","Entrada","Saída Juff","Data Entrega"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -393,7 +393,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   <td className="px-3 py-2">{p.nf_emitida === null || p.nf_emitida === undefined ? "—" : p.nf_emitida ? "Sim" : "Não"}</td>
                   <td className="px-3 py-2">{p.frete ?? "—"}</td>
                   <td className="px-3 py-2">{p.tempo_frete ?? "—"}</td>
-                  <td className="px-3 py-2"><StatusPedidoBadge pedido={p} /></td>
+                  <td className="px-3 py-2"><StatusPecasBadge pedido={p} /></td>
                   <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                   <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.entrada_pedido)}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
@@ -416,7 +416,7 @@ function PedidoStatusInline({ pedido }: { pedido: Pedido }) {
   const { etapa, cor } = calcularEtapaAtual(pedido);
   const aguardando = cor === "yellow" || cor === "blue" || cor === "gray";
   const finalizado = !!pedido.finalizado_em;
-  const incompleto = !!pedido.arte_data && pedido.status_geral !== "completo";
+  const incompleto = !!pedido.arte_data && pedido.status_pecas !== "completo";
   const bg = finalizado
     ? "bg-success/10 border-success/30 text-success"
     : aguardando
@@ -433,7 +433,7 @@ function PedidoStatusInline({ pedido }: { pedido: Pedido }) {
         <div className="flex items-center gap-2 p-3 rounded-md border text-sm bg-destructive/10 border-destructive/40 text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span className="font-semibold">Pedido Incompleto</span>
-          <span className="text-xs opacity-80">— Status do pedido ainda está "aberto".</span>
+          <span className="text-xs opacity-80">— Status de Peças ainda está "aberto".</span>
         </div>
       )}
       <div className={`flex items-center gap-2 p-3 rounded-md border text-sm ${bg}`}>

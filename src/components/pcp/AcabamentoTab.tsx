@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge, StatusPedidoChip, PedidoMobileCard, Chip } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 
@@ -133,9 +133,9 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 <CheckCircle2 className="h-4 w-4" /> Pronto para Expedição. Clique em "Enviar para Expedição" abaixo.
               </div>
             )}
-            {selected.status_geral !== "completo" && selected.arte_data && (
+            {selected.status_pecas !== "completo" && selected.arte_data && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">
-                <CheckCircle2 className="h-4 w-4" /> <span className="font-semibold">Pedido Incompleto</span> — Status do pedido ainda está "aberto".
+                <CheckCircle2 className="h-4 w-4" /> <span className="font-semibold">Pedido Incompleto</span> — Status de Peças ainda está "aberto".
               </div>
             )}
 
@@ -143,7 +143,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
               <ReadOnlyField label="Tipo de Estampa" value={selected.tipo_estampa} />
-              <ReadOnlyField label="Status do pedido" value={selected.status_geral} />
+              <ReadOnlyField label="Status de Peças" value={selected.status_pecas} />
               <ReadOnlyField label="Data de Entrega" value={formatDateBR(selected.data_entrega)} />
               <ReadOnlyField label="Saída Juff (prazo)" value={formatDateBR(selected.saida_juff)} />
               <ReadOnlyField label="DTF Estampado?" value={temDTF ? (selected.dtf_estampado ?? "—") : "N/A"} />
@@ -222,7 +222,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
                 <Chip label="Tipo" value={p.tipo_estampa} />
                 <Chip label="QTD" value={p.qtd} />
-                <StatusPedidoChip pedido={p} />
+                <StatusPecasChip pedido={p} />
                 <Chip label="DTF" value={modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"} />
                 <Chip label="Silk" value={modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"} />
                 <Chip label="Embalado" value={p.embalado} />
@@ -234,7 +234,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Etapa","Orçamento","Pedido","Tipo","QTD","Status do pedido","DTF Est.","Silk Est.","Embalado","Responsável","Saída Juff","Data Entrega"].map((h) => (
+                  {["Etapa","Orçamento","Pedido","Tipo","QTD","Status de Peças","DTF Est.","Silk Est.","Embalado","Responsável","Saída Juff","Data Entrega"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -248,7 +248,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                       <td className="px-3 py-2">{p.pedido_olist}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                       <td className="px-3 py-2">{p.qtd ?? "—"}</td>
-                      <td className="px-3 py-2"><StatusPedidoBadge pedido={p} /></td>
+                      <td className="px-3 py-2"><StatusPecasBadge pedido={p} /></td>
                       <td className="px-3 py-2">{modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"}</td>
                       <td className="px-3 py-2">{modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"}</td>
                       <td className="px-3 py-2">{p.embalado ?? "—"}</td>

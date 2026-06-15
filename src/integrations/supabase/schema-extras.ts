@@ -76,7 +76,7 @@ export type PedidoExtras = {
   quem_bateu_silk: string | null;
   finalizado_em: string | null;
   status_arte: string | null;
-  status_geral: string | null;
+  status_pecas: string | null;
   tipo_estampa: string | null;
 
   // Novos v2

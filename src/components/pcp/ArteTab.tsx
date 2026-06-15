@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge, StatusPedidoChip, PedidoMobileCard, Chip } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
@@ -180,7 +180,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
                   <Chip label="Tipo" value={p.tipo_estampa} />
                   <Chip label="QTD" value={p.qtd} />
-                  <StatusPedidoChip pedido={p} />
+                  <StatusPecasChip pedido={p} />
                   <Chip label="Arte" value={p.status_arte} />
                   <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
                 </PedidoMobileCard>
@@ -192,7 +192,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Etapa","Orçamento","Pedido","Tipo","QTD","Status do pedido","Status Arte","Frete","UF","Saída Juff","Data Entrega"].map((h) => (
+                {["Etapa","Orçamento","Pedido","Tipo","QTD","Status de Peças","Status Arte","Frete","UF","Saída Juff","Data Entrega"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -213,7 +213,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       <td className="px-3 py-2">{p.pedido_olist}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                       <td className="px-3 py-2">{p.qtd ?? "—"}</td>
-                      <td className="px-3 py-2"><StatusPedidoBadge pedido={p} /></td>
+                      <td className="px-3 py-2"><StatusPecasBadge pedido={p} /></td>
                       <td className="px-3 py-2">{p.status_arte ?? "—"}</td>
                       <td className="px-3 py-2">{p.frete ?? "—"}</td>
                       <td className="px-3 py-2">{p.uf_entrega ?? "—"}</td>
