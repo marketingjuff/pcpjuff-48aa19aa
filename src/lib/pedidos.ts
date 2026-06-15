@@ -177,6 +177,9 @@ export function sortByDataSaidaJuffAsc<T extends Pick<Pedido, "data_saida_juff">
     const bv = b.data_saida_juff ?? "9999-12-31";
     return av.localeCompare(bv);
   });
+}
+
+
 
 // ---------- Helpers de completude por etapa ----------
 
