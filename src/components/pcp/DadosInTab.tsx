@@ -267,9 +267,14 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             <Field label="Entrada do pedido *" invalid={missingVendor.has("entrada_pedido")}>
               <DateInputBR value={form.entrada_pedido} onChange={(v) => set("entrada_pedido", v ?? "")} />
             </Field>
-            <Field label="Data de Entrega">
-              <DateInputBR value={form.data_entrega} onChange={(v) => set("data_entrega", v)} />
-            </Field>
+            <DataEntregaField
+              form={form}
+              selected={selected}
+              onChangeDataEntrega={(v) => set("data_entrega", v)}
+              onPropostaSaved={(v) => {
+                set("data_entrega_proposta", v);
+              }}
+            />
             <Field label="É necessário vetorização?">
               <Select value={form.necessita_vetorizacao ? "Sim" : "Não"} onValueChange={(v) => set("necessita_vetorizacao", v === "Sim")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -347,6 +352,15 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <Save className="h-4 w-4 mr-1" />{selected?.id ? "Atualizar" : "Salvar"} Input de Produção
               </Button>
             </div>
+            {selected?.data_entrega_proposta && (
+              <div className="sm:col-span-2">
+                <PropostaDataAlerta
+                  pedidoId={selected.id}
+                  dataAtual={selected.data_entrega}
+                  dataProposta={selected.data_entrega_proposta}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
