@@ -45,6 +45,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const [search, setSearch] = useState("");
   const [sortSaidaDir, setSortSaidaDir] = useState<"asc" | "desc" | null>("asc");
   const [sortEntregaDir, setSortEntregaDir] = useState<"asc" | "desc" | null>(null);
+  const [sortDiasDir, setSortDiasDir] = useState<"asc" | "desc" | null>(null);
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
@@ -73,7 +74,13 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       if (search && !`${p.pedido_olist} ${p.orcamento}`.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-    if (sortSaidaDir) {
+    if (sortDiasDir) {
+      arr.sort((a, b) => {
+        const da = a.data_entrega ? (diasUteisAteHoje(a.data_entrega, feriados) ?? 9999) : 9999;
+        const db = b.data_entrega ? (diasUteisAteHoje(b.data_entrega, feriados) ?? 9999) : 9999;
+        return sortDiasDir === "asc" ? da - db : db - da;
+      });
+    } else if (sortSaidaDir) {
       arr.sort((a, b) => {
         const av = a.saida_juff ?? "9999-12-31";
         const bv = b.saida_juff ?? "9999-12-31";
@@ -87,7 +94,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       });
     }
     return arr;
-  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, frete, search, sortSaidaDir, sortEntregaDir]);
+  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, frete, search, sortSaidaDir, sortEntregaDir, sortDiasDir, feriados]);
 
   const stats = useMemo(() => {
     const ativos = pedidos.filter((p) => pedidoAtivoNasAreas(p));
