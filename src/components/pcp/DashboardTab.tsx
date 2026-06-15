@@ -245,7 +245,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
           </div>
 
           {/* Desktop: tabela compacta */}
-          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs" style={{ fontFamily: '"Arial Narrow", "Arial Narrow Bold", Arial, sans-serif' }}>
+          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
             <Table>
               <TableHeader>
                 <TableRow>
