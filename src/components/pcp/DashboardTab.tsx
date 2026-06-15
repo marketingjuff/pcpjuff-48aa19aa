@@ -265,13 +265,13 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                   <TableHead className="h-8 px-1.5 text-[11px] whitespace-nowrap">Acabamento</TableHead>
                   <TableHead className="h-8 px-1.5 text-[11px] whitespace-nowrap">Expedição</TableHead>
                   <TableHead className="h-8 px-1.5 text-[11px] cursor-pointer select-none whitespace-nowrap" onClick={toggleSortSaida}>
-                    <span className="inline-flex items-center gap-1">Saída Juff <ArrowUpDown className="h-3 w-3" /></span>
+                    <span className="inline-flex items-center gap-1">Saída Juff<ArrowUpDown className="h-3 w-3" /></span>
                   </TableHead>
                   <TableHead className="h-8 px-1.5 text-[11px] cursor-pointer select-none whitespace-nowrap" onClick={toggleSortEntrega}>
-                    <span className="inline-flex items-center gap-1">Data Entrega <ArrowUpDown className="h-3 w-3" /></span>
+                    <span className="inline-flex items-center gap-1">Data Entrega<ArrowUpDown className="h-3 w-3" /></span>
                   </TableHead>
                   <TableHead className="h-8 px-1.5 text-[11px] cursor-pointer select-none whitespace-nowrap text-center" onClick={toggleSortDias}>
-                    <span className="inline-flex items-center gap-1">Dias <ArrowUpDown className="h-3 w-3" /></span>
+                    <span className="inline-flex items-center gap-1">Dias<ArrowUpDown className="h-3 w-3" /></span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
