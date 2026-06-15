@@ -267,9 +267,9 @@ export function PedidoSelector({ pedidos, selectedId, onSelect, filter }: Props)
 
 export function ReadOnlyField({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="space-y-1">
-      <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      <div className="text-sm font-medium px-3 py-2 rounded-md bg-muted/50 border border-dashed">{value || "—"}</div>
+    <div className="space-y-1.5">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">{label}</div>
+      <div className="text-sm font-medium px-3 py-2 rounded-md bg-muted/50 border border-dashed border-border/60">{value || "—"}</div>
     </div>
   );
 }
@@ -277,7 +277,7 @@ export function ReadOnlyField({ label, value }: { label: string; value: React.Re
 export function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <div className="text-xs font-medium">{label}</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">{label}</div>
       {children}
     </div>
   );
