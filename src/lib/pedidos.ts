@@ -171,7 +171,7 @@ export function pedidoAtivoNasAreas(p: Pedido): boolean {
 
 /** Ordenação padrão para todos os dashboards/listas:
  *  ascendente por `data_saida_juff` (mais urgente primeiro). Nulos por último. */
-export function sortByDataSaidaJuffAsc<T extends Pick<Pedido, "data_saida_juff">>(arr: T[]): T[] {
+export function sortByDataSaidaJuffAsc<T extends { data_saida_juff?: string | null }>(arr: T[]): T[] {
   return [...arr].sort((a, b) => {
     const av = a.data_saida_juff ?? "9999-12-31";
     const bv = b.data_saida_juff ?? "9999-12-31";
