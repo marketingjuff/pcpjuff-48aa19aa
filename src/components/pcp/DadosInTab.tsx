@@ -318,8 +318,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
         {/* Produção */}
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
-          <CardHeader><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
-          <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+          <CardHeader className="py-3"><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
+          <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2">
             <Field label="Status de Peças *" invalid={missingProd.has("status_pecas")}>
               <Select value={form.status_pecas ?? ""} onValueChange={(v) => set("status_pecas", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
