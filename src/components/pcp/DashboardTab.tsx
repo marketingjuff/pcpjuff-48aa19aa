@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
   STATUS_PECAS_OPCOES, TIPOS_ESTAMPA,
-  statusPrazo, tipoIncluiDTF, tipoIncluiSilk,
+  calcularEtapaAtual, statusPrazo, tipoIncluiDTF, tipoIncluiSilk,
 } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
