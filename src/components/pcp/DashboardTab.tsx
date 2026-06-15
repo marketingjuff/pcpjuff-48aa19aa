@@ -258,7 +258,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                         onDoubleClick={() => onEdit(p.id)}
                         className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
                       >
-                        <TableCell className="py-1.5 px-2 text-xs"><Badge className={etapaPaletteClass(/* etapa */ "")} variant="outline">{/* placeholder replaced below */}{(function(){ return ""; })()}</Badge><EtapaInline pedido={p} /></TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs"><Badge variant="outline" className={`${etapaPaletteClass(calcularEtapaAtual(p).etapa)} text-[11px]`}>{calcularEtapaAtual(p).etapa}</Badge></TableCell>
                         <TableCell className="py-1.5 px-2 text-xs font-medium">{p.pedido_olist}</TableCell>
                         <TableCell className="py-1.5 px-2 text-xs max-w-[180px] truncate">{p.orcamento}</TableCell>
                         <TableCell className="py-1.5 px-2 text-xs">{p.vendedor}</TableCell>
