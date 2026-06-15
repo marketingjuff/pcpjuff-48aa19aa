@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   ListChecks, AlertCircle, Palette, Printer, Brush, Package, Truck, ArrowUpDown,
 } from "lucide-react";
-import { diasUteisEntre, diasUteisAteHoje } from "@/lib/dias-uteis";
+import { diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
 import { etapaPaletteClass, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip } from "./shared";
