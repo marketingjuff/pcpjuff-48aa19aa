@@ -82,6 +82,9 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
         const db = b.data_entrega ?? "9999-12-31";
         return sortEntregaDir === "asc" ? da.localeCompare(db) : db.localeCompare(da);
       });
+    } else {
+      // Default: ordenar por data de saída da Juff (mais urgente primeiro)
+      arr.sort((a, b) => (a.data_saida_juff ?? "9999-12-31").localeCompare(b.data_saida_juff ?? "9999-12-31"));
     }
     return arr;
   }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, frete, search, sortDiasDir, sortEntregaDir, feriados]);
