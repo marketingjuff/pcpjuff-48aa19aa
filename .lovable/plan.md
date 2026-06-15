@@ -1,100 +1,107 @@
-# Plano — PCP Juff v2 (4 blocos sequenciais)
+# Refinamento Visual Premium — App Inteiro
 
-Decisões aprovadas:
+Objetivo: elevar a percepção de qualidade do PCP Juff mantendo **todo o conteúdo, layout e densidade compacta atuais**. Sem mexer em lógica de negócio, queries ou fluxos.
 
-- **Status de Peças substitui completamente** o badge atual (aberto/completo/reaberto). O status "reaberto" vira o **asterisco** do 2A.
-- **Pedido em Expedição permanece visível no Dashboard** — só some das abas quando a expedição finalizar o pedido via botão finalizar pedido.
-- **Alerta de mudança de data** aparece apenas na aba **Dados In**.
-- **Nota Fiscal** vira dropdown com opções iniciais: Sim / Não / Não se aplica. e pode ser editavel via painel de configuracoes.
+## Direção visual
 
----
+- Paleta clara sofisticada: off-white com leve tom quente em vez de branco puro, azul Juff mantido como acento, hierarquia construída com tons neutros e não com peso de cor.
+- Tipografia editorial: importar **Inter Tight** (display, headings) + **Inter** (body) via `<link>` no `__root.tsx`. Ajustar `letter-spacing` negativo em títulos e `font-feature-settings` para numerais tabulares em KPIs/tabelas (essencial para colunas de números alinhadas).
+- Sombras suaves em duas camadas (`shadow-xs` ambient + halo sutil), em vez de bordas duras. Bordas passam a `border-color: color-mix(... 60% transparent)` para parecerem "ar" e não traço.
+- Raio: subir `--radius` para `0.75rem` (cards/inputs ficam mais modernos sem inflar densidade).
+- Foco/ring: ring 2px com `color-mix` do primary a 35% — premium e acessível.
 
-## Bloco 1 — Renomeações e Campos Globais
+## Tokens (src/styles.css)
 
-### 1A. Status de Peças (substitui Status do Pedido)
+- Ajustar `:root`:
+  - `--background: oklch(0.985 0.003 80)` (off-white levemente quente)
+  - `--card: oklch(1 0 0)` mantém, mas adicionar `--card-elevated` e sombras semânticas
+  - `--border: oklch(0.92 0.008 250)` mais clara
+  - `--muted-foreground: oklch(0.45 0.02 257)` (mais legível)
+  - `--primary` mantém; adicionar `--primary-soft: oklch(0.95 0.04 258)` para chips/hover
+  - `--radius: 0.75rem`
+- Adicionar tokens:
+  - `--shadow-xs`, `--shadow-sm`, `--shadow-md` (sombras de duas camadas)
+  - `--gradient-surface` para superfícies sutis (KPIs, header)
+- Mapear no `@theme inline` (`--color-primary-soft`, `--shadow-*`) para uso em utilitários.
+- `@layer base`:
+  - `body { font-family: "Inter", ui-sans-serif; }`
+  - Numeral tabular global em `.tabular`, `th`, `td` de tabelas, badges com números.
+  - Headings: `font-family: "Inter Tight"; letter-spacing: -0.02em;`
+- Dark mode: ajustes equivalentes (não é o foco, mas mantém consistência).
 
-- Migração DB: renomear coluna `status_geral` → `status_pecas` em `pedidos`. Valores aceitos: `"completo"` | `"incompleto"`. Migrar dados: `aberto`/`reaberto` → `incompleto`; `completo` → `completo`.
-- Adicionar coluna `reaberto` boolean default false — preserva o sinal de "reabertura" para o asterisco do Bloco 2A (independente do Status de Peças).
-- `src/lib/pedidos.ts`: trocar `STATUS_GERAL_OPCOES` por `STATUS_PECAS_OPCOES = ["completo","incompleto"]`. Atualizar tipo `Pedido` (campos `status_pecas`, `reaberto`). Atualizar `pedidoAtivoNasAreas` para usar `reaberto` no lugar de `status_geral === "reaberto"`.
-- `src/components/pcp/shared.tsx`: substituir `StatusPedidoBadge`/`StatusPedidoChip` por `StatusPecasBadge`/`StatusPecasChip` (Completo = verde, Incompleto = cinza). Remover `statusGeralColorClass`.
-- Substituir todos os labels "Status do Pedido" → "Status de Peças" em: DadosInTab, ArteTab, DTFTab, SilkTab, AcabamentoTab, ExpedicaoTab, FinalizadosTab, DashboardTab.
-- Filtros: trocar select de status nos dashboards/abas para Completo/Incompleto.
+## Carregamento de fonte (src/routes/__root.tsx)
 
-### 1B. Ordenação default por data de saída
+Adicionar `<link rel="preconnect">` e `<link rel="stylesheet">` para Inter + Inter Tight no `head` (via `links` array do route head).
 
-- Em todos os dashboards/listas (DashboardTab, DadosInTab, ArteTab, DTFTab, SilkTab, AcabamentoTab, ExpedicaoTab, FinalizadosTab e Dashboard do `_authenticated/index.tsx`): sort default ascendente por `data_saida_juff` (mais próxima primeiro; nulos por último). Filtros/busca não afetam o sort — apenas a ordem inicial.
-- Ordem das colunas nas tabelas: garantir Etapa → Pedido → Orçamento → … idêntica em todas as abas (auditar e alinhar).
+## Componentes a refinar (sem mudar conteúdo)
 
----
+1. **Header (`_authenticated/index.tsx`)**
+   - Trocar caixa azul do logo por superfície branca com borda sutil + ícone em primário; título com `Inter Tight`, tracking-tight.
+   - Linha divisória virar gradiente sutil (`border-b` com `color-mix`).
+   - Botões Configurações/Sair: variantes `ghost` com hover suave `bg-primary-soft`.
 
-## Bloco 2 — Marcadores e Configurações
+2. **Tabs (TabsList)**
+   - Pill bar minimalista: fundo `muted/40`, item ativo com `bg-card` + `shadow-xs` (efeito "card flutuante"), inativos `text-muted-foreground` com hover.
+   - Padding interno consistente, altura uniforme.
 
-### 2A. Asterisco em pedidos reabertos
+3. **KPI cards (DashboardTab topo)**
+   - Card com `shadow-xs`, hover `shadow-sm` + translate-y-[-1px] (transição 200ms).
+   - Label uppercase tracking-wider em `muted-foreground` text-[11px].
+   - Número grande em `Inter Tight` `text-4xl font-semibold tabular-nums tracking-tight`.
+   - Ícone em badge circular suave (`bg-primary-soft text-primary`), tamanho consistente.
+   - Card "ativo" usa borda primária + halo (`ring-2 ring-primary/15`) em vez de borda 2px dura.
 
-- `FinalizadosTab.tsx` — handler "Reabrir": setar `reaberto = true` e `finalizado_em = null` (não mexer mais em `status_geral`).
-- `calcularEtapaAtual`: se `p.reaberto`, sufixar a string `etapa` com `"*"` (ex.: `"Aguardando DTF*"`).
-- Aparece automaticamente no `EtapaBadgeFromPedido` (dashboards) e no `EtapaTopoBanner` (dentro do pedido).
-- Ao finalizar pela Expedição (Bloco 3B): zerar `reaberto = false` junto com `finalizado_em`.
+4. **Card "Pedidos" (filtros + tabela)**
+   - Header com título maior + subtítulo opcional vazio (placeholder de hierarquia).
+   - Filtros: grid responsivo com gap consistente (12px), inputs com altura 36px alinhada, ícones lucide leading (search, calendar) dentro dos inputs.
+   - Tabela:
+     - `th` em uppercase tracking-wider text-[11px] muted, `border-b` mais sutil.
+     - Linhas com hover `bg-muted/40`, divisor `border-b/60`.
+     - Numerais tabulares em QTD, Dias, %, datas.
+     - Badges (Etapa, Tipo, Status Peças): raio menor, padding consistente, paleta semântica (success/warning/info/destructive soft).
+     - Ações (Pencil/Eye) em botões `ghost` size-icon com hover `bg-muted`.
+     - Progress bar mais fina (h-1.5) com cor primária.
 
-### 2B. Ícone "olho" no campo de senha
+5. **Badges/Chips (shared.tsx)**
+   - Padronizar `StatusPecasBadge`, `StatusPecasChip`, chips de etapa para usar tokens semânticos (`bg-success/12 text-success-foreground` style soft).
+   - Asterisco de reaberto em cor `warning` discreta.
 
-- `src/routes/auth.tsx`: adicionar botão toggle (lucide `Eye`/`EyeOff`) dentro do input de senha; alterna `type="password"`/`text"`. Default oculto.
+6. **Forms (Dados In, Arte, DTF, Silk, Acabamento, Expedição)**
+   - Labels: text-xs uppercase tracking-wide muted.
+   - Inputs/Selects: altura 36px, raio do token, border suave, foco com ring premium.
+   - Seções dentro do form: dividers sutis, espaçamento vertical consistente (`space-y-5`).
+   - Botões primários com leve gradiente (`from-primary to-primary` com overlay) + sombra.
 
-### 2C. Dropdowns configuráveis: Tipo de Pagamento e Nota Fiscal
+7. **Auth (`routes/auth.tsx`)**
+   - Card centralizado com sombra `md`, header com logo + título editorial, inputs e botão alinhados ao novo sistema.
 
-- Migração DB:
-  - Adicionar valores `"pagamento"` e `"nf"` ao enum/uso de `app_lists.kind` (atualizar tipo TS `AppListKind`).
-  - Alterar `pedidos.nf_emitida` de `boolean` para `text` (migrar `true`→`"Sim"`, `false`→`"Não"`, `null`→null). Renomear para `nf_status` para clareza (opcional, podemos manter o nome).
-  - Seed inicial em `app_lists`: Tipo de Pagamento (Cartão de crédito, 50%/50%, Boleto, À vista) e NF (Sim, Não, Não se aplica).
-- `app-lists.ts`: estender `AppListKind`.
-- `configuracoes.tsx`: adicionar 2 painéis de gestão (CRUD) iguais aos existentes para `pagamento` e `nf`.
-- Substituir os `<Select>` hard-coded de `forma_pagamento` e `nf_emitida` (em DadosInTab e ExpedicaoTab) pelos valores dinâmicos via `useAppList`.
-- Remover constante `FORMAS_PAGAMENTO` de `pedidos.ts`.
+8. **Configurações**
+   - Cards e seções com novos tokens; tabelas no mesmo padrão da Dashboard.
 
----
+9. **Banners (PendenciasBanner, PropostaDataAlerta)**
+   - Substituir cor chapada por superfície soft (`bg-warning/8 border-warning/20`), ícone em círculo, tipografia hierárquica.
 
-## Bloco 3 — Fluxo Acabamento → Expedição
+10. **404 / Error boundary (`__root.tsx`)**
+    - Atualizar tipografia e botões ao novo sistema (já usa tokens; pequena melhoria de tracking/spacing).
 
-### 3A. Acabamento envia automaticamente para Expedição
+## Garantias de escopo
 
-- `AcabamentoTab.tsx`: remover botão "Mandar pra Expedição". No handler "Atualizar/Salvar", se `embalado === "Sim"` e `expedicao_entrou_em` for null, setar `expedicao_entrou_em = now()` no mesmo update.
-- Confirmar que `calcularEtapaAtual` retorna `"Aguardando Expedição"` quando acabamento completo e ainda não finalizado — ajustar a lógica (hoje retorna "Finalizado" quando `acabamentoOk`). Nova regra: `acabamentoOk && !finalizado_em` → `"Aguardando Expedição"`; `finalizado_em` → `"Finalizado"`.
+- **Conteúdo inalterado**: nenhum texto, coluna, campo, badge ou fluxo removido/renomeado.
+- **Densidade compacta preservada**: alturas de linha, paddings de tabela e tamanhos de fonte do corpo permanecem ≤ atuais; o "premium" vem de tipografia, sombras, tokens e hierarquia, não de inflar espaçamento.
+- **Sem alterações de lógica, dados, RLS, server functions ou migrations.**
 
-### 3B. Expedição finaliza
+## Arquivos previstos
 
-- `ExpedicaoTab.tsx`: adicionar botão verde **"Finalizar Pedido"** que seta `finalizado_em = now()` e `reaberto = false`. O botão "Atualizar Expedição" permanece, mas sem efeito de finalização.
-- Pedido permanece visível no Dashboard enquanto em Expedição (já é o caso após a mudança em `calcularEtapaAtual`).
+- `src/styles.css` (tokens, fontes, base)
+- `src/routes/__root.tsx` (link fonts, polish 404/error)
+- `src/routes/_authenticated/index.tsx` (header + TabsList)
+- `src/components/pcp/DashboardTab.tsx` (KPIs, filtros, tabela)
+- `src/components/pcp/shared.tsx` (badges/chips, etapaPaletteClass)
+- `src/components/pcp/DadosInTab.tsx`, `ArteTab.tsx`, `DTFTab.tsx`, `SilkTab.tsx`, `AcabamentoTab.tsx`, `ExpedicaoTab.tsx`, `FinalizadosTab.tsx`, `PendenciasBanner.tsx` (padrão visual de forms/tabelas/banners)
+- `src/routes/auth.tsx`, `src/routes/_authenticated/configuracoes.tsx` (mesma linguagem)
+- Possível ajuste em `src/components/ui/button.tsx`, `card.tsx`, `input.tsx`, `badge.tsx`, `tabs.tsx`, `table.tsx` para variantes/sombras (apenas se necessário; preferir className por consumo).
 
----
+## Validação
 
-## Bloco 4 — Solicitação de Alteração de Data de Entrega
-
-### 4A/4B/4C. Solicitação + Aprovação
-
-- Migração DB: adicionar em `pedidos`:
-  - `data_entrega_proposta date`
-  - `data_entrega_proposta_em timestamptz`
-  - `data_entrega_proposta_por uuid` (FK auth.users)
-- Componente "Solicitar Alteração de Data de Entrega" no input do vendedor (Dados In ou onde estiver `data_entrega` editável):
-  - Botão aparece apenas se `data_entrega != null` E `arte_data != null` (input de produção preenchido).
-  - Caso contrário, vendedor edita `data_entrega` livremente.
-  - Ao clicar: revela date input + Salvar/Cancelar. Salvar grava os 3 campos `data_entrega_proposta*`. Cancelar reseta o UI.
-- Aviso na **DadosInTab** (input de produção), abaixo do botão Salvar/Atualizar:
-  - Texto: `Solicitação de alteração de data de entrega para a data DD/MM/AA`
-  - Botão **Aprovar**: copia `data_entrega_proposta` → `data_entrega` e limpa os 3 campos de proposta.
-  - Não há "rejeitar" explícito — ignorar mantém a data original.
-
----
-
-## Resumo de ordem e dependências
-
-
-| Bloco | Entregar antes de | Migrações DB                                          |
-| ----- | ----------------- | ----------------------------------------------------- |
-| 1     | tudo              | rename status_geral→status_pecas; add `reaberto bool` |
-| 2     | 3, 4              | extend app_lists.kind; nf_emitida bool→text; seed     |
-| 3     | 4                 | —                                                     |
-| 4     | —                 | add `data_entrega_proposta*` (3 colunas)              |
-
-
-Cada bloco será entregue, validado pelo usuário e só então o próximo será iniciado.
+- Screenshot da Dashboard, de uma aba de produção, de Auth e Configurações após aplicar.
+- Verificar build TS limpa.
