@@ -5,7 +5,8 @@ import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 type PedidoBase = Omit<Tables<"pedidos">, "modelo_estampa" | "status">;
 export type Pedido = PedidoBase & {
   tipo_estampa: string;
-  status_geral: string;
+  status_pecas: string;
+  reaberto: boolean;
   data_entrega: string | null;
   uf_entrega: string | null;
   necessita_vetorizacao: boolean | null;
@@ -34,7 +35,8 @@ export type Pedido = PedidoBase & {
 type PedidoInsertBase = Omit<TablesInsert<"pedidos">, "modelo_estampa" | "status">;
 export type PedidoInsert = PedidoInsertBase & {
   tipo_estampa: string;
-  status_geral?: string;
+  status_pecas?: string;
+  reaberto?: boolean;
   data_entrega?: string | null;
   uf_entrega?: string | null;
   necessita_vetorizacao?: boolean | null;
