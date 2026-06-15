@@ -24,7 +24,7 @@ export function PendenciasBanner({ pedidos }: { pedidos: Pedido[] }) {
   return (
     <div className="space-y-2 mb-4">
       <div className="flex items-center justify-between">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Pendências</div>
+        <div className="text-xs font-medium text-muted-foreground">Pendências</div>
         <Button size="sm" variant="ghost" onClick={() => setOpen((o) => !o)}>
           {open ? <><ChevronUp className="h-4 w-4 mr-1" /> Recolher</> : <><ChevronDown className="h-4 w-4 mr-1" /> Expandir</>}
         </Button>

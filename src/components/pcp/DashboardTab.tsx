@@ -127,8 +127,8 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-baseline justify-between gap-2">
-            <CardTitle className="font-display text-lg tracking-tight">Pedidos</CardTitle>
-            <span className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground tabular-nums">
+            <CardTitle className="font-display text-base tracking-tight">Pedidos</CardTitle>
+            <span className="text-xs text-muted-foreground tabular-nums">
               {filtrados.length} {filtrados.length === 1 ? "registro" : "registros"}
             </span>
           </div>
@@ -312,10 +312,10 @@ function StatCard({ label, value, icon, accent, onClick, active }: { label: stri
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1.5">
-            <div className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.08em] truncate">
+            <div className="text-xs font-medium text-muted-foreground truncate">
               {label}
             </div>
-            <div className={`font-display text-3xl sm:text-[2rem] font-semibold tabular-nums tracking-tight leading-none ${tone.num}`}>
+            <div className={`font-display text-2xl sm:text-[1.6rem] font-semibold tabular-nums tracking-tight leading-none ${tone.num}`}>
               {value}
             </div>
           </div>
