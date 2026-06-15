@@ -24,7 +24,7 @@ export function PendenciasBanner({ pedidos }: { pedidos: Pedido[] }) {
   return (
     <div className="space-y-2 mb-4">
       <div className="flex items-center justify-between">
-        <div className="text-sm font-medium text-muted-foreground">Pendências</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Pendências</div>
         <Button size="sm" variant="ghost" onClick={() => setOpen((o) => !o)}>
           {open ? <><ChevronUp className="h-4 w-4 mr-1" /> Recolher</> : <><ChevronDown className="h-4 w-4 mr-1" /> Expandir</>}
         </Button>
@@ -32,11 +32,13 @@ export function PendenciasBanner({ pedidos }: { pedidos: Pedido[] }) {
       {open && (
         <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
           {atrasados.length > 0 && (
-            <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive border border-destructive/30 text-sm">
-              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-              <div>
-                <div className="font-semibold">{atrasados.length} pedido(s) atrasado(s)</div>
-                <div className="text-xs opacity-80 mt-1 line-clamp-2">
+            <div className="flex items-start gap-3 p-3.5 rounded-lg bg-destructive/8 border border-destructive/25 text-sm">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/15 text-destructive shrink-0 ring-1 ring-destructive/20">
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="font-semibold text-destructive">{atrasados.length} pedido(s) atrasado(s)</div>
+                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
                   {atrasados.slice(0, 5).map((p) => p.pedido_olist).join(", ")}
                   {atrasados.length > 5 && ` +${atrasados.length - 5}`}
                 </div>
@@ -44,11 +46,13 @@ export function PendenciasBanner({ pedidos }: { pedidos: Pedido[] }) {
             </div>
           )}
           {aguardando.length > 0 && (
-            <div className="flex items-start gap-2 p-3 rounded-md bg-warning/15 text-warning-foreground border border-warning/30 text-sm">
-              <Clock className="h-4 w-4 mt-0.5 shrink-0" />
-              <div>
-                <div className="font-semibold">{aguardando.length} pedido(s) aguardando etapa anterior</div>
-                <div className="text-xs opacity-80 mt-1 line-clamp-2">
+            <div className="flex items-start gap-3 p-3.5 rounded-lg bg-warning/10 border border-warning/30 text-sm">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/20 text-warning-foreground shrink-0 ring-1 ring-warning/30">
+                <Clock className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="font-semibold text-warning-foreground">{aguardando.length} pedido(s) aguardando etapa anterior</div>
+                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
                   {aguardando.slice(0, 5).map((p) => p.pedido_olist).join(", ")}
                   {aguardando.length > 5 && ` +${aguardando.length - 5}`}
                 </div>

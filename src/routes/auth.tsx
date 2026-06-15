@@ -38,22 +38,26 @@ function AuthPage() {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent to-background p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-info/10 blur-3xl" />
+      </div>
+      <Card className="w-full max-w-md shadow-lg border-border/60">
+        <CardHeader className="text-center pb-2">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-soft text-primary ring-1 ring-primary/15">
             <Factory className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl">PCP Juff</CardTitle>
-          <CardDescription>Controle de produção</CardDescription>
+          <CardTitle className="text-2xl tracking-tight">PCP Juff</CardTitle>
+          <CardDescription className="mt-1">Controle de produção</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignIn} className="space-y-4 pt-2">
-            <div className="space-y-2">
+        <CardContent className="pt-4">
+          <form onSubmit={handleSignIn} className="space-y-5">
+            <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="password">Senha</Label>
               <div className="relative">
                 <Input
@@ -67,7 +71,7 @@ function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
                   aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                   tabIndex={-1}
                 >
@@ -75,7 +79,7 @@ function AuthPage() {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>{loading ? "Entrando..." : "Entrar"}</Button>
+            <Button type="submit" className="w-full h-10" disabled={loading}>{loading ? "Entrando..." : "Entrar"}</Button>
           </form>
         </CardContent>
       </Card>
