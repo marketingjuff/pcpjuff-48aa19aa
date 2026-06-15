@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -21,10 +22,11 @@ import {
 import { Plus, Trash2, Save, X, FileText, Download, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
+import { addDiasUteis, diasUteisEntre, diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { EtapaBadgeFromPedido, PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip } from "./shared";
+import { PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip, etapaPaletteClass } from "./shared";
+import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 interface Props {
@@ -395,41 +397,73 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               ));
             })()}
           </div>
-          <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-xs uppercase">
-              <tr>
-                {["Etapa","Pedido","Orçamento","QTD","Vendedor","Forma Pgto","NF","Frete","Tempo Frete","Status de Peças","Estampa","Entrada","Saída Juff","Data Entrega"].map((h) => (
-                  <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {sortByDataSaidaJuffAsc(pedidos.filter((p) => pedidoAtivoNasAreas(p))).map((p) => (
-                <tr key={p.id}
-                  onClick={() => onSelect(p.id)}
-                  className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
-                  <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
-                  <td className="px-3 py-2 font-medium">{p.pedido_olist}</td>
-                  <td className="px-3 py-2">{p.orcamento}</td>
-                  <td className="px-3 py-2">{p.qtd}</td>
-                  <td className="px-3 py-2">{p.vendedor}</td>
-                  <td className="px-3 py-2">{p.forma_pagamento ?? "—"}</td>
-                  <td className="px-3 py-2">{p.nf_emitida ?? "—"}</td>
-                  <td className="px-3 py-2">{p.frete ?? "—"}</td>
-                  <td className="px-3 py-2">{p.tempo_frete ?? "—"}</td>
-                  <td className="px-3 py-2"><StatusPecasBadge pedido={p} /></td>
-                  <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
-                  <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.entrada_pedido)}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
-                </tr>
-              ))}
-              {sortByDataSaidaJuffAsc(pedidos.filter((p) => pedidoAtivoNasAreas(p))).length === 0 && (
-                <tr><td colSpan={14} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido ativo.</td></tr>
-              )}
-            </tbody>
-          </table>
+          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="h-9 px-2 text-xs">Etapa</TableHead>
+                  <TableHead className="h-9 px-2 text-xs">Pedido</TableHead>
+                  <TableHead className="h-9 px-2 text-xs">Orçamento</TableHead>
+                  <TableHead className="h-9 px-2 text-xs">Vendedor</TableHead>
+                  <TableHead className="h-9 px-2 text-xs">QTD</TableHead>
+                  <TableHead className="h-9 px-2 text-xs">Estampa</TableHead>
+                  <TableHead className="h-9 px-2 text-xs">Status de Peças</TableHead>
+                  <TableHead className="h-9 px-2 text-xs">Frete</TableHead>
+                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Tempo Frete</TableHead>
+                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Forma Pgto</TableHead>
+                  <TableHead className="h-9 px-2 text-xs">NF</TableHead>
+                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Entrada</TableHead>
+                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Saída Juff</TableHead>
+                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Data Entrega</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(() => {
+                  const rows = sortByDataSaidaJuffAsc(pedidos.filter((p) => pedidoAtivoNasAreas(p)));
+                  if (rows.length === 0) {
+                    return (
+                      <TableRow><TableCell colSpan={14} className="text-center py-8 text-muted-foreground">Nenhum pedido ativo.</TableCell></TableRow>
+                    );
+                  }
+                  return rows.map((p) => {
+                    const etapa = _calcEtapa(p).etapa;
+                    const isSelected = selected?.id === p.id;
+                    let bg = "";
+                    if (p.embalado !== "Sim" && p.saida_juff) {
+                      const dias = diasUteisAteHoje(p.saida_juff, feriados);
+                      if (dias !== null) {
+                        if (dias <= 0) bg = "bg-red-50 hover:bg-red-100/80";
+                        else if (dias === 1) bg = "bg-yellow-50 hover:bg-yellow-100/80";
+                      }
+                    }
+                    return (
+                      <TableRow
+                        key={p.id}
+                        onClick={() => onSelect(p.id)}
+                        className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
+                      >
+                        <TableCell className="py-1.5 px-2 text-xs"><Badge variant="outline" className={`${etapaPaletteClass(etapa)} text-[11px]`}>{etapa}</Badge></TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs font-medium align-top">{p.pedido_olist}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs max-w-[220px] align-top">
+                          <span className="block leading-snug line-clamp-2 break-words" title={p.orcamento ?? ""}>{p.orcamento}</span>
+                        </TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.vendedor}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top">{p.qtd}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs align-top"><Badge variant="outline" className="text-[11px]">{p.tipo_estampa}</Badge></TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs align-top"><StatusPecasBadge pedido={p} /></TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.frete ?? "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top">{p.tempo_frete ?? "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.forma_pagamento ?? "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.nf_emitida ?? "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.entrada_pedido) || "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.saida_juff) || "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.data_entrega) || "—"}</TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
