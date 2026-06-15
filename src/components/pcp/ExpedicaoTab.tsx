@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, CheckCircle2, ArrowUp, ArrowDown } from "lucide-react";
+import { Save, CheckCircle2, ArrowUp, ArrowDown, Flag } from "lucide-react";
 import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip } from "./shared";
 import { formatDateBR } from "@/lib/format";
 
@@ -21,7 +21,6 @@ interface Props {
 type ItemKey =
   | "exp_cobranca_pagamento"
   | "exp_pagamento"
-  | "nf_emitida"
   | "exp_etiqueta"
   | "exp_frete_solicitado"
   | "exp_despachado";
@@ -29,7 +28,6 @@ type ItemKey =
 const ITEM_LABEL: Record<ItemKey, string> = {
   exp_cobranca_pagamento: "Cobrança do pagamento",
   exp_pagamento: "Pagamento",
-  nf_emitida: "Nota Fiscal Emitida",
   exp_etiqueta: "Etiqueta",
   exp_frete_solicitado: "Frete Solicitado",
   exp_despachado: "Despachado",
@@ -37,10 +35,9 @@ const ITEM_LABEL: Record<ItemKey, string> = {
 
 function itensParaForma(forma: string | null | undefined): ItemKey[] {
   if (forma === "50%/50%") {
-    return ["exp_cobranca_pagamento", "exp_pagamento", "nf_emitida", "exp_etiqueta", "exp_frete_solicitado", "exp_despachado"];
+    return ["exp_cobranca_pagamento", "exp_pagamento", "exp_etiqueta", "exp_frete_solicitado", "exp_despachado"];
   }
-  // Cartão, À vista, Boleto OU forma vazia
-  return ["nf_emitida", "exp_etiqueta", "exp_frete_solicitado", "exp_despachado"];
+  return ["exp_etiqueta", "exp_frete_solicitado", "exp_despachado"];
 }
 
 function pendenciasDoPedido(p: Pedido): string[] {
@@ -65,7 +62,6 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
   const [form, setForm] = useState<Partial<Pedido>>({});
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
-  // Carrega form quando selected muda
   useMemo(() => { setForm(selected ?? {}); }, [selected]);
 
   function toggleItem(key: ItemKey, val: boolean) {
@@ -80,22 +76,33 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
 
   function handleSave() {
     if (!selected) return;
-    const payload: any = {
+    // 3B: Salvar não finaliza mais o pedido — apenas atualiza os campos da Expedição.
+    onSave({
       id: selected.id,
       exp_cobranca_pagamento: form.exp_cobranca_pagamento ?? null,
       exp_pagamento: form.exp_pagamento ?? null,
-      nf_emitida: form.nf_emitida ?? null,
       exp_etiqueta: form.exp_etiqueta ?? null,
       exp_frete_solicitado: form.exp_frete_solicitado ?? null,
       exp_despachado: form.exp_despachado ?? null,
       exp_despachado_em: form.exp_despachado_em ?? null,
       exp_observacoes: form.exp_observacoes ?? null,
-    };
-    // Se tudo completo, finaliza (data de finalização = agora)
-    if (todosCompletos(selected, form)) {
-      payload.finalizado_em = new Date().toISOString();
-    }
-    onSave(payload);
+    });
+  }
+
+  function handleFinalizar() {
+    if (!selected) return;
+    onSave({
+      id: selected.id,
+      exp_cobranca_pagamento: form.exp_cobranca_pagamento ?? null,
+      exp_pagamento: form.exp_pagamento ?? null,
+      exp_etiqueta: form.exp_etiqueta ?? null,
+      exp_frete_solicitado: form.exp_frete_solicitado ?? null,
+      exp_despachado: form.exp_despachado ?? null,
+      exp_despachado_em: form.exp_despachado_em ?? null,
+      exp_observacoes: form.exp_observacoes ?? null,
+      finalizado_em: new Date().toISOString(),
+      reaberto: false,
+    });
   }
 
   function marcarTudoSim() {
@@ -160,7 +167,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
               <ReadOnlyField label="Data da entrega" value={formatDateBR(selected.data_entrega)} />
               <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
               <ReadOnlyField label="Forma de pagamento" value={selected.forma_pagamento ?? "—"} />
-              <ReadOnlyField label="NF Emitida (espelho)" value={form.nf_emitida === true ? "Sim" : form.nf_emitida === false ? "Não" : "—"} />
+              <ReadOnlyField label="Nota Fiscal" value={selected.nf_emitida ?? "—"} />
             </div>
 
             <div className="border-t pt-4 grid gap-4 grid-cols-1 sm:grid-cols-2">
@@ -199,16 +206,23 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
 
             {todosCompletos(selected, form) && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-success/10 text-success text-sm border border-success/30">
-                <CheckCircle2 className="h-4 w-4" /> Ao salvar, este pedido será finalizado.
+                <CheckCircle2 className="h-4 w-4" /> Todos os itens marcados como "Sim". Clique em "Finalizar Pedido" para concluir.
               </div>
             )}
 
             <div className="flex gap-2 flex-wrap">
-              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
+              <Button onClick={handleSave} disabled={saving} variant="outline" className="w-full sm:w-auto">
                 <Save className="h-4 w-4 mr-1" /> Atualizar Expedição
               </Button>
-              <Button variant="outline" onClick={marcarTudoSim} disabled={saving} className="w-full sm:w-auto">
+              <Button onClick={marcarTudoSim} disabled={saving} variant="outline" className="w-full sm:w-auto">
                 Marcar tudo como "Sim"
+              </Button>
+              <Button
+                onClick={handleFinalizar}
+                disabled={saving}
+                className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <Flag className="h-4 w-4 mr-1" /> Finalizar Pedido
               </Button>
             </div>
           </CardContent>
