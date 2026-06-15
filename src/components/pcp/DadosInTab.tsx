@@ -2,7 +2,7 @@ import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
-  STATUS_PECAS_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS, FORMAS_PAGAMENTO,
+  STATUS_PECAS_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS,
   calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk,
 } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
@@ -57,6 +57,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const { isDirty } = useDirtyForm();
   const { names: vendedores } = useAppList("vendedor");
   const { names: fretes } = useAppList("frete");
+  const { names: formasPagamento } = useAppList("pagamento");
+  const { names: nfOpcoes } = useAppList("nf");
 
   useEffect(() => {
     if (!isDirty) setForm(selected ?? empty);
@@ -240,13 +242,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             <Field label="Forma de pagamento">
               <Select value={form.forma_pagamento ?? ""} onValueChange={(v) => set("forma_pagamento", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>{FORMAS_PAGAMENTO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                <SelectContent>{formasPagamento.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Nota Fiscal Emitida">
-              <Select value={form.nf_emitida === null || form.nf_emitida === undefined ? "" : form.nf_emitida ? "Sim" : "Não"} onValueChange={(v) => set("nf_emitida", v === "Sim")}>
+            <Field label="Nota Fiscal">
+              <Select value={form.nf_emitida ?? ""} onValueChange={(v) => set("nf_emitida", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                <SelectContent>{nfOpcoes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
             <Field label="Frete">
