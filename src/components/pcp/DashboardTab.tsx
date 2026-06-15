@@ -245,39 +245,41 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
           </div>
 
           {/* Desktop: tabela compacta */}
-          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
+          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs" style={{ fontFamily: '"Arial Narrow", "Arial Narrow Bold", Arial, sans-serif' }}>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="h-9 px-2 text-xs">Etapa</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">Pedido</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">Orçamento</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">Vendedor</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">QTD</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">Estampa</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">Status de Peças</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">Frete</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">UF</TableHead>
-                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Entrada</TableHead>
-                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Arte Limite</TableHead>
-                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Início Estamp.</TableHead>
-                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Térm. Estamp.</TableHead>
-                  <TableHead className="h-9 px-2 text-xs cursor-pointer select-none whitespace-nowrap" onClick={toggleSortDias}>
-                    <span className="inline-flex items-center gap-1">Dias <ArrowUpDown className="h-3 w-3" /></span>
-                  </TableHead>
-                  <TableHead className="h-9 px-2 text-xs cursor-pointer select-none whitespace-nowrap" onClick={toggleSortSaida}>
+                  <TableHead className="h-8 px-1.5 text-[11px]">Etapa</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px]">Pedido</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px]">Orçamento</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px]">Vendedor</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px]">QTD</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px]">Estampa</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px]">Status de Peças</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px]">Frete</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px]">UF</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px] whitespace-nowrap">Entrada</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px] whitespace-nowrap">Arte Limite</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px] whitespace-nowrap">Início Estamp.</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px] whitespace-nowrap">Térm. Estamp.</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px] whitespace-nowrap">Acabamento</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px] whitespace-nowrap">Expedição</TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px] cursor-pointer select-none whitespace-nowrap" onClick={toggleSortSaida}>
                     <span className="inline-flex items-center gap-1">Saída Juff <ArrowUpDown className="h-3 w-3" /></span>
                   </TableHead>
-                  <TableHead className="h-9 px-2 text-xs cursor-pointer select-none whitespace-nowrap" onClick={toggleSortEntrega}>
+                  <TableHead className="h-8 px-1.5 text-[11px] cursor-pointer select-none whitespace-nowrap" onClick={toggleSortEntrega}>
                     <span className="inline-flex items-center gap-1">Data Entrega <ArrowUpDown className="h-3 w-3" /></span>
+                  </TableHead>
+                  <TableHead className="h-8 px-1.5 text-[11px] cursor-pointer select-none whitespace-nowrap text-center" onClick={toggleSortDias}>
+                    <span className="inline-flex items-center gap-1">Dias <ArrowUpDown className="h-3 w-3" /></span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={16} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={18} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
                 ) : filtrados.length === 0 ? (
-                  <TableRow><TableCell colSpan={16} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={18} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
                 ) : (
                   filtrados.map((p) => {
                     const { inicio, termino } = estampariaDatas(p);
@@ -290,24 +292,26 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                         onDoubleClick={() => onEdit(p.id)}
                         className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
                       >
-                        <TableCell className="py-1.5 px-2 text-xs"><Badge variant="outline" className={`${etapaPaletteClass(calcularEtapaAtual(p).etapa)} text-[11px]`}>{calcularEtapaAtual(p).etapa}</Badge></TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs font-medium align-top">{p.pedido_olist}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs max-w-[220px] align-top">
-                          <span className="block leading-snug line-clamp-2 break-words" title={p.orcamento ?? ""}>{p.orcamento}</span>
+                        <TableCell className="py-1 px-1.5 text-[11px]"><Badge variant="outline" className={`${etapaPaletteClass(calcularEtapaAtual(p).etapa)} text-[10px] px-1.5 py-0`}>{calcularEtapaAtual(p).etapa}</Badge></TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] font-medium align-top">{p.pedido_olist}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] max-w-[200px] align-top">
+                          <span className="block leading-tight line-clamp-2 break-words" title={p.orcamento ?? ""}>{p.orcamento}</span>
                         </TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.vendedor}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top">{p.qtd}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs align-top"><Badge variant="outline" className="text-[11px]">{p.tipo_estampa}</Badge></TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs align-top"><StatusPecasBadge pedido={p} /></TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.frete ?? "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.uf_entrega ?? "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.entrada_pedido) || "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.arte_data) || "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(inicio) || "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(termino) || "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top">{p.data_entrega ? (diasUteisAteHoje(p.data_entrega, feriados) ?? "—") : "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.saida_juff) || "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.data_entrega) || "—"}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] align-top">{p.vendedor}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] tabular-nums align-top">{p.qtd}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] align-top"><Badge variant="outline" className="text-[10px] px-1.5 py-0">{p.tipo_estampa}</Badge></TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] align-top"><StatusPecasBadge pedido={p} /></TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] align-top">{p.frete ?? "—"}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] align-top">{p.uf_entrega ?? "—"}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(p.entrada_pedido) || "—"}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(p.arte_data) || "—"}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(inicio) || "—"}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(termino) || "—"}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(p.acabamento_data) || "—"}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(p.expedicao_entrou_em) || "—"}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(p.saida_juff) || "—"}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(p.data_entrega) || "—"}</TableCell>
+                        <TableCell className="py-1 px-1.5 text-[11px] tabular-nums align-top text-center">{p.data_entrega ? (diasUteisAteHoje(p.data_entrega, feriados) ?? "—") : "—"}</TableCell>
                       </TableRow>
                     );
                   })
