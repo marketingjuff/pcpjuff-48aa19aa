@@ -41,7 +41,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const [tipo, setTipo] = useState<string>("todos");
   const [etapa, setEtapa] = useState<Etapa>("ativas");
   const [dataEntrega, setDataEntrega] = useState("");
-  const [frete, setFrete] = useState("");
+  
   const [search, setSearch] = useState("");
   const [sortSaidaDir, setSortSaidaDir] = useState<"asc" | "desc" | null>("asc");
   const [sortEntregaDir, setSortEntregaDir] = useState<"asc" | "desc" | null>(null);
