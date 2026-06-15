@@ -528,10 +528,10 @@ function DadosInDashboard({
                 <TableHead className="h-9 px-2 text-xs">NF</TableHead>
                 <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Entrada</TableHead>
                 <TableHead className="h-9 px-2 text-xs cursor-pointer select-none whitespace-nowrap" onClick={toggleSortSaida}>
-                  <span className="inline-flex items-center gap-1">Saída Juff <ArrowUpDown className="h-3 w-3" /></span>
+                  <span className="inline-flex items-center gap-1">Saída Juff<ArrowUpDown className="h-3 w-3" /></span>
                 </TableHead>
                 <TableHead className="h-9 px-2 text-xs cursor-pointer select-none whitespace-nowrap" onClick={toggleSortEntrega}>
-                  <span className="inline-flex items-center gap-1">Data Entrega <ArrowUpDown className="h-3 w-3" /></span>
+                  <span className="inline-flex items-center gap-1">Data Entrega<ArrowUpDown className="h-3 w-3" /></span>
                 </TableHead>
               </TableRow>
             </TableHeader>
