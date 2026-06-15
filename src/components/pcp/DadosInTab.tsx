@@ -393,7 +393,7 @@ function DadosInDashboard({
   pedidos: Pedido[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  feriados: string[];
+  feriados: Set<string>;
   vendedores: string[];
 }) {
   const [search, setSearch] = useState("");
