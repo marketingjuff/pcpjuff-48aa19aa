@@ -114,11 +114,18 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
 
   function toggleSortSaida() {
     setSortEntregaDir(null);
+    setSortDiasDir(null);
     setSortSaidaDir((d) => d === null ? "asc" : d === "asc" ? "desc" : null);
   }
   function toggleSortEntrega() {
     setSortSaidaDir(null);
+    setSortDiasDir(null);
     setSortEntregaDir((d) => d === null ? "asc" : d === "asc" ? "desc" : null);
+  }
+  function toggleSortDias() {
+    setSortSaidaDir(null);
+    setSortEntregaDir(null);
+    setSortDiasDir((d) => d === null ? "asc" : d === "asc" ? "desc" : null);
   }
 
   /** Cor de fundo da linha — baseada em saida_juff e dias úteis. */
