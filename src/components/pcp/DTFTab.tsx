@@ -1,4 +1,4 @@
-import { pedidoAtivoNasAreas } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import { SIM_NAO_PROCESSO, modeloIncluiDTF, visivelEmDTF } from "@/lib/pedidos";
