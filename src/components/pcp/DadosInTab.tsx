@@ -365,7 +365,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   <Chip label="Vend" value={p.vendedor} />
                   <Chip label="Tipo" value={p.tipo_estampa} />
                   <Chip label="Pgto" value={p.forma_pagamento} />
-                  <Chip label="NF" value={p.nf_emitida === null || p.nf_emitida === undefined ? "—" : (p.nf_emitida ? "Sim" : "Não")} />
+                  <Chip label="NF" value={p.nf_emitida ?? "—"} />
                   <StatusPecasChip pedido={p} />
                   <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
                 </PedidoMobileCard>
@@ -392,7 +392,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   <td className="px-3 py-2">{p.qtd}</td>
                   <td className="px-3 py-2">{p.vendedor}</td>
                   <td className="px-3 py-2">{p.forma_pagamento ?? "—"}</td>
-                  <td className="px-3 py-2">{p.nf_emitida === null || p.nf_emitida === undefined ? "—" : p.nf_emitida ? "Sim" : "Não"}</td>
+                  <td className="px-3 py-2">{p.nf_emitida ?? "—"}</td>
                   <td className="px-3 py-2">{p.frete ?? "—"}</td>
                   <td className="px-3 py-2">{p.tempo_frete ?? "—"}</td>
                   <td className="px-3 py-2"><StatusPecasBadge pedido={p} /></td>
