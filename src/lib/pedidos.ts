@@ -62,7 +62,7 @@ export type PedidoInsert = PedidoInsertBase & {
 };
 
 export const VENDEDORES = ["Wander", "Mirela", "Gabriel", "Outros"] as const;
-export const STATUS_GERAL_OPCOES = ["aberto", "completo", "reaberto"] as const;
+export const STATUS_PECAS_OPCOES = ["completo", "incompleto"] as const;
 export const FORMAS_PAGAMENTO = ["Cartão de crédito", "50%/50%", "Boleto", "À vista"] as const;
 export const TIPOS_ESTAMPA = ["DTF", "Silk", "DTF+Silk", "Lisa"] as const;
 export const SIM_NAO_PROCESSO = ["Sim", "Não", "Em processo"] as const;
@@ -77,7 +77,8 @@ export const UFS = [
 ] as const;
 
 // Aliases para retrocompatibilidade com abas ainda não migradas.
-export const STATUS_OPCOES = STATUS_GERAL_OPCOES;
+export const STATUS_OPCOES = STATUS_PECAS_OPCOES;
+export const STATUS_GERAL_OPCOES = STATUS_PECAS_OPCOES;
 export const MODELOS_ESTAMPA = TIPOS_ESTAMPA;
 export const RESPONSAVEIS = RESPONSAVEIS_ACABAMENTO;
 export const PEDIDO_OK_OPCOES = STATUS_ARTE_OPCOES;
@@ -164,7 +165,7 @@ export function diasAte(date: string | null | undefined): number | null {
  *  Reabertos aparecem em todas as abas mesmo se já entraram em expedição. */
 export function pedidoAtivoNasAreas(p: Pedido): boolean {
   if (p.finalizado_em) return false;
-  if (p.status_geral === "reaberto") return true;
+  if (p.reaberto) return true;
   return !p.expedicao_entrou_em;
 }
 

@@ -77,6 +77,7 @@ export type PedidoExtras = {
   finalizado_em: string | null;
   status_arte: string | null;
   status_pecas: string | null;
+  reaberto: boolean | null;
   tipo_estampa: string | null;
 
   // Novos v2

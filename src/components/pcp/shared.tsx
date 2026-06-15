@@ -64,30 +64,34 @@ export function EtapaBadgeFromPedido({ pedido }: { pedido: Pedido }) {
   return <Badge variant="outline" className={`${etapaPaletteClass(etapa)} whitespace-nowrap`}>{etapa}</Badge>;
 }
 
-/** Classe de cor por status geral do pedido. */
-export function statusGeralColorClass(status: string | null | undefined): string {
+/** Classe de cor por Status de Peças. */
+export function statusPecasColorClass(status: string | null | undefined): string {
   if (status === "completo") return "bg-emerald-500/15 text-emerald-700 border-emerald-500/40 dark:text-emerald-300";
-  if (status === "reaberto") return "bg-amber-500/20 text-amber-800 border-amber-500/50 dark:text-amber-300";
-  if (status === "aberto") return "bg-blue-500/15 text-blue-700 border-blue-500/40 dark:text-blue-300";
+  if (status === "incompleto") return "bg-slate-500/15 text-slate-700 border-slate-500/40 dark:text-slate-300";
   return "bg-muted text-muted-foreground border-border";
 }
 
-/** Badge do status do pedido — colorido por status (aberto/completo/reaberto). */
-export function StatusPedidoBadge({ pedido }: { pedido: Pedido }) {
-  const s = pedido.status_geral;
+/** Badge do Status de Peças do pedido (Completo / Incompleto). */
+export function StatusPecasBadge({ pedido }: { pedido: Pedido }) {
+  const s = pedido.status_pecas;
   const label = s ? s.charAt(0).toUpperCase() + s.slice(1) : "—";
-  return <Badge variant="outline" className={`${statusGeralColorClass(s)} whitespace-nowrap capitalize`}>{label}</Badge>;
+  return <Badge variant="outline" className={`${statusPecasColorClass(s)} whitespace-nowrap capitalize`}>{label}</Badge>;
 }
 
-/** Chip "Status: <badge colorido>" para os cards mobile. */
-export function StatusPedidoChip({ pedido }: { pedido: Pedido }) {
+/** Chip "Status de Peças: <badge colorido>" para os cards mobile. */
+export function StatusPecasChip({ pedido }: { pedido: Pedido }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 text-[11px]">
-      <span className="text-muted-foreground">Status:</span>
-      <StatusPedidoBadge pedido={pedido} />
+      <span className="text-muted-foreground">Status de Peças:</span>
+      <StatusPecasBadge pedido={pedido} />
     </span>
   );
 }
+
+// Aliases de retrocompatibilidade.
+export const statusGeralColorClass = statusPecasColorClass;
+export const StatusPedidoBadge = StatusPecasBadge;
+export const StatusPedidoChip = StatusPecasChip;
 
 /** Pequeno chip rótulo:valor usado nos cards mobile dos dashboards. */
 export function Chip({ label, value }: { label: string; value: React.ReactNode }) {
