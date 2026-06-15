@@ -192,7 +192,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Etapa","Orçamento","Pedido","Tipo","QTD","Status de Peças","Status Arte","Frete","UF","Saída Juff","Data Entrega"].map((h) => (
+                {["Etapa","Pedido","Orçamento","Tipo","QTD","Status de Peças","Status Arte","Frete","UF","Saída Juff","Data Entrega"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -209,8 +209,8 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       onClick={() => onSelect(p.id)}
                       className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
                       <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
-                      <td className="px-3 py-2 font-medium">{p.orcamento}</td>
-                      <td className="px-3 py-2">{p.pedido_olist}</td>
+                      <td className="px-3 py-2 font-medium">{p.pedido_olist}</td>
+                      <td className="px-3 py-2">{p.orcamento}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                       <td className="px-3 py-2">{p.qtd ?? "—"}</td>
                       <td className="px-3 py-2"><StatusPecasBadge pedido={p} /></td>
