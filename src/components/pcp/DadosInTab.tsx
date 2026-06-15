@@ -358,6 +358,15 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   pedidoId={selected.id}
                   dataAtual={selected.data_entrega}
                   dataProposta={selected.data_entrega_proposta}
+                  onAprovar={(novaData) =>
+                    onSave({
+                      id: selected.id,
+                      data_entrega: novaData,
+                      data_entrega_proposta: null,
+                      data_entrega_proposta_em: null,
+                      data_entrega_proposta_por: null,
+                    } as any)
+                  }
                 />
               </div>
             )}
@@ -558,33 +567,13 @@ function DataEntregaField({
 
 /** Bloco 4: alerta na produção com botão Aprovar. */
 function PropostaDataAlerta({
-  pedidoId, dataAtual, dataProposta,
+  pedidoId, dataAtual, dataProposta, onAprovar,
 }: {
   pedidoId: string;
   dataAtual: string | null;
   dataProposta: string;
+  onAprovar: (novaData: string) => void;
 }) {
-  const [aprovando, setAprovando] = useState(false);
-  async function aprovar() {
-    setAprovando(true);
-    try {
-      const { error } = await supabase
-        .from("pedidos")
-        .update({
-          data_entrega: dataProposta,
-          data_entrega_proposta: null,
-          data_entrega_proposta_em: null,
-          data_entrega_proposta_por: null,
-        } as any)
-        .eq("id", pedidoId);
-      if (error) throw error;
-      toast.success("Nova data de entrega aprovada.");
-    } catch (e: any) {
-      toast.error(e.message ?? "Erro ao aprovar.");
-    } finally {
-      setAprovando(false);
-    }
-  }
   return (
     <div className="flex items-start gap-2 p-3 rounded-md border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/20 text-sm">
       <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-700 dark:text-amber-300" />
@@ -596,7 +585,7 @@ function PropostaDataAlerta({
           Data atual: {formatDateBR(dataAtual) || "—"}
         </div>
       </div>
-      <Button type="button" size="sm" onClick={aprovar} disabled={aprovando}>
+      <Button type="button" size="sm" onClick={() => onAprovar(dataProposta)}>
         Aprovar
       </Button>
     </div>
