@@ -112,7 +112,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
             <EtapaTopoBanner pedido={selected} tab="dtf" />
             {selected.status_pecas !== "completo" && selected.arte_data && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">
-                <span className="font-semibold">Pedido Incompleto</span> — Status de Peças ainda está "aberto".
+                <span className="font-semibold">Pedido Incompleto</span> — Status de Peças ainda está "incompleto".
               </div>
             )}
 
@@ -177,7 +177,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos status</SelectItem>
-                <SelectItem value="aberto">Aberto</SelectItem>
+                <SelectItem value="incompleto">Incompleto</SelectItem>
                 <SelectItem value="completo">Completo</SelectItem>
               </SelectContent>
             </Select>

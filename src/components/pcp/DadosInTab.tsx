@@ -43,7 +43,7 @@ const empty: Partial<Pedido> = {
   qtd: null,
   vendedor: null,
   tipo_estampa: "",
-  status_pecas: "aberto",
+  status_pecas: "incompleto",
   entrada_pedido: new Date().toISOString().slice(0, 10),
   necessita_vetorizacao: false,
   forma_pagamento: null,
@@ -433,7 +433,7 @@ function PedidoStatusInline({ pedido }: { pedido: Pedido }) {
         <div className="flex items-center gap-2 p-3 rounded-md border text-sm bg-destructive/10 border-destructive/40 text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span className="font-semibold">Pedido Incompleto</span>
-          <span className="text-xs opacity-80">— Status de Peças ainda está "aberto".</span>
+          <span className="text-xs opacity-80">— Status de Peças ainda está "incompleto".</span>
         </div>
       )}
       <div className={`flex items-center gap-2 p-3 rounded-md border text-sm ${bg}`}>
