@@ -139,12 +139,13 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
     return "";
   }
 
-  /** Estamparia: usa a data mais antiga (início) ou mais recente (término). */
+  /** Estamparia: prioriza campos dedicados; fallback nas datas executadas DTF/Silk. */
   function estampariaDatas(p: Pedido): { inicio: string | null; termino: string | null } {
     const datas = [p.dtf_data_executada, p.silk_data_executada].filter((d): d is string => !!d);
-    if (datas.length === 0) return { inicio: null, termino: null };
     const sorted = [...datas].sort();
-    return { inicio: sorted[0], termino: sorted[sorted.length - 1] };
+    const inicio = p.inicio_estamparia ?? (sorted[0] ?? null);
+    const termino = p.termino_estamparia ?? (sorted[sorted.length - 1] ?? null);
+    return { inicio, termino };
   }
 
   return (
