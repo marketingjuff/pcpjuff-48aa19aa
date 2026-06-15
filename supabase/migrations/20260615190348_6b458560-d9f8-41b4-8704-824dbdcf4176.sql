@@ -1,0 +1,1 @@
+CREATE POLICY pedidos_delete_team ON public.pedidos FOR DELETE USING (public.is_team_member());
