@@ -409,7 +409,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   <TableHead className="h-9 px-2 text-xs">Estampa</TableHead>
                   <TableHead className="h-9 px-2 text-xs">Status de Peças</TableHead>
                   <TableHead className="h-9 px-2 text-xs">Frete</TableHead>
-                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Tempo Frete</TableHead>
+                  <TableHead className="h-9 px-2 text-xs">UF</TableHead>
+                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap text-center">Tempo Frete</TableHead>
                   <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Forma Pgto</TableHead>
                   <TableHead className="h-9 px-2 text-xs">NF</TableHead>
                   <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Entrada</TableHead>
@@ -422,7 +423,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   const rows = sortByDataSaidaJuffAsc(pedidos.filter((p) => pedidoAtivoNasAreas(p)));
                   if (rows.length === 0) {
                     return (
-                      <TableRow><TableCell colSpan={14} className="text-center py-8 text-muted-foreground">Nenhum pedido ativo.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={15} className="text-center py-8 text-muted-foreground">Nenhum pedido ativo.</TableCell></TableRow>
                     );
                   }
                   return rows.map((p) => {
@@ -452,7 +453,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                         <TableCell className="py-1.5 px-2 text-xs align-top"><Badge variant="outline" className="text-[11px]">{p.tipo_estampa}</Badge></TableCell>
                         <TableCell className="py-1.5 px-2 text-xs align-top"><StatusPecasBadge pedido={p} /></TableCell>
                         <TableCell className="py-1.5 px-2 text-xs align-top">{p.frete ?? "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top">{p.tempo_frete ?? "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.uf_entrega ?? "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top text-center">{p.tempo_frete ?? "—"}</TableCell>
                         <TableCell className="py-1.5 px-2 text-xs align-top">{p.forma_pagamento ?? "—"}</TableCell>
                         <TableCell className="py-1.5 px-2 text-xs align-top">{p.nf_emitida ?? "—"}</TableCell>
                         <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.entrada_pedido) || "—"}</TableCell>
