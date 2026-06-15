@@ -1,107 +1,81 @@
-# Refinamento Visual Premium — App Inteiro
+## Alterações no Dashboard Master
 
-Objetivo: elevar a percepção de qualidade do PCP Juff mantendo **todo o conteúdo, layout e densidade compacta atuais**. Sem mexer em lógica de negócio, queries ou fluxos.
+### 1. Card "Expedição" nos KPIs (parte de cima)
 
-## Direção visual
+Adicionar 7º card de monitoramento logo após "Acabamento":
 
-- Paleta clara sofisticada: off-white com leve tom quente em vez de branco puro, azul Juff mantido como acento, hierarquia construída com tons neutros e não com peso de cor.
-- Tipografia editorial: importar **Inter Tight** (display, headings) + **Inter** (body) via `<link>` no `__root.tsx`. Ajustar `letter-spacing` negativo em títulos e `font-feature-settings` para numerais tabulares em KPIs/tabelas (essencial para colunas de números alinhadas).
-- Sombras suaves em duas camadas (`shadow-xs` ambient + halo sutil), em vez de bordas duras. Bordas passam a `border-color: color-mix(... 60% transparent)` para parecerem "ar" e não traço.
-- Raio: subir `--radius` para `0.75rem` (cards/inputs ficam mais modernos sem inflar densidade).
-- Foco/ring: ring 2px com `color-mix` do primary a 35% — premium e acessível.
+- Label: **Expedição**
+- Contagem: pedidos com `embalado === "Sim"` e sem `finalizado_em` (etapa "Aguardando Expedição")
+- Ícone: `Truck` (lucide-react), accent info
+- Ajustar grid de `lg:grid-cols-6` → `lg:grid-cols-7`
+- Adicionar filtro `etapa = "expedicao"` no `pedidoEmEtapa()` e no Select de etapa
 
-## Tokens (src/styles.css)
+### 2. Cor de fundo da linha (Saída Juff)
 
-- Ajustar `:root`:
-  - `--background: oklch(0.985 0.003 80)` (off-white levemente quente)
-  - `--card: oklch(1 0 0)` mantém, mas adicionar `--card-elevated` e sombras semânticas
-  - `--border: oklch(0.92 0.008 250)` mais clara
-  - `--muted-foreground: oklch(0.45 0.02 257)` (mais legível)
-  - `--primary` mantém; adicionar `--primary-soft: oklch(0.95 0.04 258)` para chips/hover
-  - `--radius: 0.75rem`
-- Adicionar tokens:
-  - `--shadow-xs`, `--shadow-sm`, `--shadow-md` (sombras de duas camadas)
-  - `--gradient-surface` para superfícies sutis (KPIs, header)
-- Mapear no `@theme inline` (`--color-primary-soft`, `--shadow-*`) para uso em utilitários.
-- `@layer base`:
-  - `body { font-family: "Inter", ui-sans-serif; }`
-  - Numeral tabular global em `.tabular`, `th`, `td` de tabelas, badges com números.
-  - Headings: `font-family: "Inter Tight"; letter-spacing: -0.02em;`
-- Dark mode: ajustes equivalentes (não é o foco, mas mantém consistência).
+Nova helper `corLinhaSaidaJuff(p, feriados)` em `DashboardTab.tsx`:
 
-## Carregamento de fonte (src/routes/__root.tsx)
+- Concluído (`embalado === "Sim"`) → sem destaque
+- Sem `data_saida_juff` → sem destaque
+- Hoje ≥ saída_juff → **vermelho pastel** (`bg-red-50 hover:bg-red-100`)
+- Exatamente 1 dia útil até saída_juff → **amarelo pastel** (`bg-yellow-50 hover:bg-yellow-100`)
+- Caso contrário → sem destaque
 
-Adicionar `<link rel="preconnect">` e `<link rel="stylesheet">` para Inter + Inter Tight no `head` (via `links` array do route head).
+Usa `diasUteisEntre(hoje, saida_juff, feriados)` (feriados já descontados).
 
-## Componentes a refinar (sem mudar conteúdo)
+### 3. Reordenação e mudanças de colunas
 
-1. **Header (`_authenticated/index.tsx`)**
-   - Trocar caixa azul do logo por superfície branca com borda sutil + ícone em primário; título com `Inter Tight`, tracking-tight.
-   - Linha divisória virar gradiente sutil (`border-b` com `color-mix`).
-   - Botões Configurações/Sair: variantes `ghost` com hover suave `bg-primary-soft`.
+Nova ordem:
 
-2. **Tabs (TabsList)**
-   - Pill bar minimalista: fundo `muted/40`, item ativo com `bg-card` + `shadow-xs` (efeito "card flutuante"), inativos `text-muted-foreground` com hover.
-   - Padding interno consistente, altura uniforme.
+1. Etapa
+2. Pedido
+3. Orçamento
+4. Vendedor
+5. QTD
+6. **Estampa** (renomeado de "Tipo")
+7. Status de Peças (sem % nem "Conclusão")
+8. Frete
+9. UF
+10. Entrada do Pedido
+11. Data Arte Limite (`arte_data_limite`)
+12. Início de Estamparia (`dtf_data_executada` / `silk_data_executada` — usar o mais antigo preenchido; mostrar "—" se nada)
+13. Término Estamparia (idem, mais recente)
+14. Dias
+15. Saída Juff (`data_saida_juff`)
+16. Data de Entrega
 
-3. **KPI cards (DashboardTab topo)**
-   - Card com `shadow-xs`, hover `shadow-sm` + translate-y-[-1px] (transição 200ms).
-   - Label uppercase tracking-wider em `muted-foreground` text-[11px].
-   - Número grande em `Inter Tight` `text-4xl font-semibold tabular-nums tracking-tight`.
-   - Ícone em badge circular suave (`bg-primary-soft text-primary`), tamanho consistente.
-   - Card "ativo" usa borda primária + halo (`ring-2 ring-primary/15`) em vez de borda 2px dura.
+Remover: coluna **% Conclusão**, **Prazo**,  **Ações**.  
+Manter ordenação clicável em Dias, **Saída Juff** e **Data Entrega**.
 
-4. **Card "Pedidos" (filtros + tabela)**
-   - Header com título maior + subtítulo opcional vazio (placeholder de hierarquia).
-   - Filtros: grid responsivo com gap consistente (12px), inputs com altura 36px alinhada, ícones lucide leading (search, calendar) dentro dos inputs.
-   - Tabela:
-     - `th` em uppercase tracking-wider text-[11px] muted, `border-b` mais sutil.
-     - Linhas com hover `bg-muted/40`, divisor `border-b/60`.
-     - Numerais tabulares em QTD, Dias, %, datas.
-     - Badges (Etapa, Tipo, Status Peças): raio menor, padding consistente, paleta semântica (success/warning/info/destructive soft).
-     - Ações (Pencil/Eye) em botões `ghost` size-icon com hover `bg-muted`.
-     - Progress bar mais fina (h-1.5) com cor primária.
+### 4. Interação por clique
 
-5. **Badges/Chips (shared.tsx)**
-   - Padronizar `StatusPecasBadge`, `StatusPecasChip`, chips de etapa para usar tokens semânticos (`bg-success/12 text-success-foreground` style soft).
-   - Asterisco de reaberto em cor `warning` discreta.
+- 1 clique → seleciona a linha (estado local `selectedRowId`), aplicando `ring-2 ring-primary/60` por cima da cor de status.
+- Duplo clique → chama `onEdit(p.id)` (abre Dados IN).
+- Remover coluna/botões de Ações.
+- Cursor pointer, `select-none` para evitar seleção de texto no duplo clique.
 
-6. **Forms (Dados In, Arte, DTF, Silk, Acabamento, Expedição)**
-   - Labels: text-xs uppercase tracking-wide muted.
-   - Inputs/Selects: altura 36px, raio do token, border suave, foco com ring premium.
-   - Seções dentro do form: dividers sutis, espaçamento vertical consistente (`space-y-5`).
-   - Botões primários com leve gradiente (`from-primary to-primary` com overlay) + sombra.
+### 5. Compactação da tabela
 
-7. **Auth (`routes/auth.tsx`)**
-   - Card centralizado com sombra `md`, header com logo + título editorial, inputs e botão alinhados ao novo sistema.
+Em `src/components/ui/table.tsx` aplicar variantes apenas dentro do dashboard via classes locais (não alterar globalmente):
 
-8. **Configurações**
-   - Cards e seções com novos tokens; tabelas no mesmo padrão da Dashboard.
+- Cabeçalho: `h-9 px-2 text-xs`
+- Células: `py-1.5 px-2 text-xs`
+- Aplicar via classNames nas `TableHead`/`TableCell` do Dashboard Master (sem afetar outras tabelas).
 
-9. **Banners (PendenciasBanner, PropostaDataAlerta)**
-   - Substituir cor chapada por superfície soft (`bg-warning/8 border-warning/20`), ícone em círculo, tipografia hierárquica.
+### 6. Largura da plataforma
 
-10. **404 / Error boundary (`__root.tsx`)**
-    - Atualizar tipografia e botões ao novo sistema (já usa tokens; pequena melhoria de tracking/spacing).
+No `src/routes/_authenticated/index.tsx` (e/ou shell), trocar `container mx-auto` por wrapper mais largo: `max-w-[1600px] mx-auto px-4`. Aplicar no `<header>` e `<main>`.
 
-## Garantias de escopo
+### 7. Referência de prazo (statusPrazo)
 
-- **Conteúdo inalterado**: nenhum texto, coluna, campo, badge ou fluxo removido/renomeado.
-- **Densidade compacta preservada**: alturas de linha, paddings de tabela e tamanhos de fonte do corpo permanecem ≤ atuais; o "premium" vem de tipografia, sombras, tokens e hierarquia, não de inflar espaçamento.
-- **Sem alterações de lógica, dados, RLS, server functions ou migrations.**
+Em `src/lib/pedidos.ts`, alterar `statusPrazo()` para usar **apenas `data_saida_juff**` (remover fallback `data_entrega`). Isso afeta o card "Atrasados" e outras telas que usam essa função.
 
-## Arquivos previstos
+### Arquivos editados
 
-- `src/styles.css` (tokens, fontes, base)
-- `src/routes/__root.tsx` (link fonts, polish 404/error)
-- `src/routes/_authenticated/index.tsx` (header + TabsList)
-- `src/components/pcp/DashboardTab.tsx` (KPIs, filtros, tabela)
-- `src/components/pcp/shared.tsx` (badges/chips, etapaPaletteClass)
-- `src/components/pcp/DadosInTab.tsx`, `ArteTab.tsx`, `DTFTab.tsx`, `SilkTab.tsx`, `AcabamentoTab.tsx`, `ExpedicaoTab.tsx`, `FinalizadosTab.tsx`, `PendenciasBanner.tsx` (padrão visual de forms/tabelas/banners)
-- `src/routes/auth.tsx`, `src/routes/_authenticated/configuracoes.tsx` (mesma linguagem)
-- Possível ajuste em `src/components/ui/button.tsx`, `card.tsx`, `input.tsx`, `badge.tsx`, `tabs.tsx`, `table.tsx` para variantes/sombras (apenas se necessário; preferir className por consumo).
+- `src/components/pcp/DashboardTab.tsx` — KPIs, colunas, cor de linha, seleção, duplo clique, compacto
+- `src/lib/pedidos.ts` — `statusPrazo` referencia só saída_juff
+- `src/routes/_authenticated/index.tsx` — largura do container
 
-## Validação
+### Fora do escopo
 
-- Screenshot da Dashboard, de uma aba de produção, de Auth e Configurações após aplicar.
-- Verificar build TS limpa.
+- Linha dupla (item 5 do MD: "prever opção") — fica para iteração futura, a menos que você queira já.
+- Alterações nos outros dashboards (Arte/DTF/Silk/Acabamento/Expedição) — escopo é só o Master.
