@@ -453,7 +453,7 @@ function PedidoStatusInline({ pedido }: { pedido: Pedido }) {
     ? `Aguardando etapa: ${etapa}`
     : `Etapa atual: ${etapa}`;
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {incompleto && (
         <div className="flex items-center gap-2 p-3 rounded-md border text-sm bg-destructive/10 border-destructive/40 text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />
