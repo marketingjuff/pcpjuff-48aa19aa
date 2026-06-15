@@ -60,31 +60,20 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
 
   function handleSave() {
     if (!selected) return;
-    const payload: Partial<Pedido> & { id: string } = {
+    const embalado = form.embalado ?? null;
+    const payload: any = {
       id: selected.id,
-      embalado: form.embalado ?? null,
+      embalado,
       responsavel_acabamento: form.responsavel_acabamento ?? null,
       responsavel_conferencia: form.responsavel_conferencia ?? null,
       data_saida_juff: form.data_saida_juff ?? null,
       observacoes_pedido: form.observacoes_pedido ?? null,
     };
-    onSave(payload);
-  }
-
-  function enviarParaExpedicao() {
-    if (!selected) return;
-    if (!podeFinalizar) {
-      // Mesmo assim deixamos enviar manualmente — Acabamento decide.
+    // 3A: ao marcar EMBALADO=Sim, envia automaticamente para Expedição.
+    if (embalado === "Sim" && !selected.expedicao_entrou_em) {
+      payload.expedicao_entrou_em = new Date().toISOString();
     }
-    onSave({
-      id: selected.id,
-      embalado: form.embalado ?? selected.embalado ?? null,
-      responsavel_acabamento: form.responsavel_acabamento ?? selected.responsavel_acabamento ?? null,
-      responsavel_conferencia: form.responsavel_conferencia ?? selected.responsavel_conferencia ?? null,
-      data_saida_juff: form.data_saida_juff ?? selected.data_saida_juff ?? null,
-      observacoes_pedido: form.observacoes_pedido ?? selected.observacoes_pedido ?? null,
-      expedicao_entrou_em: new Date().toISOString(),
-    } as any);
+    onSave(payload);
   }
   useRegisterSave(handleSave, active);
 
@@ -117,6 +106,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
     return true;
   })), [pedidos, fOrc, fPed, fDtf, fSilk]);
 
+  const enviadoParaExpedicao = !!selected?.expedicao_entrou_em;
 
   return (
     <div className="space-y-6">
