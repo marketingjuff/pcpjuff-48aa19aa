@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -21,10 +22,11 @@ import {
 import { Plus, Trash2, Save, X, FileText, Download, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
+import { addDiasUteis, diasUteisEntre, diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { EtapaBadgeFromPedido, PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip } from "./shared";
+import { PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip, etapaPaletteClass } from "./shared";
+import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 interface Props {
