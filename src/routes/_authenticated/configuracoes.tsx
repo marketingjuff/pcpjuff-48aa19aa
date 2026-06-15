@@ -761,6 +761,8 @@ function ListasTab() {
   const sections: { kind: AppListKind; title: string; placeholder: string }[] = [
     { kind: "vendedor", title: "Vendedores", placeholder: "Novo vendedor" },
     { kind: "frete", title: "Frete (transportadoras)", placeholder: "Nova opção de frete" },
+    { kind: "pagamento", title: "Tipo de Pagamento", placeholder: "Nova forma de pagamento" },
+    { kind: "nf", title: "Nota Fiscal", placeholder: "Nova opção (ex.: Sim, Não, Não se aplica)" },
     { kind: "dtf", title: "Operadores DTF", placeholder: "Novo operador DTF" },
     { kind: "silk", title: "Operadores Silk", placeholder: "Novo operador Silk" },
     { kind: "acabamento", title: "Responsáveis pelo Acabamento", placeholder: "Novo responsável" },
