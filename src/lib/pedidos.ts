@@ -153,7 +153,7 @@ export function calcularEtapaAtual(p: Pedido): {
 }
 
 export function statusPrazo(p: Pedido): "ok" | "aviso" | "atrasado" | "neutro" {
-  const ref = p.data_entrega ?? p.saida_juff;
+  const ref = p.saida_juff;
   if (!ref) return "neutro";
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
