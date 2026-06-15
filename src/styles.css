@@ -17,6 +17,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -34,6 +35,8 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -47,23 +50,38 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
+  --font-sans: "Inter", "InterVariable", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  --font-display: "Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-xs: 0 1px 2px -1px color-mix(in oklab, var(--shadow-color) 60%, transparent);
+  --shadow-sm: 0 1px 2px -1px color-mix(in oklab, var(--shadow-color) 50%, transparent),
+    0 2px 6px -2px color-mix(in oklab, var(--shadow-color) 35%, transparent);
+  --shadow-md: 0 2px 4px -2px color-mix(in oklab, var(--shadow-color) 45%, transparent),
+    0 8px 24px -8px color-mix(in oklab, var(--shadow-color) 35%, transparent);
+  --shadow-lg: 0 8px 16px -6px color-mix(in oklab, var(--shadow-color) 35%, transparent),
+    0 18px 40px -12px color-mix(in oklab, var(--shadow-color) 35%, transparent);
 }
 
 :root {
-  --radius: 0.5rem;
-  --background: oklch(0.99 0 0);
-  --foreground: oklch(0.18 0.03 250);
+  --radius: 0.75rem;
+  --background: oklch(0.985 0.004 80);
+  --foreground: oklch(0.18 0.03 258);
+  --surface: oklch(1 0 0);
+  --surface-muted: oklch(0.97 0.005 247);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.03 250);
+  --card-foreground: oklch(0.18 0.03 258);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.03 250);
+  --popover-foreground: oklch(0.18 0.03 258);
   --primary: oklch(0.52 0.18 258);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0.005 247);
+  --primary-soft: oklch(0.955 0.03 258);
+  --secondary: oklch(0.965 0.006 247);
   --secondary-foreground: oklch(0.22 0.04 258);
-  --muted: oklch(0.96 0.005 247);
-  --muted-foreground: oklch(0.5 0.02 257);
-  --accent: oklch(0.94 0.02 248);
+  --muted: oklch(0.965 0.006 247);
+  --muted-foreground: oklch(0.46 0.02 257);
+  --accent: oklch(0.955 0.018 258);
   --accent-foreground: oklch(0.22 0.04 258);
   --destructive: oklch(0.6 0.22 27);
   --destructive-foreground: oklch(0.99 0 0);
@@ -73,9 +91,10 @@
   --warning-foreground: oklch(0.2 0.04 80);
   --info: oklch(0.62 0.15 235);
   --info-foreground: oklch(0.99 0 0);
-  --border: oklch(0.9 0.01 250);
-  --input: oklch(0.92 0.01 250);
+  --border: oklch(0.92 0.008 250);
+  --input: oklch(0.93 0.008 250);
   --ring: oklch(0.52 0.18 258);
+  --shadow-color: oklch(0.2 0.04 258 / 0.18);
   --chart-1: oklch(0.52 0.18 258);
   --chart-2: oklch(0.62 0.16 150);
   --chart-3: oklch(0.78 0.16 75);
@@ -94,15 +113,18 @@
 .dark {
   --background: oklch(0.16 0.02 258);
   --foreground: oklch(0.98 0 0);
+  --surface: oklch(0.21 0.03 258);
+  --surface-muted: oklch(0.24 0.03 258);
   --card: oklch(0.21 0.03 258);
   --card-foreground: oklch(0.98 0 0);
   --popover: oklch(0.21 0.03 258);
   --popover-foreground: oklch(0.98 0 0);
   --primary: oklch(0.65 0.18 258);
   --primary-foreground: oklch(0.16 0.02 258);
+  --primary-soft: oklch(0.3 0.06 258);
   --secondary: oklch(0.28 0.03 258);
   --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.28 0.03 258);
+  --muted: oklch(0.26 0.03 258);
   --muted-foreground: oklch(0.7 0.02 258);
   --accent: oklch(0.28 0.03 258);
   --accent-foreground: oklch(0.98 0 0);
@@ -117,6 +139,7 @@
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.65 0.18 258);
+  --shadow-color: oklch(0 0 0 / 0.55);
   --sidebar: oklch(0.21 0.03 258);
   --sidebar-foreground: oklch(0.98 0 0);
   --sidebar-primary: oklch(0.65 0.18 258);
@@ -128,11 +151,36 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html, body { overflow-x: hidden; }
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body {
+    overflow-x: hidden;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  }
+  h1, h2, h3, h4, h5 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  /* Numerais alinhados em tabelas e KPIs — essencial para leitura premium. */
+  th, td, .tabular-nums, [class*="tabular-nums"] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum", "cv02";
+  }
+  /* Foco premium consistente em toda a app. */
+  :where(button, a, [role="button"], input, select, textarea):focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--color-primary) 50%, transparent);
+    outline-offset: 2px;
   }
 }
