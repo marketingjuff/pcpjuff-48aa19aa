@@ -355,7 +355,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           {/* Mobile cards */}
           <div className="md:hidden divide-y">
             {(() => {
-              const visiveis = pedidos.filter((p) => pedidoAtivoNasAreas(p));
+              const visiveis = sortByDataSaidaJuffAsc(pedidos.filter((p) => pedidoAtivoNasAreas(p)));
               if (visiveis.length === 0) return <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido ativo.</div>;
               return visiveis.map((p) => (
                 <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
@@ -380,7 +380,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               </tr>
             </thead>
             <tbody>
-              {pedidos.filter((p) => pedidoAtivoNasAreas(p)).map((p) => (
+              {sortByDataSaidaJuffAsc(pedidos.filter((p) => pedidoAtivoNasAreas(p))).map((p) => (
                 <tr key={p.id}
                   onClick={() => onSelect(p.id)}
                   className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
@@ -400,7 +400,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
                 </tr>
               ))}
-              {pedidos.filter((p) => pedidoAtivoNasAreas(p)).length === 0 && (
+              {sortByDataSaidaJuffAsc(pedidos.filter((p) => pedidoAtivoNasAreas(p))).length === 0 && (
                 <tr><td colSpan={14} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido ativo.</td></tr>
               )}
             </tbody>

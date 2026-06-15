@@ -107,7 +107,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   const [fDtf, setFDtf] = useState("todos");
   const [fSilk, setFSilk] = useState("todos");
 
-  const dashboardPedidos = useMemo(() => pedidos.filter((p) => {
+  const dashboardPedidos = useMemo(() => sortByDataSaidaJuffAsc(pedidos.filter((p) => {
     if (!pedidoAtivoNasAreas(p)) return false;
     if (!visivelEmAcabamento(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
@@ -115,7 +115,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
     if (fDtf !== "todos" && (p.dtf_estampado ?? "") !== fDtf) return false;
     if (fSilk !== "todos" && (p.silk_feito ?? "") !== fSilk) return false;
     return true;
-  }), [pedidos, fOrc, fPed, fDtf, fSilk]);
+  })), [pedidos, fOrc, fPed, fDtf, fSilk]);
 
 
   return (
