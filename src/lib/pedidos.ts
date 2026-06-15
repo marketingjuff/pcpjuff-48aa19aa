@@ -169,6 +169,15 @@ export function pedidoAtivoNasAreas(p: Pedido): boolean {
   return !p.expedicao_entrou_em;
 }
 
+/** Ordenação padrão para todos os dashboards/listas:
+ *  ascendente por `data_saida_juff` (mais urgente primeiro). Nulos por último. */
+export function sortByDataSaidaJuffAsc<T extends Pick<Pedido, "data_saida_juff">>(arr: T[]): T[] {
+  return [...arr].sort((a, b) => {
+    const av = a.data_saida_juff ?? "9999-12-31";
+    const bv = b.data_saida_juff ?? "9999-12-31";
+    return av.localeCompare(bv);
+  });
+
 // ---------- Helpers de completude por etapa ----------
 
 function notEmpty(v: any) {
