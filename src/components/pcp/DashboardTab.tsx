@@ -45,6 +45,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const [search, setSearch] = useState("");
   const [sortSaidaDir, setSortSaidaDir] = useState<"asc" | "desc" | null>("asc");
   const [sortEntregaDir, setSortEntregaDir] = useState<"asc" | "desc" | null>(null);
+  const [sortDiasDir, setSortDiasDir] = useState<"asc" | "desc" | null>(null);
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
@@ -73,7 +74,13 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       if (search && !`${p.pedido_olist} ${p.orcamento}`.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-    if (sortSaidaDir) {
+    if (sortDiasDir) {
+      arr.sort((a, b) => {
+        const da = a.data_entrega ? (diasUteisAteHoje(a.data_entrega, feriados) ?? 9999) : 9999;
+        const db = b.data_entrega ? (diasUteisAteHoje(b.data_entrega, feriados) ?? 9999) : 9999;
+        return sortDiasDir === "asc" ? da - db : db - da;
+      });
+    } else if (sortSaidaDir) {
       arr.sort((a, b) => {
         const av = a.saida_juff ?? "9999-12-31";
         const bv = b.saida_juff ?? "9999-12-31";
@@ -87,7 +94,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       });
     }
     return arr;
-  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, frete, search, sortSaidaDir, sortEntregaDir]);
+  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, frete, search, sortSaidaDir, sortEntregaDir, sortDiasDir, feriados]);
 
   const stats = useMemo(() => {
     const ativos = pedidos.filter((p) => pedidoAtivoNasAreas(p));
@@ -107,11 +114,18 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
 
   function toggleSortSaida() {
     setSortEntregaDir(null);
+    setSortDiasDir(null);
     setSortSaidaDir((d) => d === null ? "asc" : d === "asc" ? "desc" : null);
   }
   function toggleSortEntrega() {
     setSortSaidaDir(null);
+    setSortDiasDir(null);
     setSortEntregaDir((d) => d === null ? "asc" : d === "asc" ? "desc" : null);
+  }
+  function toggleSortDias() {
+    setSortSaidaDir(null);
+    setSortEntregaDir(null);
+    setSortDiasDir((d) => d === null ? "asc" : d === "asc" ? "desc" : null);
   }
 
   /** Cor de fundo da linha — baseada em saida_juff e dias úteis. */
@@ -233,6 +247,9 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                   <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Arte Limite</TableHead>
                   <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Início Estamp.</TableHead>
                   <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Térm. Estamp.</TableHead>
+                  <TableHead className="h-9 px-2 text-xs cursor-pointer select-none whitespace-nowrap" onClick={toggleSortDias}>
+                    <span className="inline-flex items-center gap-1">Dias <ArrowUpDown className="h-3 w-3" /></span>
+                  </TableHead>
                   <TableHead className="h-9 px-2 text-xs cursor-pointer select-none whitespace-nowrap" onClick={toggleSortSaida}>
                     <span className="inline-flex items-center gap-1">Saída Juff <ArrowUpDown className="h-3 w-3" /></span>
                   </TableHead>
@@ -243,9 +260,9 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={15} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={16} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
                 ) : filtrados.length === 0 ? (
-                  <TableRow><TableCell colSpan={15} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={16} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
                 ) : (
                   filtrados.map((p) => {
                     const { inicio, termino } = estampariaDatas(p);
@@ -259,20 +276,23 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                         className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
                       >
                         <TableCell className="py-1.5 px-2 text-xs"><Badge variant="outline" className={`${etapaPaletteClass(calcularEtapaAtual(p).etapa)} text-[11px]`}>{calcularEtapaAtual(p).etapa}</Badge></TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs font-medium">{p.pedido_olist}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs max-w-[180px] truncate">{p.orcamento}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs">{p.vendedor}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs tabular-nums">{p.qtd}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs"><Badge variant="outline" className="text-[11px]">{p.tipo_estampa}</Badge></TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs"><StatusPecasBadge pedido={p} /></TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs">{p.frete ?? "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs">{p.uf_entrega ?? "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap">{formatDateBR(p.entrada_pedido) || "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap">{formatDateBR(p.arte_data) || "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap">{formatDateBR(inicio) || "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap">{formatDateBR(termino) || "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap">{formatDateBR(p.saida_juff) || "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap">{formatDateBR(p.data_entrega) || "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs font-medium align-top">{p.pedido_olist}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs max-w-[220px] align-top">
+                          <span className="block leading-snug line-clamp-2 break-words" title={p.orcamento ?? ""}>{p.orcamento}</span>
+                        </TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.vendedor}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top">{p.qtd}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs align-top"><Badge variant="outline" className="text-[11px]">{p.tipo_estampa}</Badge></TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs align-top"><StatusPecasBadge pedido={p} /></TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.frete ?? "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.uf_entrega ?? "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.entrada_pedido) || "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.arte_data) || "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(inicio) || "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(termino) || "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top">{p.data_entrega ? (diasUteisAteHoje(p.data_entrega, feriados) ?? "—") : "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.saida_juff) || "—"}</TableCell>
+                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.data_entrega) || "—"}</TableCell>
                       </TableRow>
                     );
                   })
