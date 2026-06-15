@@ -2,7 +2,7 @@ import { pedidoAtivoNasAreas } from "@/lib/pedidos";
 import { useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
-  STATUS_GERAL_OPCOES, TIPOS_ESTAMPA,
+  STATUS_PECAS_OPCOES, TIPOS_ESTAMPA,
   calcularEtapaAtual, statusPrazo, tipoIncluiDTF, tipoIncluiSilk,
 } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
@@ -20,7 +20,7 @@ import {
 import { addDiasUteis, diasUteisEntre } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { etapaPaletteClass, StatusPedidoBadge, StatusPedidoChip, PedidoMobileCard, Chip } from "./shared";
+import { etapaPaletteClass, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip } from "./shared";
 
 interface Props {
   pedidos: Pedido[];
@@ -63,7 +63,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
     const arr = pedidos.filter((p) => {
       if (!pedidoEmEtapa(p, etapa)) return false;
       if (vendedor !== "todos" && p.vendedor !== vendedor) return false;
-      if (status !== "todos" && p.status_geral !== status) return false;
+      if (status !== "todos" && p.status_pecas !== status) return false;
       if (tipo !== "todos" && p.tipo_estampa !== tipo) return false;
       if (dataEntrega && p.data_entrega !== dataEntrega) return false;
       if (frete && !String(p.frete ?? "").toLowerCase().includes(frete.toLowerCase())) return false;
@@ -82,6 +82,9 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
         const db = b.data_entrega ?? "9999-12-31";
         return sortEntregaDir === "asc" ? da.localeCompare(db) : db.localeCompare(da);
       });
+    } else {
+      // Default: ordenar por data de saída da Juff (mais urgente primeiro)
+      arr.sort((a, b) => (a.data_saida_juff ?? "9999-12-31").localeCompare(b.data_saida_juff ?? "9999-12-31"));
     }
     return arr;
   }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, frete, search, sortDiasDir, sortEntregaDir, feriados]);
@@ -137,7 +140,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos status</SelectItem>
-                {STATUS_GERAL_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                {STATUS_PECAS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={tipo} onValueChange={setTipo}>
@@ -184,7 +187,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                     <Chip label="QTD" value={p.qtd} />
                     <Chip label="Vend" value={p.vendedor} />
                     <Chip label="Tipo" value={p.tipo_estampa} />
-                    <StatusPedidoChip pedido={p} />
+                    <StatusPecasChip pedido={p} />
                     <Chip label="Dias" value={dias} />
                     <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
                     <span className="inline-flex items-center gap-1.5 w-full mt-1">
@@ -216,7 +219,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                   <TableHead>QTD</TableHead>
                   <TableHead>Vendedor</TableHead>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Status do pedido</TableHead>
+                  <TableHead>Status de Peças</TableHead>
                   <TableHead className="min-w-[140px]">% Conclusão</TableHead>
                   <TableHead>Frete</TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={toggleSortDias}>
@@ -248,7 +251,7 @@ export function DashboardTab({ pedidos, loading, onEdit, onViewProgress }: Props
                         <TableCell>{p.qtd}</TableCell>
                         <TableCell>{p.vendedor}</TableCell>
                         <TableCell><Badge variant="outline">{p.tipo_estampa}</Badge></TableCell>
-                        <TableCell><StatusPedidoBadge pedido={p} /></TableCell>
+                        <TableCell><StatusPecasBadge pedido={p} /></TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Progress value={percentual} className="h-2 w-20" />

@@ -1,4 +1,4 @@
-import { pedidoAtivoNasAreas } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import { SIM_NAO_PROCESSO, modeloIncluiDTF, visivelEmDTF } from "@/lib/pedidos";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge, StatusPedidoChip, PedidoMobileCard, Chip } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
 import { formatDateBR } from "@/lib/format";
@@ -83,16 +83,16 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   const [fImpresso, setFImpresso] = useState("todos");
   const [fEstampado, setFEstampado] = useState("todos");
 
-  const dashboardPedidos = useMemo(() => pedidos.filter((p) => {
+  const dashboardPedidos = useMemo(() => sortByDataSaidaJuffAsc(pedidos.filter((p) => {
     if (!pedidoAtivoNasAreas(p)) return false;
     if (!visivelEmDTF(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
-    if (fStatus !== "todos" && p.status_geral !== fStatus) return false;
+    if (fStatus !== "todos" && p.status_pecas !== fStatus) return false;
     if (fImpresso !== "todos" && (p.dtf_impresso ?? "") !== fImpresso) return false;
     if (fEstampado !== "todos" && (p.dtf_estampado ?? "") !== fEstampado) return false;
     return true;
-  }), [pedidos, fOrc, fPed, fStatus, fImpresso, fEstampado]);
+  })), [pedidos, fOrc, fPed, fStatus, fImpresso, fEstampado]);
 
 
   return (
@@ -110,9 +110,9 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
             </CardHeader>
             <CardContent className="space-y-6">
             <EtapaTopoBanner pedido={selected} tab="dtf" />
-            {selected.status_geral !== "completo" && selected.arte_data && (
+            {selected.status_pecas !== "completo" && selected.arte_data && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">
-                <span className="font-semibold">Pedido Incompleto</span> — Status do pedido ainda está "aberto".
+                <span className="font-semibold">Pedido Incompleto</span> — Status de Peças ainda está "incompleto".
               </div>
             )}
 
@@ -120,7 +120,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
                 <ReadOnlyField label="QTD" value={selected.qtd} />
-                <ReadOnlyField label="Status do pedido" value={selected.status_geral} />
+                <ReadOnlyField label="Status de Peças" value={selected.status_pecas} />
                 <ReadOnlyField label="DTF Impresso? (Arte)" value={selected.dtf_impresso ?? "Pendente"} />
                 <div className="space-y-1">
                   <div className="text-xs font-medium text-muted-foreground">Layout</div>
@@ -177,7 +177,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos status</SelectItem>
-                <SelectItem value="aberto">Aberto</SelectItem>
+                <SelectItem value="incompleto">Incompleto</SelectItem>
                 <SelectItem value="completo">Completo</SelectItem>
               </SelectContent>
             </Select>
@@ -205,7 +205,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
                 <Chip label="Tipo" value={p.tipo_estampa} />
                 <Chip label="QTD" value={p.qtd} />
-                <StatusPedidoChip pedido={p} />
+                <StatusPecasChip pedido={p} />
                 <Chip label="Impresso" value={p.dtf_impresso} />
                 <Chip label="Estampado" value={p.dtf_estampado} />
                 <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
@@ -216,7 +216,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  {["Etapa","Orçamento","Pedido","Tipo","QTD","Status do pedido","DTF Impresso","DTF Estampado","Data Exec","Quem bateu","Saída Juff","Data Entrega"].map((h) => (
+                  {["Etapa","Pedido","Orçamento","Tipo","QTD","Status de Peças","DTF Impresso","DTF Estampado","Data Exec","Quem bateu","Saída Juff","Data Entrega"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -226,11 +226,11 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                   return (
                     <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
                       <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
-                      <td className="px-3 py-2 font-medium">{p.orcamento}</td>
-                      <td className="px-3 py-2">{p.pedido_olist}</td>
+                      <td className="px-3 py-2 font-medium">{p.pedido_olist}</td>
+                      <td className="px-3 py-2">{p.orcamento}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                       <td className="px-3 py-2">{p.qtd ?? "—"}</td>
-                      <td className="px-3 py-2"><StatusPedidoBadge pedido={p} /></td>
+                      <td className="px-3 py-2"><StatusPecasBadge pedido={p} /></td>
                       <td className="px-3 py-2">{p.dtf_impresso ?? "—"}</td>
                       <td className="px-3 py-2">{p.dtf_estampado ?? "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.dtf_data_executada)}</td>

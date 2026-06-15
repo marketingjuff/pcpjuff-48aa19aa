@@ -1,4 +1,4 @@
-import { pedidoAtivoNasAreas } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, AlertTriangle, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPedidoBadge, StatusPedidoChip, PedidoMobileCard, Chip } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
@@ -174,13 +174,13 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           {/* Mobile */}
           <div className="md:hidden divide-y">
             {(() => {
-              const visiveis = pedidos.filter((p) => visivelEmArte(p) && pedidoAtivoNasAreas(p));
+              const visiveis = sortByDataSaidaJuffAsc(pedidos.filter((p) => visivelEmArte(p) && pedidoAtivoNasAreas(p)));
               if (visiveis.length === 0) return <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido em aberto.</div>;
               return visiveis.map((p) => (
                 <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
                   <Chip label="Tipo" value={p.tipo_estampa} />
                   <Chip label="QTD" value={p.qtd} />
-                  <StatusPedidoChip pedido={p} />
+                  <StatusPecasChip pedido={p} />
                   <Chip label="Arte" value={p.status_arte} />
                   <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
                 </PedidoMobileCard>
@@ -192,14 +192,14 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Etapa","Orçamento","Pedido","Tipo","QTD","Status do pedido","Status Arte","Frete","UF","Saída Juff","Data Entrega"].map((h) => (
+                {["Etapa","Pedido","Orçamento","Tipo","QTD","Status de Peças","Status Arte","Frete","UF","Saída Juff","Data Entrega"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {(() => {
-                const visiveis = pedidos.filter((p) => visivelEmArte(p) && pedidoAtivoNasAreas(p));
+                const visiveis = sortByDataSaidaJuffAsc(pedidos.filter((p) => visivelEmArte(p) && pedidoAtivoNasAreas(p)));
                 if (visiveis.length === 0) {
                   return <tr><td colSpan={11} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido em aberto.</td></tr>;
                 }
@@ -209,11 +209,11 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       onClick={() => onSelect(p.id)}
                       className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
                       <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
-                      <td className="px-3 py-2 font-medium">{p.orcamento}</td>
-                      <td className="px-3 py-2">{p.pedido_olist}</td>
+                      <td className="px-3 py-2 font-medium">{p.pedido_olist}</td>
+                      <td className="px-3 py-2">{p.orcamento}</td>
                       <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                       <td className="px-3 py-2">{p.qtd ?? "—"}</td>
-                      <td className="px-3 py-2"><StatusPedidoBadge pedido={p} /></td>
+                      <td className="px-3 py-2"><StatusPecasBadge pedido={p} /></td>
                       <td className="px-3 py-2">{p.status_arte ?? "—"}</td>
                       <td className="px-3 py-2">{p.frete ?? "—"}</td>
                       <td className="px-3 py-2">{p.uf_entrega ?? "—"}</td>

@@ -129,6 +129,8 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
         const bv = b[sortKey] ?? "";
         return sortAsc ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
       });
+    } else {
+      list = [...list].sort((a, b) => (a.data_saida_juff ?? "9999-12-31").localeCompare(b.data_saida_juff ?? "9999-12-31"));
     }
     return list;
   }, [expedicaoPedidos, fPed, fOrc, fUF, fForma, sortKey, sortAsc]);

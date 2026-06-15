@@ -102,6 +102,7 @@ export type Database = {
           qtd: number | null
           quem_bateu_dtf: string | null
           quem_bateu_silk: string | null
+          reaberto: boolean
           responsavel_acabamento: string | null
           responsavel_conferencia: string | null
           saida_juff: string | null
@@ -109,7 +110,7 @@ export type Database = {
           silk_feito: string | null
           silk_observacao: string | null
           status_arte: string | null
-          status_geral: string | null
+          status_pecas: string | null
           tela_gravada: string | null
           tempo_frete: number | null
           tempo_producao: number | null
@@ -159,6 +160,7 @@ export type Database = {
           qtd?: number | null
           quem_bateu_dtf?: string | null
           quem_bateu_silk?: string | null
+          reaberto?: boolean
           responsavel_acabamento?: string | null
           responsavel_conferencia?: string | null
           saida_juff?: string | null
@@ -166,7 +168,7 @@ export type Database = {
           silk_feito?: string | null
           silk_observacao?: string | null
           status_arte?: string | null
-          status_geral?: string | null
+          status_pecas?: string | null
           tela_gravada?: string | null
           tempo_frete?: number | null
           tempo_producao?: number | null
@@ -216,6 +218,7 @@ export type Database = {
           qtd?: number | null
           quem_bateu_dtf?: string | null
           quem_bateu_silk?: string | null
+          reaberto?: boolean
           responsavel_acabamento?: string | null
           responsavel_conferencia?: string | null
           saida_juff?: string | null
@@ -223,7 +226,7 @@ export type Database = {
           silk_feito?: string | null
           silk_observacao?: string | null
           status_arte?: string | null
-          status_geral?: string | null
+          status_pecas?: string | null
           tela_gravada?: string | null
           tempo_frete?: number | null
           tempo_producao?: number | null
