@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
+import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,7 @@ function todosCompletos(p: Pedido, form: Partial<Pedido>): boolean {
 }
 
 export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
+  const { names: formasPagamento } = useAppList("pagamento");
   const expedicaoPedidos = useMemo(
     () => pedidos.filter((p) => p.expedicao_entrou_em && !p.finalizado_em),
     [pedidos],
@@ -242,10 +244,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
               <SelectTrigger><SelectValue placeholder="Forma de pagamento" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todas as formas</SelectItem>
-                <SelectItem value="Cartão de crédito">Cartão de crédito</SelectItem>
-                <SelectItem value="50%/50%">50%/50%</SelectItem>
-                <SelectItem value="Boleto">Boleto</SelectItem>
-                <SelectItem value="À vista">À vista</SelectItem>
+                {formasPagamento.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
