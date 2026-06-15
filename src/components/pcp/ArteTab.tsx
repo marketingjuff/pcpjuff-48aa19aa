@@ -1,9 +1,9 @@
-import { pedidoAtivoNasAreas } MARK_FROM_PEDIDOS
+import { pedidoAtivoNasAreas } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
-import type { Pedido } MARK_FROM_PEDIDOS
+import type { Pedido } from "@/lib/pedidos";
 import {
   SIM_NAO, STATUS_ARTE_OPCOES, tipoIncluiDTF, tipoIncluiSilk, visivelEmArte,
-} MARK_FROM_PEDIDOS
+} from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";

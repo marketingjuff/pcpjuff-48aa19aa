@@ -1,7 +1,7 @@
-import { pedidoAtivoNasAreas } MARK_FROM_PEDIDOS
+import { pedidoAtivoNasAreas } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
-import type { Pedido } MARK_FROM_PEDIDOS
-import { SIM_NAO_PROCESSO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento } MARK_FROM_PEDIDOS
+import type { Pedido } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
