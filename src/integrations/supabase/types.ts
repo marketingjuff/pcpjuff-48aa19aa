@@ -69,6 +69,9 @@ export type Database = {
           arte_observacao: string | null
           created_at: string
           data_entrega: string | null
+          data_entrega_proposta: string | null
+          data_entrega_proposta_em: string | null
+          data_entrega_proposta_por: string | null
           data_saida_juff: string | null
           dtf_data_executada: string | null
           dtf_estampado: string | null
@@ -94,7 +97,7 @@ export type Database = {
           inicio_estamparia: string | null
           layout_url: string | null
           necessita_vetorizacao: boolean | null
-          nf_emitida: boolean | null
+          nf_emitida: string | null
           obs_vendedor: string | null
           observacoes_pedido: string | null
           orcamento: string | null
@@ -127,6 +130,9 @@ export type Database = {
           arte_observacao?: string | null
           created_at?: string
           data_entrega?: string | null
+          data_entrega_proposta?: string | null
+          data_entrega_proposta_em?: string | null
+          data_entrega_proposta_por?: string | null
           data_saida_juff?: string | null
           dtf_data_executada?: string | null
           dtf_estampado?: string | null
@@ -152,7 +158,7 @@ export type Database = {
           inicio_estamparia?: string | null
           layout_url?: string | null
           necessita_vetorizacao?: boolean | null
-          nf_emitida?: boolean | null
+          nf_emitida?: string | null
           obs_vendedor?: string | null
           observacoes_pedido?: string | null
           orcamento?: string | null
@@ -185,6 +191,9 @@ export type Database = {
           arte_observacao?: string | null
           created_at?: string
           data_entrega?: string | null
+          data_entrega_proposta?: string | null
+          data_entrega_proposta_em?: string | null
+          data_entrega_proposta_por?: string | null
           data_saida_juff?: string | null
           dtf_data_executada?: string | null
           dtf_estampado?: string | null
@@ -210,7 +219,7 @@ export type Database = {
           inicio_estamparia?: string | null
           layout_url?: string | null
           necessita_vetorizacao?: boolean | null
-          nf_emitida?: boolean | null
+          nf_emitida?: string | null
           obs_vendedor?: string | null
           observacoes_pedido?: string | null
           orcamento?: string | null
