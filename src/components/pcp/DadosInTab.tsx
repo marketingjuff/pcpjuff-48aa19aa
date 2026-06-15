@@ -467,3 +467,138 @@ function Field({ label, invalid, children }: { label: string; invalid?: boolean;
     </div>
   );
 }
+
+/** Bloco 4: campo Data de Entrega com fluxo de "Solicitar alteração" quando produção já tem input. */
+function DataEntregaField({
+  form, selected, onChangeDataEntrega, onPropostaSaved,
+}: {
+  form: Partial<Pedido>;
+  selected: Pedido | null;
+  onChangeDataEntrega: (v: string | null) => void;
+  onPropostaSaved: (v: string) => void;
+}) {
+  const [solicitando, setSolicitando] = useState(false);
+  const [novaData, setNovaData] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const producaoPreenchida = !!selected?.arte_data;
+  const temDataEntrega = !!selected?.data_entrega;
+  const exigeSolicitacao = !!selected?.id && producaoPreenchida && temDataEntrega;
+
+  if (!exigeSolicitacao) {
+    return (
+      <Field label="Data de Entrega">
+        <DateInputBR value={form.data_entrega} onChange={onChangeDataEntrega} />
+      </Field>
+    );
+  }
+
+  async function salvarSolicitacao() {
+    if (!selected || !novaData) {
+      toast.error("Informe a nova data proposta.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("pedidos")
+        .update({
+          data_entrega_proposta: novaData,
+          data_entrega_proposta_em: new Date().toISOString(),
+          data_entrega_proposta_por: userData.user?.id ?? null,
+        } as any)
+        .eq("id", selected.id);
+      if (error) throw error;
+      onPropostaSaved(novaData);
+      toast.success("Solicitação enviada para a produção.");
+      setSolicitando(false);
+      setNovaData(null);
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao enviar solicitação.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Field label="Data de Entrega">
+      <div className="space-y-2">
+        <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">
+          {formatDateBR(selected?.data_entrega) || "—"}
+        </div>
+        {selected?.data_entrega_proposta && !solicitando && (
+          <div className="text-xs text-amber-700 dark:text-amber-300">
+            Já existe uma solicitação pendente para {formatDateBR(selected.data_entrega_proposta)}.
+          </div>
+        )}
+        {!solicitando ? (
+          <Button type="button" variant="outline" size="sm" onClick={() => { setSolicitando(true); setNovaData(selected?.data_entrega_proposta ?? null); }}>
+            <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+            Solicitar Alteração de Data de Entrega
+          </Button>
+        ) : (
+          <div className="space-y-2 p-2 rounded-md border border-amber-500/40 bg-amber-50/50 dark:bg-amber-950/20">
+            <Label className="text-xs">Nova data proposta</Label>
+            <DateInputBR value={novaData} onChange={(v) => setNovaData(v ?? null)} />
+            <div className="flex gap-2">
+              <Button type="button" size="sm" onClick={salvarSolicitacao} disabled={saving}>
+                <Save className="h-3.5 w-3.5 mr-1" /> Salvar
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => { setSolicitando(false); setNovaData(null); }}>
+                <X className="h-3.5 w-3.5 mr-1" /> Cancelar
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </Field>
+  );
+}
+
+/** Bloco 4: alerta na produção com botão Aprovar. */
+function PropostaDataAlerta({
+  pedidoId, dataAtual, dataProposta,
+}: {
+  pedidoId: string;
+  dataAtual: string | null;
+  dataProposta: string;
+}) {
+  const [aprovando, setAprovando] = useState(false);
+  async function aprovar() {
+    setAprovando(true);
+    try {
+      const { error } = await supabase
+        .from("pedidos")
+        .update({
+          data_entrega: dataProposta,
+          data_entrega_proposta: null,
+          data_entrega_proposta_em: null,
+          data_entrega_proposta_por: null,
+        } as any)
+        .eq("id", pedidoId);
+      if (error) throw error;
+      toast.success("Nova data de entrega aprovada.");
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao aprovar.");
+    } finally {
+      setAprovando(false);
+    }
+  }
+  return (
+    <div className="flex items-start gap-2 p-3 rounded-md border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/20 text-sm">
+      <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-700 dark:text-amber-300" />
+      <div className="flex-1">
+        <div className="font-semibold text-amber-800 dark:text-amber-200">
+          Solicitação de alteração de data de entrega para {formatDateBR(dataProposta)}
+        </div>
+        <div className="text-xs text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+          Data atual: {formatDateBR(dataAtual) || "—"}
+        </div>
+      </div>
+      <Button type="button" size="sm" onClick={aprovar} disabled={aprovando}>
+        Aprovar
+      </Button>
+    </div>
+  );
+}
