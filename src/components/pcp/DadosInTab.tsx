@@ -19,7 +19,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Save, X, FileText, Download, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Save, X, FileText, Download, AlertTriangle, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { addDiasUteis, diasUteisEntre, diasUteisAteHoje } from "@/lib/dias-uteis";
@@ -376,100 +376,210 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         </Card>
       </div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Dashboard — Dados In</CardTitle></CardHeader>
-        <CardContent className="p-0">
-          {/* Mobile cards */}
-          <div className="md:hidden divide-y">
-            {(() => {
-              const visiveis = sortByDataSaidaJuffAsc(pedidos.filter((p) => pedidoAtivoNasAreas(p)));
-              if (visiveis.length === 0) return <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido ativo.</div>;
-              return visiveis.map((p) => (
-                <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
-                  <Chip label="QTD" value={p.qtd} />
-                  <Chip label="Vend" value={p.vendedor} />
-                  <Chip label="Tipo" value={p.tipo_estampa} />
-                  <Chip label="Pgto" value={p.forma_pagamento} />
-                  <Chip label="NF" value={p.nf_emitida ?? "—"} />
-                  <StatusPecasChip pedido={p} />
-                  <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
-                </PedidoMobileCard>
-              ));
-            })()}
-          </div>
-          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="h-9 px-2 text-xs">Etapa</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">Pedido</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">Orçamento</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">Vendedor</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">QTD</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">Estampa</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">Status de Peças</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">Frete</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">UF</TableHead>
-                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap text-center">Tempo Frete</TableHead>
-                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Forma Pgto</TableHead>
-                  <TableHead className="h-9 px-2 text-xs">NF</TableHead>
-                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Entrada</TableHead>
-                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Saída Juff</TableHead>
-                  <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Data Entrega</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(() => {
-                  const rows = sortByDataSaidaJuffAsc(pedidos.filter((p) => pedidoAtivoNasAreas(p)));
-                  if (rows.length === 0) {
-                    return (
-                      <TableRow><TableCell colSpan={15} className="text-center py-8 text-muted-foreground">Nenhum pedido ativo.</TableCell></TableRow>
-                    );
-                  }
-                  return rows.map((p) => {
-                    const etapa = _calcEtapa(p).etapa;
-                    const isSelected = selected?.id === p.id;
-                    let bg = "";
-                    if (p.embalado !== "Sim" && p.saida_juff) {
-                      const dias = diasUteisAteHoje(p.saida_juff, feriados);
-                      if (dias !== null) {
-                        if (dias <= 0) bg = "bg-red-50 hover:bg-red-100/80";
-                        else if (dias === 1) bg = "bg-yellow-50 hover:bg-yellow-100/80";
-                      }
-                    }
-                    return (
-                      <TableRow
-                        key={p.id}
-                        onClick={() => onSelect(p.id)}
-                        className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
-                      >
-                        <TableCell className="py-1.5 px-2 text-xs"><Badge variant="outline" className={`${etapaPaletteClass(etapa)} text-[11px]`}>{etapa}</Badge></TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs font-medium align-top">{p.pedido_olist}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs max-w-[220px] align-top">
-                          <span className="block leading-snug line-clamp-2 break-words" title={p.orcamento ?? ""}>{p.orcamento}</span>
-                        </TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.vendedor}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top">{p.qtd}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs align-top"><Badge variant="outline" className="text-[11px]">{p.tipo_estampa}</Badge></TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs align-top"><StatusPecasBadge pedido={p} /></TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.frete ?? "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.uf_entrega ?? "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top text-center">{p.tempo_frete ?? "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.forma_pagamento ?? "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs align-top">{p.nf_emitida ?? "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.entrada_pedido) || "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.saida_juff) || "—"}</TableCell>
-                        <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.data_entrega) || "—"}</TableCell>
-                      </TableRow>
-                    );
-                  });
-                })()}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      <DadosInDashboard
+        pedidos={pedidos}
+        selectedId={selected?.id ?? null}
+        onSelect={onSelect}
+        feriados={feriados}
+        vendedores={vendedores}
+      />
     </div>
+  );
+}
+
+function DadosInDashboard({
+  pedidos, selectedId, onSelect, feriados, vendedores,
+}: {
+  pedidos: Pedido[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  feriados: Set<string>;
+  vendedores: string[];
+}) {
+  const [search, setSearch] = useState("");
+  const [vendedor, setVendedor] = useState("todos");
+  const [status, setStatus] = useState("todos");
+  const [tipo, setTipo] = useState("todos");
+  const [dataEntrega, setDataEntrega] = useState("");
+  const [sortSaidaDir, setSortSaidaDir] = useState<"asc" | "desc" | null>("asc");
+  const [sortEntregaDir, setSortEntregaDir] = useState<"asc" | "desc" | null>(null);
+
+  function toggleSortSaida() {
+    setSortEntregaDir(null);
+    setSortSaidaDir((d) => (d === "asc" ? "desc" : "asc"));
+  }
+  function toggleSortEntrega() {
+    setSortSaidaDir(null);
+    setSortEntregaDir((d) => (d === "asc" ? "desc" : "asc"));
+  }
+
+  const rows = useMemo(() => {
+    const arr = pedidos.filter((p) => {
+      if (!pedidoAtivoNasAreas(p)) return false;
+      if (vendedor !== "todos" && p.vendedor !== vendedor) return false;
+      if (status !== "todos" && p.status_pecas !== status) return false;
+      if (tipo !== "todos" && p.tipo_estampa !== tipo) return false;
+      if (dataEntrega && p.data_entrega !== dataEntrega) return false;
+      if (search && !`${p.pedido_olist ?? ""} ${p.orcamento ?? ""}`.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+    if (sortSaidaDir) {
+      arr.sort((a, b) => {
+        const av = a.saida_juff ?? "9999-12-31";
+        const bv = b.saida_juff ?? "9999-12-31";
+        return sortSaidaDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+    } else if (sortEntregaDir) {
+      arr.sort((a, b) => {
+        const da = a.data_entrega ?? "9999-12-31";
+        const db = b.data_entrega ?? "9999-12-31";
+        return sortEntregaDir === "asc" ? da.localeCompare(db) : db.localeCompare(da);
+      });
+    } else {
+      return sortByDataSaidaJuffAsc(arr);
+    }
+    return arr;
+  }, [pedidos, vendedor, status, tipo, dataEntrega, search, sortSaidaDir, sortEntregaDir]);
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-baseline justify-between gap-2">
+          <CardTitle className="text-base">Dashboard — Dados In</CardTitle>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {rows.length} {rows.length === 1 ? "registro" : "registros"}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground font-medium">Buscar</Label>
+            <Input placeholder="Pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground font-medium">Vendedor</Label>
+            <Select value={vendedor} onValueChange={setVendedor}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos vendedores</SelectItem>
+                {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground font-medium">Status Peças</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos status</SelectItem>
+                {STATUS_PECAS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground font-medium">Tipo Estampa</Label>
+            <Select value={tipo} onValueChange={setTipo}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos tipos</SelectItem>
+                {TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground font-medium">Data Entrega</Label>
+            <DateInputBR value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
+          </div>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="md:hidden divide-y rounded-md border">
+          {rows.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido.</div>
+          ) : rows.map((p) => (
+            <PedidoMobileCard key={p.id} pedido={p} active={selectedId === p.id} onClick={() => onSelect(p.id)}>
+              <Chip label="QTD" value={p.qtd} />
+              <Chip label="Vend" value={p.vendedor} />
+              <Chip label="Tipo" value={p.tipo_estampa} />
+              <Chip label="Pgto" value={p.forma_pagamento} />
+              <Chip label="NF" value={p.nf_emitida ?? "—"} />
+              <StatusPecasChip pedido={p} />
+              <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+            </PedidoMobileCard>
+          ))}
+        </div>
+
+        <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="h-9 px-2 text-xs">Etapa</TableHead>
+                <TableHead className="h-9 px-2 text-xs">Pedido</TableHead>
+                <TableHead className="h-9 px-2 text-xs">Orçamento</TableHead>
+                <TableHead className="h-9 px-2 text-xs">Vendedor</TableHead>
+                <TableHead className="h-9 px-2 text-xs">QTD</TableHead>
+                <TableHead className="h-9 px-2 text-xs">Estampa</TableHead>
+                <TableHead className="h-9 px-2 text-xs">Status de Peças</TableHead>
+                <TableHead className="h-9 px-2 text-xs">Frete</TableHead>
+                <TableHead className="h-9 px-2 text-xs">UF</TableHead>
+                <TableHead className="h-9 px-2 text-xs whitespace-nowrap text-center">Tempo Frete</TableHead>
+                <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Forma Pgto</TableHead>
+                <TableHead className="h-9 px-2 text-xs">NF</TableHead>
+                <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Entrada</TableHead>
+                <TableHead className="h-9 px-2 text-xs cursor-pointer select-none whitespace-nowrap" onClick={toggleSortSaida}>
+                  <span className="inline-flex items-center gap-1">Saída Juff <ArrowUpDown className="h-3 w-3" /></span>
+                </TableHead>
+                <TableHead className="h-9 px-2 text-xs cursor-pointer select-none whitespace-nowrap" onClick={toggleSortEntrega}>
+                  <span className="inline-flex items-center gap-1">Data Entrega <ArrowUpDown className="h-3 w-3" /></span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.length === 0 ? (
+                <TableRow><TableCell colSpan={15} className="text-center py-8 text-muted-foreground">Nenhum pedido ativo.</TableCell></TableRow>
+              ) : rows.map((p) => {
+                const etapa = _calcEtapa(p).etapa;
+                const isSelected = selectedId === p.id;
+                let bg = "";
+                if (p.embalado !== "Sim" && p.saida_juff) {
+                  const dias = diasUteisAteHoje(p.saida_juff, feriados);
+                  if (dias !== null) {
+                    if (dias <= 0) bg = "bg-red-50 hover:bg-red-100/80";
+                    else if (dias === 1) bg = "bg-yellow-50 hover:bg-yellow-100/80";
+                  }
+                }
+                return (
+                  <TableRow
+                    key={p.id}
+                    onClick={() => onSelect(p.id)}
+                    className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
+                  >
+                    <TableCell className="py-1.5 px-2 text-xs"><Badge variant="outline" className={`${etapaPaletteClass(etapa)} text-[11px]`}>{etapa}</Badge></TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs font-medium align-top">{p.pedido_olist}</TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs max-w-[220px] align-top">
+                      <span className="block leading-snug line-clamp-2 break-words" title={p.orcamento ?? ""}>{p.orcamento}</span>
+                    </TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs align-top">{p.vendedor}</TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top">{p.qtd}</TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs align-top"><Badge variant="outline" className="text-[11px]">{p.tipo_estampa}</Badge></TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs align-top"><StatusPecasBadge pedido={p} /></TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs align-top">{p.frete ?? "—"}</TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs align-top">{p.uf_entrega ?? "—"}</TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top text-center">{p.tempo_frete ?? "—"}</TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs align-top">{p.forma_pagamento ?? "—"}</TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs align-top">{p.nf_emitida ?? "—"}</TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.entrada_pedido) || "—"}</TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.saida_juff) || "—"}</TableCell>
+                    <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.data_entrega) || "—"}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
