@@ -186,7 +186,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
         </div>
         <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
           <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
-            <thead className="bg-muted/50 text-xs uppercase">
+            <thead className="bg-muted/50 text-xs uppercase font-bold">
               <tr>
                 {isAdmin && (
                   <th className="px-1.5 py-0.5 text-left w-10">
