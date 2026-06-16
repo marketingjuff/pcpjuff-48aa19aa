@@ -18,7 +18,7 @@ import {
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { etapaPaletteClass, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip } from "./shared";
+import { etapaPaletteClass, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, type SortDir } from "./shared";
 
 interface Props {
   pedidos: Pedido[];
