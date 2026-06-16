@@ -11,6 +11,10 @@ export type Pedido = PedidoBase & {
   uf_entrega: string | null;
   necessita_vetorizacao: boolean | null;
   vetorizacao_executada: boolean | null;
+  vetorizacao_dtf: string | null;
+  vetorizacao_silk: string | null;
+  dtf_cortado: string | null;
+  dtf_cortado_data: string | null;
   obs_vendedor: string | null;
   layout_url: string | null;
   status_arte: string | null;
@@ -44,6 +48,10 @@ export type PedidoInsert = PedidoInsertBase & {
   uf_entrega?: string | null;
   necessita_vetorizacao?: boolean | null;
   vetorizacao_executada?: boolean | null;
+  vetorizacao_dtf?: string | null;
+  vetorizacao_silk?: string | null;
+  dtf_cortado?: string | null;
+  dtf_cortado_data?: string | null;
   obs_vendedor?: string | null;
   layout_url?: string | null;
   status_arte?: string | null;
@@ -74,6 +82,7 @@ export const TIPOS_ESTAMPA = ["DTF", "Silk", "DTF+Silk", "Lisa"] as const;
 export const SIM_NAO_PROCESSO = ["Sim", "Não", "Em processo"] as const;
 export const SIM_NAO = ["Sim", "Não"] as const;
 export const STATUS_ARTE_OPCOES = ["Imprimindo", "Aprovar Amostra", "Arte Finalizada"] as const;
+export const VETOR_OPCOES = ["Sim", "Não", "Não se aplica"] as const;
 export const OK_OPCOES = ["Sim", "Não", "N/A"] as const;
 export const RESPONSAVEIS_ACABAMENTO = ["Vanessa", "Patrícia", "Juliana", "Outros"] as const;
 export const QUEM_BATEU_DTF = ["Jefferson", "Sarah", "Rubens", "Outros"] as const;
@@ -98,6 +107,41 @@ export function tipoIncluiSilk(tipo: string | null | undefined) {
 export const modeloIncluiDTF = tipoIncluiDTF;
 export const modeloIncluiSilk = tipoIncluiSilk;
 
+// ---------- Helpers da Arte (lado independente) ----------
+export function dtfFinalizadoArte(p: Pedido): boolean {
+  return p.dtf_impresso === "Sim" && p.dtf_cortado === "Sim"
+    && !!p.dtf_executado && !!p.dtf_cortado_data;
+}
+export function fotolitoFinalizadoArte(p: Pedido): boolean {
+  return p.fotolito_impresso === "Sim" && p.fotolito_executado === "Sim";
+}
+export function vetorDtfResolvida(p: Pedido): boolean {
+  if (!p.necessita_vetorizacao) return true;
+  return p.vetorizacao_dtf === "Sim" || p.vetorizacao_dtf === "Não" || p.vetorizacao_dtf === "Não se aplica";
+}
+export function vetorSilkResolvida(p: Pedido): boolean {
+  if (!p.necessita_vetorizacao) return true;
+  return p.vetorizacao_silk === "Sim" || p.vetorizacao_silk === "Não" || p.vetorizacao_silk === "Não se aplica";
+}
+export function ladoDtfPronto(p: Pedido): boolean {
+  return vetorDtfResolvida(p) && dtfFinalizadoArte(p);
+}
+export function ladoSilkPronto(p: Pedido): boolean {
+  return vetorSilkResolvida(p) && fotolitoFinalizadoArte(p);
+}
+export function dtfFinalizadoLabel(p: Pedido): string {
+  if (!tipoIncluiDTF(p.tipo_estampa)) return "—";
+  if (p.dtf_impresso !== "Sim") return "Aguardando impressão";
+  if (p.dtf_cortado !== "Sim") return "Aguardando corte";
+  return "Sim";
+}
+export function fotolitoFinalizadoLabel(p: Pedido): string {
+  if (!tipoIncluiSilk(p.tipo_estampa)) return "—";
+  if (p.fotolito_impresso !== "Sim") return "Aguardando impressão";
+  if (p.fotolito_executado !== "Sim") return "Aguardando execução";
+  return "Sim";
+}
+
 export function calcularEtapaAtual(p: Pedido): {
   etapa: string;
   percentual: number;
@@ -107,7 +151,10 @@ export function calcularEtapaAtual(p: Pedido): {
   const isLisa = tipo === "Lisa";
 
   const dadosInOk = !!p.pedido_olist;
-  const arteOk = p.status_arte === "Arte Finalizada";
+  // Lados da arte agora avançam independentemente
+  const dtfArteOk = !tipoIncluiDTF(tipo) || ladoDtfPronto(p);
+  const silkArteOk = !tipoIncluiSilk(tipo) || ladoSilkPronto(p);
+  const arteOk = dtfArteOk && silkArteOk;
   const dtfDone = p.dtf_estampado === "Sim";
   const silkDone = p.silk_feito === "Sim";
   const acabamentoOk = p.embalado === "Sim";
@@ -127,7 +174,6 @@ export function calcularEtapaAtual(p: Pedido): {
   if (p.finalizado_em) {
     etapa = "Finalizado"; cor = "green";
   } else if (acabamentoOk) {
-    // Acabamento concluído → vai automaticamente para Expedição
     etapa = "Aguardando Expedição"; cor = "blue";
   } else if (!dadosInOk) {
     etapa = "Aguardando entrada"; cor = "gray";
@@ -146,9 +192,7 @@ export function calcularEtapaAtual(p: Pedido): {
     else { etapa = "Aguardando Acabamento"; cor = "blue"; }
   }
 
-  // Bloco 2A: pedidos reabertos recebem asterisco (até serem finalizados novamente)
   if (p.reaberto && etapa !== "Finalizado") etapa = `${etapa}*`;
-
   return { etapa, percentual, cor };
 }
 
@@ -173,16 +217,12 @@ export function diasAte(date: string | null | undefined): number | null {
   return Math.round((d.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-/** Pedido visível nas áreas de produção (Dados In, Arte, DTF, Silk, Acabamento, Dashboard).
- *  Reabertos aparecem em todas as abas mesmo se já entraram em expedição. */
 export function pedidoAtivoNasAreas(p: Pedido): boolean {
   if (p.finalizado_em) return false;
   if (p.reaberto) return true;
   return !p.expedicao_entrou_em;
 }
 
-/** Ordenação padrão para todos os dashboards/listas:
- *  ascendente por `data_saida_juff` (mais urgente primeiro). Nulos por último. */
 export function sortByDataSaidaJuffAsc<T extends { data_saida_juff?: string | null }>(arr: T[]): T[] {
   return [...arr].sort((a, b) => {
     const av = a.data_saida_juff ?? "9999-12-31";
@@ -208,15 +248,16 @@ export function dadosInCompletos(p: Pedido): boolean {
 }
 
 export function arteCompleta(p: Pedido): boolean {
-  if (p.status_arte !== "Arte Finalizada") return false;
-  if (tipoIncluiDTF(p.tipo_estampa) && (p.dtf_impresso !== "Sim" || !notEmpty(p.dtf_executado))) return false;
-  if (tipoIncluiSilk(p.tipo_estampa) && (p.fotolito_impresso !== "Sim" || !notEmpty(p.fotolito_executado))) return false;
-  if (p.necessita_vetorizacao && !p.vetorizacao_executada) return false;
+  // Arte agora avança por lado, independente de status_arte
+  if (tipoIncluiDTF(p.tipo_estampa) && !ladoDtfPronto(p)) return false;
+  if (tipoIncluiSilk(p.tipo_estampa) && !ladoSilkPronto(p)) return false;
   return true;
 }
 export function arteAlgumPreenchido(p: Pedido): boolean {
   return notEmpty(p.status_arte) || notEmpty(p.dtf_impresso) || notEmpty(p.fotolito_impresso) ||
     notEmpty(p.dtf_executado) || notEmpty(p.fotolito_executado) || notEmpty(p.arte_observacao) ||
+    notEmpty(p.dtf_cortado) || notEmpty(p.dtf_cortado_data) ||
+    notEmpty(p.vetorizacao_dtf) || notEmpty(p.vetorizacao_silk) ||
     !!p.vetorizacao_executada;
 }
 

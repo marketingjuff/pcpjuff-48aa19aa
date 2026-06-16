@@ -1,72 +1,129 @@
-## Objetivo
-Trazer 3 comportamentos do **Dashboard Master** para **todas as outras abas** (Dados In, Arte, DTF, Silk, Acabamento, Expedição, Finalizados), mantendo colunas, ordem e tamanhos de fonte intactos.
+## Resumo do que mudará
+
+Tudo abaixo é **apenas na aba Arte, no Dashboard da aba Arte e em Configurações**. Nada será alterado em DTF, Silk, Acabamento, Expedição ou Finalizados. Tipo "Lisa" não é tocado.
 
 ---
 
-### 1) Alerta amarelo / vermelho nas linhas
-Hoje só Master e Dados In aplicam. Regra do Master (será replicada idêntica):
+### 0. Resposta direta ao item 5.5
 
-- Se `embalado === "Sim"` → sem destaque.
-- Se não tem `saida_juff` → sem destaque.
-- Calcula `diasUteisAteHoje(saida_juff, feriados)`:
-  - `≤ 0` → `bg-red-50 hover:bg-red-100/80` (atrasado)
-  - `=== 1` → `bg-yellow-50 hover:bg-yellow-100/80` (vence hoje/amanhã)
+**Hoje a plataforma NÃO avança os lados DTF e Silk de forma independente.** O avanço usa `status_arte === "Arte Finalizada"` como gatilho único:
 
-Vou aplicar essa mesma função `rowBgClass(p)` nas linhas de Arte, DTF, Silk, Acabamento, Expedição e Finalizados (em Finalizados o destaque nunca aparece, pois `embalado="Sim"`, mas a função fica padronizada).
+- `calcularEtapaAtual` (`src/lib/pedidos.ts`) só sai de "Aguardando Arte" depois que `arteOk` (Arte Finalizada) é verdadeiro — só então passa a calcular "Aguardando DTF" / "Aguardando Silk".
+- `PendenciasBanner` e os filtros de Etapa do Dashboard usam a mesma chave.
+- As abas DTF e Silk em si **não bloqueiam** por status da arte (só filtram por `tipo_estampa`), então a tela já existe; o que precisa mudar é a **regra de etapa** para considerar cada lado pronto independentemente.
 
-### 2) Cabeçalho padronizado (igual ao Master)
-Hoje as outras abas usam `<thead className="bg-muted/50 text-xs uppercase font-bold">` com `<th>` cru → cor, altura e espaçamento diferentes do Master.
-
-Vou trocar para o mesmo padrão do Master em todas as abas (Arte, DTF, Silk, Acabamento, Expedição, Finalizados):
-
-- Usar `<TableHeader>` + `<TableHead>` (componente shadcn, igual ao Master) **ou** manter `<th>` aplicando exatamente as classes `TH_RAW_CLASS` já existentes em `shared.tsx` (mesma cor de texto `text-muted-foreground`, altura `h-7`, `px-1.5`, `text-[11px]`, `uppercase`, `font-bold`).
-- Remover o `bg-muted/50` (o Master não usa fundo no cabeçalho) para manter o resultado visual idêntico.
-- Tamanho da fonte não muda (já é `text-[11px]` em todos os lugares relevantes).
-
-### 3) Setinhas de ordenação em TODA coluna de data e número
-Regra: toda coluna de **data** e toda coluna **numérica** deve ter `ArrowUpDown` clicável (alterna asc/desc), idêntico ao comportamento do Master (`toggleSortSaida` etc.).
-
-Colunas que ganharão setinha por aba (as que já têm ficam mantidas):
-
-| Aba | Adicionar setinha em |
-|---|---|
-| **Master** | QTD, ENTRADA, ARTE LIMITE, INÍCIO EST., TÉRM. EST., ACABAMENTO, EXPED. (já tem SAÍDA JUFF, ENTREGA, DIAS) |
-| **Dados In** | QTD, TEMPO FRETE, ENTRADA (já tem SAÍDA JUFF, ENTREGA) |
-| **Arte** | QTD, SAÍDA JUFF, ENTREGA |
-| **DTF** | QTD, DATA EXEC, SAÍDA JUFF, ENTREGA |
-| **Silk** | QTD, DATA SILK, SAÍDA JUFF, ENTREGA |
-| **Acabamento** | QTD, SAÍDA JUFF, ENTREGA |
-| **Expedição** | (já tem SAÍDA JUFF e ENTREGA — não há outras numéricas/data) |
-| **Finalizados** | QTD, SAÍDA JUFF, DATA SAÍDA, FINALIZADO EM |
-
-Comportamento: clique alterna asc → desc → asc. Apenas uma coluna ativa por vez (igual Master). Nulos/vazios vão para o fim na ordenação asc.
+Impacto: é um ajuste **médio**, concentrado em `calcularEtapaAtual` + helpers `arteCompleta`. Pedidos em andamento continuam funcionando — quem já está "Arte Finalizada" continua avançando; quem ainda não está passa a avançar lado a lado conforme a nova regra. Recomendo manter "Arte Finalizada" como opção default no Status da Arte para retrocompatibilidade visual, mas ela vira **informativa** (não trava nada).
 
 ---
 
-### O que NÃO será alterado
-- Tamanho de fonte (continua `text-[11px]` / `text-sm` onde já está).
-- Colunas: nenhuma adicionada, removida ou reordenada.
-- Lógica de dados, filtros e fluxo entre abas.
-- Layout dos formulários, cards e StatCards.
+### 1. Banco de dados (migração)
+
+Adicionar colunas em `pedidos`:
+- `dtf_cortado text` (Sim/Não)
+- `dtf_cortado_data date` (data manual quando Sim)
+- `vetorizacao_dtf text` (Sim/Não/Não se aplica)
+- `vetorizacao_silk text` (Sim/Não/Não se aplica)
+
+Manter `vetorizacao_executada` por enquanto (não remover na mesma migração) e fazer **backfill**: para pedidos com `necessita_vetorizacao = true`, copiar `vetorizacao_executada` → `vetorizacao_silk` quando o tipo for Silk, → `vetorizacao_dtf` quando for DTF, e para DTF+Silk copiar para o lado Silk (compatibilidade — usuário decide depois).
+
+Renomear conceitualmente "DTF Impresso Executado" → continua usando a coluna existente `dtf_executado` como "data do DTF Impresso" (sem mudança de schema; só rótulo na UI).
+
+Em `app_lists`: permitir nova `kind = 'status_arte'` (atualizar CHECK constraint se existir) e fazer seed inicial com "Imprimindo", "Aprovar Amostra", "Arte Finalizada" para não quebrar telas atuais. `AppListKind` em `src/lib/app-lists.ts` ganha `"status_arte"`.
+
+GRANTs e RLS seguem o padrão das colunas existentes (sem novas policies — herda da tabela).
 
 ---
 
-### Detalhes técnicos (resumo de implementação)
+### 2. `src/lib/pedidos.ts` (regras)
 
-- **`shared.tsx`**: adicionar helper `rowAlertBgClass(pedido, feriados)` (mesma regra do Master) para reuso em todas as abas. Garantir `TH_RAW_CLASS` sem `bg-muted/50` e com `font-bold` (já está).
-- **Cada aba** (`ArteTab`, `DTFTab`, `SilkTab`, `AcabamentoTab`, `ExpedicaoTab`, `FinalizadosTab`):
-  1. Importar `useFeriados` + `rowAlertBgClass` e aplicar no `className` do `<tr>`.
-  2. Substituir `<thead className="bg-muted/50 text-xs uppercase font-bold">` + `<th>` crus pelas classes/tags padrão do Master.
-  3. Introduzir estado `sortKey`/`sortDir` (igual ao padrão de `toggleSort` do Expedicao/Master) e botão `ArrowUpDown` em cada coluna de data e número listada acima; aplicar `sort` no array antes do `map`.
-- **`DashboardTab`** (Master): adicionar `ArrowUpDown` + toggles nos demais campos de data/QTD listados, reusando o mesmo padrão `toggleSortX` já existente.
+- Helpers novos:
+  - `dtfFinalizadoArte(p)` = `dtf_impresso === "Sim" && dtf_cortado === "Sim" && dtf_executado && dtf_cortado_data`
+  - `fotolitoFinalizadoArte(p)` = `fotolito_impresso === "Sim" && fotolito_executado === "Sim" && fotolito_executado` (data já existe)
+  - `vetorizacaoDtfResolvida(p)` = vendedor marcou Não OU `vetorizacao_dtf` ∈ {Sim, Não, Não se aplica}
+  - `vetorizacaoSilkResolvida(p)` = idem para Silk
+  - `ladoDtfPronto(p)` e `ladoSilkPronto(p)` combinando os dois acima
+- `arteCompleta(p)`: passa a exigir lados prontos conforme o tipo (DTF, Silk, DTF+Silk), **sem depender** de `status_arte`.
+- `calcularEtapaAtual`: substitui `arteOk` por verificação por lado. Se o lado DTF está pronto, ele já conta como "fora de Aguardando Arte" para aquele lado; se o lado Silk não está, ainda aparece "Aguardando Silk (arte)". Texto final: mantém os mesmos rótulos atuais ("Aguardando DTF", "Aguardando Silk", "Aguardando DTF + Silk") — só a condição de entrada muda.
+- `STATUS_ARTE_OPCOES`: deixa de ser fonte de verdade; vira fallback. UI lê de `useAppList("status_arte")`.
+- Em `setImpresso`/save: quando `dtf_cortado` voltar para "Não", zerar `dtf_cortado_data`. Mesmo já existe para `dtf_executado`/`fotolito_executado` e se mantém.
 
-Arquivos a editar:
-- `src/components/pcp/shared.tsx`
-- `src/components/pcp/DashboardTab.tsx`
-- `src/components/pcp/DadosInTab.tsx`
-- `src/components/pcp/ArteTab.tsx`
-- `src/components/pcp/DTFTab.tsx`
-- `src/components/pcp/SilkTab.tsx`
-- `src/components/pcp/AcabamentoTab.tsx`
-- `src/components/pcp/ExpedicaoTab.tsx`
-- `src/components/pcp/FinalizadosTab.tsx`
+---
+
+### 3. `src/components/pcp/ArteTab.tsx`
+
+**Parte de cima (somente leitura — duas linhas):**
+- Linha 1: Pedido · Orçamento · Tipo de Estampa · Vetorização (vinda do Dados In)
+- Linha 2: Data de Entrada · Data Limite da Arte · Saída Juff · Data de Entrega
+
+Remover desta seção: UF, Layout, "Vetorização?" duplicada. O botão **Baixar layout** vira o gatilho que revela a parte de baixo (item 6.2 do brief: "aparece após baixar o layout").
+
+**Parte de baixo (editável, condicional):**
+- Estado local `layoutBaixado` (boolean, por pedido — pode ser memória da sessão; não precisa persistir). Enquanto `false`, mostrar só o botão "Baixar layout"; ao clicar, baixa o PDF e libera os campos.
+- Campos de **vetorização** só aparecem se `selected.necessita_vetorizacao === true`, e cada um com 3 opções (Sim/Não/Não se aplica). Renderiza `vetorizacao_dtf` se tipo inclui DTF, `vetorizacao_silk` se inclui Silk.
+- **Só DTF**: vetorização_dtf · DTF Impresso (+ data quando Sim) · DTF Cortado (+ data quando Sim) · Status da Arte
+- **Só Silk**: vetorização_silk · Fotolito Impresso · Fotolito Executado · Status da Arte
+- **DTF + Silk**: linha DTF, linha Silk, linha Status da Arte (Status da Arte ocupa linha própria).
+- Status da Arte usa `useAppList("status_arte")` (livre; nenhuma opção obrigatória).
+- Salvar inclui os novos campos: `dtf_cortado`, `dtf_cortado_data`, `vetorizacao_dtf`, `vetorizacao_silk`. `vetorizacao_executada` deixa de ser escrita pela Arte (mas continua no schema por enquanto).
+- `arteAtrasada` deixa de usar `Arte Finalizada` como gate (regra antiga); usa `arteCompleta(p)`.
+
+Dashboard da Arte (parte de baixo do `ArteTab.tsx`) **continua existindo** e é o mesmo Dashboard descrito no item 8 — abaixo.
+
+---
+
+### 4. Dashboard da Arte (item 8 — substitui o atual `Dashboard — Arte` dentro de `ArteTab.tsx`)
+
+**Filtros (nessa ordem):** Etapa · Pedido/Orçamento · Tipo de Estampa · DTF Finalizado · Fotolito Finalizado · Status da Arte. Os 3 últimos filtram pelos valores calculados ("Aguardando impressão" / "Aguardando corte" / "Aguardando execução" / "Sim").
+
+**Colunas (exatamente nessa ordem, 13 colunas):**
+Etapa · Pedido · Orçamento · Vendedor · Qtd · Estampa · Status das Peças · DTF Finalizado · Fotolito Finalizado · Status da Arte · Data de Entrada · Data Limite · Saída Juff.
+
+Cabeçalho `Tipo` → **Estampa**. Remover do Dashboard da Arte: FRETE, UF, STATUS ARTE atual (texto puro), ENTREGA (item 8.4: Data de Entrega não entra).
+
+**Coluna calculada "DTF Finalizado"** (helper em `pedidos.ts`):
+- `dtf_impresso !== "Sim"` → "Aguardando impressão"
+- `dtf_impresso === "Sim" && dtf_cortado !== "Sim"` → "Aguardando corte"
+- ambos Sim → "Sim"
+- tipo não inclui DTF → "—"
+
+**Coluna calculada "Fotolito Finalizado"**:
+- `fotolito_impresso !== "Sim"` → "Aguardando impressão"
+- `fotolito_impresso === "Sim" && fotolito_executado !== "Sim"` → "Aguardando execução"
+- ambos Sim → "Sim"
+- tipo não inclui Silk → "—"
+
+Manter setas de ordenação, alerta amarelo/vermelho e estilo de cabeçalho conforme já implementado.
+
+---
+
+### 5. `src/components/pcp/DadosInTab.tsx`
+
+**Mudança única:** rótulo "Tipo de Estampa" continua **inalterado** no Dados In (item 1.2 — só muda em Arte/Dashboard). Não tocar nessa aba **exceto** garantir que `vetorizacao` siga sendo só o Sim/Não do vendedor (sem "Não se aplica"). Nada a alterar.
+
+---
+
+### 6. `src/routes/_authenticated/configuracoes.tsx`
+
+Adicionar nova seção de personalização "Status da Arte" usando `useAppList("status_arte")` e `useAppListMutations("status_arte")`, no mesmo padrão visual das outras listas. Permite criar/renomear/remover sem opções obrigatórias. Nada mais nessa rota é alterado.
+
+---
+
+### 7. Outros pontos
+
+- `PendenciasBanner.tsx` (linha 14): a checagem `status_arte === "Arte Finalizada"` é substituída por `arteCompleta(p)` (pela nova definição). Esse é o único arquivo fora do escopo Arte/Dashboard/Configurações que precisa de ajuste — sem ele, o banner de pendências passaria a sinalizar "arte pendente" mesmo quando os lados estão prontos.
+- Nenhuma alteração em `DTFTab.tsx`, `SilkTab.tsx`, `AcabamentoTab.tsx`, `ExpedicaoTab.tsx`, `FinalizadosTab.tsx`, `DashboardTab.tsx` (Master).
+- Textos livres em todos os novos inputs (sem máscara/limite). Sem restrições por equipe/cliente.
+
+---
+
+### Arquivos que serão tocados
+
+- `supabase/migrations/<novo>.sql` — colunas + extensão de `app_lists.kind` + seed Status da Arte
+- `src/integrations/supabase/schema-extras.ts` — tipos das novas colunas
+- `src/lib/pedidos.ts` — helpers, `arteCompleta`, `calcularEtapaAtual`, opcional `STATUS_ARTE_OPCOES`
+- `src/lib/app-lists.ts` — `AppListKind` += `"status_arte"`
+- `src/components/pcp/ArteTab.tsx` — formulário superior/inferior e Dashboard da Arte
+- `src/components/pcp/PendenciasBanner.tsx` — usar `arteCompleta`
+- `src/routes/_authenticated/configuracoes.tsx` — seção Status da Arte
+
+Aguardando sua aprovação para implementar.

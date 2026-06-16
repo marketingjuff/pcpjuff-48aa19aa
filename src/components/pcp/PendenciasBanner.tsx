@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { tipoIncluiDTF, tipoIncluiSilk, statusPrazo } from "@/lib/pedidos";
+import { tipoIncluiDTF, tipoIncluiSilk, statusPrazo, arteCompleta } from "@/lib/pedidos";
 import { AlertTriangle, Clock, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -11,7 +11,7 @@ export function PendenciasBanner({ pedidos }: { pedidos: Pedido[] }) {
     const ativos = pedidos.filter((p) => !p.finalizado_em);
     const atrasados = ativos.filter((p) => statusPrazo(p) === "atrasado");
     const aguardando = ativos.filter((p) => {
-      const arteFinal = p.status_arte === "Arte Finalizada";
+      const arteFinal = arteCompleta(p);
       const dtfBloq = tipoIncluiDTF(p.tipo_estampa) && p.dtf_estampado !== "Sim" && p.dtf_impresso !== "Sim";
       const silkBloq = tipoIncluiSilk(p.tipo_estampa) && p.silk_feito !== "Sim" && p.fotolito_impresso !== "Sim";
       return !arteFinal && (dtfBloq || silkBloq);
