@@ -272,8 +272,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               <Select value={fEtapa} onValueChange={setFEtapa}>
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ativas">Todas (em aberto)</SelectItem>
-                  <SelectItem value="finalizados">Finalizados</SelectItem>
+                  {ETAPA_FILTRO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
