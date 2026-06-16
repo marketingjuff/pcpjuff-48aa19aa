@@ -161,7 +161,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                     <SelectContent>{operadoresSilk.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                   </Select>
                 </FormField>
-                <div className="sm:col-span-2">
+                <div className="sm:col-span-2 lg:col-span-4">
                   <FormField label="Observações do Silk">
                     <Textarea value={form.silk_observacao ?? ""} onChange={(e) => set("silk_observacao", e.target.value)} rows={2} />
                   </FormField>

@@ -195,7 +195,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
                   </FormField>
                 );
               })}
-              <div className="sm:col-span-2">
+              <div className="sm:col-span-2 lg:col-span-4">
                 <FormField label="Observações da Expedição">
                   <Textarea
                     rows={3}

@@ -166,7 +166,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                   <SelectContent>{responsaveis.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                 </Select>
               </FormField>
-              <div className="sm:col-span-2">
+              <div className="sm:col-span-2 lg:col-span-4">
                 <FormField label="Observações do Acabamento">
                   <Textarea value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} rows={3} />
                 </FormField>
