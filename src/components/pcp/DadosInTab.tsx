@@ -64,6 +64,11 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
   useEffect(() => {
     if (!isDirty) setForm(selected ?? empty);
+    else if (selected?.id) {
+      // After a fresh insert, merge the new id into the dirty form so the
+      // next save updates the same row instead of inserting again.
+      setForm((f) => (f.id === selected.id ? f : { ...f, id: selected.id }));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
   useDirtyTracker(form, selected ?? empty, active);
