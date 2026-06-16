@@ -766,6 +766,7 @@ function ListasTab() {
     { kind: "dtf", title: "Operadores DTF", placeholder: "Novo operador DTF" },
     { kind: "silk", title: "Operadores Silk", placeholder: "Novo operador Silk" },
     { kind: "acabamento", title: "Responsáveis pelo Acabamento", placeholder: "Novo responsável" },
+    { kind: "status_arte", title: "Status da Arte", placeholder: "Nova opção de Status da Arte" },
   ];
   return (
     <div className="grid gap-6 md:grid-cols-2">
