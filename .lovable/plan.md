@@ -1,49 +1,72 @@
-# Padronização visual + compactação
-
 ## Objetivo
-Aplicar o mesmo visual do **Dashboard Master** em todas as outras abas (Dados In, Arte, DTF, Silk, Acabamento, Expedição, Finalizados) e reduzir o espaço em branco em toda a aplicação **sem alterar tamanhos de fonte**, sem mexer em colunas, ordem, filtros, dados ou lógica.
+Trazer 3 comportamentos do **Dashboard Master** para **todas as outras abas** (Dados In, Arte, DTF, Silk, Acabamento, Expedição, Finalizados), mantendo colunas, ordem e tamanhos de fonte intactos.
 
-## 1. Extrair padrão "Master" para um lugar reutilizável
-Em `src/components/pcp/shared.tsx`, criar constantes/utilitários compartilhados para garantir 100% de paridade visual:
+---
 
-- `TABLE_FONT_STYLE` → `{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }`
-- `TABLE_WRAPPER_CLASS` → `"hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs"`
-- `TH_CLASS` → `"h-7 px-1.5 text-[11px]"` (cabeçalho mais baixo que hoje, de h-8 → h-7)
-- `TD_CLASS` → `"py-0.5 px-1.5 text-[11px] align-top"` (linha mais compacta, de `py-1` → `py-0.5`)
-- `BADGE_SM_CLASS` → `"text-[10px] px-1.5 py-0"`
+### 1) Alerta amarelo / vermelho nas linhas
+Hoje só Master e Dados In aplicam. Regra do Master (será replicada idêntica):
 
-Aplicar nessas constantes no Master e em todas as outras abas, para que qualquer ajuste futuro fique sincronizado.
+- Se `embalado === "Sim"` → sem destaque.
+- Se não tem `saida_juff` → sem destaque.
+- Calcula `diasUteisAteHoje(saida_juff, feriados)`:
+  - `≤ 0` → `bg-red-50 hover:bg-red-100/80` (atrasado)
+  - `=== 1` → `bg-yellow-50 hover:bg-yellow-100/80` (vence hoje/amanhã)
 
-## 2. Compactar o Dashboard Master (referência)
-Em `src/components/pcp/DashboardTab.tsx`:
+Vou aplicar essa mesma função `rowBgClass(p)` nas linhas de Arte, DTF, Silk, Acabamento, Expedição e Finalizados (em Finalizados o destaque nunca aparece, pois `embalado="Sim"`, mas a função fica padronizada).
 
-- Container raiz: `space-y-6` → `space-y-3`.
-- Grid de StatCards: `gap-3` → `gap-2`; reduzir padding interno do `StatCard` (CardHeader/CardContent com `p-2`, sem `space-y` desnecessário).
-- `Card` de Pedidos: `CardHeader pb-3` → `pb-2`, `CardContent space-y-4` → `space-y-2`, `CardContent` com `p-3`.
-- Barra de filtros: grid `gap-3` → `gap-2`, `space-y-1` dos labels → `space-y-0.5`, altura dos `Input`/`SelectTrigger`/`DateInputBR` reduzida via classe `h-8` (sem mexer no `text-sm`).
-- Tabela: trocar inline classes pelas constantes compartilhadas (cabeçalho `h-7`, células `py-0.5`).
+### 2) Cabeçalho padronizado (igual ao Master)
+Hoje as outras abas usam `<thead className="bg-muted/50 text-xs uppercase font-bold">` com `<th>` cru → cor, altura e espaçamento diferentes do Master.
 
-## 3. Aplicar mesmo padrão nas demais abas
-Arquivos: `DadosInTab.tsx`, `ArteTab.tsx`, `DTFTab.tsx`, `SilkTab.tsx`, `AcabamentoTab.tsx`, `ExpedicaoTab.tsx`, `FinalizadosTab.tsx`.
+Vou trocar para o mesmo padrão do Master em todas as abas (Arte, DTF, Silk, Acabamento, Expedição, Finalizados):
 
-Em cada um:
-- Importar as constantes do `shared.tsx`.
-- Wrapper da tabela desktop → `TABLE_WRAPPER_CLASS` + `style={TABLE_FONT_STYLE}` (Google Sans Flex condensed igual ao Master).
-- `TableHead` → `TH_CLASS`; `TableCell` → `TD_CLASS`; `Badge` pequenos → `BADGE_SM_CLASS`.
-- Reduzir `space-y` raiz para `space-y-3`, `Card` com `CardContent` em `p-3 space-y-2`, `CardHeader` em `pb-2`.
-- Barra de filtros (Dados In já tem) → mesmo grid `gap-2`, mesma altura `h-8` dos campos, labels `space-y-0.5`.
-- Cards de resumo no topo (onde houver): `gap-2`, `p-2`.
+- Usar `<TableHeader>` + `<TableHead>` (componente shadcn, igual ao Master) **ou** manter `<th>` aplicando exatamente as classes `TH_RAW_CLASS` já existentes em `shared.tsx` (mesma cor de texto `text-muted-foreground`, altura `h-7`, `px-1.5`, `text-[11px]`, `uppercase`, `font-bold`).
+- Remover o `bg-muted/50` (o Master não usa fundo no cabeçalho) para manter o resultado visual idêntico.
+- Tamanho da fonte não muda (já é `text-[11px]` em todos os lugares relevantes).
 
-## 4. Restrições respeitadas
-- **Nenhuma** mudança em tamanhos de fonte (mantém `text-[11px]`, `text-[10px]`, `text-sm`, etc.).
-- **Nenhuma** coluna, filtro ou funcionalidade adicionada/removida.
-- **Nenhuma** mudança na ordem das colunas.
-- **Nenhuma** mudança em lógica de dados ou fluxos.
+### 3) Setinhas de ordenação em TODA coluna de data e número
+Regra: toda coluna de **data** e toda coluna **numérica** deve ter `ArrowUpDown` clicável (alterna asc/desc), idêntico ao comportamento do Master (`toggleSortSaida` etc.).
 
-## Resumo de arquivos editados
-- `src/components/pcp/shared.tsx` — adicionar constantes de estilo.
-- `src/components/pcp/DashboardTab.tsx` — compactar topo, filtros e tabela; usar constantes.
-- `src/components/pcp/DadosInTab.tsx` — adotar constantes; compactar topo/filtros/linhas.
-- `src/components/pcp/ArteTab.tsx`, `DTFTab.tsx`, `SilkTab.tsx`, `AcabamentoTab.tsx`, `ExpedicaoTab.tsx`, `FinalizadosTab.tsx` — adotar constantes; mesmo padrão compacto.
+Colunas que ganharão setinha por aba (as que já têm ficam mantidas):
 
-Aguardo aprovação para implementar.
+| Aba | Adicionar setinha em |
+|---|---|
+| **Master** | QTD, ENTRADA, ARTE LIMITE, INÍCIO EST., TÉRM. EST., ACABAMENTO, EXPED. (já tem SAÍDA JUFF, ENTREGA, DIAS) |
+| **Dados In** | QTD, TEMPO FRETE, ENTRADA (já tem SAÍDA JUFF, ENTREGA) |
+| **Arte** | QTD, SAÍDA JUFF, ENTREGA |
+| **DTF** | QTD, DATA EXEC, SAÍDA JUFF, ENTREGA |
+| **Silk** | QTD, DATA SILK, SAÍDA JUFF, ENTREGA |
+| **Acabamento** | QTD, SAÍDA JUFF, ENTREGA |
+| **Expedição** | (já tem SAÍDA JUFF e ENTREGA — não há outras numéricas/data) |
+| **Finalizados** | QTD, SAÍDA JUFF, DATA SAÍDA, FINALIZADO EM |
+
+Comportamento: clique alterna asc → desc → asc. Apenas uma coluna ativa por vez (igual Master). Nulos/vazios vão para o fim na ordenação asc.
+
+---
+
+### O que NÃO será alterado
+- Tamanho de fonte (continua `text-[11px]` / `text-sm` onde já está).
+- Colunas: nenhuma adicionada, removida ou reordenada.
+- Lógica de dados, filtros e fluxo entre abas.
+- Layout dos formulários, cards e StatCards.
+
+---
+
+### Detalhes técnicos (resumo de implementação)
+
+- **`shared.tsx`**: adicionar helper `rowAlertBgClass(pedido, feriados)` (mesma regra do Master) para reuso em todas as abas. Garantir `TH_RAW_CLASS` sem `bg-muted/50` e com `font-bold` (já está).
+- **Cada aba** (`ArteTab`, `DTFTab`, `SilkTab`, `AcabamentoTab`, `ExpedicaoTab`, `FinalizadosTab`):
+  1. Importar `useFeriados` + `rowAlertBgClass` e aplicar no `className` do `<tr>`.
+  2. Substituir `<thead className="bg-muted/50 text-xs uppercase font-bold">` + `<th>` crus pelas classes/tags padrão do Master.
+  3. Introduzir estado `sortKey`/`sortDir` (igual ao padrão de `toggleSort` do Expedicao/Master) e botão `ArrowUpDown` em cada coluna de data e número listada acima; aplicar `sort` no array antes do `map`.
+- **`DashboardTab`** (Master): adicionar `ArrowUpDown` + toggles nos demais campos de data/QTD listados, reusando o mesmo padrão `toggleSortX` já existente.
+
+Arquivos a editar:
+- `src/components/pcp/shared.tsx`
+- `src/components/pcp/DashboardTab.tsx`
+- `src/components/pcp/DadosInTab.tsx`
+- `src/components/pcp/ArteTab.tsx`
+- `src/components/pcp/DTFTab.tsx`
+- `src/components/pcp/SilkTab.tsx`
+- `src/components/pcp/AcabamentoTab.tsx`
+- `src/components/pcp/ExpedicaoTab.tsx`
+- `src/components/pcp/FinalizadosTab.tsx`

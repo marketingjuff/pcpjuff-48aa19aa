@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
+import { useFeriados } from "@/hooks/use-feriados";
 
 import { formatDateBR } from "@/lib/format";
 
@@ -29,6 +30,8 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { names: operadoresSilk } = useAppList("silk");
+  const { feriados } = useFeriados();
+  const sort = useSort<"qtd"|"silk"|"saida"|"entrega">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
@@ -220,36 +223,62 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
           </div>
           <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
-              <thead className="bg-muted/50 text-xs uppercase font-bold">
+              <thead>
                 <tr>
-                  {["ETAPA","PEDIDO","ORÇAMENTO","TIPO","QTD","STATUS DAS PEÇAS","FOTOLITO","TELA GRAVADA","SILK FEITO","DATA SILK","QUEM BATEU","SAÍDA JUFF","ENTREGA"].map((h) => (
-                    <th key={h} className="px-1.5 py-0.5 text-left whitespace-nowrap">{h}</th>
-                  ))}
+                  <Th>ETAPA</Th>
+                  <Th>PEDIDO</Th>
+                  <Th>ORÇAMENTO</Th>
+                  <Th>TIPO</Th>
+                  <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
+                  <Th>STATUS DAS PEÇAS</Th>
+                  <Th>FOTOLITO</Th>
+                  <Th>TELA GRAVADA</Th>
+                  <Th>SILK FEITO</Th>
+                  <SortableTh label="DATA SILK" active={sort.key === "silk"} onClick={() => sort.toggle("silk")} />
+                  <Th>QUEM BATEU</Th>
+                  <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
+                  <SortableTh label="ENTREGA" active={sort.key === "entrega"} onClick={() => sort.toggle("entrega")} />
                 </tr>
               </thead>
               <tbody>
-                {dashboardPedidos.map((p) => {
-                  return (
-                    <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
-                      <td className="px-1.5 py-0.5"><EtapaBadgeFromPedido pedido={p} /></td>
-                      <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
-                      <td className="px-1.5 py-0.5">{p.orcamento}</td>
-                      <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
-                      <td className="px-1.5 py-0.5">{p.qtd ?? "—"}</td>
-                      <td className="px-1.5 py-0.5"><StatusPecasBadge pedido={p} /></td>
-                      <td className="px-1.5 py-0.5">{p.fotolito_impresso ?? "—"}</td>
-                      <td className="px-1.5 py-0.5">{p.tela_gravada ?? "—"}</td>
-                      <td className="px-1.5 py-0.5">{p.silk_feito ?? "—"}</td>
-                      <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.silk_data_executada)}</td>
-                      <td className="px-1.5 py-0.5">{p.quem_bateu_silk ?? "—"}</td>
-                      <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                      <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
-                    </tr>
-                  );
-                })}
+                {(() => {
+                  let lista = dashboardPedidos;
+                  if (sort.key) {
+                    lista = [...lista].sort((a, b) => {
+                      switch (sort.key) {
+                        case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
+                        case "silk": return cmpDate(a.silk_data_executada, b.silk_data_executada, sort.dir);
+                        case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
+                        case "entrega": return cmpDate(a.data_entrega, b.data_entrega, sort.dir);
+                      }
+                      return 0;
+                    });
+                  }
+                  return lista.map((p) => {
+                    const bg = rowAlertBgClass(p, feriados);
+                    return (
+                      <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${bg} ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                        <td className="px-1.5 py-0.5"><EtapaBadgeFromPedido pedido={p} /></td>
+                        <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
+                        <td className="px-1.5 py-0.5">{p.orcamento}</td>
+                        <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                        <td className="px-1.5 py-0.5">{p.qtd ?? "—"}</td>
+                        <td className="px-1.5 py-0.5"><StatusPecasBadge pedido={p} /></td>
+                        <td className="px-1.5 py-0.5">{p.fotolito_impresso ?? "—"}</td>
+                        <td className="px-1.5 py-0.5">{p.tela_gravada ?? "—"}</td>
+                        <td className="px-1.5 py-0.5">{p.silk_feito ?? "—"}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.silk_data_executada)}</td>
+                        <td className="px-1.5 py-0.5">{p.quem_bateu_silk ?? "—"}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
+                      </tr>
+                    );
+                  });
+                })()}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={13} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk disponível.</td></tr>
+                  <tr><td colSpan={14} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk disponível.</td></tr>
                 )}
+
 
               </tbody>
             </table>

@@ -17,7 +17,7 @@ import {
 import { RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
-import { PedidoMobileCard, Chip } from "./shared";
+import { PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th } from "./shared";
 
 interface Props {
   pedidos: Pedido[];
@@ -35,10 +35,11 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const sort = useSort<"qtd"|"saida"|"data_saida"|"fin">();
 
   const finalizados = useMemo(() => {
     const hoje = new Date();
-    return pedidos.filter((p) => {
+    const arr = pedidos.filter((p) => {
       if (!p.finalizado_em) return false;
       if (search && !`${p.pedido_olist} ${p.orcamento}`.toLowerCase().includes(search.toLowerCase())) return false;
       const fin = new Date(p.finalizado_em);
@@ -49,8 +50,23 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
         if (ate && fin > new Date(ate + "T23:59:59")) return false;
       }
       return true;
-    }).sort((a, b) => (b.finalizado_em ?? "").localeCompare(a.finalizado_em ?? ""));
-  }, [pedidos, search, periodo, de, ate]);
+    });
+    if (sort.key) {
+      arr.sort((a, b) => {
+        switch (sort.key) {
+          case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
+          case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
+          case "data_saida": return cmpDate(a.data_saida_juff, b.data_saida_juff, sort.dir);
+          case "fin": return cmpDate(a.finalizado_em?.slice(0,10), b.finalizado_em?.slice(0,10), sort.dir);
+        }
+        return 0;
+      });
+    } else {
+      arr.sort((a, b) => (b.finalizado_em ?? "").localeCompare(a.finalizado_em ?? ""));
+    }
+    return arr;
+  }, [pedidos, search, periodo, de, ate, sort.key, sort.dir]);
+
 
   const visibleIds = useMemo(() => finalizados.map((p) => p.id), [finalizados]);
   const selectedVisibleCount = useMemo(
@@ -186,10 +202,10 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
         </div>
         <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
           <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
-            <thead className="bg-muted/50 text-xs uppercase font-bold">
+            <thead>
               <tr>
                 {isAdmin && (
-                  <th className="px-1.5 py-0.5 text-left w-10">
+                  <th className="h-7 px-1.5 text-left text-[11px] uppercase whitespace-nowrap font-bold text-muted-foreground w-10">
                     <Checkbox
                       checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
                       onCheckedChange={(c) => toggleAllVisible(c === true)}
@@ -197,9 +213,16 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                     />
                   </th>
                 )}
-                {["PEDIDO","ORÇAMENTO","QTD","VENDEDOR","TIPO","SAÍDA JUFF","DATA SAÍDA","RESPONSÁVEL","FINALIZADO EM",""].map((h) => (
-                  <th key={h} className="px-1.5 py-0.5 text-left whitespace-nowrap">{h}</th>
-                ))}
+                <Th>PEDIDO</Th>
+                <Th>ORÇAMENTO</Th>
+                <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
+                <Th>VENDEDOR</Th>
+                <Th>TIPO</Th>
+                <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
+                <SortableTh label="DATA SAÍDA" active={sort.key === "data_saida"} onClick={() => sort.toggle("data_saida")} />
+                <Th>RESPONSÁVEL</Th>
+                <SortableTh label="FINALIZADO EM" active={sort.key === "fin"} onClick={() => sort.toggle("fin")} />
+                <Th>{""}</Th>
               </tr>
             </thead>
             <tbody>

@@ -18,7 +18,7 @@ import {
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { etapaPaletteClass, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip } from "./shared";
+import { etapaPaletteClass, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, type SortDir } from "./shared";
 
 interface Props {
   pedidos: Pedido[];
@@ -43,9 +43,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const [dataEntrega, setDataEntrega] = useState("");
   
   const [search, setSearch] = useState("");
-  const [sortSaidaDir, setSortSaidaDir] = useState<"asc" | "desc" | null>("asc");
-  const [sortEntregaDir, setSortEntregaDir] = useState<"asc" | "desc" | null>(null);
-  const [sortDiasDir, setSortDiasDir] = useState<"asc" | "desc" | null>(null);
+  const sort = useSort<"qtd"|"entrada"|"arte"|"inicio"|"termino"|"acabamento"|"exped"|"saida"|"entrega"|"dias">("saida", "asc");
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
@@ -73,27 +71,34 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       if (search && !`${p.pedido_olist} ${p.orcamento}`.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-    if (sortDiasDir) {
+    if (sort.key) {
+      const dir = sort.dir;
+      const estampDatas = (p: Pedido) => {
+        const datas = [p.dtf_data_executada, p.silk_data_executada].filter((d): d is string => !!d).sort();
+        return { inicio: p.inicio_estamparia ?? (datas[0] ?? null), termino: p.termino_estamparia ?? (datas[datas.length - 1] ?? null) };
+      };
       arr.sort((a, b) => {
-        const da = a.data_entrega ? (diasUteisAteHoje(a.data_entrega, feriados) ?? 9999) : 9999;
-        const db = b.data_entrega ? (diasUteisAteHoje(b.data_entrega, feriados) ?? 9999) : 9999;
-        return sortDiasDir === "asc" ? da - db : db - da;
-      });
-    } else if (sortSaidaDir) {
-      arr.sort((a, b) => {
-        const av = a.saida_juff ?? "9999-12-31";
-        const bv = b.saida_juff ?? "9999-12-31";
-        return sortSaidaDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
-      });
-    } else if (sortEntregaDir) {
-      arr.sort((a, b) => {
-        const da = a.data_entrega ?? "9999-12-31";
-        const db = b.data_entrega ?? "9999-12-31";
-        return sortEntregaDir === "asc" ? da.localeCompare(db) : db.localeCompare(da);
+        switch (sort.key) {
+          case "qtd": return cmpNum(a.qtd, b.qtd, dir);
+          case "entrada": return cmpDate(a.entrada_pedido, b.entrada_pedido, dir);
+          case "arte": return cmpDate(a.arte_data, b.arte_data, dir);
+          case "inicio": return cmpDate(estampDatas(a).inicio, estampDatas(b).inicio, dir);
+          case "termino": return cmpDate(estampDatas(a).termino, estampDatas(b).termino, dir);
+          case "acabamento": return cmpDate(a.acabamento_data, b.acabamento_data, dir);
+          case "exped": return cmpDate(a.expedicao_entrou_em, b.expedicao_entrou_em, dir);
+          case "saida": return cmpDate(a.saida_juff, b.saida_juff, dir);
+          case "entrega": return cmpDate(a.data_entrega, b.data_entrega, dir);
+          case "dias": {
+            const da = a.data_entrega ? (diasUteisAteHoje(a.data_entrega, feriados) ?? 9999) : 9999;
+            const db = b.data_entrega ? (diasUteisAteHoje(b.data_entrega, feriados) ?? 9999) : 9999;
+            return dir === "asc" ? da - db : db - da;
+          }
+        }
+        return 0;
       });
     }
     return arr;
-  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, search, sortSaidaDir, sortEntregaDir, sortDiasDir, feriados]);
+  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, search, sort.key, sort.dir, feriados]);
 
   const stats = useMemo(() => {
     const ativos = pedidos.filter((p) => pedidoAtivoNasAreas(p));
@@ -111,21 +116,6 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
     };
   }, [pedidos]);
 
-  function toggleSortSaida() {
-    setSortEntregaDir(null);
-    setSortDiasDir(null);
-    setSortSaidaDir((d) => d === "asc" ? "desc" : "asc");
-  }
-  function toggleSortEntrega() {
-    setSortSaidaDir(null);
-    setSortDiasDir(null);
-    setSortEntregaDir((d) => d === "asc" ? "desc" : "asc");
-  }
-  function toggleSortDias() {
-    setSortSaidaDir(null);
-    setSortEntregaDir(null);
-    setSortDiasDir((d) => d === "asc" ? "desc" : "asc");
-  }
 
   /** Cor de fundo da linha — baseada em saida_juff e dias úteis. */
   function rowBgClass(p: Pedido): string {
@@ -253,26 +243,20 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">PEDIDO</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">ORÇAMENTO</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">VENDEDOR</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">QTD</TableHead>
+                  <SortHead label="QTD" k="qtd" sort={sort} />
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">ESTAMPA</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">STATUS DAS PEÇAS</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">FRETE</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">UF</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold whitespace-nowrap">ENTRADA</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold whitespace-nowrap">ARTE LIMITE</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold whitespace-nowrap">INÍCIO EST.</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold whitespace-nowrap">TÉRM. EST.</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold whitespace-nowrap">ACABAMENTO</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold whitespace-nowrap">EXPED.</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold cursor-pointer select-none whitespace-nowrap" onClick={toggleSortSaida}>
-                    <span className="inline-flex items-center gap-1">SAÍDA JUFF<ArrowUpDown className="h-3 w-3" /></span>
-                  </TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold cursor-pointer select-none whitespace-nowrap" onClick={toggleSortEntrega}>
-                    <span className="inline-flex items-center gap-1">ENTREGA<ArrowUpDown className="h-3 w-3" /></span>
-                  </TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold cursor-pointer select-none whitespace-nowrap text-center" onClick={toggleSortDias}>
-                    <span className="inline-flex items-center gap-1">DIAS<ArrowUpDown className="h-3 w-3" /></span>
-                  </TableHead>
+                  <SortHead label="ENTRADA" k="entrada" sort={sort} />
+                  <SortHead label="ARTE LIMITE" k="arte" sort={sort} />
+                  <SortHead label="INÍCIO EST." k="inicio" sort={sort} />
+                  <SortHead label="TÉRM. EST." k="termino" sort={sort} />
+                  <SortHead label="ACABAMENTO" k="acabamento" sort={sort} />
+                  <SortHead label="EXPED." k="exped" sort={sort} />
+                  <SortHead label="SAÍDA JUFF" k="saida" sort={sort} />
+                  <SortHead label="ENTREGA" k="entrega" sort={sort} />
+                  <SortHead label="DIAS" k="dias" sort={sort} center />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -358,5 +342,20 @@ function StatCard({ label, value, icon, accent, onClick, active }: { label: stri
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function SortHead<K extends string>({ label, k, sort, center }: { label: string; k: K; sort: { key: K | null; dir: SortDir; toggle: (k: K) => void }; center?: boolean }) {
+  const active = sort.key === k;
+  return (
+    <TableHead
+      className={`h-7 px-1.5 text-[11px] font-bold cursor-pointer select-none whitespace-nowrap ${center ? "text-center" : ""}`}
+      onClick={() => sort.toggle(k)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <ArrowUpDown className={`h-3 w-3 ${active ? "opacity-100" : "opacity-50"}`} />
+      </span>
+    </TableHead>
   );
 }
