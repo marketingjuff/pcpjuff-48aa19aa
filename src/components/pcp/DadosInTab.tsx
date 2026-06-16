@@ -443,7 +443,7 @@ function DadosInDashboard({
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <div className="flex items-baseline justify-between gap-2">
           <CardTitle className="text-base">Dashboard — Dados In</CardTitle>
           <span className="text-xs text-muted-foreground tabular-nums">
@@ -451,43 +451,43 @@ function DadosInDashboard({
           </span>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-          <div className="space-y-1">
+      <CardContent className="p-3 pt-0 space-y-2">
+        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="space-y-0.5">
             <Label className="text-xs text-muted-foreground font-medium">Buscar</Label>
-            <Input placeholder="Pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input className="h-8" placeholder="Pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <Label className="text-xs text-muted-foreground font-medium">Vendedor</Label>
             <Select value={vendedor} onValueChange={setVendedor}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos vendedores</SelectItem>
                 {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <Label className="text-xs text-muted-foreground font-medium">Status Peças</Label>
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos status</SelectItem>
                 {STATUS_PECAS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <Label className="text-xs text-muted-foreground font-medium">Tipo Estampa</Label>
             <Select value={tipo} onValueChange={setTipo}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos tipos</SelectItem>
                 {TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <Label className="text-xs text-muted-foreground font-medium">Data Entrega</Label>
             <DateInputBR value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
           </div>
@@ -510,27 +510,27 @@ function DadosInDashboard({
           ))}
         </div>
 
-        <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
+        <div className={TABLE_WRAPPER_CLASS} style={TABLE_FONT_STYLE}>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="h-9 px-2 text-xs">Etapa</TableHead>
-                <TableHead className="h-9 px-2 text-xs">Pedido</TableHead>
-                <TableHead className="h-9 px-2 text-xs">Orçamento</TableHead>
-                <TableHead className="h-9 px-2 text-xs">Vendedor</TableHead>
-                <TableHead className="h-9 px-2 text-xs">QTD</TableHead>
-                <TableHead className="h-9 px-2 text-xs">Estampa</TableHead>
-                <TableHead className="h-9 px-2 text-xs">Status de Peças</TableHead>
-                <TableHead className="h-9 px-2 text-xs">Frete</TableHead>
-                <TableHead className="h-9 px-2 text-xs">UF</TableHead>
-                <TableHead className="h-9 px-2 text-xs whitespace-nowrap text-center">Tempo Frete</TableHead>
-                <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Forma Pgto</TableHead>
-                <TableHead className="h-9 px-2 text-xs">NF</TableHead>
-                <TableHead className="h-9 px-2 text-xs whitespace-nowrap">Entrada</TableHead>
-                <TableHead className="h-9 px-2 text-xs cursor-pointer select-none whitespace-nowrap" onClick={toggleSortSaida}>
+                <TableHead className={TH_CLASS}>Etapa</TableHead>
+                <TableHead className={TH_CLASS}>Pedido</TableHead>
+                <TableHead className={TH_CLASS}>Orçamento</TableHead>
+                <TableHead className={TH_CLASS}>Vendedor</TableHead>
+                <TableHead className={TH_CLASS}>QTD</TableHead>
+                <TableHead className={TH_CLASS}>Estampa</TableHead>
+                <TableHead className={TH_CLASS}>Status de Peças</TableHead>
+                <TableHead className={TH_CLASS}>Frete</TableHead>
+                <TableHead className={TH_CLASS}>UF</TableHead>
+                <TableHead className={`${TH_CLASS} whitespace-nowrap text-center`}>Tempo Frete</TableHead>
+                <TableHead className={`${TH_CLASS} whitespace-nowrap`}>Forma Pgto</TableHead>
+                <TableHead className={TH_CLASS}>NF</TableHead>
+                <TableHead className={`${TH_CLASS} whitespace-nowrap`}>Entrada</TableHead>
+                <TableHead className={`${TH_CLASS} cursor-pointer select-none whitespace-nowrap`} onClick={toggleSortSaida}>
                   <span className="inline-flex items-center gap-1">Saída Juff<ArrowUpDown className="h-3 w-3" /></span>
                 </TableHead>
-                <TableHead className="h-9 px-2 text-xs cursor-pointer select-none whitespace-nowrap" onClick={toggleSortEntrega}>
+                <TableHead className={`${TH_CLASS} cursor-pointer select-none whitespace-nowrap`} onClick={toggleSortEntrega}>
                   <span className="inline-flex items-center gap-1">Data Entrega<ArrowUpDown className="h-3 w-3" /></span>
                 </TableHead>
               </TableRow>
@@ -555,23 +555,23 @@ function DadosInDashboard({
                     onClick={() => onSelect(p.id)}
                     className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
                   >
-                    <TableCell className="py-1.5 px-2 text-xs"><Badge variant="outline" className={`${etapaPaletteClass(etapa)} text-[11px]`}>{etapa}</Badge></TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs font-medium align-top">{p.pedido_olist}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs max-w-[220px] align-top">
-                      <span className="block leading-snug line-clamp-2 break-words" title={p.orcamento ?? ""}>{p.orcamento}</span>
+                    <TableCell className={TD_CLASS}><Badge variant="outline" className={`${etapaPaletteClass(etapa)} ${BADGE_SM_CLASS}`}>{etapa}</Badge></TableCell>
+                    <TableCell className={`${TD_CLASS} font-medium`}>{p.pedido_olist}</TableCell>
+                    <TableCell className={`${TD_CLASS} max-w-[200px]`}>
+                      <span className="block leading-tight line-clamp-2 break-words" title={p.orcamento ?? ""}>{p.orcamento}</span>
                     </TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs align-top">{p.vendedor}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top">{p.qtd}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs align-top"><Badge variant="outline" className="text-[11px]">{p.tipo_estampa}</Badge></TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs align-top"><StatusPecasBadge pedido={p} /></TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs align-top">{p.frete ?? "—"}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs align-top">{p.uf_entrega ?? "—"}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs tabular-nums align-top text-center">{p.tempo_frete ?? "—"}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs align-top">{p.forma_pagamento ?? "—"}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs align-top">{p.nf_emitida ?? "—"}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.entrada_pedido) || "—"}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.saida_juff) || "—"}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-xs whitespace-nowrap align-top">{formatDateBR(p.data_entrega) || "—"}</TableCell>
+                    <TableCell className={TD_CLASS}>{p.vendedor}</TableCell>
+                    <TableCell className={`${TD_CLASS} tabular-nums`}>{p.qtd}</TableCell>
+                    <TableCell className={TD_CLASS}><Badge variant="outline" className={BADGE_SM_CLASS}>{p.tipo_estampa}</Badge></TableCell>
+                    <TableCell className={TD_CLASS}><StatusPecasBadge pedido={p} /></TableCell>
+                    <TableCell className={TD_CLASS}>{p.frete ?? "—"}</TableCell>
+                    <TableCell className={TD_CLASS}>{p.uf_entrega ?? "—"}</TableCell>
+                    <TableCell className={`${TD_CLASS} tabular-nums text-center`}>{p.tempo_frete ?? "—"}</TableCell>
+                    <TableCell className={TD_CLASS}>{p.forma_pagamento ?? "—"}</TableCell>
+                    <TableCell className={TD_CLASS}>{p.nf_emitida ?? "—"}</TableCell>
+                    <TableCell className={`${TD_CLASS} whitespace-nowrap`}>{formatDateBR(p.entrada_pedido) || "—"}</TableCell>
+                    <TableCell className={`${TD_CLASS} whitespace-nowrap`}>{formatDateBR(p.saida_juff) || "—"}</TableCell>
+                    <TableCell className={`${TD_CLASS} whitespace-nowrap`}>{formatDateBR(p.data_entrega) || "—"}</TableCell>
                   </TableRow>
                 );
               })}
