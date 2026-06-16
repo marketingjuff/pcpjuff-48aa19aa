@@ -116,7 +116,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               </div>
             )}
 
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
                 <ReadOnlyField label="QTD" value={selected.qtd} />
@@ -137,7 +137,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 <ReadOnlyField label="Término estamparia" value={formatDateBR(selected.termino_estamparia)} />
                 <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
               </div>
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 pt-4 border-t">
+              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t">
                 <FormField label="DTF Estampado?">
                   <Select value={form.dtf_estampado ?? ""} onValueChange={setEstampado}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>

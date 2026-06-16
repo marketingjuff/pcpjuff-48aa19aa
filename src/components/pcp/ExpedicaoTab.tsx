@@ -161,7 +161,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
             </Badge>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
               <ReadOnlyField label="Frete" value={selected.frete ?? "—"} />
@@ -172,7 +172,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
               <ReadOnlyField label="Nota Fiscal" value={selected.nf_emitida ?? "—"} />
             </div>
 
-            <div className="border-t pt-4 grid gap-4 grid-cols-1 sm:grid-cols-2">
+            <div className="border-t pt-4 grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               {itensParaForma(form.forma_pagamento ?? selected.forma_pagamento).map((key) => {
                 const val = form[key];
                 return (

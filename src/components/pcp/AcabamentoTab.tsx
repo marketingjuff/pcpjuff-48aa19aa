@@ -129,7 +129,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </div>
             )}
 
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
               <ReadOnlyField label="Tipo de Estampa" value={selected.tipo_estampa} />
@@ -150,7 +150,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 ) : <div className="text-sm text-muted-foreground">Sem layout</div>}
               </div>
             </div>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 pt-4 border-t">
+            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t">
               <FormField label="EMBALADO?">
                 <Select value={form.embalado ?? ""} onValueChange={setEmbalado}>
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>

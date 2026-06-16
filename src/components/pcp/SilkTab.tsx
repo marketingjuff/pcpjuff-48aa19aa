@@ -118,7 +118,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
               </div>
             )}
 
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
                 <ReadOnlyField label="QTD" value={selected.qtd} />
@@ -139,7 +139,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 <ReadOnlyField label="Limite estamparia" value={formatDateBR(selected.termino_estamparia)} />
                 <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
               </div>
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 pt-4 border-t">
+              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t">
                 <FormField label="Tela gravada?">
                   <Select value={form.tela_gravada ?? ""} onValueChange={(v) => set("tela_gravada", v)}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
