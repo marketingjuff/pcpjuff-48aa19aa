@@ -163,9 +163,11 @@ function AppHomeInner() {
                 </nav>
               </SheetContent>
             </Sheet>
-            <div className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary ring-1 ring-primary/15 shrink-0">
-              <Factory className="h-5 w-5" />
-            </div>
+            <img
+              src={logoJuff.url}
+              alt="Logo Juff"
+              className="hidden sm:block h-10 w-10 rounded-xl object-cover ring-1 ring-primary/15 shrink-0"
+            />
             <div className="min-w-0">
               <h1 className="font-display text-base sm:text-lg font-semibold leading-tight tracking-tight truncate">PCP Juff</h1>
               <p className="text-[11px] sm:text-xs text-muted-foreground truncate">
