@@ -66,6 +66,19 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
   function handleSave() {
     if (!selected) return;
+    // Validações: Sim + sem data é inválido
+    if (form.dtf_impresso === "Sim" && !form.dtf_executado) {
+      toast.error('DTF Impresso = "Sim" exige a data de impressão.');
+      return;
+    }
+    if (form.dtf_cortado === "Sim" && !form.dtf_cortado_data) {
+      toast.error('DTF Cortado = "Sim" exige a data de corte.');
+      return;
+    }
+    if (form.fotolito_impresso === "Sim" && !form.fotolito_executado) {
+      toast.error('Fotolito Impresso = "Sim" exige a Data de Impressão do Fotolito.');
+      return;
+    }
     onSave({
       id: selected.id,
       status_arte: form.status_arte ?? null,
@@ -82,17 +95,16 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   }
   useRegisterSave(handleSave, active);
 
-  async function baixarLayout(path: string, pedidoId: string) {
+  async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
     await baixarLayoutPDF(path);
-    setLayoutBaixado((m) => ({ ...m, [pedidoId]: true }));
   }
 
   const showDTF = !!selected && tipoIncluiDTF(selected.tipo_estampa);
   const showSilk = !!selected && tipoIncluiSilk(selected.tipo_estampa);
   const showVetorDTF = !!selected && selected.necessita_vetorizacao && showDTF;
   const showVetorSilk = !!selected && selected.necessita_vetorizacao && showSilk;
-  const camposLiberados = !!selected && (layoutBaixado[selected.id] || !selected.layout_url);
+
 
   // Filtros do dashboard
   const [fEtapa, setFEtapa] = useState<string>("ativas");
