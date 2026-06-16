@@ -43,9 +43,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const [dataEntrega, setDataEntrega] = useState("");
   
   const [search, setSearch] = useState("");
-  const [sortSaidaDir, setSortSaidaDir] = useState<"asc" | "desc" | null>("asc");
-  const [sortEntregaDir, setSortEntregaDir] = useState<"asc" | "desc" | null>(null);
-  const [sortDiasDir, setSortDiasDir] = useState<"asc" | "desc" | null>(null);
+  const sort = useSort<"qtd"|"entrada"|"arte"|"inicio"|"termino"|"acabamento"|"exped"|"saida"|"entrega"|"dias">("saida", "asc");
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
