@@ -342,17 +342,17 @@ function StatCard({ label, value, icon, accent, onClick, active }: { label: stri
         active ? "ring-2 ring-primary/25 border-primary/40 shadow-sm" : ""
       }`}
     >
-      <CardContent className="p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1.5">
+      <CardContent className="p-2.5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 space-y-0.5">
             <div className="text-xs font-medium text-muted-foreground truncate">
               {label}
             </div>
-            <div className={`font-display text-2xl sm:text-[1.6rem] font-semibold tabular-nums tracking-tight leading-none ${tone.num}`}>
+            <div className={`font-display text-xl sm:text-2xl font-semibold tabular-nums tracking-tight leading-none ${tone.num}`}>
               {value}
             </div>
           </div>
-          <div className={`flex h-9 w-9 items-center justify-center rounded-full ring-1 ${tone.icon} shrink-0 transition-transform group-hover:scale-105`}>
+          <div className={`flex h-7 w-7 items-center justify-center rounded-full ring-1 ${tone.icon} shrink-0 transition-transform group-hover:scale-105`}>
             {icon}
           </div>
         </div>
