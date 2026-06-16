@@ -96,7 +96,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {selected ? (
         !modeloIncluiDTF(selected.tipo_estampa) ? (
           <EmptyState>Este pedido não inclui DTF (modelo: {selected.tipo_estampa}).</EmptyState>
@@ -108,7 +108,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 {form.dtf_estampado === "Sim" ? (atrasado ? "Atrasado" : "Concluído") : "Em andamento"}
               </Badge>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-3">
             <EtapaTopoBanner pedido={selected} tab="dtf" />
             {selected.status_pecas !== "completo" && selected.arte_data && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">

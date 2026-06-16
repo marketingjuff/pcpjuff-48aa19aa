@@ -128,7 +128,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-2">
         <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
           <Input placeholder="Buscar pedido ou orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
           <Select value={periodo} onValueChange={setPeriodo}>

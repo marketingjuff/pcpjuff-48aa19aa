@@ -151,7 +151,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {selected && selected.expedicao_entrou_em && !selected.finalizado_em ? (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
@@ -160,7 +160,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
               Expedição
             </Badge>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-3">
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />

@@ -98,7 +98,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {selected ? (
         !modeloIncluiSilk(selected.tipo_estampa) ? (
           <EmptyState>Este pedido não inclui Silk (modelo: {selected.tipo_estampa}).</EmptyState>
@@ -110,7 +110,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 {form.silk_feito === "Sim" ? (atrasado ? "Atrasado" : "Concluído") : "Em andamento"}
               </Badge>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-3">
             <EtapaTopoBanner pedido={selected} tab="silk" />
             {selected.status_pecas !== "completo" && selected.arte_data && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">

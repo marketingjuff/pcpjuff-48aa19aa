@@ -109,14 +109,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   const enviadoParaExpedicao = !!selected?.expedicao_entrou_em;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {selected ? (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base sm:text-lg truncate">Acabamento — {selected.pedido_olist}</CardTitle>
             <Badge variant="outline" className={status.color}>{status.label}</Badge>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-3">
             <EtapaTopoBanner pedido={selected} tab="acabamento" />
             {podeFinalizar && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-success/10 text-success text-sm border border-success/30">

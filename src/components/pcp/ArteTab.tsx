@@ -75,11 +75,11 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const arteAtrasada = selected?.arte_data && new Date(selected.arte_data) < new Date() && form.status_arte !== "Arte Finalizada";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {selected ? (
         <Card>
           <CardHeader><CardTitle>Arte — {selected.pedido_olist}</CardTitle></CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-3">
             <EtapaTopoBanner pedido={selected} tab="arte" />
 
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
