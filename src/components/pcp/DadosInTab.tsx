@@ -450,7 +450,16 @@ function DadosInDashboard({
         </div>
       </CardHeader>
       <CardContent className="p-3 pt-0 space-y-2">
-        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+          <div className="space-y-0.5">
+            <Label className="text-xs text-muted-foreground font-medium">Etapa</Label>
+            <Select value={etapaFiltro} onValueChange={setEtapaFiltro}>
+              <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ETAPA_FILTRO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-0.5">
             <Label className="text-xs text-muted-foreground font-medium">Buscar</Label>
             <Input className="h-8" placeholder="Pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
