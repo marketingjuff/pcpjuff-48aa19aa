@@ -17,7 +17,7 @@ import {
 import { RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
-import { PedidoMobileCard, Chip } from "./shared";
+import { PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th } from "./shared";
 
 interface Props {
   pedidos: Pedido[];
