@@ -248,15 +248,16 @@ export function dadosInCompletos(p: Pedido): boolean {
 }
 
 export function arteCompleta(p: Pedido): boolean {
-  if (p.status_arte !== "Arte Finalizada") return false;
-  if (tipoIncluiDTF(p.tipo_estampa) && (p.dtf_impresso !== "Sim" || !notEmpty(p.dtf_executado))) return false;
-  if (tipoIncluiSilk(p.tipo_estampa) && (p.fotolito_impresso !== "Sim" || !notEmpty(p.fotolito_executado))) return false;
-  if (p.necessita_vetorizacao && !p.vetorizacao_executada) return false;
+  // Arte agora avança por lado, independente de status_arte
+  if (tipoIncluiDTF(p.tipo_estampa) && !ladoDtfPronto(p)) return false;
+  if (tipoIncluiSilk(p.tipo_estampa) && !ladoSilkPronto(p)) return false;
   return true;
 }
 export function arteAlgumPreenchido(p: Pedido): boolean {
   return notEmpty(p.status_arte) || notEmpty(p.dtf_impresso) || notEmpty(p.fotolito_impresso) ||
     notEmpty(p.dtf_executado) || notEmpty(p.fotolito_executado) || notEmpty(p.arte_observacao) ||
+    notEmpty(p.dtf_cortado) || notEmpty(p.dtf_cortado_data) ||
+    notEmpty(p.vetorizacao_dtf) || notEmpty(p.vetorizacao_silk) ||
     !!p.vetorizacao_executada;
 }
 
