@@ -309,8 +309,9 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="Aguardando impressão">Aguardando impressão</SelectItem>
-                  <SelectItem value="Aguardando execução">Aguardando execução</SelectItem>
+                  <SelectItem value="Aguardando data">Aguardando data</SelectItem>
                   <SelectItem value="Sim">Sim</SelectItem>
+
                 </SelectContent>
               </Select>
             </div>
