@@ -169,45 +169,45 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
           </div>
         </CardHeader>
         <CardContent className="p-3 pt-0 space-y-2">
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-            <div className="space-y-1">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+            <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Buscar</label>
-              <Input placeholder="Pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input className="h-8" placeholder="Pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Vendedor</label>
               <Select value={vendedor} onValueChange={setVendedor}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos vendedores</SelectItem>
                   {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Status Peças</label>
               <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos status</SelectItem>
                   {STATUS_PECAS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Tipo Estampa</label>
               <Select value={tipo} onValueChange={setTipo}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos tipos</SelectItem>
                   {TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Etapa</label>
               <Select value={etapa} onValueChange={(v) => setEtapa(v as Etapa)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ativas">Todas (menos finalizados)</SelectItem>
                   <SelectItem value="arte">Aguardando Arte</SelectItem>
@@ -218,9 +218,9 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Data Entrega</label>
-              <DateInputBR value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
+              <DateInputBR className="h-8" value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
             </div>
           </div>
 
