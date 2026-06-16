@@ -364,3 +364,51 @@ export function EmptyState({ children }: { children: React.ReactNode }) {
     </Card>
   );
 }
+
+// ============================================================
+// Filtro de Etapa (compartilhado em todas as abas)
+// ============================================================
+
+export const ETAPA_FILTRO_OPCOES: { value: string; label: string }[] = [
+  { value: "ativas", label: "Todas (menos finalizados)" },
+  { value: "pendencias_arte", label: "Pendências de Arte" },
+  { value: "aguardando_entrada", label: "Aguardando entrada" },
+  { value: "aguardando_input", label: "Aguardando input de produção" },
+  { value: "arte", label: "Aguardando Arte" },
+  { value: "dtf_pronto_silk_arte", label: "DTF Pronto / Silk na Arte" },
+  { value: "silk_pronto_dtf_arte", label: "Silk Pronto / DTF na Arte" },
+  { value: "dtf", label: "Aguardando DTF" },
+  { value: "silk", label: "Aguardando Silk" },
+  { value: "dtf_silk", label: "Aguardando DTF + Silk" },
+  { value: "acabamento", label: "Aguardando Acabamento" },
+  { value: "expedicao", label: "Aguardando Expedição" },
+  { value: "finalizados", label: "Finalizados" },
+];
+
+const _ETAPA_PENDENCIAS_ARTE = new Set([
+  "Aguardando Arte",
+  "DTF Pronto / Silk na Arte",
+  "Silk Pronto / DTF na Arte",
+]);
+
+const _ETAPA_MAP: Record<string, string[]> = {
+  aguardando_entrada: ["Aguardando entrada"],
+  aguardando_input: ["Aguardando input de produção"],
+  arte: ["Aguardando Arte"],
+  dtf_pronto_silk_arte: ["DTF Pronto / Silk na Arte"],
+  silk_pronto_dtf_arte: ["Silk Pronto / DTF na Arte"],
+  dtf: ["Aguardando DTF"],
+  silk: ["Aguardando Silk"],
+  dtf_silk: ["Aguardando DTF + Silk"],
+  acabamento: ["Aguardando Acabamento"],
+  expedicao: ["Aguardando Expedição"],
+};
+
+export function matchEtapaFiltro(p: Pedido, value: string): boolean {
+  if (value === "finalizados") return !!p.finalizado_em;
+  if (!!p.finalizado_em) return false;
+  if (value === "ativas" || value === "todas") return true;
+  const etapaAtual = calcularEtapaAtual(p).etapa.replace(/\*$/, "");
+  if (value === "pendencias_arte") return _ETAPA_PENDENCIAS_ARTE.has(etapaAtual);
+  return _ETAPA_MAP[value]?.includes(etapaAtual) ?? false;
+}
