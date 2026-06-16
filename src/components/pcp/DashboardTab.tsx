@@ -219,12 +219,20 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ativas">Todas (menos finalizados)</SelectItem>
+                  <SelectItem value="pendencias_arte">Pendências de Arte</SelectItem>
+                  <SelectItem value="aguardando_entrada">Aguardando entrada</SelectItem>
+                  <SelectItem value="aguardando_input">Aguardando input de produção</SelectItem>
                   <SelectItem value="arte">Aguardando Arte</SelectItem>
+                  <SelectItem value="dtf_pronto_silk_arte">DTF Pronto / Silk na Arte</SelectItem>
+                  <SelectItem value="silk_pronto_dtf_arte">Silk Pronto / DTF na Arte</SelectItem>
                   <SelectItem value="dtf">Aguardando DTF</SelectItem>
                   <SelectItem value="silk">Aguardando Silk</SelectItem>
+                  <SelectItem value="dtf_silk">Aguardando DTF + Silk</SelectItem>
                   <SelectItem value="acabamento">Aguardando Acabamento</SelectItem>
-                  <SelectItem value="expedicao">Em Expedição</SelectItem>
+                  <SelectItem value="expedicao">Aguardando Expedição</SelectItem>
+                  <SelectItem value="finalizados">Finalizados</SelectItem>
                 </SelectContent>
+
               </Select>
             </div>
             <div className="space-y-0.5">
