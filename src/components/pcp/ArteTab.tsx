@@ -22,6 +22,7 @@ import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
   StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip,
   useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass,
+  ETAPA_FILTRO_OPCOES, matchEtapaFiltro,
 } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
