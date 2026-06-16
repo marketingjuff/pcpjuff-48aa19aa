@@ -30,6 +30,8 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { names: responsaveis } = useAppList("acabamento");
+  const { feriados } = useFeriados();
+  const sort = useSort<"qtd"|"saida"|"entrega">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
