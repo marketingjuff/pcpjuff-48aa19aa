@@ -16,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
+import { toast } from "sonner";
+
 import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
   StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip,
@@ -40,8 +42,8 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const { isDirty } = useDirtyForm();
   const { feriados } = useFeriados();
   const sort = useSort<"qtd"|"entrada"|"limite"|"saida">();
-  const [layoutBaixado, setLayoutBaixado] = useState<Record<string, boolean>>({});
   const { names: statusArteCustom } = useAppList("status_arte");
+
   const statusArteOpcoes = statusArteCustom.length ? statusArteCustom : [...STATUS_ARTE_OPCOES];
 
   useEffect(() => {
