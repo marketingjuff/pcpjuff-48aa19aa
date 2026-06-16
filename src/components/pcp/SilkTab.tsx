@@ -30,6 +30,8 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { names: operadoresSilk } = useAppList("silk");
+  const { feriados } = useFeriados();
+  const sort = useSort<"qtd"|"silk"|"saida"|"entrega">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
