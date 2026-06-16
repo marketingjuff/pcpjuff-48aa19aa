@@ -148,7 +148,10 @@ function AppHomeInner() {
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0">
                 <SheetHeader className="p-4 border-b">
-                  <SheetTitle>PCP Juff</SheetTitle>
+                  <SheetTitle className="flex items-center gap-2">
+                    <img src={logoJuff.url} alt="Logo Juff" className="h-8 w-8 rounded-lg object-cover" />
+                    PCP Juff
+                  </SheetTitle>
                 </SheetHeader>
                 <nav className="p-2 flex flex-col">
                   {tabs.map((t) => (
