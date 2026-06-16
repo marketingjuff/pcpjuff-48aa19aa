@@ -56,6 +56,7 @@ function todosCompletos(p: Pedido, form: Partial<Pedido>): boolean {
 }
 
 export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
+  const { feriados } = useFeriados();
   const { names: formasPagamento } = useAppList("pagamento");
   const expedicaoPedidos = useMemo(
     () => pedidos.filter((p) => p.expedicao_entrou_em && !p.finalizado_em),
