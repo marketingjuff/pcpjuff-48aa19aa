@@ -82,7 +82,7 @@ export const TD_RAW_CLASS = "px-1.5 py-0.5 text-[11px] align-top";
 export const BADGE_SM_CLASS = "text-[10px] px-1.5 py-0";
 
 /** Cor de fundo de alerta para linhas — mesma regra do Dashboard Master. */
-export function rowAlertBgClass(p: Pedido, feriados: string[]): string {
+export function rowAlertBgClass(p: Pedido, feriados: Set<string>): string {
   if (p.embalado === "Sim") return "";
   if (!p.saida_juff) return "";
   const dias = diasUteisAteHoje(p.saida_juff, feriados);
