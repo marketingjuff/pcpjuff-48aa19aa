@@ -11,6 +11,10 @@ export type Pedido = PedidoBase & {
   uf_entrega: string | null;
   necessita_vetorizacao: boolean | null;
   vetorizacao_executada: boolean | null;
+  vetorizacao_dtf: string | null;
+  vetorizacao_silk: string | null;
+  dtf_cortado: string | null;
+  dtf_cortado_data: string | null;
   obs_vendedor: string | null;
   layout_url: string | null;
   status_arte: string | null;
