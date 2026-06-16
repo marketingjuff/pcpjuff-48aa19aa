@@ -344,3 +344,18 @@ function StatCard({ label, value, icon, accent, onClick, active }: { label: stri
     </Card>
   );
 }
+
+function SortHead<K extends string>({ label, k, sort, center }: { label: string; k: K; sort: { key: K | null; dir: SortDir; toggle: (k: K) => void }; center?: boolean }) {
+  const active = sort.key === k;
+  return (
+    <TableHead
+      className={`h-7 px-1.5 text-[11px] font-bold cursor-pointer select-none whitespace-nowrap ${center ? "text-center" : ""}`}
+      onClick={() => sort.toggle(k)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <ArrowUpDown className={`h-3 w-3 ${active ? "opacity-100" : "opacity-50"}`} />
+      </span>
+    </TableHead>
+  );
+}
