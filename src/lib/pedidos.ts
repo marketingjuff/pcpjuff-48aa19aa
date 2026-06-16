@@ -113,7 +113,7 @@ export function dtfFinalizadoArte(p: Pedido): boolean {
     && !!p.dtf_executado && !!p.dtf_cortado_data;
 }
 export function fotolitoFinalizadoArte(p: Pedido): boolean {
-  return p.fotolito_impresso === "Sim" && p.fotolito_executado === "Sim";
+  return p.fotolito_impresso === "Sim" && !!p.fotolito_executado;
 }
 export function vetorDtfResolvida(p: Pedido): boolean {
   if (!p.necessita_vetorizacao) return true;
@@ -138,9 +138,10 @@ export function dtfFinalizadoLabel(p: Pedido): string {
 export function fotolitoFinalizadoLabel(p: Pedido): string {
   if (!tipoIncluiSilk(p.tipo_estampa)) return "—";
   if (p.fotolito_impresso !== "Sim") return "Aguardando impressão";
-  if (p.fotolito_executado !== "Sim") return "Aguardando execução";
+  if (!p.fotolito_executado) return "Aguardando data";
   return "Sim";
 }
+
 
 export function calcularEtapaAtual(p: Pedido): {
   etapa: string;
@@ -182,7 +183,14 @@ export function calcularEtapaAtual(p: Pedido): {
   } else if (isLisa) {
     etapa = "Aguardando Acabamento"; cor = "blue";
   } else if (!arteOk) {
-    etapa = "Aguardando Arte"; cor = "blue";
+    // Para DTF+Silk: se um lado já está pronto e o outro ainda na arte, mostrar etapa mista
+    if (tipo === "DTF+Silk" && dtfArteOk && !silkArteOk) {
+      etapa = "DTF Pronto / Silk na Arte"; cor = "blue";
+    } else if (tipo === "DTF+Silk" && silkArteOk && !dtfArteOk) {
+      etapa = "Silk Pronto / DTF na Arte"; cor = "blue";
+    } else {
+      etapa = "Aguardando Arte"; cor = "blue";
+    }
   } else {
     const needDTF = tipoIncluiDTF(tipo) && !dtfDone;
     const needSilk = tipoIncluiSilk(tipo) && !silkDone;
@@ -191,6 +199,7 @@ export function calcularEtapaAtual(p: Pedido): {
     else if (needSilk) { etapa = "Aguardando Silk"; cor = "yellow"; }
     else { etapa = "Aguardando Acabamento"; cor = "blue"; }
   }
+
 
   if (p.reaberto && etapa !== "Finalizado") etapa = `${etapa}*`;
   return { etapa, percentual, cor };

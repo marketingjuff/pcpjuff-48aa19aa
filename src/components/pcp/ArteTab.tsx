@@ -16,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
+import { toast } from "sonner";
+
 import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
   StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip,
@@ -40,8 +42,8 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const { isDirty } = useDirtyForm();
   const { feriados } = useFeriados();
   const sort = useSort<"qtd"|"entrada"|"limite"|"saida">();
-  const [layoutBaixado, setLayoutBaixado] = useState<Record<string, boolean>>({});
   const { names: statusArteCustom } = useAppList("status_arte");
+
   const statusArteOpcoes = statusArteCustom.length ? statusArteCustom : [...STATUS_ARTE_OPCOES];
 
   useEffect(() => {
@@ -64,6 +66,19 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
   function handleSave() {
     if (!selected) return;
+    // Validações: Sim + sem data é inválido
+    if (form.dtf_impresso === "Sim" && !form.dtf_executado) {
+      toast.error('DTF Impresso = "Sim" exige a data de impressão.');
+      return;
+    }
+    if (form.dtf_cortado === "Sim" && !form.dtf_cortado_data) {
+      toast.error('DTF Cortado = "Sim" exige a data de corte.');
+      return;
+    }
+    if (form.fotolito_impresso === "Sim" && !form.fotolito_executado) {
+      toast.error('Fotolito Impresso = "Sim" exige a Data de Impressão do Fotolito.');
+      return;
+    }
     onSave({
       id: selected.id,
       status_arte: form.status_arte ?? null,
@@ -80,17 +95,16 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   }
   useRegisterSave(handleSave, active);
 
-  async function baixarLayout(path: string, pedidoId: string) {
+  async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
     await baixarLayoutPDF(path);
-    setLayoutBaixado((m) => ({ ...m, [pedidoId]: true }));
   }
 
   const showDTF = !!selected && tipoIncluiDTF(selected.tipo_estampa);
   const showSilk = !!selected && tipoIncluiSilk(selected.tipo_estampa);
   const showVetorDTF = !!selected && selected.necessita_vetorizacao && showDTF;
   const showVetorSilk = !!selected && selected.necessita_vetorizacao && showSilk;
-  const camposLiberados = !!selected && (layoutBaixado[selected.id] || !selected.layout_url);
+
 
   // Filtros do dashboard
   const [fEtapa, setFEtapa] = useState<string>("ativas");
@@ -149,7 +163,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             <div className="pt-3 border-t flex items-center gap-3">
               {selected.layout_url ? (
                 <>
-                  <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!, selected.id)}>
+                  <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
                     <Download className="h-4 w-4 mr-1" /> Baixar layout
                   </Button>
                   <div className="text-xs text-muted-foreground truncate">{selected.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</div>
@@ -159,9 +173,8 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               )}
             </div>
 
-            {/* Parte de baixo — editável; aparece após baixar o layout */}
-            {camposLiberados && (
-              <div className="space-y-2 pt-3 border-t">
+            {/* Parte de baixo — editável; sempre visível */}
+            <div className="space-y-2 pt-3 border-t">
                 {/* Linha DTF (quando inclui DTF) */}
                 {showDTF && (
                   <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
@@ -215,14 +228,11 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                         <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                       </Select>
                     </FormField>
-                    <FormField label="Fotolito Executado">
-                      <Select disabled={form.fotolito_impresso !== "Sim"}
-                        value={(form.fotolito_executado as any) ?? ""}
-                        onValueChange={(v) => set("fotolito_executado", v)}>
-                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                        <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </FormField>
+                    {form.fotolito_impresso === "Sim" && (
+                      <FormField label="Data de Impressão do Fotolito">
+                        <DateInputBR value={form.fotolito_executado ?? null} onChange={(v) => set("fotolito_executado", v)} />
+                      </FormField>
+                    )}
                   </div>
                 )}
 
@@ -243,10 +253,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
                 <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Atualizar Arte</Button>
               </div>
-            )}
-            {!camposLiberados && selected.layout_url && (
-              <div className="text-xs text-muted-foreground pt-2">Baixe o layout para liberar os campos abaixo.</div>
-            )}
+
           </CardContent>
         </Card>
       ) : (
@@ -302,8 +309,9 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="Aguardando impressão">Aguardando impressão</SelectItem>
-                  <SelectItem value="Aguardando execução">Aguardando execução</SelectItem>
+                  <SelectItem value="Aguardando data">Aguardando data</SelectItem>
                   <SelectItem value="Sim">Sim</SelectItem>
+
                 </SelectContent>
               </Select>
             </div>

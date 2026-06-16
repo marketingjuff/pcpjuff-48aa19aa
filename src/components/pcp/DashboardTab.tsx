@@ -27,7 +27,19 @@ interface Props {
   onViewProgress: (id: string) => void;
 }
 
-type Etapa = "todas" | "ativas" | "arte" | "dtf" | "silk" | "acabamento" | "expedicao" | "finalizados";
+type Etapa =
+  | "todas" | "ativas" | "finalizados"
+  | "pendencias_arte"
+  | "aguardando_entrada" | "aguardando_input"
+  | "arte" | "dtf_pronto_silk_arte" | "silk_pronto_dtf_arte"
+  | "dtf" | "silk" | "dtf_silk"
+  | "acabamento" | "expedicao";
+
+const ETAPA_PENDENCIAS_ARTE = new Set([
+  "Aguardando Arte",
+  "DTF Pronto / Silk na Arte",
+  "Silk Pronto / DTF na Arte",
+]);
 
 function emExpedicao(p: Pedido) {
   return p.embalado === "Sim" && !p.finalizado_em;
@@ -50,16 +62,23 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
     if (e === "finalizados") return !!p.finalizado_em;
     if (!pedidoAtivoNasAreas(p)) return false;
     if (e === "todas" || e === "ativas") return true;
-    if (e === "arte") return p.status_arte !== "Arte Finalizada" && p.tipo_estampa !== "Lisa";
-    if (e === "dtf") return tipoIncluiDTF(p.tipo_estampa) && p.dtf_estampado !== "Sim";
-    if (e === "silk") return tipoIncluiSilk(p.tipo_estampa) && p.silk_feito !== "Sim";
-    if (e === "acabamento") return (p.tipo_estampa === "Lisa" || p.status_arte === "Arte Finalizada")
-      && (!tipoIncluiDTF(p.tipo_estampa) || p.dtf_estampado === "Sim")
-      && (!tipoIncluiSilk(p.tipo_estampa) || p.silk_feito === "Sim")
-      && p.embalado !== "Sim";
-    if (e === "expedicao") return emExpedicao(p);
-    return true;
+    const etapaAtual = calcularEtapaAtual(p).etapa.replace(/\*$/, "");
+    if (e === "pendencias_arte") return ETAPA_PENDENCIAS_ARTE.has(etapaAtual);
+    const map: Record<Exclude<Etapa, "todas"|"ativas"|"finalizados"|"pendencias_arte">, string[]> = {
+      aguardando_entrada: ["Aguardando entrada"],
+      aguardando_input: ["Aguardando input de produção"],
+      arte: ["Aguardando Arte"],
+      dtf_pronto_silk_arte: ["DTF Pronto / Silk na Arte"],
+      silk_pronto_dtf_arte: ["Silk Pronto / DTF na Arte"],
+      dtf: ["Aguardando DTF"],
+      silk: ["Aguardando Silk"],
+      dtf_silk: ["Aguardando DTF + Silk"],
+      acabamento: ["Aguardando Acabamento"],
+      expedicao: ["Aguardando Expedição"],
+    };
+    return map[e]?.includes(etapaAtual) ?? false;
   }
+
 
   const filtrados = useMemo(() => {
     const arr = pedidos.filter((p) => {
@@ -200,12 +219,20 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ativas">Todas (menos finalizados)</SelectItem>
+                  <SelectItem value="pendencias_arte">Pendências de Arte</SelectItem>
+                  <SelectItem value="aguardando_entrada">Aguardando entrada</SelectItem>
+                  <SelectItem value="aguardando_input">Aguardando input de produção</SelectItem>
                   <SelectItem value="arte">Aguardando Arte</SelectItem>
+                  <SelectItem value="dtf_pronto_silk_arte">DTF Pronto / Silk na Arte</SelectItem>
+                  <SelectItem value="silk_pronto_dtf_arte">Silk Pronto / DTF na Arte</SelectItem>
                   <SelectItem value="dtf">Aguardando DTF</SelectItem>
                   <SelectItem value="silk">Aguardando Silk</SelectItem>
+                  <SelectItem value="dtf_silk">Aguardando DTF + Silk</SelectItem>
                   <SelectItem value="acabamento">Aguardando Acabamento</SelectItem>
-                  <SelectItem value="expedicao">Em Expedição</SelectItem>
+                  <SelectItem value="expedicao">Aguardando Expedição</SelectItem>
+                  <SelectItem value="finalizados">Finalizados</SelectItem>
                 </SelectContent>
+
               </Select>
             </div>
             <div className="space-y-0.5">

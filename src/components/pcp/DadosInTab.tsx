@@ -283,11 +283,15 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               }}
             />
             <Field label="É necessário vetorização?">
-              <Select value={form.necessita_vetorizacao ? "Sim" : "Não"} onValueChange={(v) => set("necessita_vetorizacao", v === "Sim")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={form.necessita_vetorizacao == null ? "" : (form.necessita_vetorizacao ? "Sim" : "Não")}
+                onValueChange={(v) => set("necessita_vetorizacao", v === "Sim")}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
+
             <div className="sm:col-span-2">
               <Field label="Layout (PDF até 30MB)">
                 <div className="flex items-center gap-2">
