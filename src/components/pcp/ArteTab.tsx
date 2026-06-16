@@ -32,6 +32,8 @@ interface Props {
 export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = true }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
+  const { feriados } = useFeriados();
+  const sort = useSort<"qtd"|"saida"|"entrega">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
