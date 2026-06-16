@@ -81,6 +81,61 @@ export const TH_RAW_CLASS = "h-7 px-1.5 text-left text-[11px] uppercase whitespa
 export const TD_RAW_CLASS = "px-1.5 py-0.5 text-[11px] align-top";
 export const BADGE_SM_CLASS = "text-[10px] px-1.5 py-0";
 
+/** Cor de fundo de alerta para linhas — mesma regra do Dashboard Master. */
+export function rowAlertBgClass(p: Pedido, feriados: string[]): string {
+  if (p.embalado === "Sim") return "";
+  if (!p.saida_juff) return "";
+  const dias = diasUteisAteHoje(p.saida_juff, feriados);
+  if (dias === null) return "";
+  if (dias <= 0) return "bg-red-50 hover:bg-red-100/80";
+  if (dias === 1) return "bg-yellow-50 hover:bg-yellow-100/80";
+  return "";
+}
+
+export type SortDir = "asc" | "desc";
+
+/** Hook simples de ordenação por coluna; alterna asc/desc, troca coluna reseta para asc. */
+export function useSort<K extends string>(initialKey: K | null = null, initialDir: SortDir = "asc") {
+  const [key, setKey] = useState<K | null>(initialKey);
+  const [dir, setDir] = useState<SortDir>(initialDir);
+  function toggle(k: K) {
+    if (key !== k) { setKey(k); setDir("asc"); }
+    else setDir((d) => (d === "asc" ? "desc" : "asc"));
+  }
+  return { key, dir, toggle };
+}
+
+export function cmpDate(a: string | null | undefined, b: string | null | undefined, dir: SortDir): number {
+  const av = a ?? "9999-12-31";
+  const bv = b ?? "9999-12-31";
+  return dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+}
+export function cmpNum(a: number | null | undefined, b: number | null | undefined, dir: SortDir): number {
+  const av = a == null ? Number.POSITIVE_INFINITY : a;
+  const bv = b == null ? Number.POSITIVE_INFINITY : b;
+  return dir === "asc" ? av - bv : bv - av;
+}
+
+/** <th> com cabeçalho clicável estilizado igual ao Master. */
+export function SortableTh({
+  label, active, onClick, className,
+}: { label: string; active?: boolean; onClick?: () => void; className?: string }) {
+  return (
+    <th className={`${TH_RAW_CLASS} cursor-pointer select-none ${className ?? ""}`} onClick={onClick}>
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <ArrowUpDown className={`h-3 w-3 ${active ? "opacity-100" : "opacity-50"}`} />
+      </span>
+    </th>
+  );
+}
+
+/** <th> não clicável com mesmo estilo. */
+export function Th({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <th className={`${TH_RAW_CLASS} ${className ?? ""}`}>{children}</th>;
+}
+
+
 /** Classe de cor por Status de Peças. */
 export function statusPecasColorClass(status: string | null | undefined): string {
   if (status === "completo") return "bg-emerald-500/15 text-emerald-700 border-emerald-500/40 dark:text-emerald-300";
