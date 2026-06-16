@@ -46,9 +46,11 @@ function AuthPage() {
       </div>
       <Card className="w-full max-w-md shadow-lg border-border/60">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-soft text-primary ring-1 ring-primary/15">
-            <Factory className="h-6 w-6" />
-          </div>
+          <img
+            src={logoJuff.url}
+            alt="Logo Juff"
+            className="mx-auto mb-4 h-14 w-14 rounded-2xl object-cover ring-1 ring-primary/20 shadow-sm"
+          />
           <CardTitle className="text-2xl tracking-tight">PCP Juff</CardTitle>
           <CardDescription className="mt-1">Controle de produção</CardDescription>
         </CardHeader>
