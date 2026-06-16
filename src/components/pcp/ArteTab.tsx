@@ -163,7 +163,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             <div className="pt-3 border-t flex items-center gap-3">
               {selected.layout_url ? (
                 <>
-                  <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!, selected.id)}>
+                  <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
                     <Download className="h-4 w-4 mr-1" /> Baixar layout
                   </Button>
                   <div className="text-xs text-muted-foreground truncate">{selected.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</div>
@@ -173,9 +173,8 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               )}
             </div>
 
-            {/* Parte de baixo — editável; aparece após baixar o layout */}
-            {camposLiberados && (
-              <div className="space-y-2 pt-3 border-t">
+            {/* Parte de baixo — editável; sempre visível */}
+            <div className="space-y-2 pt-3 border-t">
                 {/* Linha DTF (quando inclui DTF) */}
                 {showDTF && (
                   <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
@@ -229,14 +228,11 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                         <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                       </Select>
                     </FormField>
-                    <FormField label="Fotolito Executado">
-                      <Select disabled={form.fotolito_impresso !== "Sim"}
-                        value={(form.fotolito_executado as any) ?? ""}
-                        onValueChange={(v) => set("fotolito_executado", v)}>
-                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                        <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </FormField>
+                    {form.fotolito_impresso === "Sim" && (
+                      <FormField label="Data de Impressão do Fotolito">
+                        <DateInputBR value={form.fotolito_executado ?? null} onChange={(v) => set("fotolito_executado", v)} />
+                      </FormField>
+                    )}
                   </div>
                 )}
 
@@ -257,10 +253,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
                 <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Atualizar Arte</Button>
               </div>
-            )}
-            {!camposLiberados && selected.layout_url && (
-              <div className="text-xs text-muted-foreground pt-2">Baixe o layout para liberar os campos abaixo.</div>
-            )}
+
           </CardContent>
         </Card>
       ) : (
