@@ -230,12 +230,12 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </PedidoMobileCard>
             ))}
           </div>
-          <div className="hidden md:block rounded-md border overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-xs uppercase">
+          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
+            <table className="w-full text-[11px]" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
+              <thead className="bg-muted/50 text-[11px] uppercase">
                 <tr>
                   {["Etapa","Pedido","Orçamento","Tipo","QTD","Status de Peças","DTF Est.","Silk Est.","Embalado","Responsável","Saída Juff","Data Entrega"].map((h) => (
-                    <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
+                    <th key={h} className="px-1.5 py-0.5 text-left whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -243,18 +243,18 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 {dashboardPedidos.map((p) => {
                   return (
                     <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
-                      <td className="px-3 py-2"><EtapaBadgeFromPedido pedido={p} /></td>
-                      <td className="px-3 py-2 font-medium">{p.pedido_olist}</td>
-                      <td className="px-3 py-2">{p.orcamento}</td>
-                      <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
-                      <td className="px-3 py-2">{p.qtd ?? "—"}</td>
-                      <td className="px-3 py-2"><StatusPecasBadge pedido={p} /></td>
-                      <td className="px-3 py-2">{modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"}</td>
-                      <td className="px-3 py-2">{modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"}</td>
-                      <td className="px-3 py-2">{p.embalado ?? "—"}</td>
-                      <td className="px-3 py-2">{p.responsavel_acabamento ?? "—"}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
+                      <td className="px-1.5 py-0.5"><EtapaBadgeFromPedido pedido={p} /></td>
+                      <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
+                      <td className="px-1.5 py-0.5">{p.orcamento}</td>
+                      <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                      <td className="px-1.5 py-0.5">{p.qtd ?? "—"}</td>
+                      <td className="px-1.5 py-0.5"><StatusPecasBadge pedido={p} /></td>
+                      <td className="px-1.5 py-0.5">{modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"}</td>
+                      <td className="px-1.5 py-0.5">{modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"}</td>
+                      <td className="px-1.5 py-0.5">{p.embalado ?? "—"}</td>
+                      <td className="px-1.5 py-0.5">{p.responsavel_acabamento ?? "—"}</td>
+                      <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                      <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
                     </tr>
                   );
                 })}

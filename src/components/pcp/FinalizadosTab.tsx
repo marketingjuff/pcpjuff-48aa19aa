@@ -184,12 +184,12 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
             </div>
           ))}
         </div>
-        <div className="hidden md:block rounded-md border overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-xs uppercase">
+        <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
+          <table className="w-full text-[11px]" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
+            <thead className="bg-muted/50 text-[11px] uppercase">
               <tr>
                 {isAdmin && (
-                  <th className="px-3 py-2 text-left w-10">
+                  <th className="px-1.5 py-0.5 text-left w-10">
                     <Checkbox
                       checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
                       onCheckedChange={(c) => toggleAllVisible(c === true)}
@@ -198,7 +198,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                   </th>
                 )}
                 {["Pedido","Orçamento","QTD","Vendedor","Tipo","Saída Juff","Data Saída","Responsável","Finalizado em",""].map((h) => (
-                  <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-1.5 py-0.5 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -209,7 +209,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                 finalizados.map((p) => (
                   <tr key={p.id} className="border-t">
                     {isAdmin && (
-                      <td className="px-3 py-2 w-10">
+                      <td className="px-1.5 py-0.5 w-10">
                         <Checkbox
                           checked={selectedIds.has(p.id)}
                           onCheckedChange={(c) => toggleOne(p.id, c === true)}
@@ -217,16 +217,16 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                         />
                       </td>
                     )}
-                    <td className="px-3 py-2 font-medium">{p.pedido_olist}</td>
-                    <td className="px-3 py-2 max-w-[200px] truncate">{p.orcamento}</td>
-                    <td className="px-3 py-2">{p.qtd}</td>
-                    <td className="px-3 py-2">{p.vendedor}</td>
-                    <td className="px-3 py-2"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
-                    <td className="px-3 py-2 text-xs whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                    <td className="px-3 py-2 text-xs whitespace-nowrap">{formatDateBR(p.data_saida_juff)}</td>
-                    <td className="px-3 py-2 text-xs">{p.responsavel_acabamento ?? "—"}</td>
-                    <td className="px-3 py-2 text-xs whitespace-nowrap">{formatDateBR(p.finalizado_em?.slice(0,10))}</td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
+                    <td className="px-1.5 py-0.5 max-w-[200px] truncate">{p.orcamento}</td>
+                    <td className="px-1.5 py-0.5">{p.qtd}</td>
+                    <td className="px-1.5 py-0.5">{p.vendedor}</td>
+                    <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                    <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                    <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.data_saida_juff)}</td>
+                    <td className="px-1.5 py-0.5 text-xs">{p.responsavel_acabamento ?? "—"}</td>
+                    <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.finalizado_em?.slice(0,10))}</td>
+                    <td className="px-1.5 py-0.5 text-right">
                       <Button size="sm" variant="outline" onClick={() => onReabrir(p.id)}>
                         <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
                       </Button>

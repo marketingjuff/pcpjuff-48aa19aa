@@ -267,27 +267,27 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
               );
             })}
           </div>
-          <div className="hidden md:block rounded-md border overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-xs uppercase">
+          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
+            <table className="w-full text-[11px]" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
+              <thead className="bg-muted/50 text-[11px] uppercase">
                 <tr>
-                  <th className="px-3 py-2 text-left">Pendências</th>
-                  <th className="px-3 py-2 text-left">Pedido</th>
-                  <th className="px-3 py-2 text-left">Orçamento</th>
-                  <th className="px-3 py-2 text-left">UF</th>
-                  <th className="px-3 py-2 text-left whitespace-nowrap">
+                  <th className="px-1.5 py-0.5 text-left">Pendências</th>
+                  <th className="px-1.5 py-0.5 text-left">Pedido</th>
+                  <th className="px-1.5 py-0.5 text-left">Orçamento</th>
+                  <th className="px-1.5 py-0.5 text-left">UF</th>
+                  <th className="px-1.5 py-0.5 text-left whitespace-nowrap">
                     <button onClick={() => toggleSort("saida_juff")} className="inline-flex items-center gap-1 hover:underline">
                       Saída Juff
                       {sortKey === "saida_juff" && (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
                     </button>
                   </th>
-                  <th className="px-3 py-2 text-left whitespace-nowrap">
+                  <th className="px-1.5 py-0.5 text-left whitespace-nowrap">
                     <button onClick={() => toggleSort("data_entrega")} className="inline-flex items-center gap-1 hover:underline">
                       Data da entrega
                       {sortKey === "data_entrega" && (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
                     </button>
                   </th>
-                  <th className="px-3 py-2 text-left">Forma de pagamento</th>
+                  <th className="px-1.5 py-0.5 text-left">Forma de pagamento</th>
                 </tr>
               </thead>
               <tbody>
@@ -297,17 +297,17 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
                     <tr key={p.id}
                       onClick={() => onSelect(p.id)}
                       className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
-                      <td className="px-3 py-2 text-xs">
+                      <td className="px-1.5 py-0.5 text-xs">
                         {pend.length === 0
                           ? <span className="text-success">Sem pendências</span>
                           : <span className="text-warning-foreground">{pend.join(", ")}</span>}
                       </td>
-                      <td className="px-3 py-2 font-medium">{p.pedido_olist}</td>
-                      <td className="px-3 py-2">{p.orcamento}</td>
-                      <td className="px-3 py-2">{p.uf_entrega ?? "—"}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
-                      <td className="px-3 py-2">{p.forma_pagamento ?? "—"}</td>
+                      <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
+                      <td className="px-1.5 py-0.5">{p.orcamento}</td>
+                      <td className="px-1.5 py-0.5">{p.uf_entrega ?? "—"}</td>
+                      <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                      <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
+                      <td className="px-1.5 py-0.5">{p.forma_pagamento ?? "—"}</td>
                     </tr>
                   );
                 })}
