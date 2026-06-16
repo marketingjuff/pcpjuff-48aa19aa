@@ -437,7 +437,7 @@ function DadosInDashboard({
       return arr;
     }
     return sortByDataSaidaJuffAsc(arr);
-  }, [pedidos, vendedor, status, tipo, dataEntrega, search, sort.key, sort.dir]);
+  }, [pedidos, etapaFiltro, vendedor, status, tipo, dataEntrega, search, sort.key, sort.dir]);
 
   return (
     <Card>
