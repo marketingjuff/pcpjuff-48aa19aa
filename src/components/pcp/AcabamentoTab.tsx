@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
@@ -98,16 +98,17 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   const [fPed, setFPed] = useState("");
   const [fDtf, setFDtf] = useState("todos");
   const [fSilk, setFSilk] = useState("todos");
+  const [fEtapa, setFEtapa] = useState("ativas");
 
   const dashboardPedidos = useMemo(() => sortByDataSaidaJuffAsc(pedidos.filter((p) => {
-    if (!pedidoAtivoNasAreas(p)) return false;
+    if (!matchEtapaFiltro(p, fEtapa)) return false;
     if (!visivelEmAcabamento(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
     if (fDtf !== "todos" && (p.dtf_estampado ?? "") !== fDtf) return false;
     if (fSilk !== "todos" && (p.silk_feito ?? "") !== fSilk) return false;
     return true;
-  })), [pedidos, fOrc, fPed, fDtf, fSilk]);
+  })), [pedidos, fEtapa, fOrc, fPed, fDtf, fSilk]);
 
   const enviadoParaExpedicao = !!selected?.expedicao_entrou_em;
 
@@ -200,7 +201,13 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — Acabamento</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-5">
+            <Select value={fEtapa} onValueChange={setFEtapa}>
+              <SelectTrigger><SelectValue placeholder="Etapa" /></SelectTrigger>
+              <SelectContent>
+                {ETAPA_FILTRO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />
             <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
             <Select value={fDtf} onValueChange={setFDtf}>

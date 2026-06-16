@@ -22,6 +22,7 @@ import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
   StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip,
   useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass,
+  ETAPA_FILTRO_OPCOES, matchEtapaFiltro,
 } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
@@ -115,7 +116,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [fStatusArte, setFStatusArte] = useState<string>("todos");
 
   const dashboardRows = useMemo(() => {
-    let arr = pedidos.filter((p) => visivelEmArte(p) && (fEtapa === "finalizados" ? !!p.finalizado_em : pedidoAtivoNasAreas(p)));
+    let arr = pedidos.filter((p) => visivelEmArte(p) && matchEtapaFiltro(p, fEtapa));
     if (fSearch) {
       const s = fSearch.toLowerCase();
       arr = arr.filter((p) => `${p.pedido_olist ?? ""} ${p.orcamento ?? ""}`.toLowerCase().includes(s));
@@ -271,8 +272,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               <Select value={fEtapa} onValueChange={setFEtapa}>
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ativas">Todas (em aberto)</SelectItem>
-                  <SelectItem value="finalizados">Finalizados</SelectItem>
+                  {ETAPA_FILTRO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

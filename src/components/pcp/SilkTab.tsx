@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { useFeriados } from "@/hooks/use-feriados";
 
@@ -87,9 +87,10 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [fStatus, setFStatus] = useState("todos");
   const [fTela, setFTela] = useState("todos");
   const [fSilk, setFSilk] = useState("todos");
+  const [fEtapa, setFEtapa] = useState("ativas");
 
   const dashboardPedidos = useMemo(() => sortByDataSaidaJuffAsc(pedidos.filter((p) => {
-    if (!pedidoAtivoNasAreas(p)) return false;
+    if (!matchEtapaFiltro(p, fEtapa)) return false;
     if (!visivelEmSilk(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
@@ -97,7 +98,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
     if (fTela !== "todos" && (p.tela_gravada ?? "") !== fTela) return false;
     if (fSilk !== "todos" && (p.silk_feito ?? "") !== fSilk) return false;
     return true;
-  })), [pedidos, fOrc, fPed, fStatus, fTela, fSilk]);
+  })), [pedidos, fEtapa, fOrc, fPed, fStatus, fTela, fSilk]);
 
 
   return (
@@ -181,7 +182,13 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — Silk</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-5">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-6">
+            <Select value={fEtapa} onValueChange={setFEtapa}>
+              <SelectTrigger><SelectValue placeholder="Etapa" /></SelectTrigger>
+              <SelectContent>
+                {ETAPA_FILTRO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />
             <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
             <Select value={fStatus} onValueChange={setFStatus}>

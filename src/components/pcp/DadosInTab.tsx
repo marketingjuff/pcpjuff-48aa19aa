@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { addDiasUteis, diasUteisEntre, diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum } from "./shared";
+import { PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
@@ -409,12 +409,13 @@ function DadosInDashboard({
   const [vendedor, setVendedor] = useState("todos");
   const [status, setStatus] = useState("todos");
   const [tipo, setTipo] = useState("todos");
+  const [etapaFiltro, setEtapaFiltro] = useState("ativas");
   const [dataEntrega, setDataEntrega] = useState("");
   const sort = useSort<"qtd"|"tempoFrete"|"entrada"|"saida"|"entrega">("saida", "asc");
 
   const rows = useMemo(() => {
     const arr = pedidos.filter((p) => {
-      if (!pedidoAtivoNasAreas(p)) return false;
+      if (!matchEtapaFiltro(p, etapaFiltro)) return false;
       if (vendedor !== "todos" && p.vendedor !== vendedor) return false;
       if (status !== "todos" && p.status_pecas !== status) return false;
       if (tipo !== "todos" && p.tipo_estampa !== tipo) return false;
@@ -436,7 +437,7 @@ function DadosInDashboard({
       return arr;
     }
     return sortByDataSaidaJuffAsc(arr);
-  }, [pedidos, vendedor, status, tipo, dataEntrega, search, sort.key, sort.dir]);
+  }, [pedidos, etapaFiltro, vendedor, status, tipo, dataEntrega, search, sort.key, sort.dir]);
 
   return (
     <Card>
@@ -449,7 +450,16 @@ function DadosInDashboard({
         </div>
       </CardHeader>
       <CardContent className="p-3 pt-0 space-y-2">
-        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+          <div className="space-y-0.5">
+            <Label className="text-xs text-muted-foreground font-medium">Etapa</Label>
+            <Select value={etapaFiltro} onValueChange={setEtapaFiltro}>
+              <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ETAPA_FILTRO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-0.5">
             <Label className="text-xs text-muted-foreground font-medium">Buscar</Label>
             <Input className="h-8" placeholder="Pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />

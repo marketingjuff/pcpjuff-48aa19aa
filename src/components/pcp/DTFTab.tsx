@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { useFeriados } from "@/hooks/use-feriados";
 
@@ -85,9 +85,10 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   const [fStatus, setFStatus] = useState("todos");
   const [fImpresso, setFImpresso] = useState("todos");
   const [fEstampado, setFEstampado] = useState("todos");
+  const [fEtapa, setFEtapa] = useState("ativas");
 
   const dashboardPedidos = useMemo(() => sortByDataSaidaJuffAsc(pedidos.filter((p) => {
-    if (!pedidoAtivoNasAreas(p)) return false;
+    if (!matchEtapaFiltro(p, fEtapa)) return false;
     if (!visivelEmDTF(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
@@ -95,7 +96,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
     if (fImpresso !== "todos" && (p.dtf_impresso ?? "") !== fImpresso) return false;
     if (fEstampado !== "todos" && (p.dtf_estampado ?? "") !== fEstampado) return false;
     return true;
-  })), [pedidos, fOrc, fPed, fStatus, fImpresso, fEstampado]);
+  })), [pedidos, fEtapa, fOrc, fPed, fStatus, fImpresso, fEstampado]);
 
 
   return (
@@ -173,7 +174,13 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — DTF</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-5">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-6">
+            <Select value={fEtapa} onValueChange={setFEtapa}>
+              <SelectTrigger><SelectValue placeholder="Etapa" /></SelectTrigger>
+              <SelectContent>
+                {ETAPA_FILTRO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />
             <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
             <Select value={fStatus} onValueChange={setFStatus}>

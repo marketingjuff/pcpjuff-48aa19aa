@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag } from "lucide-react";
-import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, TH_RAW_CLASS } from "./shared";
+import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
 import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
 
@@ -125,9 +125,11 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
   const [fOrc, setFOrc] = useState("");
   const [fUF, setFUF] = useState("");
   const [fForma, setFForma] = useState("todos");
+  const [fEtapa, setFEtapa] = useState("expedicao");
 
   const dashboardPedidos = useMemo(() => {
-    let list = expedicaoPedidos.filter((p) => {
+    let list = pedidos.filter((p) => {
+      if (!matchEtapaFiltro(p, fEtapa)) return false;
       if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
       if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
       if (fUF && (p.uf_entrega ?? "").toUpperCase() !== fUF.toUpperCase()) return false;
@@ -144,7 +146,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
       list = [...list].sort((a, b) => (a.data_saida_juff ?? "9999-12-31").localeCompare(b.data_saida_juff ?? "9999-12-31"));
     }
     return list;
-  }, [expedicaoPedidos, fPed, fOrc, fUF, fForma, sortKey, sortAsc]);
+  }, [pedidos, fEtapa, fPed, fOrc, fUF, fForma, sortKey, sortAsc]);
 
   function toggleSort(k: "saida_juff" | "data_entrega") {
     if (sortKey !== k) { setSortKey(k); setSortAsc(true); }
@@ -238,7 +240,13 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — Expedição</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-5">
+            <Select value={fEtapa} onValueChange={setFEtapa}>
+              <SelectTrigger><SelectValue placeholder="Etapa" /></SelectTrigger>
+              <SelectContent>
+                {ETAPA_FILTRO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
             <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />
             <Input placeholder="UF" value={fUF} onChange={(e) => setFUF(e.target.value)} />
