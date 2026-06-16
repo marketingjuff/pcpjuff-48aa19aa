@@ -249,29 +249,29 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="h-7 px-1.5 text-[11px]">Etapa</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px]">Pedido</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px]">Orçamento</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px]">Vendedor</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px]">ETAPA</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px]">PEDIDO</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px]">ORÇAMENTO</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px]">VENDEDOR</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px]">QTD</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px]">Estampa</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px]">Status de Peças</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px]">Frete</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px]">ESTAMPA</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px]">STATUS DAS PEÇAS</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px]">FRETE</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px]">UF</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] whitespace-nowrap">Entrada</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] whitespace-nowrap">Arte Limite</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] whitespace-nowrap">Início Estamp.</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] whitespace-nowrap">Térm. Estamp.</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] whitespace-nowrap">Acabamento</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] whitespace-nowrap">Expedição</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] whitespace-nowrap">ENTRADA</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] whitespace-nowrap">ARTE LIMITE</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] whitespace-nowrap">INÍCIO EST.</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] whitespace-nowrap">TÉRM. EST.</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] whitespace-nowrap">ACABAMENTO</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] whitespace-nowrap">EXPED.</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] cursor-pointer select-none whitespace-nowrap" onClick={toggleSortSaida}>
-                    <span className="inline-flex items-center gap-1">Saída Juff<ArrowUpDown className="h-3 w-3" /></span>
+                    <span className="inline-flex items-center gap-1">SAÍDA JUFF<ArrowUpDown className="h-3 w-3" /></span>
                   </TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] cursor-pointer select-none whitespace-nowrap" onClick={toggleSortEntrega}>
-                    <span className="inline-flex items-center gap-1">Data Entrega<ArrowUpDown className="h-3 w-3" /></span>
+                    <span className="inline-flex items-center gap-1">ENTREGA<ArrowUpDown className="h-3 w-3" /></span>
                   </TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] cursor-pointer select-none whitespace-nowrap text-center" onClick={toggleSortDias}>
-                    <span className="inline-flex items-center gap-1">Dias<ArrowUpDown className="h-3 w-3" /></span>
+                    <span className="inline-flex items-center gap-1">DIAS<ArrowUpDown className="h-3 w-3" /></span>
                   </TableHead>
                 </TableRow>
               </TableHeader>

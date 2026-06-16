@@ -271,23 +271,23 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
-                  <th className="px-1.5 py-0.5 text-left">Pendências</th>
-                  <th className="px-1.5 py-0.5 text-left">Pedido</th>
-                  <th className="px-1.5 py-0.5 text-left">Orçamento</th>
+                  <th className="px-1.5 py-0.5 text-left">PENDÊNCIAS</th>
+                  <th className="px-1.5 py-0.5 text-left">PEDIDO</th>
+                  <th className="px-1.5 py-0.5 text-left">ORÇAMENTO</th>
                   <th className="px-1.5 py-0.5 text-left">UF</th>
                   <th className="px-1.5 py-0.5 text-left whitespace-nowrap">
                     <button onClick={() => toggleSort("saida_juff")} className="inline-flex items-center gap-1 hover:underline">
-                      Saída Juff
+                      SAÍDA JUFF
                       {sortKey === "saida_juff" && (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
                     </button>
                   </th>
                   <th className="px-1.5 py-0.5 text-left whitespace-nowrap">
                     <button onClick={() => toggleSort("data_entrega")} className="inline-flex items-center gap-1 hover:underline">
-                      Data da entrega
+                      ENTREGA
                       {sortKey === "data_entrega" && (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
                     </button>
                   </th>
-                  <th className="px-1.5 py-0.5 text-left">Forma de pagamento</th>
+                  <th className="px-1.5 py-0.5 text-left">FORMA DE PAGAMENTO</th>
                 </tr>
               </thead>
               <tbody>

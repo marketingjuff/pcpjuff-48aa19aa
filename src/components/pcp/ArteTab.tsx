@@ -192,7 +192,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
             <thead className="bg-muted/50 text-xs uppercase">
               <tr>
-                {["Etapa","Pedido","Orçamento","Tipo","QTD","Status de Peças","Status Arte","Frete","UF","Saída Juff","Data Entrega"].map((h) => (
+                {["ETAPA","PEDIDO","ORÇAMENTO","TIPO","QTD","STATUS DAS PEÇAS","STATUS ARTE","FRETE","UF","SAÍDA JUFF","ENTREGA"].map((h) => (
                   <th key={h} className="px-1.5 py-0.5 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
