@@ -125,9 +125,11 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
   const [fOrc, setFOrc] = useState("");
   const [fUF, setFUF] = useState("");
   const [fForma, setFForma] = useState("todos");
+  const [fEtapa, setFEtapa] = useState("expedicao");
 
   const dashboardPedidos = useMemo(() => {
-    let list = expedicaoPedidos.filter((p) => {
+    let list = pedidos.filter((p) => {
+      if (!matchEtapaFiltro(p, fEtapa)) return false;
       if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
       if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
       if (fUF && (p.uf_entrega ?? "").toUpperCase() !== fUF.toUpperCase()) return false;
@@ -144,7 +146,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
       list = [...list].sort((a, b) => (a.data_saida_juff ?? "9999-12-31").localeCompare(b.data_saida_juff ?? "9999-12-31"));
     }
     return list;
-  }, [expedicaoPedidos, fPed, fOrc, fUF, fForma, sortKey, sortAsc]);
+  }, [pedidos, fEtapa, fPed, fOrc, fUF, fForma, sortKey, sortAsc]);
 
   function toggleSort(k: "saida_juff" | "data_entrega") {
     if (sortKey !== k) { setSortKey(k); setSortAsc(true); }
