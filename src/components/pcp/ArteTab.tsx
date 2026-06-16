@@ -116,7 +116,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [fStatusArte, setFStatusArte] = useState<string>("todos");
 
   const dashboardRows = useMemo(() => {
-    let arr = pedidos.filter((p) => visivelEmArte(p) && (fEtapa === "finalizados" ? !!p.finalizado_em : pedidoAtivoNasAreas(p)));
+    let arr = pedidos.filter((p) => visivelEmArte(p) && matchEtapaFiltro(p, fEtapa));
     if (fSearch) {
       const s = fSearch.toLowerCase();
       arr = arr.filter((p) => `${p.pedido_olist ?? ""} ${p.orcamento ?? ""}`.toLowerCase().includes(s));
