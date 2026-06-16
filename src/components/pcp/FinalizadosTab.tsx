@@ -197,7 +197,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                     />
                   </th>
                 )}
-                {["Pedido","Orçamento","QTD","Vendedor","Tipo","Saída Juff","Data Saída","Responsável","Finalizado em",""].map((h) => (
+                {["PEDIDO","ORÇAMENTO","QTD","VENDEDOR","TIPO","SAÍDA JUFF","DATA SAÍDA","RESPONSÁVEL","FINALIZADO EM",""].map((h) => (
                   <th key={h} className="px-1.5 py-0.5 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>

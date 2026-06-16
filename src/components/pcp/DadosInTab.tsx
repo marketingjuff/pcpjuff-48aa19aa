@@ -514,24 +514,24 @@ function DadosInDashboard({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className={TH_CLASS}>Etapa</TableHead>
-                <TableHead className={TH_CLASS}>Pedido</TableHead>
-                <TableHead className={TH_CLASS}>Orçamento</TableHead>
-                <TableHead className={TH_CLASS}>Vendedor</TableHead>
+                <TableHead className={TH_CLASS}>ETAPA</TableHead>
+                <TableHead className={TH_CLASS}>PEDIDO</TableHead>
+                <TableHead className={TH_CLASS}>ORÇAMENTO</TableHead>
+                <TableHead className={TH_CLASS}>VENDEDOR</TableHead>
                 <TableHead className={TH_CLASS}>QTD</TableHead>
-                <TableHead className={TH_CLASS}>Estampa</TableHead>
-                <TableHead className={TH_CLASS}>Status de Peças</TableHead>
-                <TableHead className={TH_CLASS}>Frete</TableHead>
+                <TableHead className={TH_CLASS}>ESTAMPA</TableHead>
+                <TableHead className={TH_CLASS}>STATUS DAS PEÇAS</TableHead>
+                <TableHead className={TH_CLASS}>FRETE</TableHead>
                 <TableHead className={TH_CLASS}>UF</TableHead>
-                <TableHead className={`${TH_CLASS} whitespace-nowrap text-center`}>Tempo Frete</TableHead>
-                <TableHead className={`${TH_CLASS} whitespace-nowrap`}>Forma Pgto</TableHead>
+                <TableHead className={`${TH_CLASS} whitespace-nowrap text-center`}>TEMPO FRETE</TableHead>
+                <TableHead className={`${TH_CLASS} whitespace-nowrap`}>FORMA PGTO</TableHead>
                 <TableHead className={TH_CLASS}>NF</TableHead>
-                <TableHead className={`${TH_CLASS} whitespace-nowrap`}>Entrada</TableHead>
+                <TableHead className={`${TH_CLASS} whitespace-nowrap`}>ENTRADA</TableHead>
                 <TableHead className={`${TH_CLASS} cursor-pointer select-none whitespace-nowrap`} onClick={toggleSortSaida}>
-                  <span className="inline-flex items-center gap-1">Saída Juff<ArrowUpDown className="h-3 w-3" /></span>
+                  <span className="inline-flex items-center gap-1">SAÍDA JUFF<ArrowUpDown className="h-3 w-3" /></span>
                 </TableHead>
                 <TableHead className={`${TH_CLASS} cursor-pointer select-none whitespace-nowrap`} onClick={toggleSortEntrega}>
-                  <span className="inline-flex items-center gap-1">Data Entrega<ArrowUpDown className="h-3 w-3" /></span>
+                  <span className="inline-flex items-center gap-1">ENTREGA<ArrowUpDown className="h-3 w-3" /></span>
                 </TableHead>
               </TableRow>
             </TableHeader>
