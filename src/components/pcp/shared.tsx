@@ -66,7 +66,10 @@ export function EtapaBadgeFromPedido({ pedido, compact }: { pedido: Pedido; comp
 }
 
 /** ===== Estilos compartilhados de tabela compacta (padrão Dashboard Master) ===== */
-export const TABLE_FONT_STYLE: React.CSSProperties = {
+export const TABLE_FONT_STYLE = {
+  fontFamily: '"Google Sans Flex", Arial, sans-serif',
+  fontStretch: 'condensed' as const,
+};
   fontFamily: '"Google Sans Flex", Arial, sans-serif',
   fontStretch: 'condensed',
 };
