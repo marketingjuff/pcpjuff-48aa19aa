@@ -39,7 +39,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
 
   const finalizados = useMemo(() => {
     const hoje = new Date();
-    return pedidos.filter((p) => {
+    const arr = pedidos.filter((p) => {
       if (!p.finalizado_em) return false;
       if (search && !`${p.pedido_olist} ${p.orcamento}`.toLowerCase().includes(search.toLowerCase())) return false;
       const fin = new Date(p.finalizado_em);
@@ -50,8 +50,23 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
         if (ate && fin > new Date(ate + "T23:59:59")) return false;
       }
       return true;
-    }).sort((a, b) => (b.finalizado_em ?? "").localeCompare(a.finalizado_em ?? ""));
-  }, [pedidos, search, periodo, de, ate]);
+    });
+    if (sort.key) {
+      arr.sort((a, b) => {
+        switch (sort.key) {
+          case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
+          case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
+          case "data_saida": return cmpDate(a.data_saida_juff, b.data_saida_juff, sort.dir);
+          case "fin": return cmpDate(a.finalizado_em?.slice(0,10), b.finalizado_em?.slice(0,10), sort.dir);
+        }
+        return 0;
+      });
+    } else {
+      arr.sort((a, b) => (b.finalizado_em ?? "").localeCompare(a.finalizado_em ?? ""));
+    }
+    return arr;
+  }, [pedidos, search, periodo, de, ate, sort.key, sort.dir]);
+
 
   const visibleIds = useMemo(() => finalizados.map((p) => p.id), [finalizados]);
   const selectedVisibleCount = useMemo(
