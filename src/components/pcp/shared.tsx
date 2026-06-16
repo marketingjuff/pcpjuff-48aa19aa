@@ -59,10 +59,24 @@ export function etapaPaletteClass(etapa: string): string {
 }
 
 /** Badge mostrando a Etapa atual do pedido — consistente em todos os dashboards. */
-export function EtapaBadgeFromPedido({ pedido }: { pedido: Pedido }) {
+export function EtapaBadgeFromPedido({ pedido, compact }: { pedido: Pedido; compact?: boolean }) {
   const { etapa } = calcularEtapaAtual(pedido);
-  return <Badge variant="outline" className={`${etapaPaletteClass(etapa)} whitespace-nowrap`}>{etapa}</Badge>;
+  const sizeCls = compact ? "text-[10px] px-1.5 py-0" : "";
+  return <Badge variant="outline" className={`${etapaPaletteClass(etapa)} whitespace-nowrap ${sizeCls}`}>{etapa}</Badge>;
 }
+
+/** ===== Estilos compartilhados de tabela compacta (padrão Dashboard Master) ===== */
+export const TABLE_FONT_STYLE = {
+  fontFamily: '"Google Sans Flex", Arial, sans-serif',
+  fontStretch: 'condensed' as const,
+};
+export const TABLE_WRAPPER_CLASS =
+  "hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs";
+export const TH_CLASS = "h-7 px-1.5 text-[11px]";
+export const TD_CLASS = "py-0.5 px-1.5 text-[11px] align-top";
+export const TH_RAW_CLASS = "h-7 px-1.5 text-left text-[11px] uppercase whitespace-nowrap font-medium text-muted-foreground";
+export const TD_RAW_CLASS = "px-1.5 py-0.5 text-[11px] align-top";
+export const BADGE_SM_CLASS = "text-[10px] px-1.5 py-0";
 
 /** Classe de cor por Status de Peças. */
 export function statusPecasColorClass(status: string | null | undefined): string {
