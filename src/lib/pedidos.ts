@@ -82,6 +82,7 @@ export const TIPOS_ESTAMPA = ["DTF", "Silk", "DTF+Silk", "Lisa"] as const;
 export const SIM_NAO_PROCESSO = ["Sim", "Não", "Em processo"] as const;
 export const SIM_NAO = ["Sim", "Não"] as const;
 export const STATUS_ARTE_OPCOES = ["Imprimindo", "Aprovar Amostra", "Arte Finalizada"] as const;
+export const VETOR_OPCOES = ["Sim", "Não", "Não se aplica"] as const;
 export const OK_OPCOES = ["Sim", "Não", "N/A"] as const;
 export const RESPONSAVEIS_ACABAMENTO = ["Vanessa", "Patrícia", "Juliana", "Outros"] as const;
 export const QUEM_BATEU_DTF = ["Jefferson", "Sarah", "Rubens", "Outros"] as const;
