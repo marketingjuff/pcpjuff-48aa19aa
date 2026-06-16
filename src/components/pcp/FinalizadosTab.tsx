@@ -202,10 +202,10 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
         </div>
         <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
           <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
-            <thead className="bg-muted/50 text-xs uppercase font-bold">
+            <thead>
               <tr>
                 {isAdmin && (
-                  <th className="px-1.5 py-0.5 text-left w-10">
+                  <th className="h-7 px-1.5 text-left text-[11px] uppercase whitespace-nowrap font-bold text-muted-foreground w-10">
                     <Checkbox
                       checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
                       onCheckedChange={(c) => toggleAllVisible(c === true)}
@@ -213,9 +213,16 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                     />
                   </th>
                 )}
-                {["PEDIDO","ORÇAMENTO","QTD","VENDEDOR","TIPO","SAÍDA JUFF","DATA SAÍDA","RESPONSÁVEL","FINALIZADO EM",""].map((h) => (
-                  <th key={h} className="px-1.5 py-0.5 text-left whitespace-nowrap">{h}</th>
-                ))}
+                <Th>PEDIDO</Th>
+                <Th>ORÇAMENTO</Th>
+                <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
+                <Th>VENDEDOR</Th>
+                <Th>TIPO</Th>
+                <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
+                <SortableTh label="DATA SAÍDA" active={sort.key === "data_saida"} onClick={() => sort.toggle("data_saida")} />
+                <Th>RESPONSÁVEL</Th>
+                <SortableTh label="FINALIZADO EM" active={sort.key === "fin"} onClick={() => sort.toggle("fin")} />
+                <Th>{""}</Th>
               </tr>
             </thead>
             <tbody>
