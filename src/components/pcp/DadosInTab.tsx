@@ -409,12 +409,13 @@ function DadosInDashboard({
   const [vendedor, setVendedor] = useState("todos");
   const [status, setStatus] = useState("todos");
   const [tipo, setTipo] = useState("todos");
+  const [etapaFiltro, setEtapaFiltro] = useState("ativas");
   const [dataEntrega, setDataEntrega] = useState("");
   const sort = useSort<"qtd"|"tempoFrete"|"entrada"|"saida"|"entrega">("saida", "asc");
 
   const rows = useMemo(() => {
     const arr = pedidos.filter((p) => {
-      if (!pedidoAtivoNasAreas(p)) return false;
+      if (!matchEtapaFiltro(p, etapaFiltro)) return false;
       if (vendedor !== "todos" && p.vendedor !== vendedor) return false;
       if (status !== "todos" && p.status_pecas !== status) return false;
       if (tipo !== "todos" && p.tipo_estampa !== tipo) return false;
