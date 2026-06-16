@@ -148,8 +148,8 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-7">
+    <div className="space-y-3">
+      <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-7">
         <StatCard label="Total ativos" value={stats.total} icon={<ListChecks className="h-4 w-4" />} onClick={() => setEtapa("ativas")} active={etapa === "ativas"} />
         <StatCard label="Atrasados" value={stats.atrasados} icon={<AlertCircle className="h-4 w-4" />} accent="destructive" onClick={() => setEtapa("ativas")} />
         <StatCard label="Arte" value={stats.arte} icon={<Palette className="h-4 w-4" />} accent="info" onClick={() => setEtapa("arte")} active={etapa === "arte"} />
