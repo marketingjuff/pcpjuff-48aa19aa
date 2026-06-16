@@ -220,7 +220,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
           </div>
           <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
-              <thead className="bg-muted/50 text-xs uppercase">
+              <thead className="bg-muted/50 text-xs uppercase font-bold">
                 <tr>
                   {["ETAPA","PEDIDO","ORÇAMENTO","TIPO","QTD","STATUS DAS PEÇAS","FOTOLITO","TELA GRAVADA","SILK FEITO","DATA SILK","QUEM BATEU","SAÍDA JUFF","ENTREGA"].map((h) => (
                     <th key={h} className="px-1.5 py-0.5 text-left whitespace-nowrap">{h}</th>
