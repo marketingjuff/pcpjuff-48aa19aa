@@ -268,8 +268,8 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
             })}
           </div>
           <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
-            <table className="w-full text-[11px]" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
-              <thead className="bg-muted/50 text-[11px] uppercase">
+            <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
+              <thead className="bg-muted/50 text-xs uppercase">
                 <tr>
                   <th className="px-1.5 py-0.5 text-left">Pendências</th>
                   <th className="px-1.5 py-0.5 text-left">Pedido</th>
