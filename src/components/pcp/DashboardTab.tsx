@@ -160,7 +160,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       </div>
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2">
           <div className="flex items-baseline justify-between gap-2">
             <CardTitle className="font-display text-base tracking-tight">Pedidos</CardTitle>
             <span className="text-xs text-muted-foreground tabular-nums">
@@ -168,7 +168,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
             </span>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="p-3 pt-0 space-y-2">
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground font-medium">Buscar</label>
