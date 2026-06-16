@@ -184,46 +184,43 @@ export function calcularEtapaAtual(p: Pedido): {
   } else {
     const needDTF = tipoIncluiDTF(tipo) && !dtfDone;
     const needSilk = tipoIncluiSilk(tipo) && !silkDone;
-    if (needDTF && needSilk) { etapa = "Aguardando DTF + Silk"; cor = "yellow"; }
-    else if (needDTF) { etapa = "Aguardando DTF"; cor = "yellow"; }
-    else if (needSilk) { etapa = "Aguardando Silk"; cor = "yellow"; }
-    else { etapa = "Aguardando Acabamento"; cor = "blue"; }
-  }
+  const tipo = p.tipo_estampa;
+  const isLisa = tipo === "Lisa";
 
-  // Bloco 2A: pedidos reabertos recebem asterisco (até serem finalizados novamente)
-  if (p.reaberto && etapa !== "Finalizado") etapa = `${etapa}*`;
+  const dadosInOk = !!p.pedido_olist;
+  // Lados da arte agora avançam independentemente
+  const dtfArteOk = !tipoIncluiDTF(tipo) || ladoDtfPronto(p);
+  const silkArteOk = !tipoIncluiSilk(tipo) || ladoSilkPronto(p);
+  const dtfDone = p.dtf_estampado === "Sim";
+  const silkDone = p.silk_feito === "Sim";
+  const acabamentoOk = p.embalado === "Sim";
+  const producaoInputOk = notEmpty(p.arte_data);
 
-  return { etapa, percentual, cor };
-}
+  const arteOk = dtfArteOk && silkArteOk;
+  const etapas = isLisa
+    ? [dadosInOk, acabamentoOk]
+    : ([dadosInOk, arteOk, tipoIncluiDTF(tipo) ? dtfDone : null, tipoIncluiSilk(tipo) ? silkDone : null, acabamentoOk].filter(
+        (v) => v !== null,
+      ) as boolean[]);
+  const completas = etapas.filter(Boolean).length;
+  const percentual = Math.round((completas / etapas.length) * 100);
 
-export function statusPrazo(p: Pedido): "ok" | "aviso" | "atrasado" | "neutro" {
-  const ref = p.saida_juff;
-  if (!ref) return "neutro";
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const alvo = new Date(ref + "T00:00:00");
-  const diff = (alvo.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24);
-  if (p.embalado === "Sim") return "ok";
-  if (diff < 0) return "atrasado";
-  if (diff <= 2) return "aviso";
-  return "ok";
-}
+  let etapa = "Aguardando entrada";
+  let cor: "green" | "yellow" | "red" | "gray" | "blue" = "gray";
 
-export function diasAte(date: string | null | undefined): number | null {
-  if (!date) return null;
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const d = new Date(date + "T00:00:00");
-  return Math.round((d.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-}
-
-/** Pedido visível nas áreas de produção (Dados In, Arte, DTF, Silk, Acabamento, Dashboard).
- *  Reabertos aparecem em todas as abas mesmo se já entraram em expedição. */
-export function pedidoAtivoNasAreas(p: Pedido): boolean {
-  if (p.finalizado_em) return false;
-  if (p.reaberto) return true;
-  return !p.expedicao_entrou_em;
-}
+  if (p.finalizado_em) {
+    etapa = "Finalizado"; cor = "green";
+  } else if (acabamentoOk) {
+    etapa = "Aguardando Expedição"; cor = "blue";
+  } else if (!dadosInOk) {
+    etapa = "Aguardando entrada"; cor = "gray";
+  } else if (!isLisa && !producaoInputOk) {
+    etapa = "Aguardando input de produção"; cor = "yellow";
+  } else if (isLisa) {
+    etapa = "Aguardando Acabamento"; cor = "blue";
+  } else if (!arteOk) {
+    etapa = "Aguardando Arte"; cor = "blue";
+  } else {
 
 /** Ordenação padrão para todos os dashboards/listas:
  *  ascendente por `data_saida_juff` (mais urgente primeiro). Nulos por último. */
