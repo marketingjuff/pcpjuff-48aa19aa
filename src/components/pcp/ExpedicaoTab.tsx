@@ -271,34 +271,39 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
           </div>
           <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
-              <thead className="bg-muted/50 text-xs uppercase font-bold">
+              <thead>
                 <tr>
-                  <th className="px-1.5 py-0.5 text-left">PENDÊNCIAS</th>
-                  <th className="px-1.5 py-0.5 text-left">PEDIDO</th>
-                  <th className="px-1.5 py-0.5 text-left">ORÇAMENTO</th>
-                  <th className="px-1.5 py-0.5 text-left">UF</th>
-                  <th className="px-1.5 py-0.5 text-left whitespace-nowrap">
-                    <button onClick={() => toggleSort("saida_juff")} className="inline-flex items-center gap-1 hover:underline">
+                  <Th>PENDÊNCIAS</Th>
+                  <Th>PEDIDO</Th>
+                  <Th>ORÇAMENTO</Th>
+                  <Th>UF</Th>
+                  <th className={`${TH_RAW_CLASS} cursor-pointer select-none`} onClick={() => toggleSort("saida_juff")}>
+                    <span className="inline-flex items-center gap-1">
                       SAÍDA JUFF
-                      {sortKey === "saida_juff" && (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
-                    </button>
+                      {sortKey === "saida_juff"
+                        ? (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)
+                        : <ArrowUpDown className="h-3 w-3 opacity-50" />}
+                    </span>
                   </th>
-                  <th className="px-1.5 py-0.5 text-left whitespace-nowrap">
-                    <button onClick={() => toggleSort("data_entrega")} className="inline-flex items-center gap-1 hover:underline">
+                  <th className={`${TH_RAW_CLASS} cursor-pointer select-none`} onClick={() => toggleSort("data_entrega")}>
+                    <span className="inline-flex items-center gap-1">
                       ENTREGA
-                      {sortKey === "data_entrega" && (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
-                    </button>
+                      {sortKey === "data_entrega"
+                        ? (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)
+                        : <ArrowUpDown className="h-3 w-3 opacity-50" />}
+                    </span>
                   </th>
-                  <th className="px-1.5 py-0.5 text-left">FORMA DE PAGAMENTO</th>
+                  <Th>FORMA DE PAGAMENTO</Th>
                 </tr>
               </thead>
               <tbody>
                 {dashboardPedidos.map((p) => {
                   const pend = pendenciasDoPedido(p);
+                  const bg = rowAlertBgClass(p, feriados);
                   return (
                     <tr key={p.id}
                       onClick={() => onSelect(p.id)}
-                      className={`border-t cursor-pointer hover:bg-accent ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                      className={`border-t cursor-pointer hover:bg-accent ${bg} ${selected?.id === p.id ? "bg-accent" : ""}`}>
                       <td className="px-1.5 py-0.5 text-xs">
                         {pend.length === 0
                           ? <span className="text-success">Sem pendências</span>
