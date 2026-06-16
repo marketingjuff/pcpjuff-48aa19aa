@@ -70,9 +70,6 @@ export const TABLE_FONT_STYLE = {
   fontFamily: '"Google Sans Flex", Arial, sans-serif',
   fontStretch: 'condensed' as const,
 };
-  fontFamily: '"Google Sans Flex", Arial, sans-serif',
-  fontStretch: 'condensed',
-};
 export const TABLE_WRAPPER_CLASS =
   "hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs";
 export const TH_CLASS = "h-7 px-1.5 text-[11px]";
