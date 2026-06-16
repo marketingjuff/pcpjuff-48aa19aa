@@ -401,17 +401,7 @@ function DadosInDashboard({
   const [status, setStatus] = useState("todos");
   const [tipo, setTipo] = useState("todos");
   const [dataEntrega, setDataEntrega] = useState("");
-  const [sortSaidaDir, setSortSaidaDir] = useState<"asc" | "desc" | null>("asc");
-  const [sortEntregaDir, setSortEntregaDir] = useState<"asc" | "desc" | null>(null);
-
-  function toggleSortSaida() {
-    setSortEntregaDir(null);
-    setSortSaidaDir((d) => (d === "asc" ? "desc" : "asc"));
-  }
-  function toggleSortEntrega() {
-    setSortSaidaDir(null);
-    setSortEntregaDir((d) => (d === "asc" ? "desc" : "asc"));
-  }
+  const sort = useSort<"qtd"|"tempoFrete"|"entrada"|"saida"|"entrega">("saida", "asc");
 
   const rows = useMemo(() => {
     const arr = pedidos.filter((p) => {
@@ -423,23 +413,21 @@ function DadosInDashboard({
       if (search && !`${p.pedido_olist ?? ""} ${p.orcamento ?? ""}`.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-    if (sortSaidaDir) {
+    if (sort.key) {
       arr.sort((a, b) => {
-        const av = a.saida_juff ?? "9999-12-31";
-        const bv = b.saida_juff ?? "9999-12-31";
-        return sortSaidaDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+        switch (sort.key) {
+          case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
+          case "tempoFrete": return cmpNum(a.tempo_frete as any, b.tempo_frete as any, sort.dir);
+          case "entrada": return cmpDate(a.entrada_pedido, b.entrada_pedido, sort.dir);
+          case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
+          case "entrega": return cmpDate(a.data_entrega, b.data_entrega, sort.dir);
+        }
+        return 0;
       });
-    } else if (sortEntregaDir) {
-      arr.sort((a, b) => {
-        const da = a.data_entrega ?? "9999-12-31";
-        const db = b.data_entrega ?? "9999-12-31";
-        return sortEntregaDir === "asc" ? da.localeCompare(db) : db.localeCompare(da);
-      });
-    } else {
-      return sortByDataSaidaJuffAsc(arr);
+      return arr;
     }
-    return arr;
-  }, [pedidos, vendedor, status, tipo, dataEntrega, search, sortSaidaDir, sortEntregaDir]);
+    return sortByDataSaidaJuffAsc(arr);
+  }, [pedidos, vendedor, status, tipo, dataEntrega, search, sort.key, sort.dir]);
 
   return (
     <Card>
