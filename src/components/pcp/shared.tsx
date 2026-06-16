@@ -72,9 +72,9 @@ export const TABLE_FONT_STYLE = {
 };
 export const TABLE_WRAPPER_CLASS =
   "hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs";
-export const TH_CLASS = "h-7 px-1.5 text-[11px]";
+export const TH_CLASS = "h-7 px-1.5 text-[11px] font-bold";
 export const TD_CLASS = "py-0.5 px-1.5 text-[11px] align-top";
-export const TH_RAW_CLASS = "h-7 px-1.5 text-left text-[11px] uppercase whitespace-nowrap font-medium text-muted-foreground";
+export const TH_RAW_CLASS = "h-7 px-1.5 text-left text-[11px] uppercase whitespace-nowrap font-bold text-muted-foreground";
 export const TD_RAW_CLASS = "px-1.5 py-0.5 text-[11px] align-top";
 export const BADGE_SM_CLASS = "text-[10px] px-1.5 py-0";
 
