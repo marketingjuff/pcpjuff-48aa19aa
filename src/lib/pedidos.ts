@@ -107,6 +107,41 @@ export function tipoIncluiSilk(tipo: string | null | undefined) {
 export const modeloIncluiDTF = tipoIncluiDTF;
 export const modeloIncluiSilk = tipoIncluiSilk;
 
+// ---------- Helpers da Arte (lado independente) ----------
+export function dtfFinalizadoArte(p: Pedido): boolean {
+  return p.dtf_impresso === "Sim" && p.dtf_cortado === "Sim"
+    && !!p.dtf_executado && !!p.dtf_cortado_data;
+}
+export function fotolitoFinalizadoArte(p: Pedido): boolean {
+  return p.fotolito_impresso === "Sim" && p.fotolito_executado === "Sim";
+}
+export function vetorDtfResolvida(p: Pedido): boolean {
+  if (!p.necessita_vetorizacao) return true;
+  return p.vetorizacao_dtf === "Sim" || p.vetorizacao_dtf === "Não" || p.vetorizacao_dtf === "Não se aplica";
+}
+export function vetorSilkResolvida(p: Pedido): boolean {
+  if (!p.necessita_vetorizacao) return true;
+  return p.vetorizacao_silk === "Sim" || p.vetorizacao_silk === "Não" || p.vetorizacao_silk === "Não se aplica";
+}
+export function ladoDtfPronto(p: Pedido): boolean {
+  return vetorDtfResolvida(p) && dtfFinalizadoArte(p);
+}
+export function ladoSilkPronto(p: Pedido): boolean {
+  return vetorSilkResolvida(p) && fotolitoFinalizadoArte(p);
+}
+export function dtfFinalizadoLabel(p: Pedido): string {
+  if (!tipoIncluiDTF(p.tipo_estampa)) return "—";
+  if (p.dtf_impresso !== "Sim") return "Aguardando impressão";
+  if (p.dtf_cortado !== "Sim") return "Aguardando corte";
+  return "Sim";
+}
+export function fotolitoFinalizadoLabel(p: Pedido): string {
+  if (!tipoIncluiSilk(p.tipo_estampa)) return "—";
+  if (p.fotolito_impresso !== "Sim") return "Aguardando impressão";
+  if (p.fotolito_executado !== "Sim") return "Aguardando execução";
+  return "Sim";
+}
+
 export function calcularEtapaAtual(p: Pedido): {
   etapa: string;
   percentual: number;
