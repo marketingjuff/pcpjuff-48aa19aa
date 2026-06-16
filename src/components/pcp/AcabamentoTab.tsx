@@ -201,7 +201,13 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
       <Card>
         <CardHeader><CardTitle className="text-base">Dashboard — Acabamento</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-5">
+            <Select value={fEtapa} onValueChange={setFEtapa}>
+              <SelectTrigger><SelectValue placeholder="Etapa" /></SelectTrigger>
+              <SelectContent>
+                {ETAPA_FILTRO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />
             <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
             <Select value={fDtf} onValueChange={setFDtf}>
