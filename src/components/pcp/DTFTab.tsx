@@ -30,6 +30,8 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { names: operadoresDTF } = useAppList("dtf");
+  const { feriados } = useFeriados();
+  const sort = useSort<"qtd"|"exec"|"saida"|"entrega">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
