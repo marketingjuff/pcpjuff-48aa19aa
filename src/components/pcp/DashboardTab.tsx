@@ -348,7 +348,7 @@ function StatCard({ label, value, icon, accent, onClick, active }: { label: stri
             <div className="text-xs font-medium text-muted-foreground truncate">
               {label}
             </div>
-            <div className={`font-display text-xl sm:text-2xl font-semibold tabular-nums tracking-tight leading-none ${tone.num}`}>
+            <div className={`font-display text-2xl sm:text-[1.6rem] font-semibold tabular-nums tracking-tight leading-none ${tone.num}`}>
               {value}
             </div>
           </div>
