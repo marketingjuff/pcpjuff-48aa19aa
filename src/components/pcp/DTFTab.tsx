@@ -85,9 +85,10 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   const [fStatus, setFStatus] = useState("todos");
   const [fImpresso, setFImpresso] = useState("todos");
   const [fEstampado, setFEstampado] = useState("todos");
+  const [fEtapa, setFEtapa] = useState("ativas");
 
   const dashboardPedidos = useMemo(() => sortByDataSaidaJuffAsc(pedidos.filter((p) => {
-    if (!pedidoAtivoNasAreas(p)) return false;
+    if (!matchEtapaFiltro(p, fEtapa)) return false;
     if (!visivelEmDTF(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
@@ -95,7 +96,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
     if (fImpresso !== "todos" && (p.dtf_impresso ?? "") !== fImpresso) return false;
     if (fEstampado !== "todos" && (p.dtf_estampado ?? "") !== fEstampado) return false;
     return true;
-  })), [pedidos, fOrc, fPed, fStatus, fImpresso, fEstampado]);
+  })), [pedidos, fEtapa, fOrc, fPed, fStatus, fImpresso, fEstampado]);
 
 
   return (
