@@ -73,6 +73,8 @@ export type Database = {
           data_entrega_proposta_em: string | null
           data_entrega_proposta_por: string | null
           data_saida_juff: string | null
+          dtf_cortado: string | null
+          dtf_cortado_data: string | null
           dtf_data_executada: string | null
           dtf_estampado: string | null
           dtf_executado: string | null
@@ -122,7 +124,9 @@ export type Database = {
           uf_entrega: string | null
           updated_at: string
           vendedor: string | null
+          vetorizacao_dtf: string | null
           vetorizacao_executada: boolean | null
+          vetorizacao_silk: string | null
         }
         Insert: {
           acabamento_data?: string | null
@@ -134,6 +138,8 @@ export type Database = {
           data_entrega_proposta_em?: string | null
           data_entrega_proposta_por?: string | null
           data_saida_juff?: string | null
+          dtf_cortado?: string | null
+          dtf_cortado_data?: string | null
           dtf_data_executada?: string | null
           dtf_estampado?: string | null
           dtf_executado?: string | null
@@ -183,7 +189,9 @@ export type Database = {
           uf_entrega?: string | null
           updated_at?: string
           vendedor?: string | null
+          vetorizacao_dtf?: string | null
           vetorizacao_executada?: boolean | null
+          vetorizacao_silk?: string | null
         }
         Update: {
           acabamento_data?: string | null
@@ -195,6 +203,8 @@ export type Database = {
           data_entrega_proposta_em?: string | null
           data_entrega_proposta_por?: string | null
           data_saida_juff?: string | null
+          dtf_cortado?: string | null
+          dtf_cortado_data?: string | null
           dtf_data_executada?: string | null
           dtf_estampado?: string | null
           dtf_executado?: string | null
@@ -244,7 +254,9 @@ export type Database = {
           uf_entrega?: string | null
           updated_at?: string
           vendedor?: string | null
+          vetorizacao_dtf?: string | null
           vetorizacao_executada?: boolean | null
+          vetorizacao_silk?: string | null
         }
         Relationships: []
       }
