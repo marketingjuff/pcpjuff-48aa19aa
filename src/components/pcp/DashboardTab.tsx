@@ -243,26 +243,20 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">PEDIDO</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">ORÇAMENTO</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">VENDEDOR</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">QTD</TableHead>
+                  <SortHead label="QTD" k="qtd" sort={sort} />
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">ESTAMPA</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">STATUS DAS PEÇAS</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">FRETE</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold">UF</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold whitespace-nowrap">ENTRADA</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold whitespace-nowrap">ARTE LIMITE</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold whitespace-nowrap">INÍCIO EST.</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold whitespace-nowrap">TÉRM. EST.</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold whitespace-nowrap">ACABAMENTO</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold whitespace-nowrap">EXPED.</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold cursor-pointer select-none whitespace-nowrap" onClick={toggleSortSaida}>
-                    <span className="inline-flex items-center gap-1">SAÍDA JUFF<ArrowUpDown className="h-3 w-3" /></span>
-                  </TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold cursor-pointer select-none whitespace-nowrap" onClick={toggleSortEntrega}>
-                    <span className="inline-flex items-center gap-1">ENTREGA<ArrowUpDown className="h-3 w-3" /></span>
-                  </TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold cursor-pointer select-none whitespace-nowrap text-center" onClick={toggleSortDias}>
-                    <span className="inline-flex items-center gap-1">DIAS<ArrowUpDown className="h-3 w-3" /></span>
-                  </TableHead>
+                  <SortHead label="ENTRADA" k="entrada" sort={sort} />
+                  <SortHead label="ARTE LIMITE" k="arte" sort={sort} />
+                  <SortHead label="INÍCIO EST." k="inicio" sort={sort} />
+                  <SortHead label="TÉRM. EST." k="termino" sort={sort} />
+                  <SortHead label="ACABAMENTO" k="acabamento" sort={sort} />
+                  <SortHead label="EXPED." k="exped" sort={sort} />
+                  <SortHead label="SAÍDA JUFF" k="saida" sort={sort} />
+                  <SortHead label="ENTREGA" k="entrega" sort={sort} />
+                  <SortHead label="DIAS" k="dias" sort={sort} center />
                 </TableRow>
               </TableHeader>
               <TableBody>
