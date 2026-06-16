@@ -98,16 +98,17 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   const [fPed, setFPed] = useState("");
   const [fDtf, setFDtf] = useState("todos");
   const [fSilk, setFSilk] = useState("todos");
+  const [fEtapa, setFEtapa] = useState("ativas");
 
   const dashboardPedidos = useMemo(() => sortByDataSaidaJuffAsc(pedidos.filter((p) => {
-    if (!pedidoAtivoNasAreas(p)) return false;
+    if (!matchEtapaFiltro(p, fEtapa)) return false;
     if (!visivelEmAcabamento(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
     if (fDtf !== "todos" && (p.dtf_estampado ?? "") !== fDtf) return false;
     if (fSilk !== "todos" && (p.silk_feito ?? "") !== fSilk) return false;
     return true;
-  })), [pedidos, fOrc, fPed, fDtf, fSilk]);
+  })), [pedidos, fEtapa, fOrc, fPed, fDtf, fSilk]);
 
   const enviadoParaExpedicao = !!selected?.expedicao_entrou_em;
 
