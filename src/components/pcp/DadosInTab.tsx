@@ -506,20 +506,26 @@ function DadosInDashboard({
                 <TableHead className={TH_CLASS}>PEDIDO</TableHead>
                 <TableHead className={TH_CLASS}>ORÇAMENTO</TableHead>
                 <TableHead className={TH_CLASS}>VENDEDOR</TableHead>
-                <TableHead className={TH_CLASS}>QTD</TableHead>
+                <TableHead className={`${TH_CLASS} cursor-pointer select-none`} onClick={() => sort.toggle("qtd")}>
+                  <span className="inline-flex items-center gap-1">QTD<ArrowUpDown className={`h-3 w-3 ${sort.key === "qtd" ? "opacity-100" : "opacity-50"}`} /></span>
+                </TableHead>
                 <TableHead className={TH_CLASS}>ESTAMPA</TableHead>
                 <TableHead className={TH_CLASS}>STATUS DAS PEÇAS</TableHead>
                 <TableHead className={TH_CLASS}>FRETE</TableHead>
                 <TableHead className={TH_CLASS}>UF</TableHead>
-                <TableHead className={`${TH_CLASS} whitespace-nowrap text-center`}>TEMPO FRETE</TableHead>
+                <TableHead className={`${TH_CLASS} cursor-pointer select-none whitespace-nowrap text-center`} onClick={() => sort.toggle("tempoFrete")}>
+                  <span className="inline-flex items-center justify-center gap-1">TEMPO FRETE<ArrowUpDown className={`h-3 w-3 ${sort.key === "tempoFrete" ? "opacity-100" : "opacity-50"}`} /></span>
+                </TableHead>
                 <TableHead className={`${TH_CLASS} whitespace-nowrap`}>FORMA PGTO</TableHead>
                 <TableHead className={TH_CLASS}>NF</TableHead>
-                <TableHead className={`${TH_CLASS} whitespace-nowrap`}>ENTRADA</TableHead>
-                <TableHead className={`${TH_CLASS} cursor-pointer select-none whitespace-nowrap`} onClick={toggleSortSaida}>
-                  <span className="inline-flex items-center gap-1">SAÍDA JUFF<ArrowUpDown className="h-3 w-3" /></span>
+                <TableHead className={`${TH_CLASS} cursor-pointer select-none whitespace-nowrap`} onClick={() => sort.toggle("entrada")}>
+                  <span className="inline-flex items-center gap-1">ENTRADA<ArrowUpDown className={`h-3 w-3 ${sort.key === "entrada" ? "opacity-100" : "opacity-50"}`} /></span>
                 </TableHead>
-                <TableHead className={`${TH_CLASS} cursor-pointer select-none whitespace-nowrap`} onClick={toggleSortEntrega}>
-                  <span className="inline-flex items-center gap-1">ENTREGA<ArrowUpDown className="h-3 w-3" /></span>
+                <TableHead className={`${TH_CLASS} cursor-pointer select-none whitespace-nowrap`} onClick={() => sort.toggle("saida")}>
+                  <span className="inline-flex items-center gap-1">SAÍDA JUFF<ArrowUpDown className={`h-3 w-3 ${sort.key === "saida" ? "opacity-100" : "opacity-50"}`} /></span>
+                </TableHead>
+                <TableHead className={`${TH_CLASS} cursor-pointer select-none whitespace-nowrap`} onClick={() => sort.toggle("entrega")}>
+                  <span className="inline-flex items-center gap-1">ENTREGA<ArrowUpDown className={`h-3 w-3 ${sort.key === "entrega" ? "opacity-100" : "opacity-50"}`} /></span>
                 </TableHead>
               </TableRow>
             </TableHeader>
