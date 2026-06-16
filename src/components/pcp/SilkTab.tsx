@@ -87,9 +87,10 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [fStatus, setFStatus] = useState("todos");
   const [fTela, setFTela] = useState("todos");
   const [fSilk, setFSilk] = useState("todos");
+  const [fEtapa, setFEtapa] = useState("ativas");
 
   const dashboardPedidos = useMemo(() => sortByDataSaidaJuffAsc(pedidos.filter((p) => {
-    if (!pedidoAtivoNasAreas(p)) return false;
+    if (!matchEtapaFiltro(p, fEtapa)) return false;
     if (!visivelEmSilk(p)) return false;
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
@@ -97,7 +98,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
     if (fTela !== "todos" && (p.tela_gravada ?? "") !== fTela) return false;
     if (fSilk !== "todos" && (p.silk_feito ?? "") !== fSilk) return false;
     return true;
-  })), [pedidos, fOrc, fPed, fStatus, fTela, fSilk]);
+  })), [pedidos, fEtapa, fOrc, fPed, fStatus, fTela, fSilk]);
 
 
   return (
