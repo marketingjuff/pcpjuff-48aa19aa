@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
   StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip,
-  useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass,
+  useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse,
   ETAPA_FILTRO_OPCOES, matchEtapaFiltro,
 } from "./shared";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
