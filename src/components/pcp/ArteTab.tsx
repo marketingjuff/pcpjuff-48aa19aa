@@ -154,11 +154,13 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
               <ReadOnlyField label="Tipo de Estampa" value={selected.tipo_estampa} />
               <ReadOnlyField label="Vetorização" value={selected.necessita_vetorizacao ? "Sim" : "Não"} />
-              <ReadOnlyField label="Data de Entrada" value={formatDateBR(selected.entrada_pedido)} />
               <ReadOnlyField label="Data Limite da Arte" value={formatDateBR(selected.arte_data)} />
+              <ReadOnlyField label="Início Est." value={formatDateBR(selected.inicio_estamparia)} />
               <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
-              <ReadOnlyField label="Data de Entrega" value={formatDateBR(selected.data_entrega)} />
+              <ReadOnlyField label="STATUS DTF" value={dtfFinalizadoLabel(selected)} />
+              <ReadOnlyField label="STATUS FOTOLITO" value={fotolitoFinalizadoLabel(selected)} />
             </div>
+
 
             {/* Layout / baixar */}
             <div className="pt-3 border-t flex items-center gap-3">
