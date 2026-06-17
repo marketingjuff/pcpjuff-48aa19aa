@@ -179,10 +179,11 @@ export function calcularEtapaAtual(p: Pedido): {
     etapa = "Aguardando Expedição"; cor = "blue";
   } else if (!dadosInOk) {
     etapa = "Aguardando entrada"; cor = "gray";
-  } else if (!isLisa && !producaoInputOk) {
-    etapa = "Aguardando input de produção"; cor = "yellow";
   } else if (isLisa) {
+    // Lisa pula direto para Acabamento — ignora Arte/DTF/Silk
     etapa = "Aguardando Acabamento"; cor = "blue";
+  } else if (!producaoInputOk) {
+    etapa = "Aguardando input de produção"; cor = "yellow";
   } else if (!arteOk) {
     // Para DTF+Silk: se um lado já está pronto e o outro ainda na arte, mostrar etapa mista
     if (tipo === "DTF+Silk" && dtfArteOk && !silkArteOk) {
@@ -205,6 +206,35 @@ export function calcularEtapaAtual(p: Pedido): {
   if (p.reaberto && etapa !== "Finalizado") etapa = `${etapa}*`;
   return { etapa, percentual, cor };
 }
+
+export type SetorAtraso = "arte" | "dtf" | "silk" | "acabamento" | "expedicao";
+
+/** Compara YYYY-MM-DD com hoje (sem horas). True se já passou da data. */
+function dataNoPassado(date: string | null | undefined): boolean {
+  if (!date) return false;
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const d = new Date(date + "T00:00:00");
+  return d.getTime() < hoje.getTime();
+}
+
+/** True quando a etapa do setor está atrasada (data-limite passada e não concluída). */
+export function isAtrasadoSetor(p: Pedido, setor: SetorAtraso): boolean {
+  if (p.finalizado_em) return false;
+  switch (setor) {
+    case "arte":
+      return dataNoPassado(p.arte_data) && p.status_arte !== "Arte Finalizada";
+    case "dtf":
+      return tipoIncluiDTF(p.tipo_estampa) && dataNoPassado(p.inicio_estamparia) && p.dtf_estampado !== "Sim";
+    case "silk":
+      return tipoIncluiSilk(p.tipo_estampa) && dataNoPassado(p.inicio_estamparia) && p.silk_feito !== "Sim";
+    case "acabamento":
+      return dataNoPassado(p.saida_juff) && p.embalado !== "Sim";
+    case "expedicao":
+      return dataNoPassado(p.saida_juff) && !p.finalizado_em;
+  }
+}
+
 
 export function statusPrazo(p: Pedido): "ok" | "aviso" | "atrasado" | "neutro" {
   const ref = p.saida_juff;
