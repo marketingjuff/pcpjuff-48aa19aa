@@ -150,13 +150,22 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 <div className="text-xs font-medium text-muted-foreground">Layout</div>
                 {selected.layout_url ? (
                   <div className="space-y-1">
-                    <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
-                      <Download className="h-4 w-4 mr-1" /> Baixar layout
-                    </Button>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                        <Download className="h-4 w-4 mr-1" /> Baixar layout
+                      </Button>
+                      <VoltarButtons selected={selected} onNavigate={onNavigate} />
+                    </div>
                     <div className="text-xs text-muted-foreground truncate">{selected.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</div>
                   </div>
-                ) : <div className="text-sm text-muted-foreground">Sem layout</div>}
+                ) : (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="text-sm text-muted-foreground">Sem layout</div>
+                    <VoltarButtons selected={selected} onNavigate={onNavigate} />
+                  </div>
+                )}
               </div>
+
             </div>
             <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t">
               <FormField label="EMBALADO?">
