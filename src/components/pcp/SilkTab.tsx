@@ -171,7 +171,9 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   <FormField label="Observações do Silk">
                     <Textarea value={form.silk_observacao ?? ""} onChange={(e) => set("silk_observacao", e.target.value)} rows={2} />
                   </FormField>
+                  <ObservacoesOutrosSetores pedido={selected} setorAtual="silk" />
                 </div>
+
               </div>
               <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-1" />Atualizar Silk</Button>
             </CardContent>
