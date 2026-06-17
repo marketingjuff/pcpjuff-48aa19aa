@@ -359,14 +359,15 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
                   <Th>ESTAMPA</Th>
                   <Th>STATUS DAS PEÇAS</Th>
-                  <Th>DTF FINALIZADO</Th>
-                  <Th>FOTOLITO FINALIZADO</Th>
+                  <Th>STATUS DTF</Th>
+                  <Th>STATUS FOTOLITO</Th>
                   <Th>STATUS DA ARTE</Th>
-                  <SortableTh label="DATA DE ENTRADA" active={sort.key === "entrada"} onClick={() => sort.toggle("entrada")} />
                   <SortableTh label="DATA LIMITE" active={sort.key === "limite"} onClick={() => sort.toggle("limite")} />
+                  <Th>INÍCIO EST.</Th>
                   <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
                 </tr>
               </thead>
+
               <tbody>
                 {dashboardRows.length === 0 ? (
                   <tr><td colSpan={13} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido.</td></tr>
