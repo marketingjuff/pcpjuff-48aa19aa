@@ -209,7 +209,9 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
                     onChange={(e) => set("exp_observacoes", e.target.value)}
                   />
                 </FormField>
+                <ObservacoesOutrosSetores pedido={selected} setorAtual="expedicao" />
               </div>
+
             </div>
 
             {todosCompletos(selected, form) && (
