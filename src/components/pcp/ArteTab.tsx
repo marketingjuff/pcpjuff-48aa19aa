@@ -49,9 +49,24 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
   useEffect(() => {
     if (!selected) { setForm({}); return; }
-    if (!isDirty) setForm(selected);
+    if (!isDirty) {
+      // Pré-preenche campos vazios conforme regras quando o pedido é aberto em Arte.
+      const inclDTF = tipoIncluiDTF(selected.tipo_estampa);
+      const inclSilk = tipoIncluiSilk(selected.tipo_estampa);
+      const isLisa = selected.tipo_estampa === "Lisa";
+      const isEmpty = (v: any) => v === null || v === undefined || v === "";
+      const next: Partial<Pedido> = { ...selected };
+      if (inclDTF && selected.necessita_vetorizacao && isEmpty(selected.vetorizacao_dtf)) next.vetorizacao_dtf = "Não";
+      if (inclDTF && isEmpty(selected.dtf_impresso)) next.dtf_impresso = "Não";
+      if (inclDTF && isEmpty(selected.dtf_cortado)) next.dtf_cortado = "Não";
+      if (inclSilk && selected.necessita_vetorizacao && isEmpty(selected.vetorizacao_silk)) next.vetorizacao_silk = "Não";
+      if (inclSilk && isEmpty(selected.fotolito_impresso)) next.fotolito_impresso = "Não";
+      if (!isLisa && isEmpty(selected.status_arte)) next.status_arte = "Em andamento";
+      setForm(next);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
+
   useDirtyTracker(form, selected ?? {}, active && !!selected);
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
