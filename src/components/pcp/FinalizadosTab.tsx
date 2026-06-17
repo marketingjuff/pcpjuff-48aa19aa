@@ -14,7 +14,6 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RotateCcw, Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
@@ -150,6 +149,47 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
+        {historico && (
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <FileText className="h-4 w-4" /> Histórico — {historico.pedido_olist}
+              </div>
+              <Button size="sm" variant="ghost" onClick={() => setHistorico(null)}>Fechar</Button>
+            </div>
+            <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
+              <ReadOnlyField label="Pedido" value={historico.pedido_olist} />
+              <ReadOnlyField label="Orçamento" value={historico.orcamento} />
+              <ReadOnlyField label="Tipo de Estampa" value={historico.tipo_estampa} />
+              <ReadOnlyField label="QTD" value={historico.qtd} />
+              <ReadOnlyField label="Vendedor" value={historico.vendedor} />
+              <ReadOnlyField label="Status de Peças" value={historico.status_pecas} />
+            </div>
+            <div className="border-t pt-3">
+              <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">Datas de processo</div>
+              <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
+                <ReadOnlyField label="Entrada do pedido" value={formatDateBR(historico.entrada_pedido)} />
+                <ReadOnlyField label="Limite da Arte" value={formatDateBR(historico.arte_data)} />
+                <ReadOnlyField label="Início estamparia" value={formatDateBR(historico.inicio_estamparia)} />
+                <ReadOnlyField label="Término estamparia" value={formatDateBR(historico.termino_estamparia)} />
+                <ReadOnlyField label="DTF executado" value={formatDateBR(historico.dtf_data_executada)} />
+                <ReadOnlyField label="Silk executado" value={formatDateBR(historico.silk_data_executada)} />
+                <ReadOnlyField label="Acabamento" value={formatDateBR(historico.acabamento_data)} />
+                <ReadOnlyField label="Saída Juff (prazo)" value={formatDateBR(historico.saida_juff)} />
+                <ReadOnlyField label="Saída Juff (real)" value={formatDateBR(historico.data_saida_juff)} />
+                <ReadOnlyField label="Entrega" value={formatDateBR(historico.data_entrega)} />
+                <ReadOnlyField label="Finalizado em" value={formatDateBR(historico.finalizado_em?.slice(0,10))} />
+              </div>
+            </div>
+            <div className="border-t pt-3">
+              <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">Observações</div>
+              <ObservacoesOutrosSetores
+                pedido={historico}
+                setorAtual={"__none__" as any}
+              />
+            </div>
+          </div>
+        )}
         <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
           <Input placeholder="Buscar pedido ou orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
           <Select value={periodo} onValueChange={setPeriodo}>
@@ -291,51 +331,6 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={!!historico} onOpenChange={(o) => { if (!o) setHistorico(null); }}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-4 w-4" /> Histórico — {historico?.pedido_olist}
-            </DialogTitle>
-          </DialogHeader>
-          {historico && (
-            <div className="space-y-4 text-sm">
-              <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
-                <ReadOnlyField label="Pedido" value={historico.pedido_olist} />
-                <ReadOnlyField label="Orçamento" value={historico.orcamento} />
-                <ReadOnlyField label="Tipo de Estampa" value={historico.tipo_estampa} />
-                <ReadOnlyField label="QTD" value={historico.qtd} />
-                <ReadOnlyField label="Vendedor" value={historico.vendedor} />
-                <ReadOnlyField label="Status de Peças" value={historico.status_pecas} />
-              </div>
-              <div className="border-t pt-3">
-                <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">Datas de processo</div>
-                <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
-                  <ReadOnlyField label="Entrada do pedido" value={formatDateBR(historico.entrada_pedido)} />
-                  <ReadOnlyField label="Limite da Arte" value={formatDateBR(historico.arte_data)} />
-                  <ReadOnlyField label="Início estamparia" value={formatDateBR(historico.inicio_estamparia)} />
-                  <ReadOnlyField label="Término estamparia" value={formatDateBR(historico.termino_estamparia)} />
-                  <ReadOnlyField label="DTF executado" value={formatDateBR(historico.dtf_data_executada)} />
-                  <ReadOnlyField label="Silk executado" value={formatDateBR(historico.silk_data_executada)} />
-                  <ReadOnlyField label="Acabamento" value={formatDateBR(historico.acabamento_data)} />
-                  <ReadOnlyField label="Saída Juff (prazo)" value={formatDateBR(historico.saida_juff)} />
-                  <ReadOnlyField label="Saída Juff (real)" value={formatDateBR(historico.data_saida_juff)} />
-                  <ReadOnlyField label="Entrega" value={formatDateBR(historico.data_entrega)} />
-                  <ReadOnlyField label="Finalizado em" value={formatDateBR(historico.finalizado_em?.slice(0,10))} />
-                </div>
-              </div>
-              <div className="border-t pt-3">
-                <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">Observações</div>
-                <ObservacoesOutrosSetores
-                  pedido={historico}
-                  /* setor inexistente para listar TODOS os 7 */
-                  setorAtual={"__none__" as any}
-                />
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 }
