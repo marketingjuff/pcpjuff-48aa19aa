@@ -235,9 +235,9 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                 <tr><td colSpan={isAdmin ? 11 : 10} className="text-center py-8 text-muted-foreground">Nenhum pedido finalizado.</td></tr>
               ) : (
                 finalizados.map((p) => (
-                  <tr key={p.id} className="border-t">
+                  <tr key={p.id} className="border-t cursor-pointer hover:bg-accent" onClick={() => setHistorico(p)}>
                     {isAdmin && (
-                      <td className="px-1.5 py-0.5 w-10">
+                      <td className="px-1.5 py-0.5 w-10" onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={selectedIds.has(p.id)}
                           onCheckedChange={(c) => toggleOne(p.id, c === true)}
@@ -254,10 +254,11 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                     <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.data_saida_juff)}</td>
                     <td className="px-1.5 py-0.5 text-xs">{p.responsavel_acabamento ?? "—"}</td>
                     <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.finalizado_em?.slice(0,10))}</td>
-                    <td className="px-1.5 py-0.5 text-right">
+                    <td className="px-1.5 py-0.5 text-right" onClick={(e) => e.stopPropagation()}>
                       <Button size="sm" variant="outline" onClick={() => onReabrir(p.id)}>
                         <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
                       </Button>
+
                     </td>
                   </tr>
                 ))
