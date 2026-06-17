@@ -133,14 +133,15 @@ export function dtfFinalizadoLabel(p: Pedido): string {
   if (!tipoIncluiDTF(p.tipo_estampa)) return "—";
   if (p.dtf_impresso !== "Sim") return "Aguardando impressão";
   if (p.dtf_cortado !== "Sim") return "Aguardando corte";
-  return "Sim";
+  return "Finalizado";
 }
 export function fotolitoFinalizadoLabel(p: Pedido): string {
   if (!tipoIncluiSilk(p.tipo_estampa)) return "—";
   if (p.fotolito_impresso !== "Sim") return "Aguardando impressão";
   if (!p.fotolito_executado) return "Aguardando data";
-  return "Sim";
+  return "Finalizado";
 }
+
 
 
 export function calcularEtapaAtual(p: Pedido): {
