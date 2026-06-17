@@ -134,13 +134,30 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                   <div className="text-xs font-medium text-muted-foreground">Layout</div>
                   {selected.layout_url ? (
                     <div className="space-y-1">
-                      <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
-                        <Download className="h-4 w-4 mr-1" /> Baixar layout
-                      </Button>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                          <Download className="h-4 w-4 mr-1" /> Baixar layout
+                        </Button>
+                        {onNavigate && (
+                          <Button size="sm" onClick={() => onNavigate("arte")} className="bg-[#cf0e0e] hover:bg-[#b00b0b] text-white">
+                            Voltar para a Arte
+                          </Button>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground truncate">{selected.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</div>
                     </div>
-                  ) : <div className="text-sm text-muted-foreground">Sem layout</div>}
+                  ) : (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="text-sm text-muted-foreground">Sem layout</div>
+                      {onNavigate && (
+                        <Button size="sm" onClick={() => onNavigate("arte")} className="bg-[#cf0e0e] hover:bg-[#b00b0b] text-white">
+                          Voltar para a Arte
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
+
                 <ReadOnlyField label="Início estamparia" value={formatDateBR(selected.inicio_estamparia)} />
                 <ReadOnlyField label="Término estamparia" value={formatDateBR(selected.termino_estamparia)} />
                 <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
