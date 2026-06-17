@@ -344,7 +344,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           </div>
 
           {/* Desktop */}
-          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
+          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs [&_th]:text-center [&_td]:text-center">
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
                 <tr>
