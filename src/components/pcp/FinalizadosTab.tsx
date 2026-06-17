@@ -14,10 +14,13 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { RotateCcw, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RotateCcw, Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
-import { PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th } from "./shared";
+import { PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, ReadOnlyField } from "./shared";
+import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+
 
 interface Props {
   pedidos: Pedido[];
