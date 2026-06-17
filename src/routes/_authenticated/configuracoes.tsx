@@ -21,7 +21,9 @@ import {
   updateUserRole,
   updateUserName,
   deleteUserAccount,
+  adminUpdateUserPassword,
 } from "@/lib/admin.functions";
+
 import { exportBackup, importBackup } from "@/lib/backup.functions";
 import { useAppList, useAppListMutations, type AppListKind } from "@/lib/app-lists";
 import {
