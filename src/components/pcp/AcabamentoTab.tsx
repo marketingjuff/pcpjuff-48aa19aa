@@ -319,3 +319,23 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
     </div>
   );
 }
+
+function VoltarButtons({ selected, onNavigate }: { selected: Pedido; onNavigate?: (tab: string) => void }) {
+  if (!onNavigate) return null;
+  const isLisa = selected.tipo_estampa === "Lisa";
+  const showDtf = !isLisa && selected.dtf_estampado === "Sim";
+  const showSilk = !isLisa && selected.silk_feito === "Sim";
+  const cls = "bg-[#cf0e0e] hover:bg-[#b00b0b] text-white";
+  return (
+    <>
+      {showDtf && (
+        <Button size="sm" className={cls} onClick={() => onNavigate("dtf")}>Voltar para DTF</Button>
+      )}
+      {showSilk && (
+        <Button size="sm" className={cls} onClick={() => onNavigate("silk")}>Voltar para Silk</Button>
+      )}
+      <Button size="sm" className={cls} onClick={() => onNavigate("dados")}>Voltar para Produção</Button>
+    </>
+  );
+}
+
