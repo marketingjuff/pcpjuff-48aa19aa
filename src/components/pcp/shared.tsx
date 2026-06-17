@@ -93,6 +93,26 @@ export function rowAlertBgClass(p: Pedido, feriados: Set<string>): string {
   return "";
 }
 
+/** Classe vermelha para linhas atrasadas por setor (item 4 da spec). */
+export function linhaAtrasoClasse(p: Pedido, setor: SetorAtraso): string {
+  return isAtrasadoSetor(p, setor)
+    ? "bg-red-100 text-red-900 hover:bg-red-200/90"
+    : "";
+}
+
+/** Mapeamento aba → setor para atraso. */
+export function setorDaAba(tab: "dadosin" | "arte" | "dtf" | "silk" | "acabamento" | "expedicao" | "dashboard"): SetorAtraso | null {
+  switch (tab) {
+    case "arte": return "arte";
+    case "dtf": return "dtf";
+    case "silk": return "silk";
+    case "acabamento": return "acabamento";
+    case "expedicao": return "expedicao";
+    default: return null;
+  }
+}
+
+
 export type SortDir = "asc" | "desc";
 
 /** Hook simples de ordenação por coluna; alterna asc/desc, troca coluna reseta para asc. */
