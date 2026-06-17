@@ -580,8 +580,8 @@ function DadosInDashboard({
                   >
                     <TableCell className={TD_CLASS}><Badge variant="outline" className={`${etapaPaletteClass(etapa)} ${BADGE_SM_CLASS}`}>{etapa}</Badge></TableCell>
                     <TableCell className={`${TD_CLASS} font-medium`}>{p.pedido_olist}</TableCell>
-                    <TableCell className={`${TD_CLASS} max-w-[200px]`}>
-                      <span className="block leading-tight line-clamp-2 break-words" title={p.orcamento ?? ""}>{p.orcamento}</span>
+                    <TableCell className={`${TD_CLASS} max-w-[200px] !text-left`}>
+                      <span className="block leading-tight line-clamp-2 break-words text-left" title={p.orcamento ?? ""}>{p.orcamento}</span>
                     </TableCell>
                     <TableCell className={TD_CLASS}>{p.vendedor}</TableCell>
                     <TableCell className={`${TD_CLASS} tabular-nums`}>{p.qtd}</TableCell>
