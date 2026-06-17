@@ -163,7 +163,9 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                   <FormField label="Observações do DTF">
                     <Textarea value={form.dtf_observacao ?? ""} onChange={(e) => set("dtf_observacao", e.target.value)} rows={2} />
                   </FormField>
+                  <ObservacoesOutrosSetores pedido={selected} setorAtual="dtf" />
                 </div>
+
               </div>
               <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-1" />Atualizar DTF</Button>
             </CardContent>
