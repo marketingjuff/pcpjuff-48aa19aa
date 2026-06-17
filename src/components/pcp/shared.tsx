@@ -1,12 +1,13 @@
 import type { Pedido } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk, type EtapaStatus } from "@/lib/pedidos";
+import { calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk, isAtrasadoSetor, type EtapaStatus, type SetorAtraso } from "@/lib/pedidos";
 import { CheckCircle2, Clock, AlertTriangle, Info, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
+
 
 
 /** Baixa o PDF do layout via edge function (sem expor URL do Supabase). */
