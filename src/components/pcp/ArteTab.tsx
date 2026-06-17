@@ -217,13 +217,14 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 {showSilk && (
                   <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                     {showVetorSilk && (
-                      <FormField label="Vetorização de Silk">
+                      <FormField label="Vetorização de Silk Realizada">
                         <Select value={form.vetorizacao_silk ?? ""} onValueChange={(v) => set("vetorizacao_silk", v)}>
                           <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                           <SelectContent>{VETOR_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                         </Select>
                       </FormField>
                     )}
+
                     <FormField label="Fotolito Impresso">
                       <Select value={form.fotolito_impresso ?? ""} onValueChange={(v) => setSimNaoComData("fotolito_impresso", "fotolito_executado", v)}>
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
