@@ -484,9 +484,14 @@ function UsuariosTab() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right align-top">
-                      <Button variant="ghost" size="icon" onClick={() => { if (confirm("Excluir este usuário?")) del.mutate(u.id); }}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" title="Trocar senha" onClick={() => { setPwTarget({ id: u.id, email: u.email }); setPwValue(""); setPwConfirm(""); }}>
+                          <KeyRound className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => { if (confirm("Excluir este usuário?")) del.mutate(u.id); }}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -494,9 +499,44 @@ function UsuariosTab() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!pwTarget} onOpenChange={(o) => { if (!o) setPwTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Trocar senha</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">Usuário: <span className="font-medium text-foreground">{pwTarget?.email}</span></div>
+            <div>
+              <Label>Nova senha</Label>
+              <Input type="text" value={pwValue} onChange={(e) => setPwValue(e.target.value)} placeholder="Mín. 8 caracteres" autoFocus />
+            </div>
+            <div>
+              <Label>Confirmar nova senha</Label>
+              <Input type="text" value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)} />
+            </div>
+            {pwValue.length > 0 && pwValue.length < 8 && (
+              <div className="text-xs text-destructive">A senha deve ter ao menos 8 caracteres.</div>
+            )}
+            {pwConfirm.length > 0 && pwValue !== pwConfirm && (
+              <div className="text-xs text-destructive">As senhas não conferem.</div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPwTarget(null)} disabled={changePassword.isPending}>Cancelar</Button>
+            <Button
+              onClick={() => pwTarget && changePassword.mutate({ userId: pwTarget.id, password: pwValue })}
+              disabled={changePassword.isPending || pwValue.length < 8 || pwValue !== pwConfirm}
+            >
+              {changePassword.isPending ? "Salvando..." : "Trocar senha"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 function AreasCheckboxes({ value, onChange, options }: { value: AppArea[]; onChange: (next: AppArea[]) => void; options: AppArea[] }) {
   function toggle(a: AppArea, checked: boolean) {
