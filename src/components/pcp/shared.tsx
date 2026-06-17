@@ -75,7 +75,8 @@ export const TABLE_FONT_STYLE = {
   fontStretch: 'condensed' as const,
 };
 export const TABLE_WRAPPER_CLASS =
-  "hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs";
+  "hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs [&_th]:text-center [&_td]:text-center";
+
 export const TH_CLASS = "h-7 px-1.5 text-[11px] font-bold text-center";
 export const TD_CLASS = "py-0.5 px-1.5 text-[11px] align-top text-center";
 export const TH_RAW_CLASS = "h-7 px-1.5 text-center text-[11px] uppercase whitespace-nowrap font-bold text-muted-foreground";
