@@ -26,6 +26,8 @@ import { addDiasUteis, diasUteisEntre, diasUteisAteHoje } from "@/lib/dias-uteis
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
 import { PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
+import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 
@@ -357,7 +359,15 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               <Field label="Observações de produção">
                 <Textarea rows={2} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
               </Field>
+              {selected && (
+                <ObservacoesOutrosSetores
+                  pedido={selected}
+                  setorAtual="producao"
+                  somente={["arte", "dtf", "silk", "acabamento", "expedicao"]}
+                />
+              )}
             </div>
+
             <div className="sm:col-span-2 flex gap-2">
               <Button type="button" onClick={saveProducao} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" />{selected?.id ? "Atualizar" : "Salvar"} Input de Produção

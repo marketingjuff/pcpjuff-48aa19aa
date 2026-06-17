@@ -12,7 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Trash2, Plus, Download, Upload } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Download, Upload, KeyRound } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+
 import { toast } from "sonner";
 import { useMyRoles } from "@/hooks/use-role";
 import {
@@ -21,7 +23,9 @@ import {
   updateUserRole,
   updateUserName,
   deleteUserAccount,
+  adminUpdateUserPassword,
 } from "@/lib/admin.functions";
+
 import { exportBackup, importBackup } from "@/lib/backup.functions";
 import { useAppList, useAppListMutations, type AppListKind } from "@/lib/app-lists";
 import {
@@ -327,12 +331,18 @@ function UsuariosTab() {
   const renameFn = useServerFn(updateUserName);
   const deleteFn = useServerFn(deleteUserAccount);
 
+  const passwordFn = useServerFn(adminUpdateUserPassword);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
   const [role, setRole] = useState<AppRole>("gestor");
   const [areas, setAreas] = useState<AppArea[]>([]);
   const [editingName, setEditingName] = useState<{ id: string; nome: string } | null>(null);
+  const [pwTarget, setPwTarget] = useState<{ id: string; email: string } | null>(null);
+  const [pwValue, setPwValue] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -367,6 +377,18 @@ function UsuariosTab() {
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const changePassword = useMutation({
+    mutationFn: (v: { userId: string; password: string }) => passwordFn({ data: v }),
+    onSuccess: () => {
+      setPwTarget(null);
+      setPwValue("");
+      setPwConfirm("");
+      toast.success("Senha atualizada.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
 
   const del = useMutation({
     mutationFn: (userId: string) => deleteFn({ data: { userId } }),
@@ -462,9 +484,14 @@ function UsuariosTab() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right align-top">
-                      <Button variant="ghost" size="icon" onClick={() => { if (confirm("Excluir este usuário?")) del.mutate(u.id); }}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" title="Trocar senha" onClick={() => { setPwTarget({ id: u.id, email: u.email }); setPwValue(""); setPwConfirm(""); }}>
+                          <KeyRound className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => { if (confirm("Excluir este usuário?")) del.mutate(u.id); }}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -472,9 +499,44 @@ function UsuariosTab() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!pwTarget} onOpenChange={(o) => { if (!o) setPwTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Trocar senha</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">Usuário: <span className="font-medium text-foreground">{pwTarget?.email}</span></div>
+            <div>
+              <Label>Nova senha</Label>
+              <Input type="text" value={pwValue} onChange={(e) => setPwValue(e.target.value)} placeholder="Mín. 8 caracteres" autoFocus />
+            </div>
+            <div>
+              <Label>Confirmar nova senha</Label>
+              <Input type="text" value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)} />
+            </div>
+            {pwValue.length > 0 && pwValue.length < 8 && (
+              <div className="text-xs text-destructive">A senha deve ter ao menos 8 caracteres.</div>
+            )}
+            {pwConfirm.length > 0 && pwValue !== pwConfirm && (
+              <div className="text-xs text-destructive">As senhas não conferem.</div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPwTarget(null)} disabled={changePassword.isPending}>Cancelar</Button>
+            <Button
+              onClick={() => pwTarget && changePassword.mutate({ userId: pwTarget.id, password: pwValue })}
+              disabled={changePassword.isPending || pwValue.length < 8 || pwValue !== pwConfirm}
+            >
+              {changePassword.isPending ? "Salvando..." : "Trocar senha"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 function AreasCheckboxes({ value, onChange, options }: { value: AppArea[]; onChange: (next: AppArea[]) => void; options: AppArea[] }) {
   function toggle(a: AppArea, checked: boolean) {

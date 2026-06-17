@@ -21,9 +21,11 @@ import { toast } from "sonner";
 import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
   StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip,
-  useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass,
+  useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse,
   ETAPA_FILTRO_OPCOES, matchEtapaFiltro,
 } from "./shared";
+import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
@@ -49,9 +51,24 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
   useEffect(() => {
     if (!selected) { setForm({}); return; }
-    if (!isDirty) setForm(selected);
+    if (!isDirty) {
+      // Pré-preenche campos vazios conforme regras quando o pedido é aberto em Arte.
+      const inclDTF = tipoIncluiDTF(selected.tipo_estampa);
+      const inclSilk = tipoIncluiSilk(selected.tipo_estampa);
+      const isLisa = selected.tipo_estampa === "Lisa";
+      const isEmpty = (v: any) => v === null || v === undefined || v === "";
+      const next: Partial<Pedido> = { ...selected };
+      if (inclDTF && selected.necessita_vetorizacao && isEmpty(selected.vetorizacao_dtf)) next.vetorizacao_dtf = "Não";
+      if (inclDTF && isEmpty(selected.dtf_impresso)) next.dtf_impresso = "Não";
+      if (inclDTF && isEmpty(selected.dtf_cortado)) next.dtf_cortado = "Não";
+      if (inclSilk && selected.necessita_vetorizacao && isEmpty(selected.vetorizacao_silk)) next.vetorizacao_silk = "Não";
+      if (inclSilk && isEmpty(selected.fotolito_impresso)) next.fotolito_impresso = "Não";
+      if (!isLisa && isEmpty(selected.status_arte)) next.status_arte = "Em andamento";
+      setForm(next);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
+
   useDirtyTracker(form, selected ?? {}, active && !!selected);
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
@@ -154,11 +171,13 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
               <ReadOnlyField label="Tipo de Estampa" value={selected.tipo_estampa} />
               <ReadOnlyField label="Vetorização" value={selected.necessita_vetorizacao ? "Sim" : "Não"} />
-              <ReadOnlyField label="Data de Entrada" value={formatDateBR(selected.entrada_pedido)} />
               <ReadOnlyField label="Data Limite da Arte" value={formatDateBR(selected.arte_data)} />
+              <ReadOnlyField label="Início Est." value={formatDateBR(selected.inicio_estamparia)} />
               <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
-              <ReadOnlyField label="Data de Entrega" value={formatDateBR(selected.data_entrega)} />
+              <ReadOnlyField label="STATUS DTF" value={dtfFinalizadoLabel(selected)} />
+              <ReadOnlyField label="STATUS FOTOLITO" value={fotolitoFinalizadoLabel(selected)} />
             </div>
+
 
             {/* Layout / baixar */}
             <div className="pt-3 border-t flex items-center gap-3">
@@ -180,13 +199,14 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 {showDTF && (
                   <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
                     {showVetorDTF && (
-                      <FormField label="Vetorização de DTF">
+                      <FormField label="Vetorização de DTF Realizada">
                         <Select value={form.vetorizacao_dtf ?? ""} onValueChange={(v) => set("vetorizacao_dtf", v)}>
                           <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                           <SelectContent>{VETOR_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                         </Select>
                       </FormField>
                     )}
+
                     <FormField label="DTF Impresso">
                       <Select value={form.dtf_impresso ?? ""} onValueChange={(v) => setSimNaoComData("dtf_impresso", "dtf_executado", v)}>
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -216,13 +236,14 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 {showSilk && (
                   <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                     {showVetorSilk && (
-                      <FormField label="Vetorização de Silk">
+                      <FormField label="Vetorização de Silk Realizada">
                         <Select value={form.vetorizacao_silk ?? ""} onValueChange={(v) => set("vetorizacao_silk", v)}>
                           <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                           <SelectContent>{VETOR_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                         </Select>
                       </FormField>
                     )}
+
                     <FormField label="Fotolito Impresso">
                       <Select value={form.fotolito_impresso ?? ""} onValueChange={(v) => setSimNaoComData("fotolito_impresso", "fotolito_executado", v)}>
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -249,7 +270,9 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                     <FormField label="Observações da Arte">
                       <Textarea value={form.arte_observacao ?? ""} onChange={(e) => set("arte_observacao", e.target.value)} rows={2} />
                     </FormField>
+                    <ObservacoesOutrosSetores pedido={selected} setorAtual="arte" />
                   </div>
+
                 </div>
 
                 <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Atualizar Arte</Button>
@@ -291,30 +314,31 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               </Select>
             </div>
             <div className="space-y-0.5">
-              <label className="text-xs text-muted-foreground font-medium">DTF Finalizado</label>
+              <label className="text-xs text-muted-foreground font-medium">STATUS DTF</label>
               <Select value={fDtf} onValueChange={setFDtf}>
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="Aguardando impressão">Aguardando impressão</SelectItem>
                   <SelectItem value="Aguardando corte">Aguardando corte</SelectItem>
-                  <SelectItem value="Sim">Sim</SelectItem>
+                  <SelectItem value="Finalizado">Finalizado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-0.5">
-              <label className="text-xs text-muted-foreground font-medium">Fotolito Finalizado</label>
+              <label className="text-xs text-muted-foreground font-medium">STATUS FOTOLITO</label>
               <Select value={fFoto} onValueChange={setFFoto}>
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="Aguardando impressão">Aguardando impressão</SelectItem>
                   <SelectItem value="Aguardando data">Aguardando data</SelectItem>
-                  <SelectItem value="Sim">Sim</SelectItem>
+                  <SelectItem value="Finalizado">Finalizado</SelectItem>
 
                 </SelectContent>
               </Select>
             </div>
+
             <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Status da Arte</label>
               <Select value={fStatusArte} onValueChange={setFStatusArte}>
@@ -344,7 +368,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           </div>
 
           {/* Desktop */}
-          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
+          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs [&_th]:text-center [&_td]:text-center">
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
                 <tr>
@@ -355,26 +379,27 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
                   <Th>ESTAMPA</Th>
                   <Th>STATUS DAS PEÇAS</Th>
-                  <Th>DTF FINALIZADO</Th>
-                  <Th>FOTOLITO FINALIZADO</Th>
+                  <Th>STATUS DTF</Th>
+                  <Th>STATUS FOTOLITO</Th>
                   <Th>STATUS DA ARTE</Th>
-                  <SortableTh label="DATA DE ENTRADA" active={sort.key === "entrada"} onClick={() => sort.toggle("entrada")} />
                   <SortableTh label="DATA LIMITE" active={sort.key === "limite"} onClick={() => sort.toggle("limite")} />
+                  <Th>INÍCIO EST.</Th>
                   <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
                 </tr>
               </thead>
+
               <tbody>
                 {dashboardRows.length === 0 ? (
                   <tr><td colSpan={13} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido.</td></tr>
                 ) : dashboardRows.map((p) => {
-                  const bg = rowAlertBgClass(p, feriados);
+                  const bg = linhaAtrasoClasse(p, "arte") || rowAlertBgClass(p, feriados);
                   return (
                     <tr key={p.id}
                       onClick={() => onSelect(p.id)}
                       className={`border-t cursor-pointer hover:bg-accent ${bg} ${selected?.id === p.id ? "bg-accent" : ""}`}>
                       <td className="px-1.5 py-0.5"><EtapaBadgeFromPedido pedido={p} /></td>
                       <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
-                      <td className="px-1.5 py-0.5">{p.orcamento}</td>
+                      <td className="px-1.5 py-0.5 text-left">{p.orcamento}</td>
                       <td className="px-1.5 py-0.5">{p.vendedor ?? "—"}</td>
                       <td className="px-1.5 py-0.5 tabular-nums">{p.qtd ?? "—"}</td>
                       <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
@@ -382,9 +407,10 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       <td className="px-1.5 py-0.5 whitespace-nowrap">{dtfFinalizadoLabel(p)}</td>
                       <td className="px-1.5 py-0.5 whitespace-nowrap">{fotolitoFinalizadoLabel(p)}</td>
                       <td className="px-1.5 py-0.5">{p.status_arte ?? "—"}</td>
-                      <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.entrada_pedido)}</td>
                       <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.arte_data)}</td>
+                      <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.inicio_estamparia)}</td>
                       <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+
                     </tr>
                   );
                 })}

@@ -1,12 +1,13 @@
 import type { Pedido } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk, type EtapaStatus } from "@/lib/pedidos";
+import { calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk, isAtrasadoSetor, type EtapaStatus, type SetorAtraso } from "@/lib/pedidos";
 import { CheckCircle2, Clock, AlertTriangle, Info, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
+
 
 
 /** Baixa o PDF do layout via edge function (sem expor URL do Supabase). */
@@ -74,12 +75,14 @@ export const TABLE_FONT_STYLE = {
   fontStretch: 'condensed' as const,
 };
 export const TABLE_WRAPPER_CLASS =
-  "hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs";
-export const TH_CLASS = "h-7 px-1.5 text-[11px] font-bold";
-export const TD_CLASS = "py-0.5 px-1.5 text-[11px] align-top";
-export const TH_RAW_CLASS = "h-7 px-1.5 text-left text-[11px] uppercase whitespace-nowrap font-bold text-muted-foreground";
-export const TD_RAW_CLASS = "px-1.5 py-0.5 text-[11px] align-top";
+  "hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs [&_th]:text-center [&_td]:text-center";
+
+export const TH_CLASS = "h-7 px-1.5 text-[11px] font-bold text-center";
+export const TD_CLASS = "py-0.5 px-1.5 text-[11px] align-top text-center";
+export const TH_RAW_CLASS = "h-7 px-1.5 text-center text-[11px] uppercase whitespace-nowrap font-bold text-muted-foreground";
+export const TD_RAW_CLASS = "px-1.5 py-0.5 text-[11px] align-top text-center";
 export const BADGE_SM_CLASS = "text-[10px] px-1.5 py-0";
+
 
 /** Cor de fundo de alerta para linhas — mesma regra do Dashboard Master. */
 export function rowAlertBgClass(p: Pedido, feriados: Set<string>): string {
@@ -91,6 +94,26 @@ export function rowAlertBgClass(p: Pedido, feriados: Set<string>): string {
   if (dias === 1) return "bg-yellow-50 hover:bg-yellow-100/80";
   return "";
 }
+
+/** Classe vermelha para linhas atrasadas por setor (item 4 da spec). */
+export function linhaAtrasoClasse(p: Pedido, setor: SetorAtraso): string {
+  return isAtrasadoSetor(p, setor)
+    ? "bg-red-100 text-red-900 hover:bg-red-200/90"
+    : "";
+}
+
+/** Mapeamento aba → setor para atraso. */
+export function setorDaAba(tab: "dadosin" | "arte" | "dtf" | "silk" | "acabamento" | "expedicao" | "dashboard"): SetorAtraso | null {
+  switch (tab) {
+    case "arte": return "arte";
+    case "dtf": return "dtf";
+    case "silk": return "silk";
+    case "acabamento": return "acabamento";
+    case "expedicao": return "expedicao";
+    default: return null;
+  }
+}
+
 
 export type SortDir = "asc" | "desc";
 

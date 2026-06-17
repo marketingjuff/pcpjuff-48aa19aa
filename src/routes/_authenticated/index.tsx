@@ -221,19 +221,20 @@ function AppHomeInner() {
           )}
           {canSee("dtf") && (
             <TabsContent value="dtf" forceMount hidden={tab !== "dtf"}>
-              <DTFTab active={tab === "dtf"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
+              <DTFTab active={tab === "dtf"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} />
             </TabsContent>
           )}
           {canSee("silk") && (
             <TabsContent value="silk" forceMount hidden={tab !== "silk"}>
-              <SilkTab active={tab === "silk"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
+              <SilkTab active={tab === "silk"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} />
             </TabsContent>
           )}
           {canSee("acabamento") && (
             <TabsContent value="acab" forceMount hidden={tab !== "acab"}>
-              <AcabamentoTab active={tab === "acab"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
+              <AcabamentoTab active={tab === "acab"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} />
             </TabsContent>
           )}
+
           {canSee("expedicao") && (
             <TabsContent value="exp" forceMount hidden={tab !== "exp"}>
               <ExpedicaoTab pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />

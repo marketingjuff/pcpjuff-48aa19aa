@@ -8,7 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag } from "lucide-react";
-import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
+import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
+import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+
 import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
 
@@ -207,7 +209,9 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
                     onChange={(e) => set("exp_observacoes", e.target.value)}
                   />
                 </FormField>
+                <ObservacoesOutrosSetores pedido={selected} setorAtual="expedicao" />
               </div>
+
             </div>
 
             {todosCompletos(selected, form) && (
@@ -277,7 +281,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
               );
             })}
           </div>
-          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
+          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs [&_th]:text-center [&_td]:text-center">
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
                 <tr>
@@ -307,7 +311,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
               <tbody>
                 {dashboardPedidos.map((p) => {
                   const pend = pendenciasDoPedido(p);
-                  const bg = rowAlertBgClass(p, feriados);
+                  const bg = linhaAtrasoClasse(p, "expedicao") || rowAlertBgClass(p, feriados);
                   return (
                     <tr key={p.id}
                       onClick={() => onSelect(p.id)}
@@ -318,7 +322,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
                           : <span className="text-warning-foreground">{pend.join(", ")}</span>}
                       </td>
                       <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
-                      <td className="px-1.5 py-0.5">{p.orcamento}</td>
+                      <td className="px-1.5 py-0.5 text-left">{p.orcamento}</td>
                       <td className="px-1.5 py-0.5">{p.uf_entrega ?? "—"}</td>
                       <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
                       <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>

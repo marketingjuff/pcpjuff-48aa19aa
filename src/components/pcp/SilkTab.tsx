@@ -11,7 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
+import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { useFeriados } from "@/hooks/use-feriados";
 
@@ -24,9 +26,11 @@ interface Props {
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
   saving: boolean;
   active?: boolean;
+  onNavigate?: (tab: string) => void;
 }
 
-export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = true }: Props) {
+export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate }: Props) {
+
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { names: operadoresSilk } = useAppList("silk");
@@ -132,13 +136,30 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   <div className="text-xs font-medium text-muted-foreground">Layout</div>
                   {selected.layout_url ? (
                     <div className="space-y-1">
-                      <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
-                        <Download className="h-4 w-4 mr-1" /> Baixar layout
-                      </Button>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                          <Download className="h-4 w-4 mr-1" /> Baixar layout
+                        </Button>
+                        {onNavigate && (
+                          <Button size="sm" onClick={() => onNavigate("arte")} className="bg-[#cf0e0e] hover:bg-[#b00b0b] text-white">
+                            Voltar para a Arte
+                          </Button>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground truncate">{selected.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</div>
                     </div>
-                  ) : <div className="text-sm text-muted-foreground">Sem layout</div>}
+                  ) : (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="text-sm text-muted-foreground">Sem layout</div>
+                      {onNavigate && (
+                        <Button size="sm" onClick={() => onNavigate("arte")} className="bg-[#cf0e0e] hover:bg-[#b00b0b] text-white">
+                          Voltar para a Arte
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
+
                 <ReadOnlyField label="Início estamparia" value={formatDateBR(selected.inicio_estamparia)} />
                 <ReadOnlyField label="Limite estamparia" value={formatDateBR(selected.termino_estamparia)} />
                 <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
@@ -169,7 +190,9 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   <FormField label="Observações do Silk">
                     <Textarea value={form.silk_observacao ?? ""} onChange={(e) => set("silk_observacao", e.target.value)} rows={2} />
                   </FormField>
+                  <ObservacoesOutrosSetores pedido={selected} setorAtual="silk" />
                 </div>
+
               </div>
               <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-1" />Atualizar Silk</Button>
             </CardContent>
@@ -228,7 +251,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
               </PedidoMobileCard>
             ))}
           </div>
-          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
+          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs [&_th]:text-center [&_td]:text-center">
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
                 <tr>
@@ -262,12 +285,12 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                     });
                   }
                   return lista.map((p) => {
-                    const bg = rowAlertBgClass(p, feriados);
+                    const bg = linhaAtrasoClasse(p, "silk") || rowAlertBgClass(p, feriados);
                     return (
                       <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${bg} ${selected?.id === p.id ? "bg-accent" : ""}`}>
                         <td className="px-1.5 py-0.5"><EtapaBadgeFromPedido pedido={p} /></td>
                         <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
-                        <td className="px-1.5 py-0.5">{p.orcamento}</td>
+                        <td className="px-1.5 py-0.5 text-left">{p.orcamento}</td>
                         <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                         <td className="px-1.5 py-0.5">{p.qtd ?? "—"}</td>
                         <td className="px-1.5 py-0.5"><StatusPecasBadge pedido={p} /></td>

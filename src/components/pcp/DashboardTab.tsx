@@ -180,40 +180,6 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
         <CardContent className="p-3 pt-0 space-y-2">
           <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
             <div className="space-y-0.5">
-              <label className="text-xs text-muted-foreground font-medium">Buscar</label>
-              <Input className="h-8" placeholder="Pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
-            </div>
-            <div className="space-y-0.5">
-              <label className="text-xs text-muted-foreground font-medium">Vendedor</label>
-              <Select value={vendedor} onValueChange={setVendedor}>
-                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos vendedores</SelectItem>
-                  {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-0.5">
-              <label className="text-xs text-muted-foreground font-medium">Status Peças</label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos status</SelectItem>
-                  {STATUS_PECAS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-0.5">
-              <label className="text-xs text-muted-foreground font-medium">Tipo Estampa</label>
-              <Select value={tipo} onValueChange={setTipo}>
-                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos tipos</SelectItem>
-                  {TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Etapa</label>
               <Select value={etapa} onValueChange={(v) => setEtapa(v as Etapa)}>
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
@@ -232,7 +198,40 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                   <SelectItem value="expedicao">Aguardando Expedição</SelectItem>
                   <SelectItem value="finalizados">Finalizados</SelectItem>
                 </SelectContent>
-
+              </Select>
+            </div>
+            <div className="space-y-0.5">
+              <label className="text-xs text-muted-foreground font-medium">Buscar (Pedido / Orçamento)</label>
+              <Input className="h-8" placeholder="Pedido/orçamento..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+            <div className="space-y-0.5">
+              <label className="text-xs text-muted-foreground font-medium">Vendedor</label>
+              <Select value={vendedor} onValueChange={setVendedor}>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos vendedores</SelectItem>
+                  {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-0.5">
+              <label className="text-xs text-muted-foreground font-medium">Tipo Estampa</label>
+              <Select value={tipo} onValueChange={setTipo}>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos tipos</SelectItem>
+                  {TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-0.5">
+              <label className="text-xs text-muted-foreground font-medium">Status Peças</label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos status</SelectItem>
+                  {STATUS_PECAS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                </SelectContent>
               </Select>
             </div>
             <div className="space-y-0.5">
@@ -240,6 +239,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
               <DateInputBR className="h-8" value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
             </div>
           </div>
+
 
           {/* Mobile: cards */}
           <div className="md:hidden rounded-md border divide-y">
@@ -266,15 +266,15 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">ETAPA</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">PEDIDO</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">ORÇAMENTO</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">VENDEDOR</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">ETAPA</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">PEDIDO</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">ORÇAMENTO</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">VENDEDOR</TableHead>
                   <SortHead label="QTD" k="qtd" sort={sort} />
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">ESTAMPA</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">STATUS DAS PEÇAS</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">FRETE</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">UF</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">ESTAMPA</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">STATUS DAS PEÇAS</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">FRETE</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">UF</TableHead>
                   <SortHead label="ENTRADA" k="entrada" sort={sort} />
                   <SortHead label="ARTE LIMITE" k="arte" sort={sort} />
                   <SortHead label="INÍCIO EST." k="inicio" sort={sort} />
@@ -286,6 +286,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                   <SortHead label="DIAS" k="dias" sort={sort} center />
                 </TableRow>
               </TableHeader>
+
               <TableBody>
                 {loading ? (
                   <TableRow><TableCell colSpan={18} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
@@ -303,26 +304,27 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                         onDoubleClick={() => onEdit(p.id)}
                         className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
                       >
-                        <TableCell className="py-0.5 px-1.5 text-[11px]"><Badge variant="outline" className={`${etapaPaletteClass(calcularEtapaAtual(p).etapa)} text-[10px] px-1.5 py-0`}>{calcularEtapaAtual(p).etapa}</Badge></TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] font-medium align-top">{p.pedido_olist}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] max-w-[200px] align-top">
+                        <TableCell className="py-0.5 px-1.5 text-[11px] text-center"><Badge variant="outline" className={`${etapaPaletteClass(calcularEtapaAtual(p).etapa)} text-[10px] px-1.5 py-0`}>{calcularEtapaAtual(p).etapa}</Badge></TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] font-medium align-top text-center">{p.pedido_olist}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] max-w-[200px] align-top text-left">
                           <span className="block leading-tight line-clamp-2 break-words" title={p.orcamento ?? ""}>{p.orcamento}</span>
                         </TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] align-top">{p.vendedor}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] tabular-nums align-top">{p.qtd}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] align-top"><Badge variant="outline" className="text-[10px] px-1.5 py-0">{p.tipo_estampa}</Badge></TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] align-top"><StatusPecasBadge pedido={p} /></TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] align-top">{p.frete ?? "—"}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] align-top">{p.uf_entrega ?? "—"}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(p.entrada_pedido) || "—"}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(p.arte_data) || "—"}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(inicio) || "—"}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(termino) || "—"}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(p.acabamento_data) || "—"}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(p.expedicao_entrou_em) || "—"}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(p.saida_juff) || "—"}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top">{formatDateBR(p.data_entrega) || "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] align-top text-center">{p.vendedor}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] tabular-nums align-top text-center">{p.qtd}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] align-top text-center"><Badge variant="outline" className="text-[10px] px-1.5 py-0">{p.tipo_estampa}</Badge></TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] align-top text-center"><StatusPecasBadge pedido={p} /></TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] align-top text-center">{p.frete ?? "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] align-top text-center">{p.uf_entrega ?? "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.entrada_pedido) || "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.arte_data) || "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(inicio) || "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(termino) || "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.acabamento_data) || "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.expedicao_entrou_em) || "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.saida_juff) || "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.data_entrega) || "—"}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] tabular-nums align-top text-center">{p.data_entrega ? (diasUteisAteHoje(p.data_entrega, feriados) ?? "—") : "—"}</TableCell>
+
                       </TableRow>
                     );
                   })

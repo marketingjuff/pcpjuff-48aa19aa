@@ -11,7 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
+import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
@@ -24,9 +26,11 @@ interface Props {
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
   saving: boolean;
   active?: boolean;
+  onNavigate?: (tab: string) => void;
 }
 
-export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, active = true }: Props) {
+export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate }: Props) {
+
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { names: responsaveis } = useAppList("acabamento");
@@ -146,13 +150,22 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 <div className="text-xs font-medium text-muted-foreground">Layout</div>
                 {selected.layout_url ? (
                   <div className="space-y-1">
-                    <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
-                      <Download className="h-4 w-4 mr-1" /> Baixar layout
-                    </Button>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                        <Download className="h-4 w-4 mr-1" /> Baixar layout
+                      </Button>
+                      <VoltarButtons selected={selected} onNavigate={onNavigate} />
+                    </div>
                     <div className="text-xs text-muted-foreground truncate">{selected.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</div>
                   </div>
-                ) : <div className="text-sm text-muted-foreground">Sem layout</div>}
+                ) : (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="text-sm text-muted-foreground">Sem layout</div>
+                    <VoltarButtons selected={selected} onNavigate={onNavigate} />
+                  </div>
+                )}
               </div>
+
             </div>
             <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t">
               <FormField label="EMBALADO?">
@@ -174,7 +187,9 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 <FormField label="Observações do Acabamento">
                   <Textarea value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} rows={3} />
                 </FormField>
+                <ObservacoesOutrosSetores pedido={selected} setorAtual="acabamento" />
               </div>
+
             </div>
             <div className="flex gap-2 flex-wrap">
               <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
@@ -240,7 +255,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </PedidoMobileCard>
             ))}
           </div>
-          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
+          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs [&_th]:text-center [&_td]:text-center">
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
                 <tr>
@@ -272,12 +287,12 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                     });
                   }
                   return lista.map((p) => {
-                    const bg = rowAlertBgClass(p, feriados);
+                    const bg = linhaAtrasoClasse(p, "acabamento") || rowAlertBgClass(p, feriados);
                     return (
                       <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${bg} ${selected?.id === p.id ? "bg-accent" : ""}`}>
                         <td className="px-1.5 py-0.5"><EtapaBadgeFromPedido pedido={p} /></td>
                         <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
-                        <td className="px-1.5 py-0.5">{p.orcamento}</td>
+                        <td className="px-1.5 py-0.5 text-left">{p.orcamento}</td>
                         <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                         <td className="px-1.5 py-0.5">{p.qtd ?? "—"}</td>
                         <td className="px-1.5 py-0.5"><StatusPecasBadge pedido={p} /></td>
@@ -304,3 +319,23 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
     </div>
   );
 }
+
+function VoltarButtons({ selected, onNavigate }: { selected: Pedido; onNavigate?: (tab: string) => void }) {
+  if (!onNavigate) return null;
+  const isLisa = selected.tipo_estampa === "Lisa";
+  const showDtf = !isLisa && selected.dtf_estampado === "Sim";
+  const showSilk = !isLisa && selected.silk_feito === "Sim";
+  const cls = "bg-[#cf0e0e] hover:bg-[#b00b0b] text-white";
+  return (
+    <>
+      {showDtf && (
+        <Button size="sm" className={cls} onClick={() => onNavigate("dtf")}>Voltar para DTF</Button>
+      )}
+      {showSilk && (
+        <Button size="sm" className={cls} onClick={() => onNavigate("silk")}>Voltar para Silk</Button>
+      )}
+      <Button size="sm" className={cls} onClick={() => onNavigate("dados")}>Voltar para Produção</Button>
+    </>
+  );
+}
+

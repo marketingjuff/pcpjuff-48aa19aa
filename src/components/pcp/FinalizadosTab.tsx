@@ -14,10 +14,13 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { RotateCcw, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RotateCcw, Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
-import { PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th } from "./shared";
+import { PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, ReadOnlyField } from "./shared";
+import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+
 
 interface Props {
   pedidos: Pedido[];
@@ -36,6 +39,8 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const sort = useSort<"qtd"|"saida"|"data_saida"|"fin">();
+  const [historico, setHistorico] = useState<Pedido | null>(null);
+
 
   const finalizados = useMemo(() => {
     const hoje = new Date();
@@ -200,7 +205,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
             </div>
           ))}
         </div>
-        <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs">
+        <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs [&_th]:text-center [&_td]:text-center">
           <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
             <thead>
               <tr>
@@ -230,9 +235,9 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                 <tr><td colSpan={isAdmin ? 11 : 10} className="text-center py-8 text-muted-foreground">Nenhum pedido finalizado.</td></tr>
               ) : (
                 finalizados.map((p) => (
-                  <tr key={p.id} className="border-t">
+                  <tr key={p.id} className="border-t cursor-pointer hover:bg-accent" onClick={() => setHistorico(p)}>
                     {isAdmin && (
-                      <td className="px-1.5 py-0.5 w-10">
+                      <td className="px-1.5 py-0.5 w-10" onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={selectedIds.has(p.id)}
                           onCheckedChange={(c) => toggleOne(p.id, c === true)}
@@ -241,7 +246,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                       </td>
                     )}
                     <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
-                    <td className="px-1.5 py-0.5 max-w-[200px] truncate">{p.orcamento}</td>
+                    <td className="px-1.5 py-0.5 max-w-[200px] truncate text-left">{p.orcamento}</td>
                     <td className="px-1.5 py-0.5">{p.qtd}</td>
                     <td className="px-1.5 py-0.5">{p.vendedor}</td>
                     <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
@@ -249,10 +254,11 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                     <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.data_saida_juff)}</td>
                     <td className="px-1.5 py-0.5 text-xs">{p.responsavel_acabamento ?? "—"}</td>
                     <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.finalizado_em?.slice(0,10))}</td>
-                    <td className="px-1.5 py-0.5 text-right">
+                    <td className="px-1.5 py-0.5 text-right" onClick={(e) => e.stopPropagation()}>
                       <Button size="sm" variant="outline" onClick={() => onReabrir(p.id)}>
                         <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
                       </Button>
+
                     </td>
                   </tr>
                 ))
@@ -284,6 +290,53 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!historico} onOpenChange={(o) => { if (!o) setHistorico(null); }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-4 w-4" /> Histórico — {historico?.pedido_olist}
+            </DialogTitle>
+          </DialogHeader>
+          {historico && (
+            <div className="space-y-4 text-sm">
+              <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
+                <ReadOnlyField label="Pedido" value={historico.pedido_olist} />
+                <ReadOnlyField label="Orçamento" value={historico.orcamento} />
+                <ReadOnlyField label="Tipo de Estampa" value={historico.tipo_estampa} />
+                <ReadOnlyField label="QTD" value={historico.qtd} />
+                <ReadOnlyField label="Vendedor" value={historico.vendedor} />
+                <ReadOnlyField label="Status de Peças" value={historico.status_pecas} />
+              </div>
+              <div className="border-t pt-3">
+                <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">Datas de processo</div>
+                <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
+                  <ReadOnlyField label="Entrada do pedido" value={formatDateBR(historico.entrada_pedido)} />
+                  <ReadOnlyField label="Limite da Arte" value={formatDateBR(historico.arte_data)} />
+                  <ReadOnlyField label="Início estamparia" value={formatDateBR(historico.inicio_estamparia)} />
+                  <ReadOnlyField label="Término estamparia" value={formatDateBR(historico.termino_estamparia)} />
+                  <ReadOnlyField label="DTF executado" value={formatDateBR(historico.dtf_data_executada)} />
+                  <ReadOnlyField label="Silk executado" value={formatDateBR(historico.silk_data_executada)} />
+                  <ReadOnlyField label="Acabamento" value={formatDateBR(historico.acabamento_data)} />
+                  <ReadOnlyField label="Saída Juff (prazo)" value={formatDateBR(historico.saida_juff)} />
+                  <ReadOnlyField label="Saída Juff (real)" value={formatDateBR(historico.data_saida_juff)} />
+                  <ReadOnlyField label="Entrega" value={formatDateBR(historico.data_entrega)} />
+                  <ReadOnlyField label="Finalizado em" value={formatDateBR(historico.finalizado_em?.slice(0,10))} />
+                </div>
+              </div>
+              <div className="border-t pt-3">
+                <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">Observações</div>
+                <ObservacoesOutrosSetores
+                  pedido={historico}
+                  /* setor inexistente para listar TODOS os 7 */
+                  setorAtual={"__none__" as any}
+                />
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
+
