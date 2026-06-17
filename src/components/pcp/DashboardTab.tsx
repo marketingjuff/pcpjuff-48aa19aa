@@ -306,8 +306,8 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                       >
                         <TableCell className="py-0.5 px-1.5 text-[11px] text-center"><Badge variant="outline" className={`${etapaPaletteClass(calcularEtapaAtual(p).etapa)} text-[10px] px-1.5 py-0`}>{calcularEtapaAtual(p).etapa}</Badge></TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] font-medium align-top text-center">{p.pedido_olist}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] max-w-[200px] align-top text-left">
-                          <span className="block leading-tight line-clamp-2 break-words" title={p.orcamento ?? ""}>{p.orcamento}</span>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] max-w-[200px] align-top !text-left">
+                          <span className="block leading-tight line-clamp-2 break-words text-left" title={p.orcamento ?? ""}>{p.orcamento}</span>
                         </TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] align-top text-center">{p.vendedor}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] tabular-nums align-top text-center">{p.qtd}</TableCell>

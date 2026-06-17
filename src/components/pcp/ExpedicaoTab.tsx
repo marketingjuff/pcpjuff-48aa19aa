@@ -322,7 +322,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
                           : <span className="text-warning-foreground">{pend.join(", ")}</span>}
                       </td>
                       <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
-                      <td className="px-1.5 py-0.5 text-left">{p.orcamento}</td>
+                      <td className="px-1.5 py-0.5 !text-left">{p.orcamento}</td>
                       <td className="px-1.5 py-0.5">{p.uf_entrega ?? "—"}</td>
                       <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
                       <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
