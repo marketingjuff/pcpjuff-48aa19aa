@@ -180,13 +180,14 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 {showDTF && (
                   <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
                     {showVetorDTF && (
-                      <FormField label="Vetorização de DTF">
+                      <FormField label="Vetorização de DTF Realizada">
                         <Select value={form.vetorizacao_dtf ?? ""} onValueChange={(v) => set("vetorizacao_dtf", v)}>
                           <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                           <SelectContent>{VETOR_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                         </Select>
                       </FormField>
                     )}
+
                     <FormField label="DTF Impresso">
                       <Select value={form.dtf_impresso ?? ""} onValueChange={(v) => setSimNaoComData("dtf_impresso", "dtf_executado", v)}>
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
