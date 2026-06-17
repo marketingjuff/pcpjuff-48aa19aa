@@ -378,6 +378,18 @@ function UsuariosTab() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const changePassword = useMutation({
+    mutationFn: (v: { userId: string; password: string }) => passwordFn({ data: v }),
+    onSuccess: () => {
+      setPwTarget(null);
+      setPwValue("");
+      setPwConfirm("");
+      toast.success("Senha atualizada.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+
   const del = useMutation({
     mutationFn: (userId: string) => deleteFn({ data: { userId } }),
     onSuccess: () => {
