@@ -24,6 +24,8 @@ import {
   useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse,
   ETAPA_FILTRO_OPCOES, matchEtapaFiltro,
 } from "./shared";
+import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
