@@ -331,12 +331,18 @@ function UsuariosTab() {
   const renameFn = useServerFn(updateUserName);
   const deleteFn = useServerFn(deleteUserAccount);
 
+  const passwordFn = useServerFn(adminUpdateUserPassword);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
   const [role, setRole] = useState<AppRole>("gestor");
   const [areas, setAreas] = useState<AppArea[]>([]);
   const [editingName, setEditingName] = useState<{ id: string; nome: string } | null>(null);
+  const [pwTarget, setPwTarget] = useState<{ id: string; email: string } | null>(null);
+  const [pwValue, setPwValue] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
