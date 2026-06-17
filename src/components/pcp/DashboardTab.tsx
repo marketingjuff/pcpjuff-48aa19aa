@@ -266,15 +266,15 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">ETAPA</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">PEDIDO</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">ORÇAMENTO</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">VENDEDOR</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">ETAPA</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">PEDIDO</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">ORÇAMENTO</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">VENDEDOR</TableHead>
                   <SortHead label="QTD" k="qtd" sort={sort} />
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">ESTAMPA</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">STATUS DAS PEÇAS</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">FRETE</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold">UF</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">ESTAMPA</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">STATUS DAS PEÇAS</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">FRETE</TableHead>
+                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">UF</TableHead>
                   <SortHead label="ENTRADA" k="entrada" sort={sort} />
                   <SortHead label="ARTE LIMITE" k="arte" sort={sort} />
                   <SortHead label="INÍCIO EST." k="inicio" sort={sort} />
@@ -286,6 +286,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                   <SortHead label="DIAS" k="dias" sort={sort} center />
                 </TableRow>
               </TableHeader>
+
               <TableBody>
                 {loading ? (
                   <TableRow><TableCell colSpan={18} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
