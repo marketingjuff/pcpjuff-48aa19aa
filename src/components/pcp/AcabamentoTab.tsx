@@ -26,9 +26,11 @@ interface Props {
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
   saving: boolean;
   active?: boolean;
+  onNavigate?: (tab: string) => void;
 }
 
-export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, active = true }: Props) {
+export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate }: Props) {
+
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { names: responsaveis } = useAppList("acabamento");
