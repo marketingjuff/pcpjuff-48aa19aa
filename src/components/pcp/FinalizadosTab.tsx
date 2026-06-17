@@ -39,6 +39,8 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const sort = useSort<"qtd"|"saida"|"data_saida"|"fin">();
+  const [historico, setHistorico] = useState<Pedido | null>(null);
+
 
   const finalizados = useMemo(() => {
     const hoje = new Date();
