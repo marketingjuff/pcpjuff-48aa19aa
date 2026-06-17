@@ -295,30 +295,31 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               </Select>
             </div>
             <div className="space-y-0.5">
-              <label className="text-xs text-muted-foreground font-medium">DTF Finalizado</label>
+              <label className="text-xs text-muted-foreground font-medium">STATUS DTF</label>
               <Select value={fDtf} onValueChange={setFDtf}>
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="Aguardando impressão">Aguardando impressão</SelectItem>
                   <SelectItem value="Aguardando corte">Aguardando corte</SelectItem>
-                  <SelectItem value="Sim">Sim</SelectItem>
+                  <SelectItem value="Finalizado">Finalizado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-0.5">
-              <label className="text-xs text-muted-foreground font-medium">Fotolito Finalizado</label>
+              <label className="text-xs text-muted-foreground font-medium">STATUS FOTOLITO</label>
               <Select value={fFoto} onValueChange={setFFoto}>
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="Aguardando impressão">Aguardando impressão</SelectItem>
                   <SelectItem value="Aguardando data">Aguardando data</SelectItem>
-                  <SelectItem value="Sim">Sim</SelectItem>
+                  <SelectItem value="Finalizado">Finalizado</SelectItem>
 
                 </SelectContent>
               </Select>
             </div>
+
             <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Status da Arte</label>
               <Select value={fStatusArte} onValueChange={setFStatusArte}>
