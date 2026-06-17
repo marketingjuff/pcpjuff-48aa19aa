@@ -272,7 +272,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                     });
                   }
                   return lista.map((p) => {
-                    const bg = rowAlertBgClass(p, feriados);
+                    const bg = linhaAtrasoClasse(p, "acabamento") || rowAlertBgClass(p, feriados);
                     return (
                       <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${bg} ${selected?.id === p.id ? "bg-accent" : ""}`}>
                         <td className="px-1.5 py-0.5"><EtapaBadgeFromPedido pedido={p} /></td>

@@ -367,7 +367,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 {dashboardRows.length === 0 ? (
                   <tr><td colSpan={13} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido.</td></tr>
                 ) : dashboardRows.map((p) => {
-                  const bg = rowAlertBgClass(p, feriados);
+                  const bg = linhaAtrasoClasse(p, "arte") || rowAlertBgClass(p, feriados);
                   return (
                     <tr key={p.id}
                       onClick={() => onSelect(p.id)}

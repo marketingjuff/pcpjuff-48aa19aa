@@ -307,7 +307,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
               <tbody>
                 {dashboardPedidos.map((p) => {
                   const pend = pendenciasDoPedido(p);
-                  const bg = rowAlertBgClass(p, feriados);
+                  const bg = linhaAtrasoClasse(p, "expedicao") || rowAlertBgClass(p, feriados);
                   return (
                     <tr key={p.id}
                       onClick={() => onSelect(p.id)}
