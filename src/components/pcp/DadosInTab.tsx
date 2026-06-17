@@ -357,7 +357,15 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               <Field label="Observações de produção">
                 <Textarea rows={2} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
               </Field>
+              {selected && (
+                <ObservacoesOutrosSetores
+                  pedido={selected}
+                  setorAtual="producao"
+                  somente={["arte", "dtf", "silk", "acabamento", "expedicao"]}
+                />
+              )}
             </div>
+
             <div className="sm:col-span-2 flex gap-2">
               <Button type="button" onClick={saveProducao} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" />{selected?.id ? "Atualizar" : "Salvar"} Input de Produção
