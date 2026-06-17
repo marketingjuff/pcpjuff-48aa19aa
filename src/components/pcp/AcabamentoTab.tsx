@@ -176,7 +176,9 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 <FormField label="Observações do Acabamento">
                   <Textarea value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} rows={3} />
                 </FormField>
+                <ObservacoesOutrosSetores pedido={selected} setorAtual="acabamento" />
               </div>
+
             </div>
             <div className="flex gap-2 flex-wrap">
               <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
