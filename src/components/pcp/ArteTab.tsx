@@ -230,9 +230,17 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       </Select>
                     </FormField>
                     {form.dtf_cortado === "Sim" && (
-                      <FormField label="Data DTF Cortado">
-                        <DateInputBR value={form.dtf_cortado_data} onChange={(v) => set("dtf_cortado_data", v)} />
-                      </FormField>
+                      <>
+                        <FormField label="Data DTF Cortado">
+                          <DateInputBR value={form.dtf_cortado_data} onChange={(v) => set("dtf_cortado_data", v)} />
+                        </FormField>
+                        <FormField label="Quem cortou o DTF?">
+                          <Select value={form.quem_cortou_dtf ?? ""} onValueChange={(v) => set("quem_cortou_dtf", v)}>
+                            <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                            <SelectContent>{opCorteDTF.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </FormField>
+                      </>
                     )}
                   </div>
                 )}
