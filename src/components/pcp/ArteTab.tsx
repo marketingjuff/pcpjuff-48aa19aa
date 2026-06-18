@@ -176,8 +176,8 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               <ReadOnlyField label="Data Limite da Arte" value={formatDateBR(selected.arte_data)} />
               <ReadOnlyField label="Início Est." value={formatDateBR(selected.inicio_estamparia)} />
               <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
-              <ReadOnlyField label="STATUS DTF" value={dtfFinalizadoLabel(selected)} />
-              <ReadOnlyField label="STATUS FOTOLITO" value={fotolitoFinalizadoLabel(selected)} />
+              {showDTF && <ReadOnlyField label="STATUS DTF" value={dtfFinalizadoLabel(selected)} />}
+              {showSilk && <ReadOnlyField label="STATUS FOTOLITO" value={fotolitoFinalizadoLabel(selected)} />}
             </div>
 
 
