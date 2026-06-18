@@ -48,11 +48,16 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
   function setEmbalado(v: string) {
-    setForm((f) => ({
-      ...f,
-      embalado: v,
-      ...(v !== "Sim" ? { data_saida_juff: null, responsavel_acabamento: null, responsavel_conferencia: null } : {}),
-    }));
+    setForm((f) => {
+      const curData = (f.data_saida_juff ?? selected?.data_saida_juff) ?? null;
+      const nextData = v === "Sim" ? (curData ?? todayISO()) : null;
+      return {
+        ...f,
+        embalado: v,
+        data_saida_juff: nextData,
+        ...(v !== "Sim" ? { responsavel_acabamento: null, responsavel_conferencia: null } : {}),
+      };
+    });
   }
   function setDataSaida(v: string | null | undefined) {
     setForm((f) => ({
