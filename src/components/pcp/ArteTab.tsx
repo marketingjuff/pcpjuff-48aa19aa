@@ -8,6 +8,7 @@ import {
   TIPOS_ESTAMPA,
 } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
+import { todayISO } from "@/lib/dias-uteis";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
