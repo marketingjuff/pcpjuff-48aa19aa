@@ -129,7 +129,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
                 <ReadOnlyField label="QTD" value={selected.qtd} />
                 <ReadOnlyField label="Status de Peças" value={selected.status_pecas} />
-                <ReadOnlyField label="DTF Impresso? (Arte)" value={selected.dtf_impresso ?? "Pendente"} />
+                <ReadOnlyField label="Pedido pronto para estampar?" value={selected.dtf_impresso === "Sim" && selected.dtf_cortado === "Sim" ? "Sim" : "Não"} />
                 <div className="space-y-1">
                   <div className="text-xs font-medium text-muted-foreground">Layout</div>
                   {selected.layout_url ? (
