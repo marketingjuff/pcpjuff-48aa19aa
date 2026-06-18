@@ -51,3 +51,28 @@ export function diasUteisAteHoje(target: string | null | undefined, feriados: Fe
   if (alvo.getTime() > hoje.getTime()) return diasUteisEntre(hoje, alvo, feriados);
   return -diasUteisEntre(alvo, hoje, feriados);
 }
+
+/** Adiciona N dias corridos a uma data ISO. */
+export function addDiasCorridos(start: string | Date, n: number): string {
+  const d = typeof start === "string" ? new Date(start + "T00:00:00") : new Date(start);
+  d.setDate(d.getDate() + n);
+  return toISO(d);
+}
+
+/** Empurra a data para o próximo dia útil se cair em fim de semana / feriado. */
+export function proximoDiaUtil(start: string | Date, feriados: Feriados = new Set()): string {
+  const d = typeof start === "string" ? new Date(start + "T00:00:00") : new Date(start);
+  while (true) {
+    if (isDiaUtil(d, feriados)) return toISO(d);
+    d.setDate(d.getDate() + 1);
+  }
+}
+
+/** Hoje em ISO yyyy-mm-dd, no fuso local. */
+export function todayISO(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
