@@ -93,24 +93,35 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     });
   }
 
-  // Cálculos automáticos — regras v2:
-  // Frete: reservar tempo_frete dias úteis VAZIOS — a data de entrega NÃO conta.
-  //   => Saída Juff = (dia útil anterior à entrega) menos (tempo_frete-1) dias úteis.
-  // Produção: dia da Saída Juff NÃO conta como dia útil disponível.
-  //   => tempo_producao = dias úteis entre entrada e o dia útil anterior à saída.
+  // Cálculos automáticos
   const tempoFreteNum = Number(form.tempo_frete ?? 0) || 0;
   const saidaJuffCalc = useMemo(() => {
     if (!form.data_entrega || !tempoFreteNum) return null;
-    // Recua 1 dia útil para "não contar" a data de entrega, depois os demais dias de frete.
     return addDiasUteis(form.data_entrega, -tempoFreteNum, feriados);
   }, [form.data_entrega, tempoFreteNum, feriados]);
   const tempoProducaoCalc = useMemo(() => {
     if (!form.entrada_pedido || !saidaJuffCalc) return null;
-    // "Dia da saída não conta" — diasUteisEntre é exclusivo do início e inclusivo do fim,
-    // então recuamos 1 dia útil para excluir o próprio dia da saída.
     const ultimoDiaProducao = addDiasUteis(saidaJuffCalc, -1, feriados);
     return diasUteisEntre(form.entrada_pedido, ultimoDiaProducao, feriados);
   }, [form.entrada_pedido, saidaJuffCalc, feriados]);
+
+  // A1 — Início de Acabamento
+  // Silk/Silk+DTF: término_estamparia + (dias_secagem) dias corridos pulando o dia do término e o dia do início,
+  //   ou seja: término + dias_secagem + 1 dia corrido; depois empurra para o próximo dia útil.
+  // Só DTF: igual ao término_estamparia.
+  const isLisa = form.tipo_estampa === "Lisa";
+  const incluiSilk = tipoIncluiSilk(form.tipo_estampa);
+  const soDTF = tipoIncluiDTF(form.tipo_estampa) && !incluiSilk;
+  const diasSecagemNum = Number(form.dias_secagem ?? 0) || 0;
+  const inicioAcabamentoCalc = useMemo(() => {
+    if (!form.termino_estamparia || isLisa) return null;
+    if (soDTF) return form.termino_estamparia;
+    if (!incluiSilk) return null;
+    // término dia 1, secagem N dias → início no dia (1 + N + 1); o dia do término e o dia do início não contam.
+    const base = addDiasCorridos(form.termino_estamparia, diasSecagemNum + 1);
+    return proximoDiaUtil(base, feriados);
+  }, [form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados]);
+
 
   const VENDOR_REQUIRED: (keyof Pedido)[] = ["pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido"];
   const PROD_REQUIRED: (keyof Pedido)[] = ["status_pecas", "tipo_estampa"];
