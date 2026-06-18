@@ -333,22 +333,25 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   );
 }
 
-function VoltarButtons({ selected, onNavigate }: { selected: Pedido; onNavigate?: (tab: string) => void }) {
-  if (!onNavigate) return null;
+function AcabamentoVoltar({ selected, onSave, onNavigate }: { selected: Pedido; onSave: (p: any) => void; onNavigate?: (tab: string) => void }) {
   const isLisa = selected.tipo_estampa === "Lisa";
-  const showDtf = !isLisa && selected.dtf_estampado === "Sim";
-  const showSilk = !isLisa && selected.silk_feito === "Sim";
-  const cls = "bg-[#cf0e0e] hover:bg-[#b00b0b] text-white";
-  return (
-    <>
-      {showDtf && (
-        <Button size="sm" className={cls} onClick={() => onNavigate("dtf")}>Voltar para DTF</Button>
-      )}
-      {showSilk && (
-        <Button size="sm" className={cls} onClick={() => onNavigate("silk")}>Voltar para Silk</Button>
-      )}
-      <Button size="sm" className={cls} onClick={() => onNavigate("dados")}>Voltar para Produção</Button>
-    </>
-  );
+  const destinos: ("dados" | "arte" | "dtf" | "silk")[] = ["dados"];
+  if (!isLisa) {
+    destinos.push("arte");
+    if (modeloIncluiDTF(selected.tipo_estampa)) destinos.push("dtf");
+    if (modeloIncluiSilk(selected.tipo_estampa)) destinos.push("silk");
+  }
+  async function handle(destino: string) {
+    onSave({
+      id: selected.id,
+      reaberto: true,
+      embalado: null,
+      data_saida_juff: null,
+      responsavel_acabamento: null,
+    });
+    if (onNavigate) onNavigate(destino);
+  }
+  return <VoltarDropdown destinos={destinos} onVoltar={handle} />;
 }
+
 
