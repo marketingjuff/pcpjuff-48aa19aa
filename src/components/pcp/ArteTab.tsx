@@ -108,6 +108,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
       dtf_executado: pick("dtf_executado"),
       dtf_cortado: pick("dtf_cortado"),
       dtf_cortado_data: pick("dtf_cortado_data"),
+      quem_cortou_dtf: pick("quem_cortou_dtf"),
       fotolito_impresso: pick("fotolito_impresso"),
       fotolito_executado: pick("fotolito_executado"),
       vetorizacao_dtf: pick("vetorizacao_dtf"),
