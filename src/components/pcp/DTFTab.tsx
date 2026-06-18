@@ -59,12 +59,14 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   }
   function handleSave() {
     if (!selected) return;
+    const pick = <K extends keyof Pedido>(k: K) =>
+      (form[k] !== undefined ? form[k] : (selected as any)[k]) ?? null;
     onSave({
       id: selected.id,
-      dtf_estampado: form.dtf_estampado ?? null,
-      dtf_data_executada: form.dtf_data_executada ?? null,
-      quem_bateu_dtf: form.quem_bateu_dtf ?? null,
-      dtf_observacao: form.dtf_observacao ?? null,
+      dtf_estampado: pick("dtf_estampado"),
+      dtf_data_executada: pick("dtf_data_executada"),
+      quem_bateu_dtf: pick("quem_bateu_dtf"),
+      dtf_observacao: pick("dtf_observacao"),
     });
   }
   useRegisterSave(handleSave, active);
