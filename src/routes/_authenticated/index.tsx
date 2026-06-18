@@ -237,7 +237,7 @@ function AppHomeInner() {
 
           {canSee("expedicao") && (
             <TabsContent value="exp" forceMount hidden={tab !== "exp"}>
-              <ExpedicaoTab pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
+              <ExpedicaoTab pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} />
             </TabsContent>
           )}
           {isManager && (
