@@ -59,13 +59,15 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   }
   function handleSave() {
     if (!selected) return;
+    const pick = <K extends keyof Pedido>(k: K) =>
+      (form[k] !== undefined ? form[k] : (selected as any)[k]) ?? null;
     onSave({
       id: selected.id,
-      tela_gravada: form.tela_gravada ?? null,
-      silk_feito: form.silk_feito ?? null,
-      silk_data_executada: form.silk_data_executada ?? null,
-      quem_bateu_silk: form.quem_bateu_silk ?? null,
-      silk_observacao: form.silk_observacao ?? null,
+      tela_gravada: pick("tela_gravada"),
+      silk_feito: pick("silk_feito"),
+      silk_data_executada: pick("silk_data_executada"),
+      quem_bateu_silk: pick("quem_bateu_silk"),
+      silk_observacao: pick("silk_observacao"),
     });
   }
   useRegisterSave(handleSave, active);

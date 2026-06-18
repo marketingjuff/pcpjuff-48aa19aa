@@ -97,18 +97,20 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
       toast.error('Fotolito Impresso = "Sim" exige a Data de Impressão do Fotolito.');
       return;
     }
+    const pick = <K extends keyof Pedido>(k: K) =>
+      (form[k] !== undefined ? form[k] : (selected as any)[k]) ?? null;
     onSave({
       id: selected.id,
-      status_arte: form.status_arte ?? null,
-      dtf_impresso: form.dtf_impresso ?? null,
-      dtf_executado: form.dtf_executado ?? null,
-      dtf_cortado: form.dtf_cortado ?? null,
-      dtf_cortado_data: form.dtf_cortado_data ?? null,
-      fotolito_impresso: form.fotolito_impresso ?? null,
-      fotolito_executado: form.fotolito_executado ?? null,
-      vetorizacao_dtf: form.vetorizacao_dtf ?? null,
-      vetorizacao_silk: form.vetorizacao_silk ?? null,
-      arte_observacao: form.arte_observacao ?? null,
+      status_arte: pick("status_arte"),
+      dtf_impresso: pick("dtf_impresso"),
+      dtf_executado: pick("dtf_executado"),
+      dtf_cortado: pick("dtf_cortado"),
+      dtf_cortado_data: pick("dtf_cortado_data"),
+      fotolito_impresso: pick("fotolito_impresso"),
+      fotolito_executado: pick("fotolito_executado"),
+      vetorizacao_dtf: pick("vetorizacao_dtf"),
+      vetorizacao_silk: pick("vetorizacao_silk"),
+      arte_observacao: pick("arte_observacao"),
     });
   }
   useRegisterSave(handleSave, active);
@@ -174,8 +176,8 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               <ReadOnlyField label="Data Limite da Arte" value={formatDateBR(selected.arte_data)} />
               <ReadOnlyField label="Início Est." value={formatDateBR(selected.inicio_estamparia)} />
               <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
-              <ReadOnlyField label="STATUS DTF" value={dtfFinalizadoLabel(selected)} />
-              <ReadOnlyField label="STATUS FOTOLITO" value={fotolitoFinalizadoLabel(selected)} />
+              {showDTF && <ReadOnlyField label="STATUS DTF" value={dtfFinalizadoLabel(selected)} />}
+              {showSilk && <ReadOnlyField label="STATUS FOTOLITO" value={fotolitoFinalizadoLabel(selected)} />}
             </div>
 
 

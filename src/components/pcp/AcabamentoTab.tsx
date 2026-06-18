@@ -67,14 +67,16 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
 
   function handleSave() {
     if (!selected) return;
-    const embalado = form.embalado ?? null;
+    const pick = <K extends keyof Pedido>(k: K) =>
+      (form[k] !== undefined ? form[k] : (selected as any)[k]) ?? null;
+    const embalado = pick("embalado");
     const payload: any = {
       id: selected.id,
       embalado,
-      responsavel_acabamento: form.responsavel_acabamento ?? null,
-      responsavel_conferencia: form.responsavel_conferencia ?? null,
-      data_saida_juff: form.data_saida_juff ?? null,
-      observacoes_pedido: form.observacoes_pedido ?? null,
+      responsavel_acabamento: pick("responsavel_acabamento"),
+      responsavel_conferencia: pick("responsavel_conferencia"),
+      data_saida_juff: pick("data_saida_juff"),
+      observacoes_pedido: pick("observacoes_pedido"),
     };
     // 3A: ao marcar EMBALADO=Sim, envia automaticamente para Expedição.
     if (embalado === "Sim" && !selected.expedicao_entrou_em) {
