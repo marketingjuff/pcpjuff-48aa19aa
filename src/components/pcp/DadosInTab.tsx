@@ -413,7 +413,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             </Field>
             <div />
 
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-3">
               <Field label="Observações de produção">
                 <Textarea rows={2} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
               </Field>
@@ -426,13 +426,14 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               )}
             </div>
 
-            <div className="sm:col-span-2 flex gap-2">
+            <div className="sm:col-span-2 lg:col-span-3 flex gap-2">
               <Button type="button" onClick={saveProducao} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" />{selected?.id ? "Atualizar" : "Salvar"} Input de Produção
               </Button>
             </div>
             {selected?.data_entrega_proposta && (
-              <div className="sm:col-span-2">
+              <div className="sm:col-span-2 lg:col-span-3">
+
                 <PropostaDataAlerta
                   pedidoId={selected.id}
                   dataAtual={selected.data_entrega}
