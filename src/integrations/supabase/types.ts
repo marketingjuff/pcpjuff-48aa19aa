@@ -73,6 +73,7 @@ export type Database = {
           data_entrega_proposta_em: string | null
           data_entrega_proposta_por: string | null
           data_saida_juff: string | null
+          dias_secagem: number | null
           dtf_cortado: string | null
           dtf_cortado_data: string | null
           dtf_data_executada: string | null
@@ -80,6 +81,7 @@ export type Database = {
           dtf_executado: string | null
           dtf_impresso: string | null
           dtf_observacao: string | null
+          dtf_pessoas_qtd: Json | null
           embalado: string | null
           entrada_pedido: string | null
           exp_cobranca_pagamento: boolean | null
@@ -96,8 +98,11 @@ export type Database = {
           fotolito_impresso: string | null
           frete: string | null
           id: string
+          inicio_acabamento: string | null
           inicio_estamparia: string | null
           layout_url: string | null
+          n_batidas_dtf: number | null
+          n_batidas_silk: number | null
           necessita_vetorizacao: boolean | null
           nf_emitida: string | null
           obs_vendedor: string | null
@@ -107,6 +112,8 @@ export type Database = {
           qtd: number | null
           quem_bateu_dtf: string | null
           quem_bateu_silk: string | null
+          quem_cortou_dtf: string | null
+          quem_revelou_tela: string | null
           reaberto: boolean
           responsavel_acabamento: string | null
           responsavel_conferencia: string | null
@@ -119,6 +126,7 @@ export type Database = {
           tela_gravada: string | null
           tempo_frete: number | null
           tempo_producao: number | null
+          termino_acabamento: string | null
           termino_estamparia: string | null
           tipo_estampa: string | null
           uf_entrega: string | null
@@ -138,6 +146,7 @@ export type Database = {
           data_entrega_proposta_em?: string | null
           data_entrega_proposta_por?: string | null
           data_saida_juff?: string | null
+          dias_secagem?: number | null
           dtf_cortado?: string | null
           dtf_cortado_data?: string | null
           dtf_data_executada?: string | null
@@ -145,6 +154,7 @@ export type Database = {
           dtf_executado?: string | null
           dtf_impresso?: string | null
           dtf_observacao?: string | null
+          dtf_pessoas_qtd?: Json | null
           embalado?: string | null
           entrada_pedido?: string | null
           exp_cobranca_pagamento?: boolean | null
@@ -161,8 +171,11 @@ export type Database = {
           fotolito_impresso?: string | null
           frete?: string | null
           id?: string
+          inicio_acabamento?: string | null
           inicio_estamparia?: string | null
           layout_url?: string | null
+          n_batidas_dtf?: number | null
+          n_batidas_silk?: number | null
           necessita_vetorizacao?: boolean | null
           nf_emitida?: string | null
           obs_vendedor?: string | null
@@ -172,6 +185,8 @@ export type Database = {
           qtd?: number | null
           quem_bateu_dtf?: string | null
           quem_bateu_silk?: string | null
+          quem_cortou_dtf?: string | null
+          quem_revelou_tela?: string | null
           reaberto?: boolean
           responsavel_acabamento?: string | null
           responsavel_conferencia?: string | null
@@ -184,6 +199,7 @@ export type Database = {
           tela_gravada?: string | null
           tempo_frete?: number | null
           tempo_producao?: number | null
+          termino_acabamento?: string | null
           termino_estamparia?: string | null
           tipo_estampa?: string | null
           uf_entrega?: string | null
@@ -203,6 +219,7 @@ export type Database = {
           data_entrega_proposta_em?: string | null
           data_entrega_proposta_por?: string | null
           data_saida_juff?: string | null
+          dias_secagem?: number | null
           dtf_cortado?: string | null
           dtf_cortado_data?: string | null
           dtf_data_executada?: string | null
@@ -210,6 +227,7 @@ export type Database = {
           dtf_executado?: string | null
           dtf_impresso?: string | null
           dtf_observacao?: string | null
+          dtf_pessoas_qtd?: Json | null
           embalado?: string | null
           entrada_pedido?: string | null
           exp_cobranca_pagamento?: boolean | null
@@ -226,8 +244,11 @@ export type Database = {
           fotolito_impresso?: string | null
           frete?: string | null
           id?: string
+          inicio_acabamento?: string | null
           inicio_estamparia?: string | null
           layout_url?: string | null
+          n_batidas_dtf?: number | null
+          n_batidas_silk?: number | null
           necessita_vetorizacao?: boolean | null
           nf_emitida?: string | null
           obs_vendedor?: string | null
@@ -237,6 +258,8 @@ export type Database = {
           qtd?: number | null
           quem_bateu_dtf?: string | null
           quem_bateu_silk?: string | null
+          quem_cortou_dtf?: string | null
+          quem_revelou_tela?: string | null
           reaberto?: boolean
           responsavel_acabamento?: string | null
           responsavel_conferencia?: string | null
@@ -249,6 +272,7 @@ export type Database = {
           tela_gravada?: string | null
           tempo_frete?: number | null
           tempo_producao?: number | null
+          termino_acabamento?: string | null
           termino_estamparia?: string | null
           tipo_estampa?: string | null
           uf_entrega?: string | null
