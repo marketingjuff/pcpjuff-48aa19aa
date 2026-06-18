@@ -187,11 +187,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               <FormField label={`Data Saída Juff${form.embalado === "Sim" ? " *" : ""}`}>
                 <DateInputBR disabled={form.embalado !== "Sim"} value={form.data_saida_juff} onChange={setDataSaida} />
               </FormField>
-              <FormField label="Responsável pelo Acabamento">
-                <Select value={form.responsavel_acabamento ?? ""} onValueChange={(v) => set("responsavel_acabamento", v)} disabled={!form.data_saida_juff}>
-                  <SelectTrigger><SelectValue placeholder={!form.data_saida_juff ? "Preencha a data primeiro" : "Selecione..."} /></SelectTrigger>
-                  <SelectContent>{responsaveis.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                </Select>
+              <FormField label="Responsável pelo Acabamento (múltiplos)">
+                <MultiSelectPeople
+                  value={form.responsavel_acabamento}
+                  options={responsaveis}
+                  onChange={(v) => set("responsavel_acabamento", v)}
+                  disabled={!form.data_saida_juff}
+                  placeholder={!form.data_saida_juff ? "Preencha a data primeiro" : "Selecione..."}
+                />
               </FormField>
               <div className="sm:col-span-2 lg:col-span-4">
                 <FormField label="Observações do Acabamento">
