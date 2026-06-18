@@ -8,6 +8,7 @@ import {
   TIPOS_ESTAMPA,
 } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
+import { todayISO } from "@/lib/dias-uteis";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -46,6 +47,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const { feriados } = useFeriados();
   const sort = useSort<"qtd"|"entrada"|"limite"|"saida">();
   const { names: statusArteCustom } = useAppList("status_arte");
+  const { names: opCorteDTF } = useAppList("corte_dtf");
 
   const statusArteOpcoes = statusArteCustom.length ? statusArteCustom : [...STATUS_ARTE_OPCOES];
 
@@ -73,13 +75,13 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
-  // Sim → Não: limpa a data correspondente
+  // A4: Sim → preenche data automática (editável). Não → limpa data.
   function setSimNaoComData(field: keyof Pedido, dataField: keyof Pedido, v: string) {
-    setForm((f) => ({
-      ...f,
-      [field]: v,
-      ...(v !== "Sim" ? { [dataField]: null } : {}),
-    }));
+    setForm((f) => {
+      const curData = (f as any)[dataField] ?? (selected as any)?.[dataField] ?? null;
+      const nextData = v === "Sim" ? (curData ?? todayISO()) : null;
+      return { ...f, [field]: v, [dataField]: nextData };
+    });
   }
 
   function handleSave() {
@@ -106,6 +108,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
       dtf_executado: pick("dtf_executado"),
       dtf_cortado: pick("dtf_cortado"),
       dtf_cortado_data: pick("dtf_cortado_data"),
+      quem_cortou_dtf: pick("quem_cortou_dtf"),
       fotolito_impresso: pick("fotolito_impresso"),
       fotolito_executado: pick("fotolito_executado"),
       vetorizacao_dtf: pick("vetorizacao_dtf"),
@@ -227,9 +230,17 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       </Select>
                     </FormField>
                     {form.dtf_cortado === "Sim" && (
-                      <FormField label="Data DTF Cortado">
-                        <DateInputBR value={form.dtf_cortado_data} onChange={(v) => set("dtf_cortado_data", v)} />
-                      </FormField>
+                      <>
+                        <FormField label="Data DTF Cortado">
+                          <DateInputBR value={form.dtf_cortado_data} onChange={(v) => set("dtf_cortado_data", v)} />
+                        </FormField>
+                        <FormField label="Quem cortou o DTF?">
+                          <Select value={form.quem_cortou_dtf ?? ""} onValueChange={(v) => set("quem_cortou_dtf", v)}>
+                            <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                            <SelectContent>{opCorteDTF.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </FormField>
+                      </>
                     )}
                   </div>
                 )}

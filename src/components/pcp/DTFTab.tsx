@@ -13,6 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+import { MultiSelectPeople, parsePeople } from "./MultiSelectPeople";
+import { VoltarDropdown } from "./VoltarDropdown";
+import { todayISO } from "@/lib/dias-uteis";
 
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { useFeriados } from "@/hooks/use-feriados";
@@ -44,18 +47,41 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   useDirtyTracker(form, selected ?? {}, active && !!selected);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
   function setEstampado(v: string) {
-    setForm((f) => ({
-      ...f,
-      dtf_estampado: v,
-      ...(v !== "Sim" ? { dtf_data_executada: null, quem_bateu_dtf: null } : {}),
-    }));
+    setForm((f) => {
+      const curData = (f.dtf_data_executada ?? selected?.dtf_data_executada) ?? null;
+      const nextData = v === "Sim" ? (curData ?? todayISO()) : null;
+      return {
+        ...f,
+        dtf_estampado: v,
+        dtf_data_executada: nextData,
+        ...(v !== "Sim" ? { quem_bateu_dtf: null, dtf_pessoas_qtd: null } : {}),
+      };
+    });
   }
   function setDataExec(v: string | null | undefined) {
     setForm((f) => ({
       ...f,
       dtf_data_executada: v ?? null,
-      ...(!v ? { quem_bateu_dtf: null } : {}),
+      ...(!v ? { quem_bateu_dtf: null, dtf_pessoas_qtd: null } : {}),
     }));
+  }
+  function setQuemBateu(next: string | null) {
+    setForm((f) => {
+      const pessoas = parsePeople(next);
+      // Mantém apenas qtds das pessoas atuais
+      const prev = (f.dtf_pessoas_qtd ?? selected?.dtf_pessoas_qtd ?? {}) as Record<string, number>;
+      const limpo: Record<string, number> = {};
+      pessoas.forEach((p) => { if (prev[p] !== undefined) limpo[p] = prev[p]; });
+      return { ...f, quem_bateu_dtf: next, dtf_pessoas_qtd: pessoas.length > 0 ? limpo : null };
+    });
+  }
+  function setPessoaQtd(nome: string, qtd: number | null) {
+    setForm((f) => {
+      const prev = { ...(f.dtf_pessoas_qtd ?? selected?.dtf_pessoas_qtd ?? {}) } as Record<string, number>;
+      if (qtd === null || isNaN(qtd as any)) delete prev[nome];
+      else prev[nome] = qtd;
+      return { ...f, dtf_pessoas_qtd: prev };
+    });
   }
   function handleSave() {
     if (!selected) return;
@@ -66,10 +92,26 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
       dtf_estampado: pick("dtf_estampado"),
       dtf_data_executada: pick("dtf_data_executada"),
       quem_bateu_dtf: pick("quem_bateu_dtf"),
+      dtf_pessoas_qtd: pick("dtf_pessoas_qtd"),
       dtf_observacao: pick("dtf_observacao"),
     });
   }
   useRegisterSave(handleSave, active);
+
+  async function handleVoltar(destino: "dados" | "arte" | "dtf" | "silk" | "acabamento") {
+    if (!selected) return;
+    const tabMap: Record<string, string> = { dados: "dados", arte: "arte", dtf: "dtf", silk: "silk", acabamento: "acabamento" };
+    onSave({
+      id: selected.id,
+      reaberto: true,
+      // limpa o carimbo da etapa atual (DTF) para que o pedido volte
+      dtf_estampado: null,
+      dtf_data_executada: null,
+      quem_bateu_dtf: null,
+      dtf_pessoas_qtd: null,
+    } as any);
+    if (onNavigate) onNavigate(tabMap[destino]);
+  }
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
@@ -99,11 +141,16 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
     if (fOrc && !String(p.orcamento ?? "").toLowerCase().includes(fOrc.toLowerCase())) return false;
     if (fPed && !String(p.pedido_olist ?? "").toLowerCase().includes(fPed.toLowerCase())) return false;
     if (fStatus !== "todos" && p.status_pecas !== fStatus) return false;
-    if (fImpresso !== "todos" && (p.dtf_impresso ?? "") !== fImpresso) return false;
+    if (fImpresso !== "todos") {
+      const pronto = p.dtf_impresso === "Sim" && p.dtf_cortado === "Sim" ? "Sim" : "Não";
+      if (pronto !== fImpresso) return false;
+    }
     if (fEstampado !== "todos" && (p.dtf_estampado ?? "") !== fEstampado) return false;
     return true;
   })), [pedidos, fEtapa, fOrc, fPed, fStatus, fImpresso, fEstampado]);
 
+  const pessoasSelecionadas = parsePeople(form.quem_bateu_dtf);
+  const prontoEstampar = selected?.dtf_impresso === "Sim" && selected?.dtf_cortado === "Sim" ? "Sim" : "Não";
 
   return (
     <div className="space-y-3">
@@ -126,44 +173,23 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               </div>
             )}
 
+              {/* Linha 1 */}
               <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
                 <ReadOnlyField label="QTD" value={selected.qtd} />
                 <ReadOnlyField label="Status de Peças" value={selected.status_pecas} />
-                <ReadOnlyField label="Pedido pronto para estampar?" value={selected.dtf_impresso === "Sim" && selected.dtf_cortado === "Sim" ? "Sim" : "Não"} />
-                <div className="space-y-1">
-                  <div className="text-xs font-medium text-muted-foreground">Layout</div>
-                  {selected.layout_url ? (
-                    <div className="space-y-1">
-                      <div className="flex gap-2 flex-wrap">
-                        <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
-                          <Download className="h-4 w-4 mr-1" /> Baixar layout
-                        </Button>
-                        {onNavigate && (
-                          <Button size="sm" onClick={() => onNavigate("arte")} className="bg-[#cf0e0e] hover:bg-[#b00b0b] text-white">
-                            Voltar para a Arte
-                          </Button>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate">{selected.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="text-sm text-muted-foreground">Sem layout</div>
-                      {onNavigate && (
-                        <Button size="sm" onClick={() => onNavigate("arte")} className="bg-[#cf0e0e] hover:bg-[#b00b0b] text-white">
-                          Voltar para a Arte
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <ReadOnlyField label="Início estamparia" value={formatDateBR(selected.inicio_estamparia)} />
-                <ReadOnlyField label="Término estamparia" value={formatDateBR(selected.termino_estamparia)} />
-                <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
               </div>
+              {/* Linha 2 */}
+              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+                <ReadOnlyField label="Pedido pronto para estampar?" value={prontoEstampar} />
+                <ReadOnlyField label="Início Estamparia" value={formatDateBR(selected.inicio_estamparia)} />
+                <ReadOnlyField label="Término Estamparia" value={formatDateBR(selected.termino_estamparia)} />
+                <ReadOnlyField label="Início Acabamento" value={formatDateBR(selected.inicio_acabamento)} />
+                <ReadOnlyField label="Nº Batidas DTF" value={selected.n_batidas_dtf ?? "—"} />
+              </div>
+
+              {/* Edição */}
               <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t">
                 <FormField label="DTF Estampado?">
                   <Select value={form.dtf_estampado ?? ""} onValueChange={setEstampado}>
@@ -174,11 +200,14 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 <FormField label={`DTF Estampado Executado${form.dtf_estampado === "Sim" ? " *" : ""}`}>
                   <DateInputBR disabled={form.dtf_estampado !== "Sim"} value={form.dtf_data_executada} onChange={setDataExec} />
                 </FormField>
-                <FormField label="Quem bateu o DTF?">
-                  <Select value={form.quem_bateu_dtf ?? ""} onValueChange={(v) => set("quem_bateu_dtf", v)} disabled={!form.dtf_data_executada}>
-                    <SelectTrigger><SelectValue placeholder={!form.dtf_data_executada ? "Preencha a data primeiro" : "Selecione..."} /></SelectTrigger>
-                    <SelectContent>{operadoresDTF.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                  </Select>
+                <FormField label="Quem bateu o DTF? (múltiplos)">
+                  <MultiSelectPeople
+                    value={form.quem_bateu_dtf}
+                    options={operadoresDTF}
+                    onChange={setQuemBateu}
+                    disabled={!form.dtf_data_executada}
+                    placeholder={!form.dtf_data_executada ? "Preencha a data primeiro" : "Selecione..."}
+                  />
                 </FormField>
                 <div className="sm:col-span-2 lg:col-span-4">
                   <FormField label="Observações do DTF">
@@ -186,9 +215,36 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                   </FormField>
                   <ObservacoesOutrosSetores pedido={selected} setorAtual="dtf" />
                 </div>
-
               </div>
-              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-1" />Atualizar DTF</Button>
+
+              {/* A5 — qtd por pessoa quando >1 pessoa */}
+              {pessoasSelecionadas.length > 1 && (
+                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-2">
+                  {pessoasSelecionadas.map((nome) => {
+                    const qtd = (form.dtf_pessoas_qtd ?? {})[nome] ?? "";
+                    return (
+                      <FormField key={nome} label={`Qtd peças — ${nome}`}>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={qtd}
+                          onChange={(e) => setPessoaQtd(nome, e.target.value === "" ? null : Number(e.target.value))}
+                        />
+                      </FormField>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2 pt-3 border-t items-center">
+                <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Atualizar DTF</Button>
+                {selected.layout_url && (
+                  <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                    <Download className="h-4 w-4 mr-1" /> Baixar layout
+                  </Button>
+                )}
+                <VoltarDropdown destinos={["arte"]} onVoltar={handleVoltar} />
+              </div>
             </CardContent>
           </Card>
         )
@@ -217,9 +273,9 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               </SelectContent>
             </Select>
             <Select value={fImpresso} onValueChange={setFImpresso}>
-              <SelectTrigger><SelectValue placeholder="DTF Impresso" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="DTF Pronto" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">DTF Impresso (todos)</SelectItem>
+                <SelectItem value="todos">DTF Pronto (todos)</SelectItem>
                 <SelectItem value="Sim">Sim</SelectItem>
                 <SelectItem value="Não">Não</SelectItem>
               </SelectContent>
@@ -232,6 +288,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               </SelectContent>
             </Select>
           </div>
+
           {/* Mobile cards */}
           <div className="md:hidden rounded-md border divide-y">
             {dashboardPedidos.length === 0 ? (
@@ -241,12 +298,14 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 <Chip label="Tipo" value={p.tipo_estampa} />
                 <Chip label="QTD" value={p.qtd} />
                 <StatusPecasChip pedido={p} />
-                <Chip label="Impresso" value={p.dtf_impresso} />
+                <Chip label="Pronto" value={p.dtf_impresso === "Sim" && p.dtf_cortado === "Sim" ? "Sim" : "Não"} />
                 <Chip label="Estampado" value={p.dtf_estampado} />
                 <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
               </PedidoMobileCard>
             ))}
           </div>
+
+          {/* A8 — colunas: ETAPA / PEDIDO / ORÇAMENTO / VENDEDOR / QTD / ESTAMPA / STATUS PEÇAS / DTF PRONTO / DTF ESTAMPADO / INÍCIO EST / TÉRMINO EST / INÍCIO ACAB */}
           <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs [&_th]:text-center [&_td]:text-center">
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
@@ -254,15 +313,15 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                   <Th>ETAPA</Th>
                   <Th>PEDIDO</Th>
                   <Th>ORÇAMENTO</Th>
-                  <Th>TIPO</Th>
+                  <Th>VENDEDOR</Th>
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
+                  <Th>ESTAMPA</Th>
                   <Th>STATUS DAS PEÇAS</Th>
-                  <Th>DTF IMPRESSO</Th>
+                  <Th>DTF PRONTO</Th>
                   <Th>DTF ESTAMPADO</Th>
-                  <SortableTh label="DATA EXEC" active={sort.key === "exec"} onClick={() => sort.toggle("exec")} />
-                  <Th>QUEM BATEU</Th>
-                  <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
-                  <SortableTh label="ENTREGA" active={sort.key === "entrega"} onClick={() => sort.toggle("entrega")} />
+                  <Th>INÍCIO ESTAMPARIA</Th>
+                  <Th>TÉRMINO ESTAMPARIA</Th>
+                  <Th>INÍCIO ACABAMENTO</Th>
                 </tr>
               </thead>
               <tbody>
@@ -281,29 +340,28 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                   }
                   return lista.map((p) => {
                     const bg = linhaAtrasoClasse(p, "dtf") || rowAlertBgClass(p, feriados);
+                    const pronto = p.dtf_impresso === "Sim" && p.dtf_cortado === "Sim" ? "Sim" : "Não";
                     return (
                       <tr key={p.id} onClick={() => onSelect(p.id)} className={`border-t cursor-pointer hover:bg-accent ${bg} ${selected?.id === p.id ? "bg-accent" : ""}`}>
                         <td className="px-1.5 py-0.5"><EtapaBadgeFromPedido pedido={p} /></td>
                         <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
                         <td className="px-1.5 py-0.5 !text-left">{p.orcamento}</td>
-                        <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                        <td className="px-1.5 py-0.5">{p.vendedor ?? "—"}</td>
                         <td className="px-1.5 py-0.5">{p.qtd ?? "—"}</td>
+                        <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                         <td className="px-1.5 py-0.5"><StatusPecasBadge pedido={p} /></td>
-                        <td className="px-1.5 py-0.5">{p.dtf_impresso ?? "—"}</td>
+                        <td className="px-1.5 py-0.5">{pronto}</td>
                         <td className="px-1.5 py-0.5">{p.dtf_estampado ?? "—"}</td>
-                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.dtf_data_executada)}</td>
-                        <td className="px-1.5 py-0.5">{p.quem_bateu_dtf ?? "—"}</td>
-                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.inicio_estamparia)}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.termino_estamparia)}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.inicio_acabamento)}</td>
                       </tr>
                     );
                   });
                 })()}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={13} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido DTF disponível.</td></tr>
+                  <tr><td colSpan={12} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido DTF disponível.</td></tr>
                 )}
-
-
               </tbody>
             </table>
           </div>

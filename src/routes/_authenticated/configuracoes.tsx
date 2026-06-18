@@ -829,6 +829,8 @@ function ListasTab() {
     { kind: "silk", title: "Operadores Silk", placeholder: "Novo operador Silk" },
     { kind: "acabamento", title: "Responsáveis pelo Acabamento", placeholder: "Novo responsável" },
     { kind: "status_arte", title: "Status da Arte", placeholder: "Nova opção de Status da Arte" },
+    { kind: "corte_dtf", title: "Quem cortou o DTF", placeholder: "Novo responsável pelo corte" },
+    { kind: "revelacao_silk", title: "Quem revelou a tela (Silk)", placeholder: "Nova pessoa" },
   ];
   return (
     <div className="grid gap-6 md:grid-cols-2">

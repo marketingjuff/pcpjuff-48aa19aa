@@ -22,7 +22,7 @@ import {
 import { Plus, Trash2, Save, X, FileText, Download, AlertTriangle, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { addDiasUteis, diasUteisEntre, diasUteisAteHoje } from "@/lib/dias-uteis";
+import { addDiasUteis, diasUteisEntre, diasUteisAteHoje, addDiasCorridos, proximoDiaUtil } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
 import { PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
@@ -93,24 +93,35 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     });
   }
 
-  // Cálculos automáticos — regras v2:
-  // Frete: reservar tempo_frete dias úteis VAZIOS — a data de entrega NÃO conta.
-  //   => Saída Juff = (dia útil anterior à entrega) menos (tempo_frete-1) dias úteis.
-  // Produção: dia da Saída Juff NÃO conta como dia útil disponível.
-  //   => tempo_producao = dias úteis entre entrada e o dia útil anterior à saída.
+  // Cálculos automáticos
   const tempoFreteNum = Number(form.tempo_frete ?? 0) || 0;
   const saidaJuffCalc = useMemo(() => {
     if (!form.data_entrega || !tempoFreteNum) return null;
-    // Recua 1 dia útil para "não contar" a data de entrega, depois os demais dias de frete.
     return addDiasUteis(form.data_entrega, -tempoFreteNum, feriados);
   }, [form.data_entrega, tempoFreteNum, feriados]);
   const tempoProducaoCalc = useMemo(() => {
     if (!form.entrada_pedido || !saidaJuffCalc) return null;
-    // "Dia da saída não conta" — diasUteisEntre é exclusivo do início e inclusivo do fim,
-    // então recuamos 1 dia útil para excluir o próprio dia da saída.
     const ultimoDiaProducao = addDiasUteis(saidaJuffCalc, -1, feriados);
     return diasUteisEntre(form.entrada_pedido, ultimoDiaProducao, feriados);
   }, [form.entrada_pedido, saidaJuffCalc, feriados]);
+
+  // A1 — Início de Acabamento
+  // Silk/Silk+DTF: término_estamparia + (dias_secagem) dias corridos pulando o dia do término e o dia do início,
+  //   ou seja: término + dias_secagem + 1 dia corrido; depois empurra para o próximo dia útil.
+  // Só DTF: igual ao término_estamparia.
+  const isLisa = form.tipo_estampa === "Lisa";
+  const incluiSilk = tipoIncluiSilk(form.tipo_estampa);
+  const soDTF = tipoIncluiDTF(form.tipo_estampa) && !incluiSilk;
+  const diasSecagemNum = Number(form.dias_secagem ?? 0) || 0;
+  const inicioAcabamentoCalc = useMemo(() => {
+    if (!form.termino_estamparia || isLisa) return null;
+    if (soDTF) return form.termino_estamparia;
+    if (!incluiSilk) return null;
+    // término dia 1, secagem N dias → início no dia (1 + N + 1); o dia do término e o dia do início não contam.
+    const base = addDiasCorridos(form.termino_estamparia, diasSecagemNum + 1);
+    return proximoDiaUtil(base, feriados);
+  }, [form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados]);
+
 
   const VENDOR_REQUIRED: (keyof Pedido)[] = ["pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido"];
   const PROD_REQUIRED: (keyof Pedido)[] = ["status_pecas", "tipo_estampa"];
@@ -146,6 +157,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       ...form,
       saida_juff: saidaJuffCalc ?? form.saida_juff ?? null,
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
+      inicio_acabamento: inicioAcabamentoCalc ?? form.inicio_acabamento ?? null,
     });
   }
   async function saveProducao() {
@@ -171,6 +183,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       ...form,
       saida_juff: saidaJuffCalc ?? form.saida_juff ?? null,
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
+      inicio_acabamento: inicioAcabamentoCalc ?? form.inicio_acabamento ?? null,
     });
   }
   useRegisterSave(saveVendor, active);
@@ -332,7 +345,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         {/* Produção */}
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
           <CardHeader className="py-2"><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
-          <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 pt-0">
+          <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 pt-0">
+            {/* Linha 1 — Status / Tipo / Nº Batidas (condicional) */}
             <Field label="Status de Peças *" invalid={missingProd.has("status_pecas")}>
               <Select value={form.status_pecas ?? ""} onValueChange={(v) => set("status_pecas", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -345,17 +359,61 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <SelectContent>{TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
+            {form.tipo_estampa === "DTF" && (
+              <Field label="Nº Batidas DTF">
+                <Input type="number" min="0" value={form.n_batidas_dtf ?? ""} onChange={(e) => set("n_batidas_dtf", e.target.value === "" ? null : Number(e.target.value))} />
+              </Field>
+            )}
+            {form.tipo_estampa === "Silk" && (
+              <Field label="Nº Batidas Silk">
+                <Input type="number" min="0" value={form.n_batidas_silk ?? ""} onChange={(e) => set("n_batidas_silk", e.target.value === "" ? null : Number(e.target.value))} />
+              </Field>
+            )}
+            {form.tipo_estampa === "DTF+Silk" && (
+              <>
+                <Field label="Nº Batidas DTF">
+                  <Input type="number" min="0" value={form.n_batidas_dtf ?? ""} onChange={(e) => set("n_batidas_dtf", e.target.value === "" ? null : Number(e.target.value))} />
+                </Field>
+                <Field label="Nº Batidas Silk">
+                  <Input type="number" min="0" value={form.n_batidas_silk ?? ""} onChange={(e) => set("n_batidas_silk", e.target.value === "" ? null : Number(e.target.value))} />
+                </Field>
+              </>
+            )}
+            {!form.tipo_estampa && <div />}
+
+            {/* Linha 2 — Dias de Secagem / Arte Limite */}
+            <Field label="Dias de Secagem (dias corridos)">
+              {soDTF ? (
+                <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm text-muted-foreground">Não se aplica</div>
+              ) : (
+                <Input type="number" min="0" value={form.dias_secagem ?? ""} onChange={(e) => set("dias_secagem", e.target.value === "" ? null : Number(e.target.value))} />
+              )}
+            </Field>
             <Field label="Arte (limite)"><DateInputBR value={form.arte_data} onChange={(v) => set("arte_data", v)} /></Field>
+            <div />
+
+            {/* Linha 3 — Início / Término Estamparia */}
             <Field label="Início Estamparia"><DateInputBR value={form.inicio_estamparia} onChange={(v) => set("inicio_estamparia", v)} /></Field>
             <Field label="Término Estamparia"><DateInputBR value={form.termino_estamparia} onChange={(v) => set("termino_estamparia", v)} /></Field>
-            <Field label="Acabamento"><DateInputBR value={form.acabamento_data} onChange={(v) => set("acabamento_data", v)} /></Field>
+            <div />
+
+            {/* Linha 4 — Início / Término Acabamento */}
+            <Field label="Início de Acabamento (calculado)">
+              <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{inicioAcabamentoCalc ? formatDateBR(inicioAcabamentoCalc) : "—"}</div>
+            </Field>
+            <Field label="Término de Acabamento"><DateInputBR value={form.termino_acabamento} onChange={(v) => set("termino_acabamento", v)} /></Field>
+            <div />
+
+            {/* Linha 5 — Saída Juff / Tempo de produção */}
             <Field label="Saída Juff (calculado)">
               <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{saidaJuffCalc ? formatDateBR(saidaJuffCalc) : "—"}</div>
             </Field>
             <Field label="Tempo de produção (dias úteis)">
               <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{tempoProducaoCalc ?? "—"}</div>
             </Field>
-            <div className="sm:col-span-2">
+            <div />
+
+            <div className="sm:col-span-2 lg:col-span-3">
               <Field label="Observações de produção">
                 <Textarea rows={2} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
               </Field>
@@ -368,13 +426,14 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               )}
             </div>
 
-            <div className="sm:col-span-2 flex gap-2">
+            <div className="sm:col-span-2 lg:col-span-3 flex gap-2">
               <Button type="button" onClick={saveProducao} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" />{selected?.id ? "Atualizar" : "Salvar"} Input de Produção
               </Button>
             </div>
             {selected?.data_entrega_proposta && (
-              <div className="sm:col-span-2">
+              <div className="sm:col-span-2 lg:col-span-3">
+
                 <PropostaDataAlerta
                   pedidoId={selected.id}
                   dataAtual={selected.data_entrega}

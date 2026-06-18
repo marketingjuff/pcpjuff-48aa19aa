@@ -37,6 +37,15 @@ export type Pedido = PedidoBase & {
   data_entrega_proposta: string | null;
   data_entrega_proposta_em: string | null;
   data_entrega_proposta_por: string | null;
+  // A1-A11
+  dias_secagem: number | null;
+  inicio_acabamento: string | null;
+  termino_acabamento: string | null;
+  n_batidas_dtf: number | null;
+  n_batidas_silk: number | null;
+  quem_cortou_dtf: string | null;
+  quem_revelou_tela: string | null;
+  dtf_pessoas_qtd: Record<string, number> | null;
 };
 
 type PedidoInsertBase = Omit<TablesInsert<"pedidos">, "modelo_estampa" | "status">;
@@ -73,6 +82,14 @@ export type PedidoInsert = PedidoInsertBase & {
   data_entrega_proposta?: string | null;
   data_entrega_proposta_em?: string | null;
   data_entrega_proposta_por?: string | null;
+  dias_secagem?: number | null;
+  inicio_acabamento?: string | null;
+  termino_acabamento?: string | null;
+  n_batidas_dtf?: number | null;
+  n_batidas_silk?: number | null;
+  quem_cortou_dtf?: string | null;
+  quem_revelou_tela?: string | null;
+  dtf_pessoas_qtd?: Record<string, number> | null;
 };
 
 export const VENDEDORES = ["Wander", "Mirela", "Gabriel", "Outros"] as const;

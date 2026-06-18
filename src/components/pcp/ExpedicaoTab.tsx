@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag } from "lucide-react";
 import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+import { VoltarDropdown } from "./VoltarDropdown";
 
 import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
@@ -20,6 +21,7 @@ interface Props {
   onSelect: (id: string | null) => void;
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
   saving: boolean;
+  onNavigate?: (tab: string) => void;
 }
 
 type ItemKey =
@@ -57,7 +59,7 @@ function todosCompletos(p: Pedido, form: Partial<Pedido>): boolean {
   });
 }
 
-export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Props) {
+export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNavigate }: Props) {
   const { feriados } = useFeriados();
   const { names: formasPagamento } = useAppList("pagamento");
   const expedicaoPedidos = useMemo(
@@ -234,6 +236,18 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving }: Pr
               >
                 <Flag className="h-4 w-4 mr-1" /> Finalizar Pedido
               </Button>
+              <VoltarDropdown
+                destinos={["dados", "arte", "dtf", "silk", "acabamento"]}
+                onVoltar={(destino) => {
+                  onSave({
+                    id: selected.id,
+                    reaberto: true,
+                    expedicao_entrou_em: null,
+                    embalado: null,
+                  } as any);
+                  if (onNavigate) onNavigate(destino);
+                }}
+              />
             </div>
           </CardContent>
         </Card>

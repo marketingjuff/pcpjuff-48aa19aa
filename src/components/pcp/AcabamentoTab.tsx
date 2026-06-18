@@ -17,6 +17,9 @@ import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
+import { MultiSelectPeople } from "./MultiSelectPeople";
+import { VoltarDropdown } from "./VoltarDropdown";
+import { todayISO } from "@/lib/dias-uteis";
 
 
 interface Props {
@@ -45,11 +48,16 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
   function setEmbalado(v: string) {
-    setForm((f) => ({
-      ...f,
-      embalado: v,
-      ...(v !== "Sim" ? { data_saida_juff: null, responsavel_acabamento: null, responsavel_conferencia: null } : {}),
-    }));
+    setForm((f) => {
+      const curData = (f.data_saida_juff ?? selected?.data_saida_juff) ?? null;
+      const nextData = v === "Sim" ? (curData ?? todayISO()) : null;
+      return {
+        ...f,
+        embalado: v,
+        data_saida_juff: nextData,
+        ...(v !== "Sim" ? { responsavel_acabamento: null, responsavel_conferencia: null } : {}),
+      };
+    });
   }
   function setDataSaida(v: string | null | undefined) {
     setForm((f) => ({
@@ -156,14 +164,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                       <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
                         <Download className="h-4 w-4 mr-1" /> Baixar layout
                       </Button>
-                      <VoltarButtons selected={selected} onNavigate={onNavigate} />
+                      <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
                     </div>
                     <div className="text-xs text-muted-foreground truncate">{selected.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="text-sm text-muted-foreground">Sem layout</div>
-                    <VoltarButtons selected={selected} onNavigate={onNavigate} />
+                    <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
                   </div>
                 )}
               </div>
@@ -179,11 +187,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               <FormField label={`Data Saída Juff${form.embalado === "Sim" ? " *" : ""}`}>
                 <DateInputBR disabled={form.embalado !== "Sim"} value={form.data_saida_juff} onChange={setDataSaida} />
               </FormField>
-              <FormField label="Responsável pelo Acabamento">
-                <Select value={form.responsavel_acabamento ?? ""} onValueChange={(v) => set("responsavel_acabamento", v)} disabled={!form.data_saida_juff}>
-                  <SelectTrigger><SelectValue placeholder={!form.data_saida_juff ? "Preencha a data primeiro" : "Selecione..."} /></SelectTrigger>
-                  <SelectContent>{responsaveis.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                </Select>
+              <FormField label="Responsável pelo Acabamento (múltiplos)">
+                <MultiSelectPeople
+                  value={form.responsavel_acabamento}
+                  options={responsaveis}
+                  onChange={(v) => set("responsavel_acabamento", v)}
+                  disabled={!form.data_saida_juff}
+                  placeholder={!form.data_saida_juff ? "Preencha a data primeiro" : "Selecione..."}
+                />
               </FormField>
               <div className="sm:col-span-2 lg:col-span-4">
                 <FormField label="Observações do Acabamento">
@@ -322,22 +333,25 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   );
 }
 
-function VoltarButtons({ selected, onNavigate }: { selected: Pedido; onNavigate?: (tab: string) => void }) {
-  if (!onNavigate) return null;
+function AcabamentoVoltar({ selected, onSave, onNavigate }: { selected: Pedido; onSave: (p: any) => void; onNavigate?: (tab: string) => void }) {
   const isLisa = selected.tipo_estampa === "Lisa";
-  const showDtf = !isLisa && selected.dtf_estampado === "Sim";
-  const showSilk = !isLisa && selected.silk_feito === "Sim";
-  const cls = "bg-[#cf0e0e] hover:bg-[#b00b0b] text-white";
-  return (
-    <>
-      {showDtf && (
-        <Button size="sm" className={cls} onClick={() => onNavigate("dtf")}>Voltar para DTF</Button>
-      )}
-      {showSilk && (
-        <Button size="sm" className={cls} onClick={() => onNavigate("silk")}>Voltar para Silk</Button>
-      )}
-      <Button size="sm" className={cls} onClick={() => onNavigate("dados")}>Voltar para Produção</Button>
-    </>
-  );
+  const destinos: ("dados" | "arte" | "dtf" | "silk")[] = ["dados"];
+  if (!isLisa) {
+    destinos.push("arte");
+    if (modeloIncluiDTF(selected.tipo_estampa)) destinos.push("dtf");
+    if (modeloIncluiSilk(selected.tipo_estampa)) destinos.push("silk");
+  }
+  async function handle(destino: string) {
+    onSave({
+      id: selected.id,
+      reaberto: true,
+      embalado: null,
+      data_saida_juff: null,
+      responsavel_acabamento: null,
+    });
+    if (onNavigate) onNavigate(destino);
+  }
+  return <VoltarDropdown destinos={destinos} onVoltar={handle} />;
 }
+
 
