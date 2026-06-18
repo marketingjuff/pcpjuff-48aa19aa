@@ -164,14 +164,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                       <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
                         <Download className="h-4 w-4 mr-1" /> Baixar layout
                       </Button>
-                      <VoltarButtons selected={selected} onNavigate={onNavigate} />
+                      <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
                     </div>
                     <div className="text-xs text-muted-foreground truncate">{selected.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="text-sm text-muted-foreground">Sem layout</div>
-                    <VoltarButtons selected={selected} onNavigate={onNavigate} />
+                    <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
                   </div>
                 )}
               </div>
