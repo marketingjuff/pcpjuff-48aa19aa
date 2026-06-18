@@ -47,6 +47,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const { feriados } = useFeriados();
   const sort = useSort<"qtd"|"entrada"|"limite"|"saida">();
   const { names: statusArteCustom } = useAppList("status_arte");
+  const { names: opCorteDTF } = useAppList("corte_dtf");
 
   const statusArteOpcoes = statusArteCustom.length ? statusArteCustom : [...STATUS_ARTE_OPCOES];
 
