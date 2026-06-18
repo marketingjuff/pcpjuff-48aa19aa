@@ -236,6 +236,18 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               >
                 <Flag className="h-4 w-4 mr-1" /> Finalizar Pedido
               </Button>
+              <VoltarDropdown
+                destinos={["dados", "arte", "dtf", "silk", "acabamento"]}
+                onVoltar={(destino) => {
+                  onSave({
+                    id: selected.id,
+                    reaberto: true,
+                    expedicao_entrou_em: null,
+                    embalado: null,
+                  } as any);
+                  if (onNavigate) onNavigate(destino);
+                }}
+              />
             </div>
           </CardContent>
         </Card>
