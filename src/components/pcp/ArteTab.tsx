@@ -75,13 +75,13 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
-  // Sim → Não: limpa a data correspondente
+  // A4: Sim → preenche data automática (editável). Não → limpa data.
   function setSimNaoComData(field: keyof Pedido, dataField: keyof Pedido, v: string) {
-    setForm((f) => ({
-      ...f,
-      [field]: v,
-      ...(v !== "Sim" ? { [dataField]: null } : {}),
-    }));
+    setForm((f) => {
+      const curData = (f as any)[dataField] ?? (selected as any)?.[dataField] ?? null;
+      const nextData = v === "Sim" ? (curData ?? todayISO()) : null;
+      return { ...f, [field]: v, [dataField]: nextData };
+    });
   }
 
   function handleSave() {
