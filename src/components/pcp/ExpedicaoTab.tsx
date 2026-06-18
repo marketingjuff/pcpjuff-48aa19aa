@@ -21,6 +21,7 @@ interface Props {
   onSelect: (id: string | null) => void;
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
   saving: boolean;
+  onNavigate?: (tab: string) => void;
 }
 
 type ItemKey =
