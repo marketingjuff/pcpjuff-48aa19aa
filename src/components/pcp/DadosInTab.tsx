@@ -345,7 +345,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         {/* Produção */}
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
           <CardHeader className="py-2"><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
-          <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 pt-0">
+          <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 pt-0">
+            {/* Linha 1 — Status / Tipo / Nº Batidas (condicional) */}
             <Field label="Status de Peças *" invalid={missingProd.has("status_pecas")}>
               <Select value={form.status_pecas ?? ""} onValueChange={(v) => set("status_pecas", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -358,16 +359,60 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <SelectContent>{TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
+            {form.tipo_estampa === "DTF" && (
+              <Field label="Nº Batidas DTF">
+                <Input type="number" min="0" value={form.n_batidas_dtf ?? ""} onChange={(e) => set("n_batidas_dtf", e.target.value === "" ? null : Number(e.target.value))} />
+              </Field>
+            )}
+            {form.tipo_estampa === "Silk" && (
+              <Field label="Nº Batidas Silk">
+                <Input type="number" min="0" value={form.n_batidas_silk ?? ""} onChange={(e) => set("n_batidas_silk", e.target.value === "" ? null : Number(e.target.value))} />
+              </Field>
+            )}
+            {form.tipo_estampa === "DTF+Silk" && (
+              <>
+                <Field label="Nº Batidas DTF">
+                  <Input type="number" min="0" value={form.n_batidas_dtf ?? ""} onChange={(e) => set("n_batidas_dtf", e.target.value === "" ? null : Number(e.target.value))} />
+                </Field>
+                <Field label="Nº Batidas Silk">
+                  <Input type="number" min="0" value={form.n_batidas_silk ?? ""} onChange={(e) => set("n_batidas_silk", e.target.value === "" ? null : Number(e.target.value))} />
+                </Field>
+              </>
+            )}
+            {!form.tipo_estampa && <div />}
+
+            {/* Linha 2 — Dias de Secagem / Arte Limite */}
+            <Field label="Dias de Secagem (dias corridos)">
+              {soDTF ? (
+                <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm text-muted-foreground">Não se aplica</div>
+              ) : (
+                <Input type="number" min="0" value={form.dias_secagem ?? ""} onChange={(e) => set("dias_secagem", e.target.value === "" ? null : Number(e.target.value))} />
+              )}
+            </Field>
             <Field label="Arte (limite)"><DateInputBR value={form.arte_data} onChange={(v) => set("arte_data", v)} /></Field>
+            <div />
+
+            {/* Linha 3 — Início / Término Estamparia */}
             <Field label="Início Estamparia"><DateInputBR value={form.inicio_estamparia} onChange={(v) => set("inicio_estamparia", v)} /></Field>
             <Field label="Término Estamparia"><DateInputBR value={form.termino_estamparia} onChange={(v) => set("termino_estamparia", v)} /></Field>
-            <Field label="Acabamento"><DateInputBR value={form.acabamento_data} onChange={(v) => set("acabamento_data", v)} /></Field>
+            <div />
+
+            {/* Linha 4 — Início / Término Acabamento */}
+            <Field label="Início de Acabamento (calculado)">
+              <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{inicioAcabamentoCalc ? formatDateBR(inicioAcabamentoCalc) : "—"}</div>
+            </Field>
+            <Field label="Término de Acabamento"><DateInputBR value={form.termino_acabamento} onChange={(v) => set("termino_acabamento", v)} /></Field>
+            <div />
+
+            {/* Linha 5 — Saída Juff / Tempo de produção */}
             <Field label="Saída Juff (calculado)">
               <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{saidaJuffCalc ? formatDateBR(saidaJuffCalc) : "—"}</div>
             </Field>
             <Field label="Tempo de produção (dias úteis)">
               <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{tempoProducaoCalc ?? "—"}</div>
             </Field>
+            <div />
+
             <div className="sm:col-span-2">
               <Field label="Observações de produção">
                 <Textarea rows={2} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
