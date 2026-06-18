@@ -13,6 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+import { MultiSelectPeople } from "./MultiSelectPeople";
+import { VoltarDropdown } from "./VoltarDropdown";
+import { todayISO } from "@/lib/dias-uteis";
 
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { useFeriados } from "@/hooks/use-feriados";
@@ -34,6 +37,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { names: operadoresSilk } = useAppList("silk");
+  const { names: opRevelacao } = useAppList("revelacao_silk");
   const { feriados } = useFeriados();
   const sort = useSort<"qtd"|"silk"|"saida"|"entrega">();
   useEffect(() => {
@@ -43,12 +47,25 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   }, [selected]);
   useDirtyTracker(form, selected ?? {}, active && !!selected);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
+
+  // A4: ao marcar "Sim" preenche a data automática (editável). "Não" limpa.
+  function setTelaGravada(v: string) {
+    setForm((f) => {
+      const curData = (f as any).tela_gravada_data ?? null; // não existe coluna específica; mantemos lógica original
+      return { ...f, tela_gravada: v };
+    });
+  }
   function setSilkFeito(v: string) {
-    setForm((f) => ({
-      ...f,
-      silk_feito: v,
-      ...(v !== "Sim" ? { silk_data_executada: null, quem_bateu_silk: null } : {}),
-    }));
+    setForm((f) => {
+      const curData = (f.silk_data_executada ?? selected?.silk_data_executada) ?? null;
+      const nextData = v === "Sim" ? (curData ?? todayISO()) : null;
+      return {
+        ...f,
+        silk_feito: v,
+        silk_data_executada: nextData,
+        ...(v !== "Sim" ? { quem_bateu_silk: null } : {}),
+      };
+    });
   }
   function setDataExec(v: string | null | undefined) {
     setForm((f) => ({
@@ -64,6 +81,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
     onSave({
       id: selected.id,
       tela_gravada: pick("tela_gravada"),
+      quem_revelou_tela: pick("quem_revelou_tela"),
       silk_feito: pick("silk_feito"),
       silk_data_executada: pick("silk_data_executada"),
       quem_bateu_silk: pick("quem_bateu_silk"),
@@ -71,6 +89,18 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
     });
   }
   useRegisterSave(handleSave, active);
+
+  async function handleVoltar(destino: "dados" | "arte" | "dtf" | "silk" | "acabamento") {
+    if (!selected) return;
+    onSave({
+      id: selected.id,
+      reaberto: true,
+      silk_feito: null,
+      silk_data_executada: null,
+      quem_bateu_silk: null,
+    } as any);
+    if (onNavigate) onNavigate(destino);
+  }
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
@@ -121,82 +151,86 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
               </Badge>
             </CardHeader>
             <CardContent className="space-y-3">
-            <EtapaTopoBanner pedido={selected} tab="silk" />
-            {selected.status_pecas !== "completo" && selected.arte_data && (
-              <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">
-                <span className="font-semibold">Pedido Incompleto</span> — Status de Peças ainda está "incompleto".
-              </div>
-            )}
+              <EtapaTopoBanner pedido={selected} tab="silk" />
+              {selected.status_pecas !== "completo" && selected.arte_data && (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm border border-destructive/30">
+                  <span className="font-semibold">Pedido Incompleto</span> — Status de Peças ainda está "incompleto".
+                </div>
+              )}
 
+              {/* Linha 1 */}
               <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
                 <ReadOnlyField label="QTD" value={selected.qtd} />
                 <ReadOnlyField label="Status de Peças" value={selected.status_pecas} />
-                <ReadOnlyField label="Fotolito Impresso? (Arte)" value={selected.fotolito_impresso ?? "Pendente"} />
-                <div className="space-y-1">
-                  <div className="text-xs font-medium text-muted-foreground">Layout</div>
-                  {selected.layout_url ? (
-                    <div className="space-y-1">
-                      <div className="flex gap-2 flex-wrap">
-                        <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
-                          <Download className="h-4 w-4 mr-1" /> Baixar layout
-                        </Button>
-                        {onNavigate && (
-                          <Button size="sm" onClick={() => onNavigate("arte")} className="bg-[#cf0e0e] hover:bg-[#b00b0b] text-white">
-                            Voltar para a Arte
-                          </Button>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate">{selected.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="text-sm text-muted-foreground">Sem layout</div>
-                      {onNavigate && (
-                        <Button size="sm" onClick={() => onNavigate("arte")} className="bg-[#cf0e0e] hover:bg-[#b00b0b] text-white">
-                          Voltar para a Arte
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <ReadOnlyField label="Início estamparia" value={formatDateBR(selected.inicio_estamparia)} />
-                <ReadOnlyField label="Limite estamparia" value={formatDateBR(selected.termino_estamparia)} />
-                <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
               </div>
-              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t">
-                <FormField label="Tela gravada?">
-                  <Select value={form.tela_gravada ?? ""} onValueChange={(v) => set("tela_gravada", v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>{SIM_NAO_PROCESSO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                  </Select>
-                </FormField>
-                <FormField label="Silk feito?">
-                  <Select value={form.silk_feito ?? ""} onValueChange={setSilkFeito} disabled={silkBloqueado}>
-                    <SelectTrigger><SelectValue placeholder={silkBloqueado ? "Tela precisa estar gravada" : "Selecione..."} /></SelectTrigger>
-                    <SelectContent>{SIM_NAO_PROCESSO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                  </Select>
-                </FormField>
-                <FormField label={`Data Executada de Silk${form.silk_feito === "Sim" ? " *" : ""}`}>
-                  <DateInputBR disabled={form.silk_feito !== "Sim"} value={form.silk_data_executada} onChange={setDataExec} />
-                </FormField>
-                <FormField label="Quem bateu o Silk?">
-                  <Select value={form.quem_bateu_silk ?? ""} onValueChange={(v) => set("quem_bateu_silk", v)} disabled={!form.silk_data_executada}>
-                    <SelectTrigger><SelectValue placeholder={!form.silk_data_executada ? "Preencha a data primeiro" : "Selecione..."} /></SelectTrigger>
-                    <SelectContent>{operadoresSilk.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                  </Select>
-                </FormField>
-                <div className="sm:col-span-2 lg:col-span-4">
-                  <FormField label="Observações do Silk">
-                    <Textarea value={form.silk_observacao ?? ""} onChange={(e) => set("silk_observacao", e.target.value)} rows={2} />
+              {/* Linha 2 */}
+              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+                <ReadOnlyField label="Fotolito Impresso" value={selected.fotolito_impresso ?? "Pendente"} />
+                <ReadOnlyField label="Início Estamparia" value={formatDateBR(selected.inicio_estamparia)} />
+                <ReadOnlyField label="Término Estamparia" value={formatDateBR(selected.termino_estamparia)} />
+                <ReadOnlyField label="Início Acabamento" value={formatDateBR(selected.inicio_acabamento)} />
+                <ReadOnlyField label="Nº Batidas Silk" value={selected.n_batidas_silk ?? "—"} />
+              </div>
+
+              {/* A10 — Execuções em duas linhas */}
+              <div className="pt-3 border-t space-y-2">
+                {/* Linha 1: Tela gravada / Data / Quem revelou */}
+                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  <FormField label="Tela gravada?">
+                    <Select value={form.tela_gravada ?? ""} onValueChange={setTelaGravada}>
+                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>{SIM_NAO_PROCESSO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                    </Select>
                   </FormField>
-                  <ObservacoesOutrosSetores pedido={selected} setorAtual="silk" />
+                  <FormField label="Quem revelou a tela?">
+                    <Select value={form.quem_revelou_tela ?? ""} onValueChange={(v) => set("quem_revelou_tela", v)} disabled={form.tela_gravada !== "Sim"}>
+                      <SelectTrigger><SelectValue placeholder={form.tela_gravada !== "Sim" ? "Marque tela gravada primeiro" : "Selecione..."} /></SelectTrigger>
+                      <SelectContent>{opRevelacao.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </FormField>
+                  <div />
                 </div>
-
+                {/* Linha 2: Silk feito / Data / Quem bateu */}
+                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  <FormField label="Silk feito?">
+                    <Select value={form.silk_feito ?? ""} onValueChange={setSilkFeito} disabled={silkBloqueado}>
+                      <SelectTrigger><SelectValue placeholder={silkBloqueado ? "Tela precisa estar gravada" : "Selecione..."} /></SelectTrigger>
+                      <SelectContent>{SIM_NAO_PROCESSO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </FormField>
+                  <FormField label={`Data da execução${form.silk_feito === "Sim" ? " *" : ""}`}>
+                    <DateInputBR disabled={form.silk_feito !== "Sim"} value={form.silk_data_executada} onChange={setDataExec} />
+                  </FormField>
+                  <FormField label="Quem bateu o Silk? (múltiplos)">
+                    <MultiSelectPeople
+                      value={form.quem_bateu_silk}
+                      options={operadoresSilk}
+                      onChange={(v) => set("quem_bateu_silk", v)}
+                      disabled={!form.silk_data_executada}
+                      placeholder={!form.silk_data_executada ? "Preencha a data primeiro" : "Selecione..."}
+                    />
+                  </FormField>
+                </div>
               </div>
-              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto"><Save className="h-4 w-4 mr-1" />Atualizar Silk</Button>
+
+              <div className="pt-3 border-t">
+                <FormField label="Observações do Silk">
+                  <Textarea value={form.silk_observacao ?? ""} onChange={(e) => set("silk_observacao", e.target.value)} rows={2} />
+                </FormField>
+                <ObservacoesOutrosSetores pedido={selected} setorAtual="silk" />
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-3 border-t items-center">
+                <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Atualizar Silk</Button>
+                {selected.layout_url && (
+                  <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                    <Download className="h-4 w-4 mr-1" /> Baixar layout
+                  </Button>
+                )}
+                <VoltarDropdown destinos={["arte"]} onVoltar={handleVoltar} />
+              </div>
             </CardContent>
           </Card>
         )
@@ -253,6 +287,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
               </PedidoMobileCard>
             ))}
           </div>
+          {/* A11 — colunas */}
           <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs [&_th]:text-center [&_td]:text-center">
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
@@ -260,16 +295,16 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   <Th>ETAPA</Th>
                   <Th>PEDIDO</Th>
                   <Th>ORÇAMENTO</Th>
-                  <Th>TIPO</Th>
+                  <Th>VENDEDOR</Th>
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
+                  <Th>ESTAMPA</Th>
                   <Th>STATUS DAS PEÇAS</Th>
                   <Th>FOTOLITO</Th>
-                  <Th>TELA GRAVADA</Th>
+                  <Th>TELA</Th>
                   <Th>SILK FEITO</Th>
-                  <SortableTh label="DATA SILK" active={sort.key === "silk"} onClick={() => sort.toggle("silk")} />
-                  <Th>QUEM BATEU</Th>
-                  <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
-                  <SortableTh label="ENTREGA" active={sort.key === "entrega"} onClick={() => sort.toggle("entrega")} />
+                  <Th>INÍCIO ESTAMPARIA</Th>
+                  <Th>TÉRMINO ESTAMPARIA</Th>
+                  <Th>INÍCIO ACABAMENTO</Th>
                 </tr>
               </thead>
               <tbody>
@@ -293,25 +328,23 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                         <td className="px-1.5 py-0.5"><EtapaBadgeFromPedido pedido={p} /></td>
                         <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
                         <td className="px-1.5 py-0.5 !text-left">{p.orcamento}</td>
-                        <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
+                        <td className="px-1.5 py-0.5">{p.vendedor ?? "—"}</td>
                         <td className="px-1.5 py-0.5">{p.qtd ?? "—"}</td>
+                        <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                         <td className="px-1.5 py-0.5"><StatusPecasBadge pedido={p} /></td>
                         <td className="px-1.5 py-0.5">{p.fotolito_impresso ?? "—"}</td>
                         <td className="px-1.5 py-0.5">{p.tela_gravada ?? "—"}</td>
                         <td className="px-1.5 py-0.5">{p.silk_feito ?? "—"}</td>
-                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.silk_data_executada)}</td>
-                        <td className="px-1.5 py-0.5">{p.quem_bateu_silk ?? "—"}</td>
-                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.inicio_estamparia)}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.termino_estamparia)}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.inicio_acabamento)}</td>
                       </tr>
                     );
                   });
                 })()}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={14} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk disponível.</td></tr>
+                  <tr><td colSpan={13} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido Silk disponível.</td></tr>
                 )}
-
-
               </tbody>
             </table>
           </div>
