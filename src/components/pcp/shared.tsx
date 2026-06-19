@@ -1,12 +1,14 @@
 import type { Pedido } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button, type ButtonProps } from "@/components/ui/button";
 import { calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk, isAtrasadoSetor, type EtapaStatus, type SetorAtraso } from "@/lib/pedidos";
-import { CheckCircle2, Clock, AlertTriangle, Info, ArrowUpDown } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Info, ArrowUpDown, Save, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
+import { useColorSettings, type BotaoKey } from "@/hooks/use-color-settings";
 
 
 
