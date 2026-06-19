@@ -366,6 +366,14 @@ export function DashboardTab({ pedidos, loading, onEdit, onFinalizarMany }: Prop
                         onDoubleClick={() => onEdit(p.id)}
                         className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
                       >
+                        {onFinalizarMany && (
+                          <TableCell
+                            className="py-0.5 px-1.5 w-8 text-center"
+                            onClick={(e) => { e.stopPropagation(); toggleId(p.id); }}
+                          >
+                            <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
+                          </TableCell>
+                        )}
                         <TableCell className="py-0.5 px-1.5 text-[11px] text-center"><Badge variant="outline" className={`${etapaPaletteClass(calcularEtapaAtual(p).etapa)} text-[10px] px-1.5 py-0`}>{calcularEtapaAtual(p).etapa}</Badge></TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] font-medium align-top text-center">{p.pedido_olist}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] max-w-[200px] align-top !text-left">
