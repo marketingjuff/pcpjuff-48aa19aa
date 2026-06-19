@@ -282,20 +282,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               </div>
             )}
 
-            <div className="flex gap-2 flex-wrap">
-              <Button onClick={handleSave} disabled={saving} variant="outline" className="w-full sm:w-auto">
-                <Save className="h-4 w-4 mr-1" /> Atualizar Expedição
-              </Button>
-              <Button onClick={marcarTudoSim} disabled={saving} variant="outline" className="w-full sm:w-auto">
-                Marcar tudo como "Sim"
-              </Button>
-              <Button
-                onClick={handleFinalizar}
-                disabled={saving}
-                className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                <Flag className="h-4 w-4 mr-1" /> Finalizar Pedido
-              </Button>
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
               <VoltarDropdown
                 destinos={["dados", "arte", "dtf", "silk", "acabamento"]}
                 onVoltar={(destino) => {
@@ -308,6 +295,21 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   if (onNavigate) onNavigate(destino);
                 }}
               />
+              <div className="flex gap-2 flex-wrap sm:justify-end">
+                <Button onClick={marcarTudoSim} disabled={saving} variant="outline" className="w-full sm:w-auto">
+                  Marcar tudo como "Sim"
+                </Button>
+                <UpdateButton onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
+                  Atualizar Expedição
+                </UpdateButton>
+                <FinalizarButton
+                  onClick={handleFinalizar}
+                  disabled={saving}
+                  className="w-full sm:w-auto"
+                >
+                  Finalizar Pedido
+                </FinalizarButton>
+              </div>
             </div>
           </CardContent>
         </Card>
