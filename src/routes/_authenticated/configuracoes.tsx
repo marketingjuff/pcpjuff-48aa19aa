@@ -80,11 +80,13 @@ function ConfiguracoesPage() {
             {isAdmin && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
             <TabsTrigger value="listas">Listas</TabsTrigger>
             <TabsTrigger value="backup">Backup</TabsTrigger>
+            {isAdmin && <TabsTrigger value="cores">Cores</TabsTrigger>}
           </TabsList>
           {isAdmin && <TabsContent value="feriados"><FeriadosTab /></TabsContent>}
           {isAdmin && <TabsContent value="usuarios"><UsuariosTab /></TabsContent>}
           <TabsContent value="listas"><ListasTab /></TabsContent>
           <TabsContent value="backup"><BackupTab /></TabsContent>
+          {isAdmin && <TabsContent value="cores"><CoresTab /></TabsContent>}
         </Tabs>
       </main>
     </div>
