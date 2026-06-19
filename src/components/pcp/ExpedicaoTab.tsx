@@ -366,7 +366,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   {onFinalizarMany && (
                     <div
                       className="absolute top-2 left-2 z-10"
-                      onClick={(e) => { e.stopPropagation(); toggleId(p.id); }}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
                     </div>
