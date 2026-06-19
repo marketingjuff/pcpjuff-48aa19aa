@@ -48,7 +48,7 @@ function emExpedicao(p: Pedido) {
   return p.embalado === "Sim" && !p.finalizado_em;
 }
 
-export function DashboardTab({ pedidos, loading, onEdit }: Props) {
+export function DashboardTab({ pedidos, loading, onEdit, onFinalizarMany }: Props) {
   const { feriados } = useFeriados();
   const { names: vendedores } = useAppList("vendedor");
   const [vendedor, setVendedor] = useState<string>("todos");
