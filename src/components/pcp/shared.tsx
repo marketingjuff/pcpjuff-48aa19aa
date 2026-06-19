@@ -67,9 +67,51 @@ export function etapaPaletteClass(etapa: string): string {
 /** Badge mostrando a Etapa atual do pedido — consistente em todos os dashboards. */
 export function EtapaBadgeFromPedido({ pedido, compact }: { pedido: Pedido; compact?: boolean }) {
   const { etapa } = calcularEtapaAtual(pedido);
-  const sizeCls = compact ? "text-[10px] px-1.5 py-0" : "";
-  return <Badge variant="outline" className={`${etapaPaletteClass(etapa)} whitespace-nowrap ${sizeCls}`}>{etapa}</Badge>;
+  return <EtapaBadgeView etapa={etapa} compact={compact} />;
 }
+
+/** Badge de etapa por string (para casos onde já temos a label). Usa cores do painel de configuração. */
+export function EtapaBadgeView({ etapa, compact, className }: { etapa: string; compact?: boolean; className?: string }) {
+  const { etapaStyle } = useColorSettings();
+  const sizeCls = compact ? "text-[10px] px-1.5 py-0" : "";
+  return (
+    <Badge
+      variant="outline"
+      className={`${etapaPaletteClass(etapa)} whitespace-nowrap ${sizeCls} ${className ?? ""}`}
+      style={etapaStyle(etapa)}
+    >
+      {etapa}
+    </Badge>
+  );
+}
+
+/** Botão de ação principal (Atualizar/Salvar) com cor configurável (default azul). */
+export const UpdateButton = forwardRef<HTMLButtonElement, ButtonProps & { icon?: boolean }>(
+  ({ icon = true, children, style, className, ...rest }, ref) => {
+    const { btnStyle } = useColorSettings();
+    return (
+      <Button ref={ref} className={className} style={{ ...btnStyle("atualizar"), ...style }} {...rest}>
+        {icon && <Save className="h-4 w-4 mr-1" />}
+        {children}
+      </Button>
+    );
+  },
+);
+UpdateButton.displayName = "UpdateButton";
+
+/** Botão de finalizar pedido(s) com cor configurável (default verde). */
+export const FinalizarButton = forwardRef<HTMLButtonElement, ButtonProps & { icon?: boolean }>(
+  ({ icon = true, children, style, className, ...rest }, ref) => {
+    const { btnStyle } = useColorSettings();
+    return (
+      <Button ref={ref} className={className} style={{ ...btnStyle("finalizar"), ...style }} {...rest}>
+        {icon && <Flag className="h-4 w-4 mr-1" />}
+        {children}
+      </Button>
+    );
+  },
+);
+FinalizarButton.displayName = "FinalizarButton";
 
 /** ===== Estilos compartilhados de tabela compacta (padrão Dashboard Master) ===== */
 export const TABLE_FONT_STYLE = {
