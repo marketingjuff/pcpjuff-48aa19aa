@@ -265,8 +265,9 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 <StatusPecasChip pedido={p} />
                 <Chip label="DTF" value={modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"} />
                 <Chip label="Silk" value={modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"} />
-                <Chip label="Embalado" value={p.embalado} />
-                <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+                <Chip label="Início Acab." value={formatDateBR(p.inicio_acabamento) || "—"} />
+                <Chip label="Término Acab." value={formatDateBR(p.termino_acabamento) || "—"} />
+                <Chip label="Saída Juff" value={formatDateBR(p.saida_juff) || "—"} />
               </PedidoMobileCard>
             ))}
           </div>
@@ -275,17 +276,16 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               <thead>
                 <tr>
                   <Th>ETAPA</Th>
-                  <Th>PEDIDO</Th>
+                  <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
                   <Th>ORÇAMENTO</Th>
                   <Th>TIPO</Th>
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
                   <Th>STATUS DAS PEÇAS</Th>
                   <Th>DTF EST.</Th>
                   <Th>SILK EST.</Th>
-                  <Th>EMBALADO</Th>
-                  <Th>RESPONSÁVEL</Th>
+                  <SortableTh label="INÍCIO ACAB." active={sort.key === "inicio"} onClick={() => sort.toggle("inicio")} />
+                  <SortableTh label="TÉRMINO ACAB." active={sort.key === "termino"} onClick={() => sort.toggle("termino")} />
                   <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
-                  <SortableTh label="ENTREGA" active={sort.key === "entrega"} onClick={() => sort.toggle("entrega")} />
                 </tr>
               </thead>
               <tbody>
@@ -294,9 +294,11 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                   if (sort.key) {
                     lista = [...lista].sort((a, b) => {
                       switch (sort.key) {
+                        case "pedido": return cmpPedido(a, b, sort.dir);
                         case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
+                        case "inicio": return cmpDate(a.inicio_acabamento, b.inicio_acabamento, sort.dir);
+                        case "termino": return cmpDate(a.termino_acabamento, b.termino_acabamento, sort.dir);
                         case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
-                        case "entrega": return cmpDate(a.data_entrega, b.data_entrega, sort.dir);
                       }
                       return 0;
                     });
@@ -313,16 +315,15 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                         <td className="px-1.5 py-0.5"><StatusPecasBadge pedido={p} /></td>
                         <td className="px-1.5 py-0.5">{modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"}</td>
                         <td className="px-1.5 py-0.5">{modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"}</td>
-                        <td className="px-1.5 py-0.5">{p.embalado ?? "—"}</td>
-                        <td className="px-1.5 py-0.5">{p.responsavel_acabamento ?? "—"}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.inicio_acabamento)}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.termino_acabamento)}</td>
                         <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
                       </tr>
                     );
                   });
                 })()}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={13} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido pronto para acabamento.</td></tr>
+                  <tr><td colSpan={11} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido pronto para acabamento.</td></tr>
                 )}
 
 
