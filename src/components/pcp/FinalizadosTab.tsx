@@ -37,7 +37,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const sort = useSort<"qtd"|"saida"|"data_saida"|"fin">();
+  const sort = useSort<"pedido"|"qtd"|"saida"|"data_saida"|"fin">();
   const [historico, setHistorico] = useState<Pedido | null>(null);
 
 
