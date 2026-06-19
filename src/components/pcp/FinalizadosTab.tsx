@@ -58,6 +58,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
     if (sort.key) {
       arr.sort((a, b) => {
         switch (sort.key) {
+          case "pedido": return cmpPedido(a, b, sort.dir);
           case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
           case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
           case "data_saida": return cmpDate(a.data_saida_juff, b.data_saida_juff, sort.dir);
