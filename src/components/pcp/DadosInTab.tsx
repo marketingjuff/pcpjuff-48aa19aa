@@ -497,31 +497,36 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       </div>
 
 
-      <DadosInDashboard
-        pedidos={pedidos}
-        selectedId={selected?.id ?? null}
-        onSelect={onSelect}
-        feriados={feriados}
-        vendedores={vendedores}
-      />
+      <div ref={dashboardRef}>
+        <DadosInDashboard
+          pedidos={pedidos}
+          selectedId={selected?.id ?? null}
+          onSelect={onSelect}
+          feriados={feriados}
+          vendedores={vendedores}
+          etapaFiltro={etapaFiltro}
+          setEtapaFiltro={setEtapaFiltro}
+        />
+      </div>
     </div>
   );
 }
 
 function DadosInDashboard({
-  pedidos, selectedId, onSelect, feriados, vendedores,
+  pedidos, selectedId, onSelect, feriados, vendedores, etapaFiltro, setEtapaFiltro,
 }: {
   pedidos: Pedido[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   feriados: Set<string>;
   vendedores: string[];
+  etapaFiltro: string;
+  setEtapaFiltro: (v: string) => void;
 }) {
   const [search, setSearch] = useState("");
   const [vendedor, setVendedor] = useState("todos");
   const [status, setStatus] = useState("todos");
   const [tipo, setTipo] = useState("todos");
-  const [etapaFiltro, setEtapaFiltro] = useState("ativas");
   const [dataEntrega, setDataEntrega] = useState("");
   const sort = useSort<"qtd"|"tempoFrete"|"entrada"|"saida"|"entrega">("saida", "asc");
 
