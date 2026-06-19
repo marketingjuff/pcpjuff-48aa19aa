@@ -545,6 +545,7 @@ function DadosInDashboard({
     if (sort.key) {
       arr.sort((a, b) => {
         switch (sort.key) {
+          case "pedido": return cmpPedido(a, b, sort.dir);
           case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
           case "tempoFrete": return cmpNum(a.tempo_frete as any, b.tempo_frete as any, sort.dir);
           case "entrada": return cmpDate(a.entrada_pedido, b.entrada_pedido, sort.dir);
