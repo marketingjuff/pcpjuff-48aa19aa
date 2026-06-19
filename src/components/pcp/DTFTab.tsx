@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES, matchEtapaFiltro, UpdateButton } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { MultiSelectPeople, parsePeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
@@ -236,14 +236,16 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-2 pt-3 border-t items-center">
-                <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Atualizar DTF</Button>
-                {selected.layout_url && (
-                  <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
-                    <Download className="h-4 w-4 mr-1" /> Baixar layout
-                  </Button>
-                )}
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 pt-3 border-t">
                 <VoltarDropdown destinos={["arte"]} onVoltar={handleVoltar} />
+                <div className="flex flex-wrap gap-2 sm:justify-end items-center">
+                  {selected.layout_url && (
+                    <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                      <Download className="h-4 w-4 mr-1" /> Baixar layout
+                    </Button>
+                  )}
+                  <UpdateButton onClick={handleSave} disabled={saving}>Atualizar DTF</UpdateButton>
+                </div>
               </div>
             </CardContent>
           </Card>

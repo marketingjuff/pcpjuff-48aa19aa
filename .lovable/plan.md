@@ -1,65 +1,58 @@
-Plano único para a aba **Acabamento** (Blocos 1–4) e ordenação nas demais abas (Bloco 5). Sem novos arquivos. Sem alterar lógica fora do escopo.
+## Painel de Configuração de Cores
 
-## Bloco 1 — Topo da aba Acabamento (read-only)
-`AcabamentoTab.tsx`, grid dos `ReadOnlyField`:
-- Remover **Data de Entrega**.
-- Adicionar **Início de Acabamento** (`inicio_acabamento`) e **Término de Acabamento** (`termino_acabamento`) via `ReadOnlyField` + `formatDateBR`.
-- Reorganizar em duas linhas (grids separados):
-  - **Linha 1** (`sm:grid-cols-3 lg:grid-cols-6`): Pedido · Orçamento · Tipo de Estampa · Status de Peças · DTF Estampado? · Silk Estampado?
-  - **Linha 2** (`sm:grid-cols-2 lg:grid-cols-3`): Início de Acabamento · Término de Acabamento · Saída Juff (prazo)
-- Bloco do **Layout** (download + `AcabamentoVoltar`) permanece logo abaixo das duas linhas, igual hoje.
-
-## Bloco 2 — Bloco de edição
-`AcabamentoTab.tsx`, grid dos `FormField`:
-- **EMBALADO?** permanece igual.
-- Renomear rótulo `"Data Saída Juff"` → **"Data da Embalagem"** (asterisco quando `embalado === "Sim"`). Coluna do banco continua `data_saida_juff`. Comportamento atual de `setEmbalado`/`setDataSaida` preservado (auto-preenche `todayISO()` ao marcar Sim; limpa ao voltar para Não).
-- **Responsável pelo Acabamento (múltiplos)** e **Observações** permanecem.
-
-## Bloco 3 — Envio automático para Expedição
-`AcabamentoTab.tsx`, função `handleSave`:
-- Trocar condição `embalado === "Sim" && !selected.expedicao_entrou_em` por:
-  `embalado === "Sim" && !!data_saida_juff && !!responsavel_acabamento && !selected.expedicao_entrou_em` (usando os valores do `payload`).
-- Banner verde: trocar o texto para  
-  > "Pronto para Expedição. Ao clicar em **Atualizar Acabamento**, o pedido vai automaticamente para a Expedição."
-
-  (O `podeFinalizar` já exige os três campos, então o banner aparece nas condições corretas.)
-- Texto auxiliar abaixo do botão ("Ao salvar com EMBALADO=Sim…") permanece — só descreve o fluxo.
-
-## Bloco 4 — Dashboard do Acabamento
-`AcabamentoTab.tsx`, tabela desktop + cards mobile:
-- **Tipo do `useSort`**: trocar para `useSort<"pedido"|"qtd"|"inicio"|"termino"|"saida">()`.
-- **Colunas finais (ordem)**: ETAPA · PEDIDO · ORÇAMENTO · TIPO · QTD · STATUS DAS PEÇAS · DTF EST. · SILK EST. · INÍCIO ACAB. · TÉRMINO ACAB. · SAÍDA JUFF (11 colunas; `colSpan` da linha vazia = 11).
-- Remover **EMBALADO**, **RESPONSÁVEL** e **ENTREGA**.
-- Tornar ordenáveis com `SortableTh`:
-  - **PEDIDO**: numérico por `Number(p.pedido_olist)`, com NaN/null por último. Helper inline `cmpPedido(a, b, dir)`.
-  - **QTD**: `cmpNum(qtd)`.
-  - **INÍCIO ACAB.**: `cmpDate(inicio_acabamento)`.
-  - **TÉRMINO ACAB.**: `cmpDate(termino_acabamento)`.
-  - **SAÍDA JUFF**: `cmpDate(saida_juff)`.
-- Estender o `switch (sort.key)` para `pedido | qtd | inicio | termino | saida`.
-- **Mobile cards**: remover chips "Embalado" e "Entrega"; adicionar "Início Acab.", "Término Acab." e "Saída Juff" (`formatDateBR`).
-
-## Bloco 5 — Ordenação nas demais abas
-Padrão: helper local `cmpPedido` (numérico, não-numérico/null por último) em cada arquivo; estender o `useSort` e o `switch` correspondente. Não mexer no Dashboard Master.
-
-- **ArteTab.tsx**: tornar **PEDIDO** e **INÍCIO EST.** ordenáveis. Estender `useSort` para `"pedido"|"qtd"|"entrada"|"limite"|"saida"|"inicio"` e adicionar `cmpPedido` + `cmpDate(arte_data)` no switch.
-- **DTFTab.tsx**: tornar **PEDIDO**, **INÍCIO ESTAMPARIA**, **TÉRMINO ESTAMPARIA** e **INÍCIO ACABAMENTO** ordenáveis. Estender `useSort` para `"pedido"|"qtd"|"exec"|"saida"|"entrega"|"iniEst"|"fimEst"|"iniAcab"`. Campos a confirmar lendo a tabela: `dtf_inicio` / `dtf_termino` / `inicio_acabamento` (usar os já mostrados nas células).
-- **SilkTab.tsx**: idem DTF, com os campos `silk_inicio` / `silk_termino` / `inicio_acabamento`.
-- **DadosInTab.tsx**: tornar **PEDIDO** ordenável (numérico). Estender `useSort` (`"pedido"|...`) e o switch. Demais (QTD, Tempo Frete, Entrada, Saída, Entrega) já ordenam.
-- **ExpedicaoTab.tsx**: substituir o `Th` fixo de **PEDIDO** por `SortableTh` (numérico). O sort atual usa estado próprio (`sortKey: "saida_juff" | "data_entrega"`); estender para incluir `"pedido"` no `sortKey`/`toggleSort` e no `useMemo` do `dashboardPedidos` (ramo numérico via `Number`).
-- **FinalizadosTab.tsx**: tornar **PEDIDO** ordenável. Estender `useSort` para `"pedido"|"qtd"|"saida"|"data_saida"|"fin"` e o switch com `cmpPedido`.
-
-## Notas técnicas
-- Helper `cmpPedido` (definido em cada arquivo, sem novo módulo):
-  ```ts
-  function cmpPedido(a: Pedido, b: Pedido, dir: "asc"|"desc") {
-    const na = Number(a.pedido_olist), nb = Number(b.pedido_olist);
-    const aBad = !Number.isFinite(na), bBad = !Number.isFinite(nb);
-    if (aBad && bBad) return 0;
-    if (aBad) return 1;
-    if (bBad) return -1;
-    return dir === "asc" ? na - nb : nb - na;
+### 1. Armazenamento (Lovable Cloud)
+Nova tabela `app_color_settings` com 1 linha singleton (`id = 'global'`) e coluna `data jsonb`. Estrutura:
+```json
+{
+  "etapas": { "Aguardando Arte": { "fg": "#3730a3", "bg": "#eef2ff" }, ... },
+  "botoes": {
+    "atualizar":  { "fg": "#ffffff", "bg": "#2563eb" },
+    "finalizar":  { "fg": "#ffffff", "bg": "#059669" },
+    "voltar":     { "fg": "#ffffff", "bg": "#475569" }
   }
-  ```
-- Nenhuma migração, nenhum tipo novo. Só renderização e ordenação.
-- Antes de tocar nos campos `dtf_inicio/termino`, `silk_inicio/termino` nos blocos DTF/Silk, abro os arquivos para confirmar os nomes exatos das colunas usadas nas células e reuso esses mesmos identificadores no `switch`.
+}
+```
+RLS: leitura por `authenticated`; escrita só para `has_role(auth.uid(), 'admin')`. GRANT padrão. Sem migração de tipos extras (uso direto via supabase client).
+
+### 2. Hook `useColorSettings`
+`src/hooks/use-color-settings.ts`:
+- `useQuery(['color-settings'])` lê a linha singleton, com fallback aos defaults atuais (paleta já em `etapaPaletteClass` convertida para hex).
+- Helpers: `etapaStyle(etapa)` → `{ color, backgroundColor, borderColor }`; `btnStyle('atualizar' | 'finalizar' | 'voltar')`.
+- Mutation `saveColorSettings` (admin only) faz upsert.
+- Invalidação em todas as abas via mesmo queryKey.
+
+### 3. Aba "Cores" em Configurações (admin only)
+Em `src/routes/_authenticated/configuracoes.tsx`:
+- Novo `TabsTrigger value="cores"` visível só para admin.
+- Componente `CoresTab`: lista as 11 etapas do badge + 3 botões. Cada linha tem 2 `<input type="color">` (fundo / fonte) e um preview ao vivo. Botões "Restaurar padrão" e "Salvar".
+- As etapas configuráveis são todas as do badge: Aguardando entrada, Aguardando input de produção, Aguardando Arte, DTF Pronto / Silk na Arte, Silk Pronto / DTF na Arte, Aguardando DTF, Aguardando Silk, Aguardando DTF + Silk, Aguardando Acabamento, Aguardando Expedição, Finalizado.
+
+### 4. Aplicar cores nos badges de etapa
+Em `src/components/pcp/shared.tsx`:
+- `EtapaBadgeFromPedido` e demais usos passam a aceitar `style` derivado do hook. Onde a `Badge` é renderizada via `etapaPaletteClass`, substituir por `<Badge variant="outline" style={etapaStyle(etapa)}>`.
+- `etapaPaletteClass` permanece como fallback caso o hook ainda não tenha carregado.
+
+### 5. Botões uniformes
+- **Atualizar**: criar `<UpdateButton>` em `shared.tsx` que aplica `style={btnStyle('atualizar')}` (azul por padrão). Substituir todos os `<Button>Atualizar ...</Button>` em ArteTab, DTFTab, SilkTab, AcabamentoTab, ExpedicaoTab, DadosInTab (2 botões "Atualizar/Salvar Input").
+- **Finalizar Pedido / Finalizar selecionados** em ExpedicaoTab: trocar `bg-emerald-600 hover:bg-emerald-700 text-white` por `style={btnStyle('finalizar')}` (verde por padrão).
+- **Voltar (VoltarDropdown)**: o botão "Voltar" interno usa `style={btnStyle('voltar')}`.
+
+### 6. Alinhamento do VoltarDropdown
+Em **todas as abas que têm Voltar** (ArteTab, DTFTab, SilkTab, AcabamentoTab, ExpedicaoTab), a barra de ações vira:
+```
+[Voltar ▼]                    ...                    [Atualizar]
+```
+Implementação: container `flex items-center justify-between w-full` (em mobile vira `flex-col-reverse gap-2`). Hoje em ExpedicaoTab eles estão lado a lado num `flex-wrap`; mover `VoltarDropdown` para a esquerda e `Atualizar`/`Finalizar` para a direita. Mesma estrutura nas demais abas.
+
+### 7. Detalhes técnicos
+- Cores aplicadas via `style={{ backgroundColor, color, borderColor }}` (não via classes Tailwind) para permitir valores arbitrários do usuário.
+- `borderColor` = mesmo `bg` com opacidade ~40% (computado via `color-mix` inline ou helper hex→rgba).
+- Dark mode: usuário escolhe uma cor única; mantemos a mesma em ambos os temas (simples e previsível). Se quiser separar light/dark, fica para uma próxima iteração.
+- Defaults vêm de uma constante `DEFAULT_COLOR_SETTINGS` em `use-color-settings.ts` espelhando as cores Tailwind atuais convertidas para hex.
+
+### Arquivos
+- **Migração**: cria `app_color_settings` (id text PK, data jsonb, updated_at) + RLS + GRANT.
+- **Novo**: `src/hooks/use-color-settings.ts`.
+- **Editar**: `src/routes/_authenticated/configuracoes.tsx` (nova aba), `src/components/pcp/shared.tsx` (badges + UpdateButton), `src/components/pcp/VoltarDropdown.tsx` (cor do botão), `ArteTab.tsx`, `DTFTab.tsx`, `SilkTab.tsx`, `AcabamentoTab.tsx`, `ExpedicaoTab.tsx`, `DadosInTab.tsx` (uniformizar Atualizar + reposicionar Voltar).
+
+Sem alteração nos schemas de auth/storage. Tudo respeita o gate `_authenticated`.

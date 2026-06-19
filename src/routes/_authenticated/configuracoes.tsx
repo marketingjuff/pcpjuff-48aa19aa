@@ -38,6 +38,13 @@ import {
 import type { AppRole, AppArea, Feriado } from "@/integrations/supabase/schema-extras";
 import { APP_AREAS_GESTOR, APP_AREAS_OPERADOR, APP_AREA_LABEL } from "@/integrations/supabase/schema-extras";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  useColorSettings as useColorSettingsHook,
+  DEFAULT_COLOR_SETTINGS as DEFAULT_COLOR_SETTINGS_CONST,
+  ETAPAS_CONFIGURAVEIS as ETAPAS_CONFIGURAVEIS_CONST,
+  type ColorSettings as ColorSettingsType,
+  type BotaoKey as BotaoKeyType,
+} from "@/hooks/use-color-settings";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: ConfiguracoesPage,
@@ -80,11 +87,13 @@ function ConfiguracoesPage() {
             {isAdmin && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
             <TabsTrigger value="listas">Listas</TabsTrigger>
             <TabsTrigger value="backup">Backup</TabsTrigger>
+            {isAdmin && <TabsTrigger value="cores">Cores</TabsTrigger>}
           </TabsList>
           {isAdmin && <TabsContent value="feriados"><FeriadosTab /></TabsContent>}
           {isAdmin && <TabsContent value="usuarios"><UsuariosTab /></TabsContent>}
           <TabsContent value="listas"><ListasTab /></TabsContent>
           <TabsContent value="backup"><BackupTab /></TabsContent>
+          {isAdmin && <TabsContent value="cores"><CoresTab /></TabsContent>}
         </Tabs>
       </main>
     </div>
@@ -928,3 +937,116 @@ function ListaCard({ kind, title, placeholder }: { kind: AppListKind; title: str
     </div>
   );
 }
+
+// ============================================================
+// Aba: Cores (admin only)
+// ============================================================
+function CoresTab() {
+  const { settings, save } = useColorSettingsHook();
+  const [draft, setDraft] = useState<ColorSettingsType>(settings);
+  // Sincroniza quando settings carrega
+  useEffect(() => { setDraft(settings); }, [settings]);
+
+  function setEtapa(key: string, field: "bg" | "fg", value: string) {
+    setDraft((d) => ({ ...d, etapas: { ...d.etapas, [key]: { ...d.etapas[key], [field]: value } } }));
+  }
+  function setBotao(key: BotaoKeyType, field: "bg" | "fg", value: string) {
+    setDraft((d) => ({ ...d, botoes: { ...d.botoes, [key]: { ...d.botoes[key], [field]: value } } }));
+  }
+  function resetDefaults() {
+    setDraft(DEFAULT_COLOR_SETTINGS_CONST);
+  }
+  async function handleSave() {
+    try {
+      await save.mutateAsync(draft);
+      toast.success("Cores atualizadas.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao salvar cores.");
+    }
+  }
+
+  const BOTOES: { key: BotaoKeyType; label: string }[] = [
+    { key: "atualizar", label: "Botão Atualizar (todas as abas)" },
+    { key: "finalizar", label: "Botão Finalizar Pedido (Expedição)" },
+    { key: "voltar", label: "Dropdown / Botão Voltar" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-md border p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold">Cores dos botões</h2>
+            <p className="text-xs text-muted-foreground">Cores aplicadas em todas as abas. Visíveis para todos os usuários.</p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {BOTOES.map(({ key, label }) => {
+            const pair = draft.botoes[key];
+            return (
+              <div key={key} className="rounded-md border p-3 space-y-2">
+                <div className="text-sm font-medium">{label}</div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 rounded-md text-sm font-medium border shadow-sm"
+                    style={{ backgroundColor: pair.bg, color: pair.fg, borderColor: pair.bg }}
+                  >
+                    Preview
+                  </button>
+                </div>
+                <div className="flex gap-2 items-center text-xs">
+                  <label className="flex items-center gap-1">Fundo
+                    <input type="color" value={pair.bg} onChange={(e) => setBotao(key, "bg", e.target.value)} className="h-7 w-10 cursor-pointer rounded border" />
+                  </label>
+                  <label className="flex items-center gap-1">Fonte
+                    <input type="color" value={pair.fg} onChange={(e) => setBotao(key, "fg", e.target.value)} className="h-7 w-10 cursor-pointer rounded border" />
+                  </label>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="rounded-md border p-4 space-y-3">
+        <div>
+          <h2 className="text-base font-semibold">Cores das etapas</h2>
+          <p className="text-xs text-muted-foreground">Cor de fundo e cor da fonte do badge de etapa no dashboard.</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {ETAPAS_CONFIGURAVEIS_CONST.map((etapa) => {
+            const pair = draft.etapas[etapa] ?? { bg: "#f1f5f9", fg: "#475569" };
+            return (
+              <div key={etapa} className="rounded-md border p-3 space-y-2">
+                <div className="text-sm font-medium truncate" title={etapa}>{etapa}</div>
+                <div>
+                  <span
+                    className="inline-block px-2 py-0.5 text-xs rounded-md border"
+                    style={{ backgroundColor: pair.bg, color: pair.fg, borderColor: `color-mix(in oklab, ${pair.fg} 35%, transparent)` }}
+                  >
+                    {etapa}
+                  </span>
+                </div>
+                <div className="flex gap-2 items-center text-xs">
+                  <label className="flex items-center gap-1">Fundo
+                    <input type="color" value={pair.bg} onChange={(e) => setEtapa(etapa, "bg", e.target.value)} className="h-7 w-10 cursor-pointer rounded border" />
+                  </label>
+                  <label className="flex items-center gap-1">Fonte
+                    <input type="color" value={pair.fg} onChange={(e) => setEtapa(etapa, "fg", e.target.value)} className="h-7 w-10 cursor-pointer rounded border" />
+                  </label>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" onClick={resetDefaults}>Restaurar padrão</Button>
+        <Button onClick={handleSave} disabled={save.isPending}>Salvar cores</Button>
+      </div>
+    </div>
+  );
+}
+

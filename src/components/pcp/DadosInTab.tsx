@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { addDiasUteis, diasUteisEntre, diasUteisAteHoje, addDiasCorridos, proximoDiaUtil, isDataUtilISO } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
+import { PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES, matchEtapaFiltro, UpdateButton, EtapaBadgeView } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
@@ -372,13 +372,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <Textarea rows={2} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
               </Field>
             </div>
-            <div className="sm:col-span-2 lg:col-span-4 flex gap-2">
-              <Button type="button" onClick={saveVendor} disabled={saving}>
-                <Save className="h-4 w-4 mr-1" />{selected?.id ? "Atualizar" : "Salvar"} Input do Vendedor
-              </Button>
+            <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-end">
               {selected && (
                 <Button type="button" variant="outline" onClick={handleNew}><X className="h-4 w-4 mr-1" />Cancelar edição</Button>
               )}
+              <UpdateButton type="button" onClick={saveVendor} disabled={saving}>
+                {selected?.id ? "Atualizar" : "Salvar"} Input do Vendedor
+              </UpdateButton>
             </div>
           </CardContent>
         </Card>
@@ -471,10 +471,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               )}
             </div>
 
-            <div className="sm:col-span-2 lg:col-span-4 flex gap-2">
-              <Button type="button" onClick={saveProducao} disabled={saving}>
-                <Save className="h-4 w-4 mr-1" />{selected?.id ? "Atualizar" : "Salvar"} Input de Produção
-              </Button>
+            <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-end">
+              <UpdateButton type="button" onClick={saveProducao} disabled={saving}>
+                {selected?.id ? "Atualizar" : "Salvar"} Input de Produção
+              </UpdateButton>
             </div>
             {selected?.data_entrega_proposta && (
               <div className="sm:col-span-2 lg:col-span-4">
@@ -690,7 +690,7 @@ function DadosInDashboard({
                     onClick={() => onSelect(p.id)}
                     className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
                   >
-                    <TableCell className={TD_CLASS}><Badge variant="outline" className={`${etapaPaletteClass(etapa)} ${BADGE_SM_CLASS}`}>{etapa}</Badge></TableCell>
+                    <TableCell className={TD_CLASS}><EtapaBadgeView etapa={etapa} className={BADGE_SM_CLASS} /></TableCell>
                     <TableCell className={`${TD_CLASS} font-medium`}>{p.pedido_olist}</TableCell>
                     <TableCell className={`${TD_CLASS} max-w-[200px] !text-left`}>
                       <span className="block leading-tight line-clamp-2 break-words text-left" title={p.orcamento ?? ""}>{p.orcamento}</span>

@@ -23,7 +23,7 @@ import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
   StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip,
   useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse,
-  ETAPA_FILTRO_OPCOES, matchEtapaFiltro,
+  ETAPA_FILTRO_OPCOES, matchEtapaFiltro, UpdateButton,
 } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 
@@ -290,7 +290,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
                 </div>
 
-                <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Atualizar Arte</Button>
+                <div className="flex justify-end"><UpdateButton onClick={handleSave} disabled={saving}>Atualizar Arte</UpdateButton></div>
               </div>
 
           </CardContent>

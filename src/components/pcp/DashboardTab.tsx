@@ -18,7 +18,7 @@ import {
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { etapaPaletteClass, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, type SortDir } from "./shared";
+import { EtapaBadgeView, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, type SortDir } from "./shared";
 
 interface Props {
   pedidos: Pedido[];
@@ -303,7 +303,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                         onDoubleClick={() => onEdit(p.id)}
                         className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
                       >
-                        <TableCell className="py-0.5 px-1.5 text-[11px] text-center"><Badge variant="outline" className={`${etapaPaletteClass(calcularEtapaAtual(p).etapa)} text-[10px] px-1.5 py-0`}>{calcularEtapaAtual(p).etapa}</Badge></TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] text-center"><EtapaBadgeView etapa={calcularEtapaAtual(p).etapa} compact /></TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] font-medium align-top text-center">{p.pedido_olist}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] max-w-[200px] align-top !text-left">
                           <span className="block leading-tight line-clamp-2 break-words text-left" title={p.orcamento ?? ""}>{p.orcamento}</span>
