@@ -25,7 +25,6 @@ interface Props {
   loading: boolean;
   onEdit: (id: string) => void;
   onViewProgress: (id: string) => void;
-  onFinalizarMany?: (ids: string[]) => void;
 }
 
 type Etapa =
