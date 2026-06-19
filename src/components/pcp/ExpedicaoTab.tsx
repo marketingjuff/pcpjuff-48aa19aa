@@ -183,7 +183,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
     return list;
   }, [pedidos, fEtapa, fPed, fOrc, fUF, fForma, sortKey, sortAsc]);
 
-  function toggleSort(k: "saida_juff" | "data_entrega") {
+  function toggleSort(k: "pedido" | "saida_juff" | "data_entrega") {
     if (sortKey !== k) { setSortKey(k); setSortAsc(true); }
     else if (sortAsc) setSortAsc(false);
     else { setSortKey(null); }
