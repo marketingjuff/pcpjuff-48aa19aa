@@ -395,6 +395,7 @@ export function EmptyState({ children }: { children: React.ReactNode }) {
 export const ETAPA_FILTRO_OPCOES: { value: string; label: string }[] = [
   { value: "ativas", label: "Todas (menos finalizados)" },
   { value: "pendencias_arte", label: "Pendências de Arte" },
+  { value: "pendencias_data", label: "Pendências de Data" },
   { value: "aguardando_entrada", label: "Aguardando entrada" },
   { value: "aguardando_input", label: "Aguardando input de produção" },
   { value: "arte", label: "Aguardando Arte" },
