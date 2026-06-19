@@ -438,7 +438,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   );
                 })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido na expedição.</td></tr>
+                  <tr><td colSpan={onFinalizarMany ? 8 : 7} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido na expedição.</td></tr>
                 )}
               </tbody>
             </table>
