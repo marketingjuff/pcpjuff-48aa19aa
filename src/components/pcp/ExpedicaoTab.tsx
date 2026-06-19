@@ -124,8 +124,10 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
     if (!selected) return;
     const itens = itensParaForma(form.forma_pagamento ?? selected.forma_pagamento);
     const upd: any = { ...form };
+    const hoje = new Date().toISOString().slice(0, 10);
     itens.forEach((k) => { upd[k] = true; });
-    upd.exp_despachado_em = upd.exp_despachado_em ?? new Date().toISOString().slice(0, 10);
+    upd.exp_despachado_em = upd.exp_despachado_em ?? hoje;
+    upd.exp_frete_solicitado_em = upd.exp_frete_solicitado_em ?? hoje;
     setForm(upd);
   }
 
