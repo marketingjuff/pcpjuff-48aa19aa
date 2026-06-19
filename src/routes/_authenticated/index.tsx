@@ -217,16 +217,7 @@ function AppHomeInner() {
 
           {isManager && (
             <TabsContent value="dashboard" forceMount hidden={tab !== "dashboard"}>
-              <DashboardTab
-                pedidos={pedidos}
-                loading={isLoading}
-                onEdit={(id) => goToTabWithPedido("dados", id)}
-                onViewProgress={(id) => goToTabWithPedido("arte", id)}
-                onFinalizarMany={(ids) => {
-                  const now = new Date().toISOString();
-                  ids.forEach((id) => upsert.mutate({ id, finalizado_em: now, reaberto: false }));
-                }}
-              />
+              <DashboardTab pedidos={pedidos} loading={isLoading} onEdit={(id) => goToTabWithPedido("dados", id)} onViewProgress={(id) => goToTabWithPedido("arte", id)} />
             </TabsContent>
           )}
           {(canSee("dados_in_vendedor") || canSee("dados_in_producao")) && (
