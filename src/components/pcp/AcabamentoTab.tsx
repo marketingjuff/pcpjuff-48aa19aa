@@ -38,7 +38,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   const { isDirty } = useDirtyForm();
   const { names: responsaveis } = useAppList("acabamento");
   const { feriados } = useFeriados();
-  const sort = useSort<"qtd"|"saida"|"entrega">();
+  const sort = useSort<"pedido"|"qtd"|"inicio"|"termino"|"saida">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
