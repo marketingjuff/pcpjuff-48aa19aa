@@ -259,7 +259,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                     />
                   </th>
                 )}
-                <Th>PEDIDO</Th>
+                <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
                 <Th>ORÇAMENTO</Th>
                 <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
                 <Th>VENDEDOR</Th>
