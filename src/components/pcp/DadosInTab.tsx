@@ -471,10 +471,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               )}
             </div>
 
-            <div className="sm:col-span-2 lg:col-span-4 flex gap-2">
-              <Button type="button" onClick={saveProducao} disabled={saving}>
-                <Save className="h-4 w-4 mr-1" />{selected?.id ? "Atualizar" : "Salvar"} Input de Produção
-              </Button>
+            <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-end">
+              <UpdateButton type="button" onClick={saveProducao} disabled={saving}>
+                {selected?.id ? "Atualizar" : "Salvar"} Input de Produção
+              </UpdateButton>
             </div>
             {selected?.data_entrega_proposta && (
               <div className="sm:col-span-2 lg:col-span-4">
