@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Trash2, Plus, Download, Upload, KeyRound } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Download, Upload, KeyRound, ArrowUp, ArrowDown, ArrowDownAZ } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 import { toast } from "sonner";
