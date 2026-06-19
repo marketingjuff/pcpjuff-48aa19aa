@@ -167,6 +167,12 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       toast.error("Preencha os campos obrigatórios do Input de Produção.");
       return;
     }
+    // Validação: Término de Acabamento deve ser dia útil
+    if (form.termino_acabamento && !isDataUtilISO(form.termino_acabamento, feriados)) {
+      setMissingProd(new Set([...missP, "termino_acabamento"]));
+      toast.error("Término de Acabamento deve cair em dia útil (não pode ser fim de semana ou feriado).");
+      return;
+    }
     if (!selected?.id) {
       const missV = findMissing(VENDOR_REQUIRED);
       setMissingVendor(missV);
