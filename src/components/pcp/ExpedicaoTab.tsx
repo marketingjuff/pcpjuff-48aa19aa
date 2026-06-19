@@ -415,6 +415,14 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                     <tr key={p.id}
                       onClick={() => onSelect(p.id)}
                       className={`border-t cursor-pointer hover:bg-accent ${bg} ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                      {onFinalizarMany && (
+                        <td
+                          className="px-1.5 py-0.5 w-8"
+                          onClick={(e) => { e.stopPropagation(); toggleId(p.id); }}
+                        >
+                          <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
+                        </td>
+                      )}
                       <td className="px-1.5 py-0.5 text-xs">
                         {pend.length === 0
                           ? <span className="text-success">Sem pendências</span>
