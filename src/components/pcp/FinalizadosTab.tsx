@@ -37,7 +37,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const sort = useSort<"qtd"|"saida"|"data_saida"|"fin">();
+  const sort = useSort<"pedido"|"qtd"|"saida"|"data_saida"|"fin">();
   const [historico, setHistorico] = useState<Pedido | null>(null);
 
 
@@ -58,6 +58,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
     if (sort.key) {
       arr.sort((a, b) => {
         switch (sort.key) {
+          case "pedido": return cmpPedido(a, b, sort.dir);
           case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
           case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
           case "data_saida": return cmpDate(a.data_saida_juff, b.data_saida_juff, sort.dir);
@@ -258,7 +259,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                     />
                   </th>
                 )}
-                <Th>PEDIDO</Th>
+                <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
                 <Th>ORÇAMENTO</Th>
                 <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
                 <Th>VENDEDOR</Th>
@@ -333,5 +334,16 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
 
     </Card>
   );
+}
+
+function cmpPedido(a: Pedido, b: Pedido, dir: "asc" | "desc") {
+  const na = Number(a.pedido_olist);
+  const nb = Number(b.pedido_olist);
+  const aBad = !Number.isFinite(na);
+  const bBad = !Number.isFinite(nb);
+  if (aBad && bBad) return 0;
+  if (aBad) return 1;
+  if (bBad) return -1;
+  return dir === "asc" ? na - nb : nb - na;
 }
 

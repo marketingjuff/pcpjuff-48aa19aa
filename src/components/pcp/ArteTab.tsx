@@ -45,7 +45,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { feriados } = useFeriados();
-  const sort = useSort<"qtd"|"entrada"|"limite"|"saida">();
+  const sort = useSort<"pedido"|"qtd"|"entrada"|"limite"|"saida"|"inicio">();
   const { names: statusArteCustom } = useAppList("status_arte");
   const { names: opCorteDTF } = useAppList("corte_dtf");
 
@@ -151,9 +151,11 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
     if (sort.key) {
       arr = [...arr].sort((a, b) => {
         switch (sort.key) {
+          case "pedido": return cmpPedido(a, b, sort.dir);
           case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
           case "entrada": return cmpDate(a.entrada_pedido, b.entrada_pedido, sort.dir);
           case "limite": return cmpDate(a.arte_data, b.arte_data, sort.dir);
+          case "inicio": return cmpDate(a.inicio_estamparia, b.inicio_estamparia, sort.dir);
           case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
         }
         return 0;
@@ -386,7 +388,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               <thead>
                 <tr>
                   <Th>ETAPA</Th>
-                  <Th>PEDIDO</Th>
+                  <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
                   <Th>ORÇAMENTO</Th>
                   <Th>VENDEDOR</Th>
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
@@ -396,7 +398,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   <Th>STATUS FOTOLITO</Th>
                   <Th>ANOTAÇÕES</Th>
                   <SortableTh label="DATA LIMITE" active={sort.key === "limite"} onClick={() => sort.toggle("limite")} />
-                  <Th>INÍCIO EST.</Th>
+                  <SortableTh label="INÍCIO EST." active={sort.key === "inicio"} onClick={() => sort.toggle("inicio")} />
                   <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
                 </tr>
               </thead>
@@ -434,4 +436,15 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
       </Card>
     </div>
   );
+}
+
+function cmpPedido(a: Pedido, b: Pedido, dir: "asc" | "desc") {
+  const na = Number(a.pedido_olist);
+  const nb = Number(b.pedido_olist);
+  const aBad = !Number.isFinite(na);
+  const bBad = !Number.isFinite(nb);
+  if (aBad && bBad) return 0;
+  if (aBad) return 1;
+  if (bBad) return -1;
+  return dir === "asc" ? na - nb : nb - na;
 }

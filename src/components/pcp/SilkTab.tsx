@@ -39,7 +39,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const { names: operadoresSilk } = useAppList("silk");
   const { names: opRevelacao } = useAppList("revelacao_silk");
   const { feriados } = useFeriados();
-  const sort = useSort<"qtd"|"silk"|"saida"|"entrega">();
+  const sort = useSort<"pedido"|"qtd"|"silk"|"saida"|"entrega"|"iniEst"|"fimEst"|"iniAcab">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
@@ -293,7 +293,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
               <thead>
                 <tr>
                   <Th>ETAPA</Th>
-                  <Th>PEDIDO</Th>
+                  <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
                   <Th>ORÇAMENTO</Th>
                   <Th>VENDEDOR</Th>
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
@@ -302,9 +302,9 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   <Th>FOTOLITO</Th>
                   <Th>TELA</Th>
                   <Th>SILK FEITO</Th>
-                  <Th>INÍCIO ESTAMPARIA</Th>
-                  <Th>TÉRMINO ESTAMPARIA</Th>
-                  <Th>INÍCIO ACABAMENTO</Th>
+                  <SortableTh label="INÍCIO ESTAMPARIA" active={sort.key === "iniEst"} onClick={() => sort.toggle("iniEst")} />
+                  <SortableTh label="TÉRMINO ESTAMPARIA" active={sort.key === "fimEst"} onClick={() => sort.toggle("fimEst")} />
+                  <SortableTh label="INÍCIO ACABAMENTO" active={sort.key === "iniAcab"} onClick={() => sort.toggle("iniAcab")} />
                 </tr>
               </thead>
               <tbody>
@@ -313,10 +313,14 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   if (sort.key) {
                     lista = [...lista].sort((a, b) => {
                       switch (sort.key) {
+                        case "pedido": return cmpPedido(a, b, sort.dir);
                         case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
                         case "silk": return cmpDate(a.silk_data_executada, b.silk_data_executada, sort.dir);
                         case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
                         case "entrega": return cmpDate(a.data_entrega, b.data_entrega, sort.dir);
+                        case "iniEst": return cmpDate(a.inicio_estamparia, b.inicio_estamparia, sort.dir);
+                        case "fimEst": return cmpDate(a.termino_estamparia, b.termino_estamparia, sort.dir);
+                        case "iniAcab": return cmpDate(a.inicio_acabamento, b.inicio_acabamento, sort.dir);
                       }
                       return 0;
                     });
@@ -352,4 +356,15 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
       </Card>
     </div>
   );
+}
+
+function cmpPedido(a: Pedido, b: Pedido, dir: "asc" | "desc") {
+  const na = Number(a.pedido_olist);
+  const nb = Number(b.pedido_olist);
+  const aBad = !Number.isFinite(na);
+  const bBad = !Number.isFinite(nb);
+  if (aBad && bBad) return 0;
+  if (aBad) return 1;
+  if (bBad) return -1;
+  return dir === "asc" ? na - nb : nb - na;
 }

@@ -134,7 +134,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   }
 
   // Dashboard
-  const [sortKey, setSortKey] = useState<"saida_juff" | "data_entrega" | null>(null);
+  const [sortKey, setSortKey] = useState<"pedido" | "saida_juff" | "data_entrega" | null>(null);
   const [sortAsc, setSortAsc] = useState(true);
   const [fPed, setFPed] = useState("");
   const [fOrc, setFOrc] = useState("");
@@ -160,10 +160,21 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
       if (fForma !== "todos" && (p.forma_pagamento ?? "") !== fForma) return false;
       return true;
     });
-    if (sortKey) {
+    if (sortKey === "pedido") {
       list = [...list].sort((a, b) => {
-        const av = a[sortKey] ?? "";
-        const bv = b[sortKey] ?? "";
+        const na = Number(a.pedido_olist);
+        const nb = Number(b.pedido_olist);
+        const aBad = !Number.isFinite(na);
+        const bBad = !Number.isFinite(nb);
+        if (aBad && bBad) return 0;
+        if (aBad) return 1;
+        if (bBad) return -1;
+        return sortAsc ? na - nb : nb - na;
+      });
+    } else if (sortKey) {
+      list = [...list].sort((a, b) => {
+        const av = (a as any)[sortKey] ?? "";
+        const bv = (b as any)[sortKey] ?? "";
         return sortAsc ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
       });
     } else {
@@ -172,7 +183,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
     return list;
   }, [pedidos, fEtapa, fPed, fOrc, fUF, fForma, sortKey, sortAsc]);
 
-  function toggleSort(k: "saida_juff" | "data_entrega") {
+  function toggleSort(k: "pedido" | "saida_juff" | "data_entrega") {
     if (sortKey !== k) { setSortKey(k); setSortAsc(true); }
     else if (sortAsc) setSortAsc(false);
     else { setSortKey(null); }
@@ -407,7 +418,14 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                     </th>
                   )}
                   <Th>PENDÊNCIAS</Th>
-                  <Th>PEDIDO</Th>
+                  <th className={`${TH_RAW_CLASS} cursor-pointer select-none`} onClick={() => toggleSort("pedido")}>
+                    <span className="inline-flex items-center gap-1">
+                      PEDIDO
+                      {sortKey === "pedido"
+                        ? (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)
+                        : <ArrowUpDown className="h-3 w-3 opacity-50" />}
+                    </span>
+                  </th>
                   <Th>ORÇAMENTO</Th>
                   <Th>UF</Th>
                   <th className={`${TH_RAW_CLASS} cursor-pointer select-none`} onClick={() => toggleSort("saida_juff")}>

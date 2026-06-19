@@ -530,7 +530,7 @@ function DadosInDashboard({
   const [status, setStatus] = useState("todos");
   const [tipo, setTipo] = useState("todos");
   const [dataEntrega, setDataEntrega] = useState("");
-  const sort = useSort<"qtd"|"tempoFrete"|"entrada"|"saida"|"entrega">("saida", "asc");
+  const sort = useSort<"pedido"|"qtd"|"tempoFrete"|"entrada"|"saida"|"entrega">("saida", "asc");
 
   const rows = useMemo(() => {
     const arr = pedidos.filter((p) => {
@@ -545,6 +545,7 @@ function DadosInDashboard({
     if (sort.key) {
       arr.sort((a, b) => {
         switch (sort.key) {
+          case "pedido": return cmpPedido(a, b, sort.dir);
           case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
           case "tempoFrete": return cmpNum(a.tempo_frete as any, b.tempo_frete as any, sort.dir);
           case "entrada": return cmpDate(a.entrada_pedido, b.entrada_pedido, sort.dir);
@@ -641,7 +642,9 @@ function DadosInDashboard({
             <TableHeader>
               <TableRow>
                 <TableHead className={TH_CLASS}>ETAPA</TableHead>
-                <TableHead className={TH_CLASS}>PEDIDO</TableHead>
+                <TableHead className={`${TH_CLASS} cursor-pointer select-none`} onClick={() => sort.toggle("pedido")}>
+                  <span className="inline-flex items-center gap-1">PEDIDO<ArrowUpDown className={`h-3 w-3 ${sort.key === "pedido" ? "opacity-100" : "opacity-50"}`} /></span>
+                </TableHead>
                 <TableHead className={TH_CLASS}>ORÇAMENTO</TableHead>
                 <TableHead className={TH_CLASS}>VENDEDOR</TableHead>
                 <TableHead className={`${TH_CLASS} cursor-pointer select-none`} onClick={() => sort.toggle("qtd")}>
@@ -868,4 +871,15 @@ function PropostaDataAlerta({
       </Button>
     </div>
   );
+}
+
+function cmpPedido(a: Pedido, b: Pedido, dir: "asc" | "desc") {
+  const na = Number(a.pedido_olist);
+  const nb = Number(b.pedido_olist);
+  const aBad = !Number.isFinite(na);
+  const bBad = !Number.isFinite(nb);
+  if (aBad && bBad) return 0;
+  if (aBad) return 1;
+  if (bBad) return -1;
+  return dir === "asc" ? na - nb : nb - na;
 }

@@ -38,7 +38,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   const { isDirty } = useDirtyForm();
   const { names: responsaveis } = useAppList("acabamento");
   const { feriados } = useFeriados();
-  const sort = useSort<"qtd"|"saida"|"entrega">();
+  const sort = useSort<"pedido"|"qtd"|"inicio"|"termino"|"saida">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
@@ -86,8 +86,8 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
       data_saida_juff: pick("data_saida_juff"),
       observacoes_pedido: pick("observacoes_pedido"),
     };
-    // 3A: ao marcar EMBALADO=Sim, envia automaticamente para Expedição.
-    if (embalado === "Sim" && !selected.expedicao_entrou_em) {
+    // 3A: ao marcar EMBALADO=Sim + Data da Embalagem + Responsável, envia automaticamente para Expedição.
+    if (embalado === "Sim" && !!payload.data_saida_juff && !!payload.responsavel_acabamento && !selected.expedicao_entrou_em) {
       payload.expedicao_entrou_em = new Date().toISOString();
     }
     onSave(payload);
@@ -138,7 +138,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             <EtapaTopoBanner pedido={selected} tab="acabamento" />
             {podeFinalizar && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-success/10 text-success text-sm border border-success/30">
-                <CheckCircle2 className="h-4 w-4" /> Pronto para Expedição. Clique em "Enviar para Expedição" abaixo.
+                <CheckCircle2 className="h-4 w-4" /> Pronto para Expedição. Ao clicar em <strong className="mx-1">Atualizar Acabamento</strong>, o pedido vai automaticamente para a Expedição.
               </div>
             )}
             {selected.status_pecas !== "completo" && selected.arte_data && (
@@ -147,35 +147,37 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </div>
             )}
 
-            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-2 grid-cols-1 sm:grid-cols-3 lg:grid-cols-6">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
               <ReadOnlyField label="Tipo de Estampa" value={selected.tipo_estampa} />
               <ReadOnlyField label="Status de Peças" value={selected.status_pecas} />
-              <ReadOnlyField label="Data de Entrega" value={formatDateBR(selected.data_entrega)} />
-              <ReadOnlyField label="Saída Juff (prazo)" value={formatDateBR(selected.saida_juff)} />
               <ReadOnlyField label="DTF Estampado?" value={temDTF ? (selected.dtf_estampado ?? "—") : "N/A"} />
               <ReadOnlyField label="Silk Estampado?" value={temSilk ? (selected.silk_feito ?? "—") : "N/A"} />
-              <div className="space-y-1">
-                <div className="text-xs font-medium text-muted-foreground">Layout</div>
-                {selected.layout_url ? (
-                  <div className="space-y-1">
-                    <div className="flex gap-2 flex-wrap">
-                      <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
-                        <Download className="h-4 w-4 mr-1" /> Baixar layout
-                      </Button>
-                      <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate">{selected.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className="text-sm text-muted-foreground">Sem layout</div>
+            </div>
+            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              <ReadOnlyField label="Início de Acabamento" value={formatDateBR(selected.inicio_acabamento)} />
+              <ReadOnlyField label="Término de Acabamento" value={formatDateBR(selected.termino_acabamento)} />
+              <ReadOnlyField label="Saída Juff (prazo)" value={formatDateBR(selected.saida_juff)} />
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs font-medium text-muted-foreground">Layout</div>
+              {selected.layout_url ? (
+                <div className="space-y-1">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                      <Download className="h-4 w-4 mr-1" /> Baixar layout
+                    </Button>
                     <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
                   </div>
-                )}
-              </div>
-
+                  <div className="text-xs text-muted-foreground truncate">{selected.layout_url.replace(/^[0-9a-f-]{36}-/i, "")}</div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="text-sm text-muted-foreground">Sem layout</div>
+                  <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
+                </div>
+              )}
             </div>
             <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t">
               <FormField label="EMBALADO?">
@@ -184,7 +186,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                   <SelectContent>{SIM_NAO_PROCESSO.slice(0, 2).map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                 </Select>
               </FormField>
-              <FormField label={`Data Saída Juff${form.embalado === "Sim" ? " *" : ""}`}>
+              <FormField label={`Data da Embalagem${form.embalado === "Sim" ? " *" : ""}`}>
                 <DateInputBR disabled={form.embalado !== "Sim"} value={form.data_saida_juff} onChange={setDataSaida} />
               </FormField>
               <FormField label="Responsável pelo Acabamento (múltiplos)">
@@ -263,8 +265,9 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 <StatusPecasChip pedido={p} />
                 <Chip label="DTF" value={modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"} />
                 <Chip label="Silk" value={modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"} />
-                <Chip label="Embalado" value={p.embalado} />
-                <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+                <Chip label="Início Acab." value={formatDateBR(p.inicio_acabamento) || "—"} />
+                <Chip label="Término Acab." value={formatDateBR(p.termino_acabamento) || "—"} />
+                <Chip label="Saída Juff" value={formatDateBR(p.saida_juff) || "—"} />
               </PedidoMobileCard>
             ))}
           </div>
@@ -273,17 +276,16 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               <thead>
                 <tr>
                   <Th>ETAPA</Th>
-                  <Th>PEDIDO</Th>
+                  <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
                   <Th>ORÇAMENTO</Th>
                   <Th>TIPO</Th>
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
                   <Th>STATUS DAS PEÇAS</Th>
                   <Th>DTF EST.</Th>
                   <Th>SILK EST.</Th>
-                  <Th>EMBALADO</Th>
-                  <Th>RESPONSÁVEL</Th>
+                  <SortableTh label="INÍCIO ACAB." active={sort.key === "inicio"} onClick={() => sort.toggle("inicio")} />
+                  <SortableTh label="TÉRMINO ACAB." active={sort.key === "termino"} onClick={() => sort.toggle("termino")} />
                   <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
-                  <SortableTh label="ENTREGA" active={sort.key === "entrega"} onClick={() => sort.toggle("entrega")} />
                 </tr>
               </thead>
               <tbody>
@@ -292,9 +294,11 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                   if (sort.key) {
                     lista = [...lista].sort((a, b) => {
                       switch (sort.key) {
+                        case "pedido": return cmpPedido(a, b, sort.dir);
                         case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
+                        case "inicio": return cmpDate(a.inicio_acabamento, b.inicio_acabamento, sort.dir);
+                        case "termino": return cmpDate(a.termino_acabamento, b.termino_acabamento, sort.dir);
                         case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
-                        case "entrega": return cmpDate(a.data_entrega, b.data_entrega, sort.dir);
                       }
                       return 0;
                     });
@@ -311,16 +315,15 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                         <td className="px-1.5 py-0.5"><StatusPecasBadge pedido={p} /></td>
                         <td className="px-1.5 py-0.5">{modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"}</td>
                         <td className="px-1.5 py-0.5">{modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"}</td>
-                        <td className="px-1.5 py-0.5">{p.embalado ?? "—"}</td>
-                        <td className="px-1.5 py-0.5">{p.responsavel_acabamento ?? "—"}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.inicio_acabamento)}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.termino_acabamento)}</td>
                         <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
-                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.data_entrega)}</td>
                       </tr>
                     );
                   });
                 })()}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={13} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido pronto para acabamento.</td></tr>
+                  <tr><td colSpan={11} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido pronto para acabamento.</td></tr>
                 )}
 
 
@@ -331,6 +334,17 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
       </Card>
     </div>
   );
+}
+
+function cmpPedido(a: Pedido, b: Pedido, dir: "asc" | "desc") {
+  const na = Number(a.pedido_olist);
+  const nb = Number(b.pedido_olist);
+  const aBad = !Number.isFinite(na);
+  const bBad = !Number.isFinite(nb);
+  if (aBad && bBad) return 0;
+  if (aBad) return 1;
+  if (bBad) return -1;
+  return dir === "asc" ? na - nb : nb - na;
 }
 
 function AcabamentoVoltar({ selected, onSave, onNavigate }: { selected: Pedido; onSave: (p: any) => void; onNavigate?: (tab: string) => void }) {
