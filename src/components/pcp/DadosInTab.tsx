@@ -348,7 +348,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               </Select>
             </Field>
 
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-2">
               <Field label="Layout (PDF até 30MB)">
                 <div className="flex items-center gap-2">
                   <Input type="file" accept="application/pdf" disabled={uploading}
