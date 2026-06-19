@@ -248,24 +248,14 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
               <div className="py-8 text-center text-sm text-muted-foreground">Nenhum pedido.</div>
             ) : (
               filtrados.map((p) => (
-                <div key={p.id} className="relative">
-                  {onFinalizarMany && (
-                    <div
-                      className="absolute top-2 left-2 z-10"
-                      onClick={(e) => { e.stopPropagation(); toggleId(p.id); }}
-                    >
-                      <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
-                    </div>
-                  )}
-                  <PedidoMobileCard pedido={p} onClick={() => onEdit(p.id)}>
-                    <Chip label="QTD" value={p.qtd} />
-                    <Chip label="Vend" value={p.vendedor} />
-                    <Chip label="Estampa" value={p.tipo_estampa} />
-                    <StatusPecasChip pedido={p} />
-                    <Chip label="Saída Juff" value={formatDateBR(p.saida_juff) || "—"} />
-                    <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
-                  </PedidoMobileCard>
-                </div>
+                <PedidoMobileCard key={p.id} pedido={p} onClick={() => onEdit(p.id)}>
+                  <Chip label="QTD" value={p.qtd} />
+                  <Chip label="Vend" value={p.vendedor} />
+                  <Chip label="Estampa" value={p.tipo_estampa} />
+                  <StatusPecasChip pedido={p} />
+                  <Chip label="Saída Juff" value={formatDateBR(p.saida_juff) || "—"} />
+                  <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+                </PedidoMobileCard>
               ))
             )}
           </div>
