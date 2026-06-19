@@ -151,9 +151,11 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
     if (sort.key) {
       arr = [...arr].sort((a, b) => {
         switch (sort.key) {
+          case "pedido": return cmpPedido(a, b, sort.dir);
           case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
           case "entrada": return cmpDate(a.entrada_pedido, b.entrada_pedido, sort.dir);
           case "limite": return cmpDate(a.arte_data, b.arte_data, sort.dir);
+          case "inicio": return cmpDate(a.inicio_estamparia, b.inicio_estamparia, sort.dir);
           case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
         }
         return 0;
