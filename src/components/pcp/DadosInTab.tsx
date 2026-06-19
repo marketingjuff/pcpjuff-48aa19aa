@@ -290,9 +290,11 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         {/* Vendedor */}
         <Card className="border-l-4 border-l-green-500 bg-green-50/40 dark:bg-green-950/10">
           <CardHeader className="py-2"><CardTitle className="text-base text-green-700 dark:text-green-400">Input do Vendedor</CardTitle></CardHeader>
-          <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 pt-0">
+          <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-0">
             <Field label="Pedido Olist *" invalid={missingVendor.has("pedido_olist")}><Input value={form.pedido_olist ?? ""} onChange={(e) => set("pedido_olist", e.target.value)} /></Field>
-            <Field label="Orçamento Comercial *" invalid={missingVendor.has("orcamento")}><Input value={form.orcamento ?? ""} onChange={(e) => set("orcamento", e.target.value)} /></Field>
+            <div className="lg:col-span-2">
+              <Field label="Orçamento Comercial *" invalid={missingVendor.has("orcamento")}><Input value={form.orcamento ?? ""} onChange={(e) => set("orcamento", e.target.value)} /></Field>
+            </div>
             <Field label="Quantas peças *" invalid={missingVendor.has("qtd")}><Input value={form.qtd ?? ""} onChange={(e) => set("qtd", e.target.value)} /></Field>
             <Field label="Vendedor *" invalid={missingVendor.has("vendedor")}>
               <Select value={form.vendedor ?? ""} onValueChange={(v) => set("vendedor", v)}>
