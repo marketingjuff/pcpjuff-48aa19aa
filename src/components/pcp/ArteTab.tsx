@@ -201,97 +201,104 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             </div>
 
             {/* Parte de baixo — editável; sempre visível */}
-            <div className="space-y-2 pt-3 border-t">
-                {/* Linha DTF (quando inclui DTF) */}
+            <div className="space-y-4 pt-3 border-t">
+                {/* Seção DTF */}
                 {showDTF && (
-                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-                    {showVetorDTF && (
-                      <FormField label="Vetorização de DTF Realizada">
-                        <Select value={form.vetorizacao_dtf ?? ""} onValueChange={(v) => set("vetorizacao_dtf", v)}>
-                          <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                          <SelectContent>{VETOR_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </FormField>
-                    )}
-
-                    <FormField label="DTF Impresso">
-                      <Select value={form.dtf_impresso ?? ""} onValueChange={(v) => setSimNaoComData("dtf_impresso", "dtf_executado", v)}>
-                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                        <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </FormField>
-                    {form.dtf_impresso === "Sim" && (
-                      <FormField label="Data DTF Impresso">
-                        <DateInputBR value={form.dtf_executado} onChange={(v) => set("dtf_executado", v)} />
-                      </FormField>
-                    )}
-                    <FormField label="DTF Cortado">
-                      <Select value={form.dtf_cortado ?? ""} onValueChange={(v) => setSimNaoComData("dtf_cortado", "dtf_cortado_data", v)}>
-                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                        <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </FormField>
-                    {form.dtf_cortado === "Sim" && (
-                      <>
-                        <FormField label="Data DTF Cortado">
-                          <DateInputBR value={form.dtf_cortado_data} onChange={(v) => set("dtf_cortado_data", v)} />
-                        </FormField>
-                        <FormField label="Quem cortou o DTF?">
-                          <Select value={form.quem_cortou_dtf ?? ""} onValueChange={(v) => set("quem_cortou_dtf", v)}>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">DTF</h4>
+                    <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-6">
+                      {showVetorDTF && (
+                        <FormField label="Vetorização de DTF Realizada">
+                          <Select value={form.vetorizacao_dtf ?? ""} onValueChange={(v) => set("vetorizacao_dtf", v)}>
                             <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                            <SelectContent>{opCorteDTF.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                            <SelectContent>{VETOR_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                           </Select>
                         </FormField>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* Linha Silk (quando inclui Silk) */}
-                {showSilk && (
-                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                    {showVetorSilk && (
-                      <FormField label="Vetorização de Silk Realizada">
-                        <Select value={form.vetorizacao_silk ?? ""} onValueChange={(v) => set("vetorizacao_silk", v)}>
+                      )}
+                      <FormField label="DTF Impresso">
+                        <Select value={form.dtf_impresso ?? ""} onValueChange={(v) => setSimNaoComData("dtf_impresso", "dtf_executado", v)}>
                           <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                          <SelectContent>{VETOR_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                          <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                         </Select>
                       </FormField>
-                    )}
-
-                    <FormField label="Fotolito Impresso">
-                      <Select value={form.fotolito_impresso ?? ""} onValueChange={(v) => setSimNaoComData("fotolito_impresso", "fotolito_executado", v)}>
-                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                        <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </FormField>
-                    {form.fotolito_impresso === "Sim" && (
-                      <FormField label="Data de Impressão do Fotolito">
-                        <DateInputBR value={form.fotolito_executado ?? null} onChange={(v) => set("fotolito_executado", v)} />
+                      {form.dtf_impresso === "Sim" && (
+                        <FormField label="Data DTF Impresso">
+                          <DateInputBR value={form.dtf_executado} onChange={(v) => set("dtf_executado", v)} />
+                        </FormField>
+                      )}
+                      <FormField label="DTF Cortado">
+                        <Select value={form.dtf_cortado ?? ""} onValueChange={(v) => setSimNaoComData("dtf_cortado", "dtf_cortado_data", v)}>
+                          <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                          <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                        </Select>
                       </FormField>
-                    )}
+                      {form.dtf_cortado === "Sim" && (
+                        <>
+                          <FormField label="Data DTF Cortado">
+                            <DateInputBR value={form.dtf_cortado_data} onChange={(v) => set("dtf_cortado_data", v)} />
+                          </FormField>
+                          <FormField label="Quem cortou o DTF?">
+                            <Select value={form.quem_cortou_dtf ?? ""} onValueChange={(v) => set("quem_cortou_dtf", v)}>
+                              <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                              <SelectContent>{opCorteDTF.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </FormField>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                {/* Status da Arte */}
-                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                  <FormField label="Anotações da Arte">
-                    <Select value={form.status_arte ?? ""} onValueChange={(v) => set("status_arte", v)}>
-                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                      <SelectContent>{statusArteOpcoes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </FormField>
-                  <div className="sm:col-span-2 lg:col-span-3">
-                    <FormField label="Observações da Arte">
-                      <Textarea value={form.arte_observacao ?? ""} onChange={(e) => set("arte_observacao", e.target.value)} rows={2} />
-                    </FormField>
-                    <ObservacoesOutrosSetores pedido={selected} setorAtual="arte" />
+                {/* Seção Silk */}
+                {showSilk && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Silk</h4>
+                    <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                      {showVetorSilk && (
+                        <FormField label="Vetorização de Silk Realizada">
+                          <Select value={form.vetorizacao_silk ?? ""} onValueChange={(v) => set("vetorizacao_silk", v)}>
+                            <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                            <SelectContent>{VETOR_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </FormField>
+                      )}
+                      <FormField label="Fotolito Impresso">
+                        <Select value={form.fotolito_impresso ?? ""} onValueChange={(v) => setSimNaoComData("fotolito_impresso", "fotolito_executado", v)}>
+                          <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                          <SelectContent>{SIM_NAO.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </FormField>
+                      {form.fotolito_impresso === "Sim" && (
+                        <FormField label="Data de Impressão do Fotolito">
+                          <DateInputBR value={form.fotolito_executado ?? null} onChange={(v) => set("fotolito_executado", v)} />
+                        </FormField>
+                      )}
+                    </div>
                   </div>
+                )}
 
+                {/* Seção Observações e anotações */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Observações e anotações</h4>
+                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="sm:col-span-2 lg:col-span-3">
+                      <FormField label="Observações da Arte">
+                        <Textarea value={form.arte_observacao ?? ""} onChange={(e) => set("arte_observacao", e.target.value)} rows={2} />
+                      </FormField>
+                      <ObservacoesOutrosSetores pedido={selected} setorAtual="arte" />
+                    </div>
+                    <FormField label="Anotações da Arte">
+                      <Select value={form.status_arte ?? ""} onValueChange={(v) => set("status_arte", v)}>
+                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                        <SelectContent>{statusArteOpcoes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </FormField>
+                  </div>
                 </div>
 
                 <div className="flex justify-start"><UpdateButton onClick={handleSave} disabled={saving}>Atualizar Arte</UpdateButton></div>
               </div>
+
 
           </CardContent>
         </Card>

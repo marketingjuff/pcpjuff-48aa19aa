@@ -1,58 +1,35 @@
-## Painel de Configuração de Cores
+## Reorganização do trecho abaixo de "Baixar layout" na aba Arte
 
-### 1. Armazenamento (Lovable Cloud)
-Nova tabela `app_color_settings` com 1 linha singleton (`id = 'global'`) e coluna `data jsonb`. Estrutura:
-```json
-{
-  "etapas": { "Aguardando Arte": { "fg": "#3730a3", "bg": "#eef2ff" }, ... },
-  "botoes": {
-    "atualizar":  { "fg": "#ffffff", "bg": "#2563eb" },
-    "finalizar":  { "fg": "#ffffff", "bg": "#059669" },
-    "voltar":     { "fg": "#ffffff", "bg": "#475569" }
-  }
-}
-```
-RLS: leitura por `authenticated`; escrita só para `has_role(auth.uid(), 'admin')`. GRANT padrão. Sem migração de tipos extras (uso direto via supabase client).
+Arquivo único: `src/components/pcp/ArteTab.tsx` (linhas 203–294). Nada acima da linha 202 será tocado. Sem novos arquivos, sem mudanças de estilo/tamanho, sem mudança de lógica de negócio. Reaproveita `showDTF` / `showSilk` (já equivalentes a `visivelEmDTF` / `visivelEmSilk`) e os mesmos `FormField` / `Select` / `DateInputBR` / `Textarea` atuais.
 
-### 2. Hook `useColorSettings`
-`src/hooks/use-color-settings.ts`:
-- `useQuery(['color-settings'])` lê a linha singleton, com fallback aos defaults atuais (paleta já em `etapaPaletteClass` convertida para hex).
-- Helpers: `etapaStyle(etapa)` → `{ color, backgroundColor, borderColor }`; `btnStyle('atualizar' | 'finalizar' | 'voltar')`.
-- Mutation `saveColorSettings` (admin only) faz upsert.
-- Invalidação em todas as abas via mesmo queryKey.
+### 1. Seção "DTF" (condicional a `showDTF`)
+- Título de texto simples acima do grid: `<h4>DTF</h4>` (classe neutra, sem cor/ícone, ex.: `text-sm font-medium`).
+- Todos os campos na MESMA linha (um único grid, mesmas classes de grid já usadas):
+  1. Vetorização de DTF Realizada (se `showVetorDTF`)
+  2. DTF Impresso
+  3. Data DTF Impresso (se `form.dtf_impresso === "Sim"`)
+  4. DTF Cortado
+  5. Data DTF Cortado (se `form.dtf_cortado === "Sim"`)
+  6. Quem cortou o DTF? (se `form.dtf_cortado === "Sim"`)
 
-### 3. Aba "Cores" em Configurações (admin only)
-Em `src/routes/_authenticated/configuracoes.tsx`:
-- Novo `TabsTrigger value="cores"` visível só para admin.
-- Componente `CoresTab`: lista as 11 etapas do badge + 3 botões. Cada linha tem 2 `<input type="color">` (fundo / fonte) e um preview ao vivo. Botões "Restaurar padrão" e "Salvar".
-- As etapas configuráveis são todas as do badge: Aguardando entrada, Aguardando input de produção, Aguardando Arte, DTF Pronto / Silk na Arte, Silk Pronto / DTF na Arte, Aguardando DTF, Aguardando Silk, Aguardando DTF + Silk, Aguardando Acabamento, Aguardando Expedição, Finalizado.
+### 2. Seção "Silk" (condicional a `showSilk`)
+- Título de texto simples: `<h4>Silk</h4>`.
+- Todos os campos na MESMA linha:
+  1. Vetorização de Silk Realizada (se `showVetorSilk`)
+  2. Fotolito Impresso
+  3. Data de Impressão do Fotolito (se `form.fotolito_impresso === "Sim"`)
 
-### 4. Aplicar cores nos badges de etapa
-Em `src/components/pcp/shared.tsx`:
-- `EtapaBadgeFromPedido` e demais usos passam a aceitar `style` derivado do hook. Onde a `Badge` é renderizada via `etapaPaletteClass`, substituir por `<Badge variant="outline" style={etapaStyle(etapa)}>`.
-- `etapaPaletteClass` permanece como fallback caso o hook ainda não tenha carregado.
+Em pedidos DTF+Silk as duas seções aparecem; em pedidos de um tipo só, apenas a correspondente — comportamento já garantido por `showDTF` / `showSilk`.
 
-### 5. Botões uniformes
-- **Atualizar**: criar `<UpdateButton>` em `shared.tsx` que aplica `style={btnStyle('atualizar')}` (azul por padrão). Substituir todos os `<Button>Atualizar ...</Button>` em ArteTab, DTFTab, SilkTab, AcabamentoTab, ExpedicaoTab, DadosInTab (2 botões "Atualizar/Salvar Input").
-- **Finalizar Pedido / Finalizar selecionados** em ExpedicaoTab: trocar `bg-emerald-600 hover:bg-emerald-700 text-white` por `style={btnStyle('finalizar')}` (verde por padrão).
-- **Voltar (VoltarDropdown)**: o botão "Voltar" interno usa `style={btnStyle('voltar')}`.
+### 3. Seção "Observações e anotações"
+- Título de texto simples: `<h4>Observações e anotações</h4>`.
+- Inverter a ordem do bloco atual:
+  - PRIMEIRO: campo "Observações da Arte" (Textarea + `ObservacoesOutrosSetores`).
+  - DEPOIS: campo "Anotações da Arte" (Select `status_arte`).
+- Mantém o mesmo grid/colspans atuais, só trocando a ordem dos dois blocos internos.
 
-### 6. Alinhamento do VoltarDropdown
-Em **todas as abas que têm Voltar** (ArteTab, DTFTab, SilkTab, AcabamentoTab, ExpedicaoTab), a barra de ações vira:
-```
-[Voltar ▼]                    ...                    [Atualizar]
-```
-Implementação: container `flex items-center justify-between w-full` (em mobile vira `flex-col-reverse gap-2`). Hoje em ExpedicaoTab eles estão lado a lado num `flex-wrap`; mover `VoltarDropdown` para a esquerda e `Atualizar`/`Finalizar` para a direita. Mesma estrutura nas demais abas.
+### 4. Botão "Atualizar Arte"
+- Permanece exatamente onde está, logo abaixo da última seção.
 
-### 7. Detalhes técnicos
-- Cores aplicadas via `style={{ backgroundColor, color, borderColor }}` (não via classes Tailwind) para permitir valores arbitrários do usuário.
-- `borderColor` = mesmo `bg` com opacidade ~40% (computado via `color-mix` inline ou helper hex→rgba).
-- Dark mode: usuário escolhe uma cor única; mantemos a mesma em ambos os temas (simples e previsível). Se quiser separar light/dark, fica para uma próxima iteração.
-- Defaults vêm de uma constante `DEFAULT_COLOR_SETTINGS` em `use-color-settings.ts` espelhando as cores Tailwind atuais convertidas para hex.
-
-### Arquivos
-- **Migração**: cria `app_color_settings` (id text PK, data jsonb, updated_at) + RLS + GRANT.
-- **Novo**: `src/hooks/use-color-settings.ts`.
-- **Editar**: `src/routes/_authenticated/configuracoes.tsx` (nova aba), `src/components/pcp/shared.tsx` (badges + UpdateButton), `src/components/pcp/VoltarDropdown.tsx` (cor do botão), `ArteTab.tsx`, `DTFTab.tsx`, `SilkTab.tsx`, `AcabamentoTab.tsx`, `ExpedicaoTab.tsx`, `DadosInTab.tsx` (uniformizar Atualizar + reposicionar Voltar).
-
-Sem alteração nos schemas de auth/storage. Tudo respeita o gate `_authenticated`.
+### Observação técnica
+O label do Select `status_arte` hoje está como "Anotações da Arte" e o Textarea `arte_observacao` como "Observações da Arte" — mantenho esses labels como estão (a reordenação pede "Observações primeiro, Anotações depois", o que é satisfeito invertendo os dois blocos sem renomear nada).
