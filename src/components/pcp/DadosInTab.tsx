@@ -530,7 +530,7 @@ function DadosInDashboard({
   const [status, setStatus] = useState("todos");
   const [tipo, setTipo] = useState("todos");
   const [dataEntrega, setDataEntrega] = useState("");
-  const sort = useSort<"qtd"|"tempoFrete"|"entrada"|"saida"|"entrega">("saida", "asc");
+  const sort = useSort<"pedido"|"qtd"|"tempoFrete"|"entrada"|"saida"|"entrega">("saida", "asc");
 
   const rows = useMemo(() => {
     const arr = pedidos.filter((p) => {
