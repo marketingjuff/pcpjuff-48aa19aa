@@ -248,7 +248,18 @@ function AppHomeInner() {
 
           {canSee("expedicao") && (
             <TabsContent value="exp" forceMount hidden={tab !== "exp"}>
-              <ExpedicaoTab pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} />
+              <ExpedicaoTab
+                pedidos={pedidos}
+                selected={selected}
+                onSelect={setSelectedId}
+                onSave={(p) => upsert.mutate(p)}
+                saving={upsert.isPending}
+                onNavigate={setTab}
+                onFinalizarMany={(ids) => {
+                  const now = new Date().toISOString();
+                  ids.forEach((id) => upsert.mutate({ id, finalizado_em: now, reaberto: false }));
+                }}
+              />
             </TabsContent>
           )}
           {isManager && (
