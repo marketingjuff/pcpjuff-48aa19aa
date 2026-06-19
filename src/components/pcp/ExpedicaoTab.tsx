@@ -353,17 +353,16 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                     Limpar seleção
                   </Button>
                 )}
-                <Button
+                <FinalizarButton
                   size="sm"
                   disabled={selectedIds.size === 0 || saving}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
                   onClick={() => {
                     onFinalizarMany(Array.from(selectedIds));
                     setSelectedIds(new Set());
                   }}
                 >
-                  <Flag className="h-4 w-4 mr-1" /> Finalizar selecionados
-                </Button>
+                  Finalizar selecionados
+                </FinalizarButton>
               </div>
             </div>
           )}
