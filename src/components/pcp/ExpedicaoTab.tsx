@@ -418,7 +418,14 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                     </th>
                   )}
                   <Th>PENDÊNCIAS</Th>
-                  <Th>PEDIDO</Th>
+                  <th className={`${TH_RAW_CLASS} cursor-pointer select-none`} onClick={() => toggleSort("pedido")}>
+                    <span className="inline-flex items-center gap-1">
+                      PEDIDO
+                      {sortKey === "pedido"
+                        ? (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)
+                        : <ArrowUpDown className="h-3 w-3 opacity-50" />}
+                    </span>
+                  </th>
                   <Th>ORÇAMENTO</Th>
                   <Th>UF</Th>
                   <th className={`${TH_RAW_CLASS} cursor-pointer select-none`} onClick={() => toggleSort("saida_juff")}>
