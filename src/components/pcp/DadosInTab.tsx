@@ -820,8 +820,8 @@ function DataEntregaField({
           </div>
         )}
         {!solicitando ? (
-          <Button type="button" variant="outline" size="sm" onClick={() => { setSolicitando(true); setNovaData(selected?.data_entrega_proposta ?? null); }}>
-            <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+          <Button type="button" variant="outline" size="sm" className="whitespace-normal h-auto w-full text-center" onClick={() => { setSolicitando(true); setNovaData(selected?.data_entrega_proposta ?? null); }}>
+            <AlertTriangle className="h-3.5 w-3.5 mr-1 shrink-0" />
             Solicitar Alteração de Data de Entrega
           </Button>
         ) : (
