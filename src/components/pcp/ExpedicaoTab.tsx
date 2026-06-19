@@ -23,6 +23,7 @@ interface Props {
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
   saving: boolean;
   onNavigate?: (tab: string) => void;
+  onFinalizarMany?: (ids: string[]) => void;
 }
 
 type ItemKey =
