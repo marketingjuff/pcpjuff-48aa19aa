@@ -1,5 +1,5 @@
 import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
   STATUS_PECAS_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS,
