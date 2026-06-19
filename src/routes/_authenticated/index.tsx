@@ -130,7 +130,7 @@ function AppHomeInner() {
 
   type TabDef = { value: string; label: string };
   const tabs: TabDef[] = [
-    ...(isManager ? [{ value: "dashboard", label: "Dashboard Master" }] : []),
+    ...((isManager || canSee("dashboard")) ? [{ value: "dashboard", label: "Dashboard Master" }] : []),
     ...((canSee("dados_in_vendedor") || canSee("dados_in_producao")) ? [{ value: "dados", label: "Dados In" }] : []),
     ...(canSee("arte") ? [{ value: "arte", label: "Arte" }] : []),
     ...(canSee("dtf") ? [{ value: "dtf", label: "DTF" }] : []),
@@ -215,7 +215,7 @@ function AppHomeInner() {
             ))}
           </TabsList>
 
-          {isManager && (
+          {(isManager || canSee("dashboard")) && (
             <TabsContent value="dashboard" forceMount hidden={tab !== "dashboard"}>
               <DashboardTab pedidos={pedidos} loading={isLoading} onEdit={(id) => goToTabWithPedido("dados", id)} onViewProgress={(id) => goToTabWithPedido("arte", id)} />
             </TabsContent>

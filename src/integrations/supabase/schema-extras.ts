@@ -6,6 +6,7 @@ export type AppRole = "admin" | "gestor" | "operador";
 // Áreas usadas no checkbox de permissões (configurações > usuários).
 // Operador NÃO pode ter "expedicao".
 export type AppArea =
+  | "dashboard"
   | "dados_in_vendedor"
   | "dados_in_producao"
   | "arte"
@@ -15,6 +16,7 @@ export type AppArea =
   | "expedicao";
 
 export const APP_AREAS_GESTOR: AppArea[] = [
+  "dashboard",
   "dados_in_vendedor",
   "dados_in_producao",
   "arte",
@@ -24,6 +26,7 @@ export const APP_AREAS_GESTOR: AppArea[] = [
   "expedicao",
 ];
 export const APP_AREAS_OPERADOR: AppArea[] = [
+  "dashboard",
   "dados_in_vendedor",
   "dados_in_producao",
   "arte",
@@ -32,6 +35,7 @@ export const APP_AREAS_OPERADOR: AppArea[] = [
   "acabamento",
 ];
 export const APP_AREA_LABEL: Record<AppArea, string> = {
+  dashboard: "Dashboard Master",
   dados_in_vendedor: "Dados In — Input de Vendedor",
   dados_in_producao: "Dados In — Input de Produção",
   arte: "Arte",
