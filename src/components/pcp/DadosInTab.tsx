@@ -690,7 +690,7 @@ function DadosInDashboard({
                     onClick={() => onSelect(p.id)}
                     className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
                   >
-                    <TableCell className={TD_CLASS}><Badge variant="outline" className={`${etapaPaletteClass(etapa)} ${BADGE_SM_CLASS}`}>{etapa}</Badge></TableCell>
+                    <TableCell className={TD_CLASS}><EtapaBadgeView etapa={etapa} className={BADGE_SM_CLASS} /></TableCell>
                     <TableCell className={`${TD_CLASS} font-medium`}>{p.pedido_olist}</TableCell>
                     <TableCell className={`${TD_CLASS} max-w-[200px] !text-left`}>
                       <span className="block leading-tight line-clamp-2 break-words text-left" title={p.orcamento ?? ""}>{p.orcamento}</span>
