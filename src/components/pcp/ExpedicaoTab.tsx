@@ -346,15 +346,25 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
             ) : dashboardPedidos.map((p) => {
               const pend = pendenciasDoPedido(p);
               return (
-                <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
-                  <Chip label="UF" value={p.uf_entrega} />
-                  <Chip label="Pgto" value={p.forma_pagamento} />
-                  <Chip label="Saída" value={formatDateBR(p.saida_juff) || "—"} />
-                  <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
-                  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${pend.length === 0 ? "text-success border-success/40" : "text-warning-foreground border-warning/40 bg-warning/15"}`}>
-                    {pend.length === 0 ? "Sem pendências" : `${pend.length} pendência${pend.length > 1 ? "s" : ""}`}
-                  </span>
-                </PedidoMobileCard>
+                <div key={p.id} className="relative">
+                  {onFinalizarMany && (
+                    <div
+                      className="absolute top-2 left-2 z-10"
+                      onClick={(e) => { e.stopPropagation(); toggleId(p.id); }}
+                    >
+                      <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
+                    </div>
+                  )}
+                  <PedidoMobileCard pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                    <Chip label="UF" value={p.uf_entrega} />
+                    <Chip label="Pgto" value={p.forma_pagamento} />
+                    <Chip label="Saída" value={formatDateBR(p.saida_juff) || "—"} />
+                    <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${pend.length === 0 ? "text-success border-success/40" : "text-warning-foreground border-warning/40 bg-warning/15"}`}>
+                      {pend.length === 0 ? "Sem pendências" : `${pend.length} pendência${pend.length > 1 ? "s" : ""}`}
+                    </span>
+                  </PedidoMobileCard>
+                </div>
               );
             })}
           </div>
