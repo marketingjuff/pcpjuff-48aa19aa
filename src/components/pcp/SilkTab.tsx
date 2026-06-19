@@ -39,7 +39,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const { names: operadoresSilk } = useAppList("silk");
   const { names: opRevelacao } = useAppList("revelacao_silk");
   const { feriados } = useFeriados();
-  const sort = useSort<"qtd"|"silk"|"saida"|"entrega">();
+  const sort = useSort<"pedido"|"qtd"|"silk"|"saida"|"entrega"|"iniEst"|"fimEst"|"iniAcab">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
