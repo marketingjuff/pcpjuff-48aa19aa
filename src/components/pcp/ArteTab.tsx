@@ -273,7 +273,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
                 {/* Status da Arte */}
                 <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                  <FormField label="Status da Arte">
+                  <FormField label="Anotações da Arte">
                     <Select value={form.status_arte ?? ""} onValueChange={(v) => set("status_arte", v)}>
                       <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                       <SelectContent>{statusArteOpcoes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
@@ -353,7 +353,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             </div>
 
             <div className="space-y-0.5">
-              <label className="text-xs text-muted-foreground font-medium">Status da Arte</label>
+              <label className="text-xs text-muted-foreground font-medium">Anotações da Arte</label>
               <Select value={fStatusArte} onValueChange={setFStatusArte}>
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -394,7 +394,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   <Th>STATUS DAS PEÇAS</Th>
                   <Th>STATUS DTF</Th>
                   <Th>STATUS FOTOLITO</Th>
-                  <Th>STATUS DA ARTE</Th>
+                  <Th>ANOTAÇÕES</Th>
                   <SortableTh label="DATA LIMITE" active={sort.key === "limite"} onClick={() => sort.toggle("limite")} />
                   <Th>INÍCIO EST.</Th>
                   <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
