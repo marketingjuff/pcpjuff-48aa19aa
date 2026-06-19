@@ -38,7 +38,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   const { isDirty } = useDirtyForm();
   const { names: operadoresDTF } = useAppList("dtf");
   const { feriados } = useFeriados();
-  const sort = useSort<"qtd"|"exec"|"saida"|"entrega">();
+  const sort = useSort<"pedido"|"qtd"|"exec"|"saida"|"entrega"|"iniEst"|"fimEst"|"iniAcab">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
