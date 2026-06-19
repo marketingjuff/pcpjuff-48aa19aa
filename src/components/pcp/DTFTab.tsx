@@ -330,10 +330,14 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                   if (sort.key) {
                     lista = [...lista].sort((a, b) => {
                       switch (sort.key) {
+                        case "pedido": return cmpPedido(a, b, sort.dir);
                         case "qtd": return cmpNum(a.qtd, b.qtd, sort.dir);
                         case "exec": return cmpDate(a.dtf_data_executada, b.dtf_data_executada, sort.dir);
                         case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
                         case "entrega": return cmpDate(a.data_entrega, b.data_entrega, sort.dir);
+                        case "iniEst": return cmpDate(a.inicio_estamparia, b.inicio_estamparia, sort.dir);
+                        case "fimEst": return cmpDate(a.termino_estamparia, b.termino_estamparia, sort.dir);
+                        case "iniAcab": return cmpDate(a.inicio_acabamento, b.inicio_acabamento, sort.dir);
                       }
                       return 0;
                     });
