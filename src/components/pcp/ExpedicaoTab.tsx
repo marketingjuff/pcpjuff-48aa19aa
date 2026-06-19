@@ -113,6 +113,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
       exp_frete_solicitado: form.exp_frete_solicitado ?? null,
       exp_despachado: form.exp_despachado ?? null,
       exp_despachado_em: form.exp_despachado_em ?? null,
+      exp_frete_solicitado_em: form.exp_frete_solicitado_em ?? null,
       exp_observacoes: form.exp_observacoes ?? null,
       finalizado_em: new Date().toISOString(),
       reaberto: false,
