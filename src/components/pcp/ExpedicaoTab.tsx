@@ -205,8 +205,21 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                       </SelectContent>
                     </Select>
                     {key === "exp_despachado" && form.exp_despachado === true && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Despachado em: {formatDateBR(form.exp_despachado_em)}
+                      <div className="mt-1">
+                        <div className="text-[11px] text-muted-foreground mb-0.5">Despachado em</div>
+                        <DateInputBR
+                          value={form.exp_despachado_em ?? ""}
+                          onChange={(v) => set("exp_despachado_em", v ?? null)}
+                        />
+                      </div>
+                    )}
+                    {key === "exp_frete_solicitado" && form.exp_frete_solicitado === true && (
+                      <div className="mt-1">
+                        <div className="text-[11px] text-muted-foreground mb-0.5">Frete solicitado em</div>
+                        <DateInputBR
+                          value={form.exp_frete_solicitado_em ?? ""}
+                          onChange={(v) => set("exp_frete_solicitado_em", v ?? null)}
+                        />
                       </div>
                     )}
                   </FormField>
