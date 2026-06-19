@@ -11,6 +11,7 @@ import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag } from "lucid
 import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { VoltarDropdown } from "./VoltarDropdown";
+import { DateInputBR } from "@/components/ui/date-input";
 
 import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
@@ -75,8 +76,12 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   function toggleItem(key: ItemKey, val: boolean) {
     setForm((f) => {
       const next: any = { ...f, [key]: val };
+      const hoje = new Date().toISOString().slice(0, 10);
       if (key === "exp_despachado") {
-        next.exp_despachado_em = val ? new Date().toISOString().slice(0, 10) : null;
+        next.exp_despachado_em = val ? (f.exp_despachado_em ?? hoje) : null;
+      }
+      if (key === "exp_frete_solicitado") {
+        next.exp_frete_solicitado_em = val ? (f.exp_frete_solicitado_em ?? hoje) : null;
       }
       return next;
     });
@@ -93,6 +98,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
       exp_frete_solicitado: form.exp_frete_solicitado ?? null,
       exp_despachado: form.exp_despachado ?? null,
       exp_despachado_em: form.exp_despachado_em ?? null,
+      exp_frete_solicitado_em: form.exp_frete_solicitado_em ?? null,
       exp_observacoes: form.exp_observacoes ?? null,
     });
   }
@@ -107,6 +113,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
       exp_frete_solicitado: form.exp_frete_solicitado ?? null,
       exp_despachado: form.exp_despachado ?? null,
       exp_despachado_em: form.exp_despachado_em ?? null,
+      exp_frete_solicitado_em: form.exp_frete_solicitado_em ?? null,
       exp_observacoes: form.exp_observacoes ?? null,
       finalizado_em: new Date().toISOString(),
       reaberto: false,
@@ -117,8 +124,10 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
     if (!selected) return;
     const itens = itensParaForma(form.forma_pagamento ?? selected.forma_pagamento);
     const upd: any = { ...form };
+    const hoje = new Date().toISOString().slice(0, 10);
     itens.forEach((k) => { upd[k] = true; });
-    upd.exp_despachado_em = upd.exp_despachado_em ?? new Date().toISOString().slice(0, 10);
+    upd.exp_despachado_em = upd.exp_despachado_em ?? hoje;
+    upd.exp_frete_solicitado_em = upd.exp_frete_solicitado_em ?? hoje;
     setForm(upd);
   }
 
@@ -196,8 +205,21 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                       </SelectContent>
                     </Select>
                     {key === "exp_despachado" && form.exp_despachado === true && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Despachado em: {formatDateBR(form.exp_despachado_em)}
+                      <div className="mt-1">
+                        <div className="text-[11px] text-muted-foreground mb-0.5">Despachado em</div>
+                        <DateInputBR
+                          value={form.exp_despachado_em ?? ""}
+                          onChange={(v) => set("exp_despachado_em", v ?? null)}
+                        />
+                      </div>
+                    )}
+                    {key === "exp_frete_solicitado" && form.exp_frete_solicitado === true && (
+                      <div className="mt-1">
+                        <div className="text-[11px] text-muted-foreground mb-0.5">Frete solicitado em</div>
+                        <DateInputBR
+                          value={form.exp_frete_solicitado_em ?? ""}
+                          onChange={(v) => set("exp_frete_solicitado_em", v ?? null)}
+                        />
                       </div>
                     )}
                   </FormField>

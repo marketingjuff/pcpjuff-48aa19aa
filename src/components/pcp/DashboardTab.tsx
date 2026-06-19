@@ -8,12 +8,14 @@ import {
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  ListChecks, AlertCircle, Palette, Printer, Brush, Package, Truck, ArrowUpDown,
+  ListChecks, AlertCircle, Palette, Printer, Brush, Package, Truck, ArrowUpDown, Flag,
 } from "lucide-react";
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
@@ -25,6 +27,7 @@ interface Props {
   loading: boolean;
   onEdit: (id: string) => void;
   onViewProgress: (id: string) => void;
+  onFinalizarMany?: (ids: string[]) => void;
 }
 
 type Etapa =
@@ -45,7 +48,7 @@ function emExpedicao(p: Pedido) {
   return p.embalado === "Sim" && !p.finalizado_em;
 }
 
-export function DashboardTab({ pedidos, loading, onEdit }: Props) {
+export function DashboardTab({ pedidos, loading, onEdit, onFinalizarMany }: Props) {
   const { feriados } = useFeriados();
   const { names: vendedores } = useAppList("vendedor");
   const [vendedor, setVendedor] = useState<string>("todos");
@@ -57,6 +60,15 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const [search, setSearch] = useState("");
   const sort = useSort<"qtd"|"entrada"|"arte"|"inicio"|"termino"|"acabamento"|"exped"|"saida"|"entrega"|"dias">("saida", "asc");
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  function toggleId(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
     if (e === "finalizados") return !!p.finalizado_em;
@@ -240,6 +252,34 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
             </div>
           </div>
 
+          {/* Barra de ações em lote */}
+          {onFinalizarMany && (
+            <div className="flex items-center justify-between gap-2 rounded-md border border-dashed bg-muted/30 px-3 py-2">
+              <div className="text-xs text-muted-foreground">
+                {selectedIds.size === 0
+                  ? "Selecione pedidos sem pendências para finalizar em lote."
+                  : `${selectedIds.size} pedido${selectedIds.size > 1 ? "s" : ""} selecionado${selectedIds.size > 1 ? "s" : ""}.`}
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedIds.size > 0 && (
+                  <Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>
+                    Limpar seleção
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  disabled={selectedIds.size === 0}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={() => {
+                    onFinalizarMany(Array.from(selectedIds));
+                    setSelectedIds(new Set());
+                  }}
+                >
+                  <Flag className="h-4 w-4 mr-1" /> Finalizar selecionados
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Mobile: cards */}
           <div className="md:hidden rounded-md border divide-y">
@@ -249,14 +289,24 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
               <div className="py-8 text-center text-sm text-muted-foreground">Nenhum pedido.</div>
             ) : (
               filtrados.map((p) => (
-                <PedidoMobileCard key={p.id} pedido={p} onClick={() => onEdit(p.id)}>
-                  <Chip label="QTD" value={p.qtd} />
-                  <Chip label="Vend" value={p.vendedor} />
-                  <Chip label="Estampa" value={p.tipo_estampa} />
-                  <StatusPecasChip pedido={p} />
-                  <Chip label="Saída Juff" value={formatDateBR(p.saida_juff) || "—"} />
-                  <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
-                </PedidoMobileCard>
+                <div key={p.id} className="relative">
+                  {onFinalizarMany && (
+                    <div
+                      className="absolute top-2 left-2 z-10"
+                      onClick={(e) => { e.stopPropagation(); toggleId(p.id); }}
+                    >
+                      <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
+                    </div>
+                  )}
+                  <PedidoMobileCard pedido={p} onClick={() => onEdit(p.id)}>
+                    <Chip label="QTD" value={p.qtd} />
+                    <Chip label="Vend" value={p.vendedor} />
+                    <Chip label="Estampa" value={p.tipo_estampa} />
+                    <StatusPecasChip pedido={p} />
+                    <Chip label="Saída Juff" value={formatDateBR(p.saida_juff) || "—"} />
+                    <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+                  </PedidoMobileCard>
+                </div>
               ))
             )}
           </div>
@@ -266,6 +316,18 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  {onFinalizarMany && (
+                    <TableHead className="h-7 w-8 px-1.5 text-center">
+                      <Checkbox
+                        checked={filtrados.length > 0 && filtrados.every((p) => selectedIds.has(p.id))}
+                        onCheckedChange={(v) => {
+                          if (v) setSelectedIds(new Set(filtrados.map((p) => p.id)));
+                          else setSelectedIds(new Set());
+                        }}
+                        aria-label="Selecionar todos visíveis"
+                      />
+                    </TableHead>
+                  )}
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">ETAPA</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">PEDIDO</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">ORÇAMENTO</TableHead>
@@ -289,9 +351,9 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
 
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={18} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={onFinalizarMany ? 19 : 18} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
                 ) : filtrados.length === 0 ? (
-                  <TableRow><TableCell colSpan={18} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={onFinalizarMany ? 19 : 18} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
                 ) : (
                   filtrados.map((p) => {
                     const { inicio, termino } = estampariaDatas(p);
@@ -304,6 +366,14 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                         onDoubleClick={() => onEdit(p.id)}
                         className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
                       >
+                        {onFinalizarMany && (
+                          <TableCell
+                            className="py-0.5 px-1.5 w-8 text-center"
+                            onClick={(e) => { e.stopPropagation(); toggleId(p.id); }}
+                          >
+                            <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
+                          </TableCell>
+                        )}
                         <TableCell className="py-0.5 px-1.5 text-[11px] text-center"><Badge variant="outline" className={`${etapaPaletteClass(calcularEtapaAtual(p).etapa)} text-[10px] px-1.5 py-0`}>{calcularEtapaAtual(p).etapa}</Badge></TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] font-medium align-top text-center">{p.pedido_olist}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] max-w-[200px] align-top !text-left">
