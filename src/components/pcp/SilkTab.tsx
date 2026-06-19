@@ -293,7 +293,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
               <thead>
                 <tr>
                   <Th>ETAPA</Th>
-                  <Th>PEDIDO</Th>
+                  <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
                   <Th>ORÇAMENTO</Th>
                   <Th>VENDEDOR</Th>
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
@@ -302,9 +302,9 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   <Th>FOTOLITO</Th>
                   <Th>TELA</Th>
                   <Th>SILK FEITO</Th>
-                  <Th>INÍCIO ESTAMPARIA</Th>
-                  <Th>TÉRMINO ESTAMPARIA</Th>
-                  <Th>INÍCIO ACABAMENTO</Th>
+                  <SortableTh label="INÍCIO ESTAMPARIA" active={sort.key === "iniEst"} onClick={() => sort.toggle("iniEst")} />
+                  <SortableTh label="TÉRMINO ESTAMPARIA" active={sort.key === "fimEst"} onClick={() => sort.toggle("fimEst")} />
+                  <SortableTh label="INÍCIO ACABAMENTO" active={sort.key === "iniAcab"} onClick={() => sort.toggle("iniAcab")} />
                 </tr>
               </thead>
               <tbody>
