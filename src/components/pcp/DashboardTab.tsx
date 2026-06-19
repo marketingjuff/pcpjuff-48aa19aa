@@ -316,6 +316,18 @@ export function DashboardTab({ pedidos, loading, onEdit, onFinalizarMany }: Prop
             <Table>
               <TableHeader>
                 <TableRow>
+                  {onFinalizarMany && (
+                    <TableHead className="h-7 w-8 px-1.5 text-center">
+                      <Checkbox
+                        checked={filtrados.length > 0 && filtrados.every((p) => selectedIds.has(p.id))}
+                        onCheckedChange={(v) => {
+                          if (v) setSelectedIds(new Set(filtrados.map((p) => p.id)));
+                          else setSelectedIds(new Set());
+                        }}
+                        aria-label="Selecionar todos visíveis"
+                      />
+                    </TableHead>
+                  )}
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">ETAPA</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">PEDIDO</TableHead>
                   <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">ORÇAMENTO</TableHead>
