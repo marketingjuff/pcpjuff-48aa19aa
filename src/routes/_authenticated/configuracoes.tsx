@@ -852,7 +852,7 @@ function ListasTab() {
 
 function ListaCard({ kind, title, placeholder }: { kind: AppListKind; title: string; placeholder: string }) {
   const { items, isLoading } = useAppList(kind);
-  const { add, rename, remove } = useAppListMutations(kind);
+  const { add, rename, remove, reorder } = useAppListMutations(kind);
   const [novo, setNovo] = useState("");
   const [editing, setEditing] = useState<{ id: string; nome: string } | null>(null);
 
@@ -876,10 +876,33 @@ function ListaCard({ kind, title, placeholder }: { kind: AppListKind; title: str
       onError: (e: any) => toast.error(e.message ?? "Erro ao remover."),
     });
   }
+  function move(index: number, dir: -1 | 1) {
+    const target = index + dir;
+    if (target < 0 || target >= items.length) return;
+    const ids = items.map((i) => i.id);
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    reorder.mutate(ids, {
+      onError: (e: any) => toast.error(e.message ?? "Erro ao reordenar."),
+    });
+  }
+  function sortAZ() {
+    const ids = [...items]
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }))
+      .map((i) => i.id);
+    reorder.mutate(ids, {
+      onSuccess: () => toast.success("Ordenado A→Z."),
+      onError: (e: any) => toast.error(e.message ?? "Erro ao ordenar."),
+    });
+  }
 
   return (
     <div className="border rounded-lg p-4 space-y-3">
-      <h2 className="font-semibold">{title}</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-semibold">{title}</h2>
+        <Button size="sm" variant="outline" onClick={sortAZ} disabled={reorder.isPending || items.length < 2}>
+          <ArrowDownAZ className="h-4 w-4 mr-1" /> A→Z
+        </Button>
+      </div>
       <div className="flex gap-2">
         <Input
           value={novo}
@@ -893,14 +916,14 @@ function ListaCard({ kind, title, placeholder }: { kind: AppListKind; title: str
       </div>
       <Table>
         <TableHeader>
-          <TableRow><TableHead>Nome</TableHead><TableHead className="w-32 text-right">Ações</TableHead></TableRow>
+          <TableRow><TableHead>Nome</TableHead><TableHead className="w-44 text-right">Ações</TableHead></TableRow>
         </TableHeader>
         <TableBody>
           {isLoading ? (
             <TableRow><TableCell colSpan={2}>Carregando…</TableCell></TableRow>
           ) : items.length === 0 ? (
             <TableRow><TableCell colSpan={2} className="text-muted-foreground">Nenhum item.</TableCell></TableRow>
-          ) : items.map((it) => (
+          ) : items.map((it, idx) => (
             <TableRow key={it.id}>
               <TableCell>
                 {editing?.id === it.id ? (
@@ -923,8 +946,14 @@ function ListaCard({ kind, title, placeholder }: { kind: AppListKind; title: str
                   </>
                 ) : (
                   <>
+                    <Button size="icon" variant="ghost" onClick={() => move(idx, -1)} disabled={idx === 0 || reorder.isPending} title="Mover para cima">
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => move(idx, 1)} disabled={idx === items.length - 1 || reorder.isPending} title="Mover para baixo">
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
                     <Button size="sm" variant="ghost" onClick={() => setEditing({ id: it.id, nome: it.nome })}>Editar</Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDelete(it.id, it.nome)}>
+                    <Button size="icon" variant="ghost" onClick={() => handleDelete(it.id, it.nome)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </>
