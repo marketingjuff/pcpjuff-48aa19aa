@@ -1,33 +1,36 @@
-## Bloco 1 — Aba Expedição: datas editáveis em "Frete Solicitado" e "Despachado"
+Dois ajustes na aba **Expedição** em `src/components/pcp/ExpedicaoTab.tsx`. Sem novos arquivos, sem mudança de lógica de dados.
 
-**Migration (backend)**
-- Adicionar coluna `exp_frete_solicitado_em date` na tabela `pedidos` (já existe `exp_despachado_em`).
+## 1. Seleção de pedidos no Dashboard
 
-**`src/components/pcp/ExpedicaoTab.tsx`**
-- Ao marcar `Frete Solicitado = Sim`, preencher `exp_frete_solicitado_em = hoje` automaticamente (se vazio). Ao marcar "Não", limpar.
-- Mesmo comportamento já existe para `Despachado` — manter.
-- Substituir os textos "Despachado em: …" por um `DateInputBR` editável logo abaixo do select, tanto para `exp_frete_solicitado_em` quanto para `exp_despachado_em`, visível somente quando o item está "Sim".
-- Incluir os dois campos no payload do `handleSave` / `handleFinalizar` / `marcarTudoSim` (este último também pré-preenche `exp_frete_solicitado_em`).
+**Bug atual:** o `<td>` (e o wrapper no mobile) tem `onClick={toggleId}` e o `<Checkbox>` dentro dele tem `onCheckedChange={toggleId}`. Os dois disparam no mesmo clique, cancelando a marcação.
 
-**Tipos**
-- Adicionar `exp_frete_solicitado_em: string | null` em `src/lib/pedidos.ts` (`Pedido` + `PedidoInput`) e em `src/integrations/supabase/schema-extras.ts`. `types.ts` é auto-gerado pela migration.
+**Correção:**
+- Remover o `onClick` do `<td>`/wrapper mobile; manter apenas `e.stopPropagation()` para não abrir o card de edição. A marcação fica só no `onCheckedChange` do `Checkbox`.
+- Cabeçalho: trocar o `checked` por um estado de 3 valores (`true` / `false` / `"indeterminate"`):
+  - todos marcados → `true`
+  - alguns marcados → `"indeterminate"`
+  - nenhum → `false`
+  
+  O componente `Checkbox` (Radix) já suporta `checked="indeterminate"` visualmente (traço).
+- "Finalizar selecionados" continua usando `selectedIds` — já funciona em individuais ou todos.
 
-## Bloco 2 — Dashboard Master: seleção múltipla + "Finalizar selecionados"
+## 2. Reorganizar bloco de preenchimento da Expedição
 
-**`src/components/pcp/DashboardTab.tsx`**
-- Novo estado `selectedIds: Set<string>`.
-- Nova coluna `<TableHead>` à esquerda (antes de "ETAPA") com checkbox de "selecionar todos os visíveis" no header; e checkbox por linha em cada `<TableRow>` (com `onClick stopPropagation` para não acionar a seleção da linha).
-- Acima da tabela, quando houver itens selecionados, mostrar barra com contagem + botão **"Finalizar selecionados"** (verde). Desabilitado quando 0.
-- Ação do botão: para cada id selecionado chamar `onFinalizarMany(ids)` recebido via prop; em seguida limpa a seleção.
-- Mobile (cards): adicionar pequeno checkbox no canto do `PedidoMobileCard` ou um botão de seleção — manter simples: checkbox absoluto no canto superior esquerdo.
+Bloco somente-leitura (Pedido/Orçamento/Frete/UF/Data entrega/Saída Juff/Forma de pagamento/NF) **permanece igual**.
 
-**`src/routes/_authenticated/index.tsx`**
-- Passar nova prop `onFinalizarMany` para `DashboardTab` que itera e chama `upsert.mutate({ id, finalizado_em: new Date().toISOString(), reaberto: false })` para cada id.
+Substituir o grid único atual dos campos editáveis por duas linhas dedicadas (renderizadas só com os itens aplicáveis a `itensParaForma(...)`):
 
-**Escopo / regras**
-- Não filtra automaticamente "sem pendências"; o gestor escolhe quais marcar (o usuário disse "facilita a seleção dos pedidos que não têm pendências", então a seleção é manual).
-- Não altera lógica de etapa/cálculo — apenas escreve `finalizado_em`.
+- **Linha 1 — status simples** (`grid-cols-1 sm:grid-cols-3`): Cobrança do pagamento · Pagamento · Etiqueta  
+  (Cobrança/Pagamento aparecem só quando forma = "50%/50%", igual hoje.)
+- **Linha 2 — status com data em pares** (`grid-cols-1 sm:grid-cols-2`, cada célula com sub-grid `grid-cols-2` para status + data colados):
+  - Frete Solicitado + Frete solicitado em
+  - Despachado + Despachado em
+  
+  A data sempre aparece (não fica mais condicionada a `=== true`), permitindo edição quando "Sim". Mantém-se a regra atual: ao alternar para "Não", `toggleItem` limpa a data (`null`). Ao mudar para "Sim", auto-preenche hoje se vazio. Nenhuma mudança em `toggleItem`, `handleSave`, `handleFinalizar`, `marcarTudoSim`.
 
-**Sem novos arquivos.** Reaproveita `DateInputBR`, `Checkbox` (shadcn já instalado), `Button`, `upsert.mutate`.
+Observações da Expedição + `ObservacoesOutrosSetores` continuam abaixo, como hoje.
 
-Posso executar?
+### Detalhes técnicos
+- Arquivo único: `src/components/pcp/ExpedicaoTab.tsx`.
+- Sem mudanças em tipos, migrations, outros componentes, validação ou cálculos.
+- Reaproveita `FormField`, `Select`, `DateInputBR`, `Checkbox` já importados.

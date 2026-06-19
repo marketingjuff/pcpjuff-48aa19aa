@@ -200,54 +200,70 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               <ReadOnlyField label="Nota Fiscal" value={selected.nf_emitida ?? "—"} />
             </div>
 
-            <div className="border-t pt-4 grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-              {itensParaForma(form.forma_pagamento ?? selected.forma_pagamento).map((key) => {
+            {(() => {
+              const itens = itensParaForma(form.forma_pagamento ?? selected.forma_pagamento);
+              const simples: ItemKey[] = (["exp_cobranca_pagamento", "exp_pagamento", "exp_etiqueta"] as ItemKey[]).filter((k) => itens.includes(k));
+              const comData: ItemKey[] = (["exp_frete_solicitado", "exp_despachado"] as ItemKey[]).filter((k) => itens.includes(k));
+              const renderStatus = (key: ItemKey) => {
                 const val = form[key];
                 return (
-                  <FormField key={key} label={ITEM_LABEL[key]}>
-                    <Select
-                      value={val === true ? "Sim" : val === false ? "Não" : ""}
-                      onValueChange={(v) => toggleItem(key, v === "Sim")}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Sim">Sim</SelectItem>
-                        <SelectItem value="Não">Não</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {key === "exp_despachado" && form.exp_despachado === true && (
-                      <div className="mt-1">
-                        <div className="text-[11px] text-muted-foreground mb-0.5">Despachado em</div>
-                        <DateInputBR
-                          value={form.exp_despachado_em ?? ""}
-                          onChange={(v) => set("exp_despachado_em", v ?? null)}
-                        />
-                      </div>
-                    )}
-                    {key === "exp_frete_solicitado" && form.exp_frete_solicitado === true && (
-                      <div className="mt-1">
-                        <div className="text-[11px] text-muted-foreground mb-0.5">Frete solicitado em</div>
-                        <DateInputBR
-                          value={form.exp_frete_solicitado_em ?? ""}
-                          onChange={(v) => set("exp_frete_solicitado_em", v ?? null)}
-                        />
-                      </div>
-                    )}
-                  </FormField>
+                  <Select
+                    value={val === true ? "Sim" : val === false ? "Não" : ""}
+                    onValueChange={(v) => toggleItem(key, v === "Sim")}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Sim">Sim</SelectItem>
+                      <SelectItem value="Não">Não</SelectItem>
+                    </SelectContent>
+                  </Select>
                 );
-              })}
-              <div className="sm:col-span-2 lg:col-span-4">
-                <FormField label="Observações da Expedição">
-                  <Textarea
-                    rows={3}
-                    value={form.exp_observacoes ?? ""}
-                    onChange={(e) => set("exp_observacoes", e.target.value)}
-                  />
-                </FormField>
-                <ObservacoesOutrosSetores pedido={selected} setorAtual="expedicao" />
-              </div>
-
-            </div>
+              };
+              return (
+                <>
+                  {simples.length > 0 && (
+                    <div className="border-t pt-4 grid gap-2 grid-cols-1 sm:grid-cols-3">
+                      {simples.map((key) => (
+                        <FormField key={key} label={ITEM_LABEL[key]}>
+                          {renderStatus(key)}
+                        </FormField>
+                      ))}
+                    </div>
+                  )}
+                  {comData.length > 0 && (
+                    <div className={`grid gap-3 grid-cols-1 sm:grid-cols-2 ${simples.length === 0 ? "border-t pt-4" : ""}`}>
+                      {comData.map((key) => {
+                        const dateKey = (key === "exp_despachado" ? "exp_despachado_em" : "exp_frete_solicitado_em") as "exp_despachado_em" | "exp_frete_solicitado_em";
+                        const dateLabel = key === "exp_despachado" ? "Despachado em" : "Frete solicitado em";
+                        return (
+                          <div key={key} className="grid grid-cols-2 gap-2">
+                            <FormField label={ITEM_LABEL[key]}>
+                              {renderStatus(key)}
+                            </FormField>
+                            <FormField label={dateLabel}>
+                              <DateInputBR
+                                value={(form[dateKey] as string | null | undefined) ?? ""}
+                                onChange={(v) => set(dateKey, v ?? null)}
+                              />
+                            </FormField>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div>
+                    <FormField label="Observações da Expedição">
+                      <Textarea
+                        rows={3}
+                        value={form.exp_observacoes ?? ""}
+                        onChange={(e) => set("exp_observacoes", e.target.value)}
+                      />
+                    </FormField>
+                    <ObservacoesOutrosSetores pedido={selected} setorAtual="expedicao" />
+                  </div>
+                </>
+              );
+            })()}
 
             {todosCompletos(selected, form) && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-success/10 text-success text-sm border border-success/30">
@@ -350,7 +366,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   {onFinalizarMany && (
                     <div
                       className="absolute top-2 left-2 z-10"
-                      onClick={(e) => { e.stopPropagation(); toggleId(p.id); }}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
                     </div>
@@ -375,7 +391,13 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   {onFinalizarMany && (
                     <th className={`${TH_RAW_CLASS} w-8`}>
                       <Checkbox
-                        checked={dashboardPedidos.length > 0 && dashboardPedidos.every((p) => selectedIds.has(p.id))}
+                        checked={
+                          dashboardPedidos.length > 0 && dashboardPedidos.every((p) => selectedIds.has(p.id))
+                            ? true
+                            : dashboardPedidos.some((p) => selectedIds.has(p.id))
+                            ? "indeterminate"
+                            : false
+                        }
                         onCheckedChange={(v) => {
                           if (v) setSelectedIds(new Set(dashboardPedidos.map((p) => p.id)));
                           else setSelectedIds(new Set());
@@ -418,7 +440,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                       {onFinalizarMany && (
                         <td
                           className="px-1.5 py-0.5 w-8"
-                          onClick={(e) => { e.stopPropagation(); toggleId(p.id); }}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
                         </td>
