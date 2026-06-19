@@ -395,6 +395,7 @@ export function EmptyState({ children }: { children: React.ReactNode }) {
 export const ETAPA_FILTRO_OPCOES: { value: string; label: string }[] = [
   { value: "ativas", label: "Todas (menos finalizados)" },
   { value: "pendencias_arte", label: "Pendências de Arte" },
+  { value: "pendencias_data", label: "Pendências de Data" },
   { value: "aguardando_entrada", label: "Aguardando entrada" },
   { value: "aguardando_input", label: "Aguardando input de produção" },
   { value: "arte", label: "Aguardando Arte" },
@@ -430,6 +431,7 @@ const _ETAPA_MAP: Record<string, string[]> = {
 export function matchEtapaFiltro(p: Pedido, value: string): boolean {
   if (value === "finalizados") return !!p.finalizado_em;
   if (!!p.finalizado_em) return false;
+  if (value === "pendencias_data") return !!p.data_entrega_proposta;
   if (value === "ativas" || value === "todas") return true;
   const etapaAtual = calcularEtapaAtual(p).etapa.replace(/\*$/, "");
   if (value === "pendencias_arte") return _ETAPA_PENDENCIAS_ARTE.has(etapaAtual);

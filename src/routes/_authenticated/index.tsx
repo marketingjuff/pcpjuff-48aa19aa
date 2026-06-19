@@ -117,6 +117,17 @@ function AppHomeInner() {
     setTab(t);
   }
 
+  // Auto-scroll para o topo quando um pedido é selecionado (aplica em todas as abas)
+  useEffect(() => {
+    if (!selectedId) return;
+    if (typeof window === "undefined") return;
+    // pequeno delay para garantir que a aba mudou e o card renderizou
+    const id = window.setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 50);
+    return () => window.clearTimeout(id);
+  }, [selectedId, tab]);
+
   type TabDef = { value: string; label: string };
   const tabs: TabDef[] = [
     ...(isManager ? [{ value: "dashboard", label: "Dashboard Master" }] : []),

@@ -7,11 +7,17 @@ function toISO(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function isDiaUtil(d: Date, feriados: Feriados): boolean {
+export function isDiaUtil(d: Date, feriados: Feriados): boolean {
   const dow = d.getDay();
   if (dow === 0 || dow === 6) return false;
   if (feriados.has(toISO(d))) return false;
   return true;
+}
+
+/** Checa se uma data ISO (yyyy-mm-dd) é dia útil. */
+export function isDataUtilISO(iso: string | null | undefined, feriados: Feriados = new Set()): boolean {
+  if (!iso) return true;
+  return isDiaUtil(new Date(iso + "T00:00:00"), feriados);
 }
 
 /** Adiciona N dias úteis a uma data (positivo no futuro, negativo no passado). */

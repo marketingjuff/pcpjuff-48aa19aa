@@ -1,5 +1,5 @@
 import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
   STATUS_PECAS_OPCOES, TIPOS_ESTAMPA, SIM_NAO, UFS,
@@ -19,10 +19,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Save, X, FileText, Download, AlertTriangle, ArrowUpDown } from "lucide-react";
+import { Plus, Trash2, Save, X, FileText, Download, AlertTriangle, ArrowUpDown, CalendarClock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { addDiasUteis, diasUteisEntre, diasUteisAteHoje, addDiasCorridos, proximoDiaUtil } from "@/lib/dias-uteis";
+import { addDiasUteis, diasUteisEntre, diasUteisAteHoje, addDiasCorridos, proximoDiaUtil, isDataUtilISO } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
 import { PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
@@ -167,6 +167,12 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       toast.error("Preencha os campos obrigatórios do Input de Produção.");
       return;
     }
+    // Validação: Término de Acabamento deve ser dia útil
+    if (form.termino_acabamento && !isDataUtilISO(form.termino_acabamento, feriados)) {
+      setMissingProd(new Set([...missP, "termino_acabamento"]));
+      toast.error("Término de Acabamento deve cair em dia útil (não pode ser fim de semana ou feriado).");
+      return;
+    }
     if (!selected?.id) {
       const missV = findMissing(VENDOR_REQUIRED);
       setMissingVendor(missV);
@@ -214,8 +220,41 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     baixarLayoutPDF(path);
   }
 
+  const pendenciasDataCount = useMemo(
+    () => pedidos.filter((p) => !!p.data_entrega_proposta && !p.finalizado_em).length,
+    [pedidos],
+  );
+  const [etapaFiltro, setEtapaFiltro] = useState("ativas");
+  const dashboardRef = useRef<HTMLDivElement | null>(null);
+
+  function abrirPendenciasData() {
+    setEtapaFiltro("pendencias_data");
+    setTimeout(() => {
+      dashboardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
   return (
     <div className="space-y-3">
+      {pendenciasDataCount > 0 && (
+        <button
+          type="button"
+          onClick={abrirPendenciasData}
+          className="w-full flex items-center gap-3 p-3 rounded-md border border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/15 text-left transition-colors"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20 text-blue-700 dark:text-blue-300 shrink-0">
+            <CalendarClock className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+              {pendenciasDataCount} solicitação{pendenciasDataCount === 1 ? "" : "ões"} de alteração de data pendente{pendenciasDataCount === 1 ? "" : "s"}
+            </div>
+            <div className="text-xs text-blue-700/80 dark:text-blue-300/80">
+              Clique para filtrar e revisar.
+            </div>
+          </div>
+        </button>
+      )}
       <Card className="border-primary/30">
         <CardContent className="py-2 flex items-center justify-between flex-wrap gap-3">
           <div className="min-w-0">
@@ -345,8 +384,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         {/* Produção */}
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
           <CardHeader className="py-2"><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
-          <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 pt-0">
-            {/* Linha 1 — Status / Tipo / Nº Batidas (condicional) */}
+          <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-0">
+            {/* Linha 1: Status | Tipo | Batidas DTF/Silk (condicional) */}
             <Field label="Status de Peças *" invalid={missingProd.has("status_pecas")}>
               <Select value={form.status_pecas ?? ""} onValueChange={(v) => set("status_pecas", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -360,14 +399,20 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               </Select>
             </Field>
             {form.tipo_estampa === "DTF" && (
-              <Field label="Nº Batidas DTF">
-                <Input type="number" min="0" value={form.n_batidas_dtf ?? ""} onChange={(e) => set("n_batidas_dtf", e.target.value === "" ? null : Number(e.target.value))} />
-              </Field>
+              <>
+                <Field label="Nº Batidas DTF">
+                  <Input type="number" min="0" value={form.n_batidas_dtf ?? ""} onChange={(e) => set("n_batidas_dtf", e.target.value === "" ? null : Number(e.target.value))} />
+                </Field>
+                <div />
+              </>
             )}
             {form.tipo_estampa === "Silk" && (
-              <Field label="Nº Batidas Silk">
-                <Input type="number" min="0" value={form.n_batidas_silk ?? ""} onChange={(e) => set("n_batidas_silk", e.target.value === "" ? null : Number(e.target.value))} />
-              </Field>
+              <>
+                <Field label="Nº Batidas Silk">
+                  <Input type="number" min="0" value={form.n_batidas_silk ?? ""} onChange={(e) => set("n_batidas_silk", e.target.value === "" ? null : Number(e.target.value))} />
+                </Field>
+                <div />
+              </>
             )}
             {form.tipo_estampa === "DTF+Silk" && (
               <>
@@ -379,41 +424,39 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 </Field>
               </>
             )}
-            {!form.tipo_estampa && <div />}
+            {(!form.tipo_estampa || form.tipo_estampa === "Lisa") && (<><div /><div /></>)}
 
-            {/* Linha 2 — Dias de Secagem / Arte Limite */}
+            {/* Linha 2: Dias Secagem | Arte Limite | Início Estamparia | Término Estamparia */}
             <Field label="Dias de Secagem (dias corridos)">
-              {soDTF ? (
+              {(soDTF || isLisa) ? (
                 <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm text-muted-foreground">Não se aplica</div>
               ) : (
                 <Input type="number" min="0" value={form.dias_secagem ?? ""} onChange={(e) => set("dias_secagem", e.target.value === "" ? null : Number(e.target.value))} />
               )}
             </Field>
             <Field label="Arte (limite)"><DateInputBR value={form.arte_data} onChange={(v) => set("arte_data", v)} /></Field>
-            <div />
-
-            {/* Linha 3 — Início / Término Estamparia */}
             <Field label="Início Estamparia"><DateInputBR value={form.inicio_estamparia} onChange={(v) => set("inicio_estamparia", v)} /></Field>
             <Field label="Término Estamparia"><DateInputBR value={form.termino_estamparia} onChange={(v) => set("termino_estamparia", v)} /></Field>
-            <div />
 
-            {/* Linha 4 — Início / Término Acabamento */}
+            {/* Linha 3: Início Acabamento | Término Acabamento | Saída Juff | Tempo Produção */}
             <Field label="Início de Acabamento (calculado)">
               <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{inicioAcabamentoCalc ? formatDateBR(inicioAcabamentoCalc) : "—"}</div>
             </Field>
-            <Field label="Término de Acabamento"><DateInputBR value={form.termino_acabamento} onChange={(v) => set("termino_acabamento", v)} /></Field>
-            <div />
-
-            {/* Linha 5 — Saída Juff / Tempo de produção */}
+            <Field label="Término de Acabamento" invalid={missingProd.has("termino_acabamento")}>
+              <DateInputBR value={form.termino_acabamento} onChange={(v) => set("termino_acabamento", v)} />
+              {form.termino_acabamento && !isDataUtilISO(form.termino_acabamento, feriados) && (
+                <div className="text-xs text-destructive mt-1">Deve ser dia útil (não pode ser fim de semana ou feriado).</div>
+              )}
+            </Field>
             <Field label="Saída Juff (calculado)">
               <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{saidaJuffCalc ? formatDateBR(saidaJuffCalc) : "—"}</div>
             </Field>
             <Field label="Tempo de produção (dias úteis)">
               <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{tempoProducaoCalc ?? "—"}</div>
             </Field>
-            <div />
 
-            <div className="sm:col-span-2 lg:col-span-3">
+            {/* Linha 4: Observações */}
+            <div className="sm:col-span-2 lg:col-span-4">
               <Field label="Observações de produção">
                 <Textarea rows={2} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
               </Field>
@@ -426,14 +469,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               )}
             </div>
 
-            <div className="sm:col-span-2 lg:col-span-3 flex gap-2">
+            <div className="sm:col-span-2 lg:col-span-4 flex gap-2">
               <Button type="button" onClick={saveProducao} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" />{selected?.id ? "Atualizar" : "Salvar"} Input de Produção
               </Button>
             </div>
             {selected?.data_entrega_proposta && (
-              <div className="sm:col-span-2 lg:col-span-3">
-
+              <div className="sm:col-span-2 lg:col-span-4">
                 <PropostaDataAlerta
                   pedidoId={selected.id}
                   dataAtual={selected.data_entrega}
@@ -454,31 +496,37 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         </Card>
       </div>
 
-      <DadosInDashboard
-        pedidos={pedidos}
-        selectedId={selected?.id ?? null}
-        onSelect={onSelect}
-        feriados={feriados}
-        vendedores={vendedores}
-      />
+
+      <div ref={dashboardRef}>
+        <DadosInDashboard
+          pedidos={pedidos}
+          selectedId={selected?.id ?? null}
+          onSelect={onSelect}
+          feriados={feriados}
+          vendedores={vendedores}
+          etapaFiltro={etapaFiltro}
+          setEtapaFiltro={setEtapaFiltro}
+        />
+      </div>
     </div>
   );
 }
 
 function DadosInDashboard({
-  pedidos, selectedId, onSelect, feriados, vendedores,
+  pedidos, selectedId, onSelect, feriados, vendedores, etapaFiltro, setEtapaFiltro,
 }: {
   pedidos: Pedido[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   feriados: Set<string>;
   vendedores: string[];
+  etapaFiltro: string;
+  setEtapaFiltro: (v: string) => void;
 }) {
   const [search, setSearch] = useState("");
   const [vendedor, setVendedor] = useState("todos");
   const [status, setStatus] = useState("todos");
   const [tipo, setTipo] = useState("todos");
-  const [etapaFiltro, setEtapaFiltro] = useState("ativas");
   const [dataEntrega, setDataEntrega] = useState("");
   const sort = useSort<"qtd"|"tempoFrete"|"entrada"|"saida"|"entrega">("saida", "asc");
 
