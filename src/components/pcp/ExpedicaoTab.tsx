@@ -282,20 +282,8 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               </div>
             )}
 
-            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
-              <VoltarDropdown
-                destinos={["dados", "arte", "dtf", "silk", "acabamento"]}
-                onVoltar={(destino) => {
-                  onSave({
-                    id: selected.id,
-                    reaberto: true,
-                    expedicao_entrou_em: null,
-                    embalado: null,
-                  } as any);
-                  if (onNavigate) onNavigate(destino);
-                }}
-              />
-              <div className="flex gap-2 flex-wrap sm:justify-end">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="flex gap-2 flex-wrap sm:justify-start">
                 <Button onClick={marcarTudoSim} disabled={saving} variant="outline" className="w-full sm:w-auto">
                   Marcar tudo como "Sim"
                 </Button>
@@ -310,6 +298,18 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   Finalizar Pedido
                 </FinalizarButton>
               </div>
+              <VoltarDropdown
+                destinos={["dados", "arte", "dtf", "silk", "acabamento"]}
+                onVoltar={(destino) => {
+                  onSave({
+                    id: selected.id,
+                    reaberto: true,
+                    expedicao_entrou_em: null,
+                    embalado: null,
+                  } as any);
+                  if (onNavigate) onNavigate(destino);
+                }}
+              />
             </div>
           </CardContent>
         </Card>

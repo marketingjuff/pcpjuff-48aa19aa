@@ -202,9 +202,8 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </div>
 
             </div>
-            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
-              <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
-              <div className="flex flex-wrap gap-2 sm:justify-end items-center">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="flex flex-wrap gap-2 sm:justify-start items-center">
                 {form.embalado === "Sim" && !enviadoParaExpedicao && (
                   <span className="text-xs text-muted-foreground self-center">
                     Ao salvar com EMBALADO=Sim, o pedido vai automaticamente para Expedição.
@@ -219,6 +218,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                   {enviadoParaExpedicao ? "Atualizar Acabamento" : "Atualizar"}
                 </UpdateButton>
               </div>
+              <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
             </div>
           </CardContent>
         </Card>
