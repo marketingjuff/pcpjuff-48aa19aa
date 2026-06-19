@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { VoltarDropdown } from "./VoltarDropdown";
@@ -23,6 +24,7 @@ interface Props {
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
   saving: boolean;
   onNavigate?: (tab: string) => void;
+  onFinalizarMany?: (ids: string[]) => void;
 }
 
 type ItemKey =
@@ -60,7 +62,7 @@ function todosCompletos(p: Pedido, form: Partial<Pedido>): boolean {
   });
 }
 
-export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNavigate }: Props) {
+export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNavigate, onFinalizarMany }: Props) {
   const { feriados } = useFeriados();
   const { names: formasPagamento } = useAppList("pagamento");
   const expedicaoPedidos = useMemo(
@@ -139,6 +141,15 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   const [fUF, setFUF] = useState("");
   const [fForma, setFForma] = useState("todos");
   const [fEtapa, setFEtapa] = useState("expedicao");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  function toggleId(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
 
   const dashboardPedidos = useMemo(() => {
     let list = pedidos.filter((p) => {
@@ -298,6 +309,36 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               </SelectContent>
             </Select>
           </div>
+
+          {/* Barra de ações em lote */}
+          {onFinalizarMany && (
+            <div className="flex items-center justify-between gap-2 rounded-md border border-dashed bg-muted/30 px-3 py-2">
+              <div className="text-xs text-muted-foreground">
+                {selectedIds.size === 0
+                  ? "Selecione pedidos sem pendências para finalizar em lote."
+                  : `${selectedIds.size} pedido${selectedIds.size > 1 ? "s" : ""} selecionado${selectedIds.size > 1 ? "s" : ""}.`}
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedIds.size > 0 && (
+                  <Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>
+                    Limpar seleção
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  disabled={selectedIds.size === 0 || saving}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={() => {
+                    onFinalizarMany(Array.from(selectedIds));
+                    setSelectedIds(new Set());
+                  }}
+                >
+                  <Flag className="h-4 w-4 mr-1" /> Finalizar selecionados
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Mobile cards */}
           <div className="md:hidden rounded-md border divide-y">
             {dashboardPedidos.length === 0 ? (
@@ -305,15 +346,25 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
             ) : dashboardPedidos.map((p) => {
               const pend = pendenciasDoPedido(p);
               return (
-                <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
-                  <Chip label="UF" value={p.uf_entrega} />
-                  <Chip label="Pgto" value={p.forma_pagamento} />
-                  <Chip label="Saída" value={formatDateBR(p.saida_juff) || "—"} />
-                  <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
-                  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${pend.length === 0 ? "text-success border-success/40" : "text-warning-foreground border-warning/40 bg-warning/15"}`}>
-                    {pend.length === 0 ? "Sem pendências" : `${pend.length} pendência${pend.length > 1 ? "s" : ""}`}
-                  </span>
-                </PedidoMobileCard>
+                <div key={p.id} className="relative">
+                  {onFinalizarMany && (
+                    <div
+                      className="absolute top-2 left-2 z-10"
+                      onClick={(e) => { e.stopPropagation(); toggleId(p.id); }}
+                    >
+                      <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
+                    </div>
+                  )}
+                  <PedidoMobileCard pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                    <Chip label="UF" value={p.uf_entrega} />
+                    <Chip label="Pgto" value={p.forma_pagamento} />
+                    <Chip label="Saída" value={formatDateBR(p.saida_juff) || "—"} />
+                    <Chip label="Entrega" value={formatDateBR(p.data_entrega) || "—"} />
+                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${pend.length === 0 ? "text-success border-success/40" : "text-warning-foreground border-warning/40 bg-warning/15"}`}>
+                      {pend.length === 0 ? "Sem pendências" : `${pend.length} pendência${pend.length > 1 ? "s" : ""}`}
+                    </span>
+                  </PedidoMobileCard>
+                </div>
               );
             })}
           </div>
@@ -321,6 +372,18 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
                 <tr>
+                  {onFinalizarMany && (
+                    <th className={`${TH_RAW_CLASS} w-8`}>
+                      <Checkbox
+                        checked={dashboardPedidos.length > 0 && dashboardPedidos.every((p) => selectedIds.has(p.id))}
+                        onCheckedChange={(v) => {
+                          if (v) setSelectedIds(new Set(dashboardPedidos.map((p) => p.id)));
+                          else setSelectedIds(new Set());
+                        }}
+                        aria-label="Selecionar todos visíveis"
+                      />
+                    </th>
+                  )}
                   <Th>PENDÊNCIAS</Th>
                   <Th>PEDIDO</Th>
                   <Th>ORÇAMENTO</Th>
@@ -352,6 +415,14 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                     <tr key={p.id}
                       onClick={() => onSelect(p.id)}
                       className={`border-t cursor-pointer hover:bg-accent ${bg} ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                      {onFinalizarMany && (
+                        <td
+                          className="px-1.5 py-0.5 w-8"
+                          onClick={(e) => { e.stopPropagation(); toggleId(p.id); }}
+                        >
+                          <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
+                        </td>
+                      )}
                       <td className="px-1.5 py-0.5 text-xs">
                         {pend.length === 0
                           ? <span className="text-success">Sem pendências</span>
@@ -367,7 +438,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   );
                 })}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido na expedição.</td></tr>
+                  <tr><td colSpan={onFinalizarMany ? 8 : 7} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido na expedição.</td></tr>
                 )}
               </tbody>
             </table>
