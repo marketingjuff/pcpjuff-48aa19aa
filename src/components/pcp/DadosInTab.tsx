@@ -367,12 +367,12 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 )}
               </Field>
             </div>
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-4">
               <Field label="Observações do vendedor">
                 <Textarea rows={2} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
               </Field>
             </div>
-            <div className="sm:col-span-2 flex gap-2">
+            <div className="sm:col-span-2 lg:col-span-4 flex gap-2">
               <Button type="button" onClick={saveVendor} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" />{selected?.id ? "Atualizar" : "Salvar"} Input do Vendedor
               </Button>
