@@ -45,7 +45,7 @@ function emExpedicao(p: Pedido) {
   return p.embalado === "Sim" && !p.finalizado_em;
 }
 
-export function DashboardTab({ pedidos, loading, onEdit, onFinalizarMany }: Props) {
+export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const { feriados } = useFeriados();
   const { names: vendedores } = useAppList("vendedor");
   const [vendedor, setVendedor] = useState<string>("todos");
@@ -57,15 +57,6 @@ export function DashboardTab({ pedidos, loading, onEdit, onFinalizarMany }: Prop
   const [search, setSearch] = useState("");
   const sort = useSort<"qtd"|"entrada"|"arte"|"inicio"|"termino"|"acabamento"|"exped"|"saida"|"entrega"|"dias">("saida", "asc");
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  function toggleId(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
     if (e === "finalizados") return !!p.finalizado_em;
