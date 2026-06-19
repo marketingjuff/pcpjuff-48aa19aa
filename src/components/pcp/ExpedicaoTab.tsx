@@ -372,6 +372,18 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
                 <tr>
+                  {onFinalizarMany && (
+                    <th className={`${TH_RAW_CLASS} w-8`}>
+                      <Checkbox
+                        checked={dashboardPedidos.length > 0 && dashboardPedidos.every((p) => selectedIds.has(p.id))}
+                        onCheckedChange={(v) => {
+                          if (v) setSelectedIds(new Set(dashboardPedidos.map((p) => p.id)));
+                          else setSelectedIds(new Set());
+                        }}
+                        aria-label="Selecionar todos visíveis"
+                      />
+                    </th>
+                  )}
                   <Th>PENDÊNCIAS</Th>
                   <Th>PEDIDO</Th>
                   <Th>ORÇAMENTO</Th>
