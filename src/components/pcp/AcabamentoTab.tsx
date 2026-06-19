@@ -86,8 +86,8 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
       data_saida_juff: pick("data_saida_juff"),
       observacoes_pedido: pick("observacoes_pedido"),
     };
-    // 3A: ao marcar EMBALADO=Sim, envia automaticamente para Expedição.
-    if (embalado === "Sim" && !selected.expedicao_entrou_em) {
+    // 3A: ao marcar EMBALADO=Sim + Data da Embalagem + Responsável, envia automaticamente para Expedição.
+    if (embalado === "Sim" && !!payload.data_saida_juff && !!payload.responsavel_acabamento && !selected.expedicao_entrou_em) {
       payload.expedicao_entrou_em = new Date().toISOString();
     }
     onSave(payload);
