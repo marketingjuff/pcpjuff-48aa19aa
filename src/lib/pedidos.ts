@@ -79,6 +79,7 @@ export type PedidoInsert = PedidoInsertBase & {
   exp_frete_solicitado?: boolean | null;
   exp_despachado?: boolean | null;
   exp_despachado_em?: string | null;
+  exp_frete_solicitado_em?: string | null;
   exp_observacoes?: string | null;
   data_entrega_proposta?: string | null;
   data_entrega_proposta_em?: string | null;
