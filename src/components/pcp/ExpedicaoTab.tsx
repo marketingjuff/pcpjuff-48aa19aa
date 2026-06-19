@@ -134,7 +134,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   }
 
   // Dashboard
-  const [sortKey, setSortKey] = useState<"saida_juff" | "data_entrega" | null>(null);
+  const [sortKey, setSortKey] = useState<"pedido" | "saida_juff" | "data_entrega" | null>(null);
   const [sortAsc, setSortAsc] = useState(true);
   const [fPed, setFPed] = useState("");
   const [fOrc, setFOrc] = useState("");
