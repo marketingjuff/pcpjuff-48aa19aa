@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState, forwardRef } from "react";
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
-import { useColorSettings, type BotaoKey } from "@/hooks/use-color-settings";
+import { useColorSettings } from "@/hooks/use-color-settings";
 
 
 
