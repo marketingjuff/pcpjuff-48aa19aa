@@ -215,7 +215,7 @@ function AppHomeInner() {
             ))}
           </TabsList>
 
-          {isManager && (
+          {(isManager || canSee("dashboard")) && (
             <TabsContent value="dashboard" forceMount hidden={tab !== "dashboard"}>
               <DashboardTab pedidos={pedidos} loading={isLoading} onEdit={(id) => goToTabWithPedido("dados", id)} onViewProgress={(id) => goToTabWithPedido("arte", id)} />
             </TabsContent>
