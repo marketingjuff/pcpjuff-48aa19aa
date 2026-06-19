@@ -76,8 +76,12 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   function toggleItem(key: ItemKey, val: boolean) {
     setForm((f) => {
       const next: any = { ...f, [key]: val };
+      const hoje = new Date().toISOString().slice(0, 10);
       if (key === "exp_despachado") {
-        next.exp_despachado_em = val ? new Date().toISOString().slice(0, 10) : null;
+        next.exp_despachado_em = val ? (f.exp_despachado_em ?? hoje) : null;
+      }
+      if (key === "exp_frete_solicitado") {
+        next.exp_frete_solicitado_em = val ? (f.exp_frete_solicitado_em ?? hoje) : null;
       }
       return next;
     });
