@@ -437,3 +437,14 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
     </div>
   );
 }
+
+function cmpPedido(a: Pedido, b: Pedido, dir: "asc" | "desc") {
+  const na = Number(a.pedido_olist);
+  const nb = Number(b.pedido_olist);
+  const aBad = !Number.isFinite(na);
+  const bBad = !Number.isFinite(nb);
+  if (aBad && bBad) return 0;
+  if (aBad) return 1;
+  if (bBad) return -1;
+  return dir === "asc" ? na - nb : nb - na;
+}
