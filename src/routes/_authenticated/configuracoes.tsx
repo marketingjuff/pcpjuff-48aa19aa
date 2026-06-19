@@ -38,6 +38,13 @@ import {
 import type { AppRole, AppArea, Feriado } from "@/integrations/supabase/schema-extras";
 import { APP_AREAS_GESTOR, APP_AREAS_OPERADOR, APP_AREA_LABEL } from "@/integrations/supabase/schema-extras";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  useColorSettings as useColorSettingsHook,
+  DEFAULT_COLOR_SETTINGS as DEFAULT_COLOR_SETTINGS_CONST,
+  ETAPAS_CONFIGURAVEIS as ETAPAS_CONFIGURAVEIS_CONST,
+  type ColorSettings as ColorSettingsType,
+  type BotaoKey as BotaoKeyType,
+} from "@/hooks/use-color-settings";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: ConfiguracoesPage,
