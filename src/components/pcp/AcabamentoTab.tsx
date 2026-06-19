@@ -202,21 +202,23 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </div>
 
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
-                <Save className="h-4 w-4 mr-1" />
-                {enviadoParaExpedicao ? "Atualizar Acabamento" : "Atualizar"}
-              </Button>
-              {form.embalado === "Sim" && !enviadoParaExpedicao && (
-                <span className="text-xs text-muted-foreground self-center">
-                  Ao salvar com EMBALADO=Sim, o pedido vai automaticamente para Expedição.
-                </span>
-              )}
-              {enviadoParaExpedicao && (
-                <Badge variant="outline" className="bg-pink-500/15 text-pink-700 border-pink-500/30 dark:text-pink-300 self-center">
-                  Enviado para Expedição
-                </Badge>
-              )}
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
+              <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
+              <div className="flex flex-wrap gap-2 sm:justify-end items-center">
+                {form.embalado === "Sim" && !enviadoParaExpedicao && (
+                  <span className="text-xs text-muted-foreground self-center">
+                    Ao salvar com EMBALADO=Sim, o pedido vai automaticamente para Expedição.
+                  </span>
+                )}
+                {enviadoParaExpedicao && (
+                  <Badge variant="outline" className="bg-pink-500/15 text-pink-700 border-pink-500/30 dark:text-pink-300 self-center">
+                    Enviado para Expedição
+                  </Badge>
+                )}
+                <UpdateButton onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
+                  {enviadoParaExpedicao ? "Atualizar Acabamento" : "Atualizar"}
+                </UpdateButton>
+              </div>
             </div>
           </CardContent>
         </Card>
