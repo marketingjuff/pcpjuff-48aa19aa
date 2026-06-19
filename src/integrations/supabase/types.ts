@@ -89,6 +89,7 @@ export type Database = {
           exp_despachado_em: string | null
           exp_etiqueta: boolean | null
           exp_frete_solicitado: boolean | null
+          exp_frete_solicitado_em: string | null
           exp_observacoes: string | null
           exp_pagamento: boolean | null
           expedicao_entrou_em: string | null
@@ -162,6 +163,7 @@ export type Database = {
           exp_despachado_em?: string | null
           exp_etiqueta?: boolean | null
           exp_frete_solicitado?: boolean | null
+          exp_frete_solicitado_em?: string | null
           exp_observacoes?: string | null
           exp_pagamento?: boolean | null
           expedicao_entrou_em?: string | null
@@ -235,6 +237,7 @@ export type Database = {
           exp_despachado_em?: string | null
           exp_etiqueta?: boolean | null
           exp_frete_solicitado?: boolean | null
+          exp_frete_solicitado_em?: string | null
           exp_observacoes?: string | null
           exp_pagamento?: boolean | null
           expedicao_entrou_em?: string | null
