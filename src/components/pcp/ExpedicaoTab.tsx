@@ -11,6 +11,7 @@ import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag } from "lucid
 import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES, matchEtapaFiltro } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { VoltarDropdown } from "./VoltarDropdown";
+import { DateInputBR } from "@/components/ui/date-input";
 
 import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
