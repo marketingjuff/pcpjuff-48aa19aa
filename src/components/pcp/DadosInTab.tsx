@@ -642,7 +642,9 @@ function DadosInDashboard({
             <TableHeader>
               <TableRow>
                 <TableHead className={TH_CLASS}>ETAPA</TableHead>
-                <TableHead className={TH_CLASS}>PEDIDO</TableHead>
+                <TableHead className={`${TH_CLASS} cursor-pointer select-none`} onClick={() => sort.toggle("pedido")}>
+                  <span className="inline-flex items-center gap-1">PEDIDO<ArrowUpDown className={`h-3 w-3 ${sort.key === "pedido" ? "opacity-100" : "opacity-50"}`} /></span>
+                </TableHead>
                 <TableHead className={TH_CLASS}>ORÇAMENTO</TableHead>
                 <TableHead className={TH_CLASS}>VENDEDOR</TableHead>
                 <TableHead className={`${TH_CLASS} cursor-pointer select-none`} onClick={() => sort.toggle("qtd")}>
