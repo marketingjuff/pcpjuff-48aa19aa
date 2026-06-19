@@ -372,7 +372,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <Textarea rows={2} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
               </Field>
             </div>
-            <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-end">
+            <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start">
               {selected && (
                 <Button type="button" variant="outline" onClick={handleNew}><X className="h-4 w-4 mr-1" />Cancelar edição</Button>
               )}
@@ -471,7 +471,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               )}
             </div>
 
-            <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-end">
+            <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start">
               <UpdateButton type="button" onClick={saveProducao} disabled={saving}>
                 {selected?.id ? "Atualizar" : "Salvar"} Input de Produção
               </UpdateButton>
