@@ -67,5 +67,18 @@ export function useAppListMutations(kind: AppListKind) {
     onSuccess: invalidate,
   });
 
-  return { add, rename, remove };
+  const reorder = useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      // Atualiza a coluna `ordem` para refletir a nova sequência.
+      const updates = orderedIds.map((id, idx) =>
+        (supabase as any).from("app_lists").update({ ordem: (idx + 1) * 10 }).eq("id", id)
+      );
+      const results = await Promise.all(updates);
+      const firstError = results.find((r: any) => r.error)?.error;
+      if (firstError) throw firstError;
+    },
+    onSuccess: invalidate,
+  });
+
+  return { add, rename, remove, reorder };
 }
