@@ -220,8 +220,41 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     baixarLayoutPDF(path);
   }
 
+  const pendenciasDataCount = useMemo(
+    () => pedidos.filter((p) => !!p.data_entrega_proposta && !p.finalizado_em).length,
+    [pedidos],
+  );
+  const [etapaFiltro, setEtapaFiltro] = useState("ativas");
+  const dashboardRef = useRef<HTMLDivElement | null>(null);
+
+  function abrirPendenciasData() {
+    setEtapaFiltro("pendencias_data");
+    setTimeout(() => {
+      dashboardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
   return (
     <div className="space-y-3">
+      {pendenciasDataCount > 0 && (
+        <button
+          type="button"
+          onClick={abrirPendenciasData}
+          className="w-full flex items-center gap-3 p-3 rounded-md border border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/15 text-left transition-colors"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20 text-blue-700 dark:text-blue-300 shrink-0">
+            <CalendarClock className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+              {pendenciasDataCount} solicitação{pendenciasDataCount === 1 ? "" : "ões"} de alteração de data pendente{pendenciasDataCount === 1 ? "" : "s"}
+            </div>
+            <div className="text-xs text-blue-700/80 dark:text-blue-300/80">
+              Clique para filtrar e revisar.
+            </div>
+          </div>
+        </button>
+      )}
       <Card className="border-primary/30">
         <CardContent className="py-2 flex items-center justify-between flex-wrap gap-3">
           <div className="min-w-0">
