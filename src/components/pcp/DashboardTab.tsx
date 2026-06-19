@@ -240,35 +240,6 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
             </div>
           </div>
 
-          {/* Barra de ações em lote */}
-          {onFinalizarMany && (
-            <div className="flex items-center justify-between gap-2 rounded-md border border-dashed bg-muted/30 px-3 py-2">
-              <div className="text-xs text-muted-foreground">
-                {selectedIds.size === 0
-                  ? "Selecione pedidos sem pendências para finalizar em lote."
-                  : `${selectedIds.size} pedido${selectedIds.size > 1 ? "s" : ""} selecionado${selectedIds.size > 1 ? "s" : ""}.`}
-              </div>
-              <div className="flex items-center gap-2">
-                {selectedIds.size > 0 && (
-                  <Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>
-                    Limpar seleção
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  disabled={selectedIds.size === 0}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={() => {
-                    onFinalizarMany(Array.from(selectedIds));
-                    setSelectedIds(new Set());
-                  }}
-                >
-                  <Flag className="h-4 w-4 mr-1" /> Finalizar selecionados
-                </Button>
-              </div>
-            </div>
-          )}
-
           {/* Mobile: cards */}
           <div className="md:hidden rounded-md border divide-y">
             {loading ? (
