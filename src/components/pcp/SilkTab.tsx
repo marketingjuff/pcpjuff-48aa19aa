@@ -222,14 +222,16 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 <ObservacoesOutrosSetores pedido={selected} setorAtual="silk" />
               </div>
 
-              <div className="flex flex-wrap gap-2 pt-3 border-t items-center">
-                <Button onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1" />Atualizar Silk</Button>
-                {selected.layout_url && (
-                  <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
-                    <Download className="h-4 w-4 mr-1" /> Baixar layout
-                  </Button>
-                )}
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 pt-3 border-t">
                 <VoltarDropdown destinos={["arte"]} onVoltar={handleVoltar} />
+                <div className="flex flex-wrap gap-2 sm:justify-end items-center">
+                  {selected.layout_url && (
+                    <Button variant="outline" size="sm" onClick={() => baixarLayout(selected.layout_url!)}>
+                      <Download className="h-4 w-4 mr-1" /> Baixar layout
+                    </Button>
+                  )}
+                  <UpdateButton onClick={handleSave} disabled={saving}>Atualizar Silk</UpdateButton>
+                </div>
               </div>
             </CardContent>
           </Card>
