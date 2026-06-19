@@ -141,6 +141,15 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   const [fUF, setFUF] = useState("");
   const [fForma, setFForma] = useState("todos");
   const [fEtapa, setFEtapa] = useState("expedicao");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  function toggleId(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
 
   const dashboardPedidos = useMemo(() => {
     let list = pedidos.filter((p) => {
