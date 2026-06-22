@@ -4,6 +4,18 @@ import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 // `types.ts` é gerado automaticamente — fazemos o merge aqui até regenerar.
 type PedidoBase = Omit<Tables<"pedidos">, "modelo_estampa" | "status">;
 
+export type RefacaoRetratoEtapa = {
+  etapa: "Arte" | "DTF" | "Silk" | "Acabamento";
+  data: string | null;
+  responsavel: string | null;
+};
+
+export type RefacaoRetrato = {
+  entrada_pedido: string | null;
+  saida_juff: string | null;
+  etapas_concluidas: RefacaoRetratoEtapa[];
+};
+
 export type RefacaoEpisodio = {
   etapa_origem: string;
   etapa_destino: "dados" | "arte" | "dtf" | "silk" | "acabamento";
@@ -12,8 +24,18 @@ export type RefacaoEpisodio = {
   pecas_refazer: number;
   perda_pecas: number;
   perda_adesivos: number;
+  pecas_extras?: number;   // apenas quando destino === "dados"
   motivo: string;
   aberto: boolean;
+  retrato?: RefacaoRetrato;
+};
+
+export const ETAPA_DESTINO_LABEL: Record<RefacaoEpisodio["etapa_destino"], string> = {
+  dados: "Dados In",
+  arte: "Arte",
+  dtf: "DTF",
+  silk: "Silk",
+  acabamento: "Acabamento",
 };
 
 export type Pedido = PedidoBase & {
