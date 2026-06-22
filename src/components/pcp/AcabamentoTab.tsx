@@ -280,7 +280,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             ) : dashboardPedidos.map((p) => (
               <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
                 <Chip label="Tipo" value={p.tipo_estampa} />
-                <Chip label="QTD" value={p.qtd} />
+                <Chip label="QTD" value={<QtdTotal pedido={p} />} />
                 <StatusPecasChip pedido={p} />
                 <Chip label="DTF" value={modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"} />
                 <Chip label="Silk" value={modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"} />

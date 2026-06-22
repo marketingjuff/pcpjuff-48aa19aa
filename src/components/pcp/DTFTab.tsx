@@ -321,7 +321,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
             ) : dashboardPedidos.map((p) => (
               <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
                 <Chip label="Tipo" value={p.tipo_estampa} />
-                <Chip label="QTD" value={p.qtd} />
+                <Chip label="QTD" value={<QtdTotal pedido={p} />} />
                 <StatusPecasChip pedido={p} />
                 <Chip label="Pronto" value={p.dtf_impresso === "Sim" && p.dtf_cortado === "Sim" ? "Sim" : "Não"} />
                 <Chip label="Estampado" value={p.dtf_estampado} />

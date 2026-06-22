@@ -242,7 +242,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
             ) : (
               filtrados.map((p) => (
                 <PedidoMobileCard key={p.id} pedido={p} onClick={() => onEdit(p.id)}>
-                  <Chip label="QTD" value={p.qtd} />
+                  <Chip label="QTD" value={<QtdTotal pedido={p} />} />
                   <Chip label="Vend" value={p.vendedor} />
                   <Chip label="Estampa" value={p.tipo_estampa} />
                   <StatusPecasChip pedido={p} />

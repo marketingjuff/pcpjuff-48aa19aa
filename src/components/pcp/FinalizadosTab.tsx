@@ -231,7 +231,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                   </div>
                   <div className="text-xs text-muted-foreground truncate">{p.orcamento}</div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    <Chip label="QTD" value={p.qtd} />
+                    <Chip label="QTD" value={<QtdTotal pedido={p} />} />
                     <Chip label="Vend" value={p.vendedor} />
                     <Chip label="Resp" value={p.responsavel_acabamento} />
                     <Chip label="Finalizado" value={formatDateBR(p.finalizado_em?.slice(0,10)) || "—"} />

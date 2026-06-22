@@ -626,7 +626,7 @@ function DadosInDashboard({
             <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido.</div>
           ) : rows.map((p) => (
             <PedidoMobileCard key={p.id} pedido={p} active={selectedId === p.id} onClick={() => onSelect(p.id)}>
-              <Chip label="QTD" value={p.qtd} />
+              <Chip label="QTD" value={<QtdTotal pedido={p} />} />
               <Chip label="Vend" value={p.vendedor} />
               <Chip label="Tipo" value={p.tipo_estampa} />
               <Chip label="Pgto" value={p.forma_pagamento} />

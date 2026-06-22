@@ -306,7 +306,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
             ) : dashboardPedidos.map((p) => (
               <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
                 <Chip label="Tipo" value={p.tipo_estampa} />
-                <Chip label="QTD" value={p.qtd} />
+                <Chip label="QTD" value={<QtdTotal pedido={p} />} />
                 <StatusPecasChip pedido={p} />
                 <Chip label="Tela" value={p.tela_gravada} />
                 <Chip label="Silk" value={p.silk_feito} />
