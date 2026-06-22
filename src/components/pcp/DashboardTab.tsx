@@ -29,17 +29,11 @@ interface Props {
 
 type Etapa =
   | "todas" | "ativas" | "finalizados"
-  | "pendencias_arte"
   | "aguardando_entrada" | "aguardando_input"
   | "arte" | "dtf_pronto_silk_arte" | "silk_pronto_dtf_arte"
   | "dtf" | "silk" | "dtf_silk"
   | "acabamento" | "expedicao";
 
-const ETAPA_PENDENCIAS_ARTE = new Set([
-  "Aguardando Arte",
-  "DTF Liberado / Silk na Arte",
-  "Silk Liberado / DTF na Arte",
-]);
 
 function emExpedicao(p: Pedido) {
   return p.embalado === "Sim" && !p.finalizado_em;
