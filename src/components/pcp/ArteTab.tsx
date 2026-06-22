@@ -23,7 +23,7 @@ import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
   StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip,
   useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse,
-  ETAPA_FILTRO_OPCOES, matchEtapaFiltro, UpdateButton,
+  ETAPA_FILTRO_OPCOES_ARTE, matchEtapaFiltro, UpdateButton,
 } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoBadge } from "./RefacaoBadge";
@@ -332,7 +332,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               <Select value={fEtapa} onValueChange={setFEtapa}>
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {ETAPA_FILTRO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                  {ETAPA_FILTRO_OPCOES_ARTE.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { addDiasUteis, diasUteisEntre, diasUteisAteHoje, addDiasCorridos, proximoDiaUtil, isDataUtilISO } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES, matchEtapaFiltro, UpdateButton, EtapaBadgeView } from "./shared";
+import { PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES_DADOS_IN, matchEtapaFiltro, UpdateButton, EtapaBadgeView } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
@@ -576,7 +576,7 @@ function DadosInDashboard({
             <Select value={etapaFiltro} onValueChange={setEtapaFiltro}>
               <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {ETAPA_FILTRO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {ETAPA_FILTRO_OPCOES_DADOS_IN.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

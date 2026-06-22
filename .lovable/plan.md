@@ -1,62 +1,40 @@
-# Etapa 2 — Trava de Edição por Etapa
-
 ## Objetivo
-Operadores só editam o pedido **enquanto a tarefa daquela aba está pendente**. Depois disso a aba vira somente leitura. Admin/gestor sempre editam. Dados In e Expedição não mudam.
 
-## Regra de "editável" por aba
+Ajustar somente o dropdown de filtro **Etapa** em cada aba e a lógica de agregação das opções "Aguardando DTF" e "Aguardando Silk". Nenhuma outra coisa muda (colunas, StatCards, cores, demais filtros).
 
-Centralizar em um helper único `src/components/pcp/edicao-policy.ts`:
+## 1. Lógica de agregação (arquivo `src/components/pcp/shared.tsx`)
 
-```ts
-canEditArte(p)        = !p.finalizado_em && p.tipo_estampa !== "Lisa" && p.status_arte !== "Arte Finalizada"
-canEditDTF(p)         = !p.finalizado_em && tipoIncluiDTF(p.tipo_estampa) && p.dtf_estampado !== "Sim"
-canEditSilk(p)        = !p.finalizado_em && tipoIncluiSilk(p.tipo_estampa) && p.silk_feito !== "Sim"
-canEditAcabamento(p)  = !p.finalizado_em && p.embalado !== "Sim"
-                        && etapaAtualSemAsterisco(p) === "Aguardando Acabamento"
-                        // mesma condição já usada no Dashboard Master
-```
+Em `_ETAPA_MAP`, ampliar os arrays:
 
-Reaberto da Expedição (`reaberto === true` e parado lá) cai naturalmente nos casos acima: `embalado === "Sim"`, então Arte/DTF/Silk/Acab ficam todos travados para operador. Expedição segue com Refazer.
+- `dtf` → `["Aguardando DTF", "Aguardando DTF + Silk", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"]`
+- `silk` → `["Aguardando Silk", "Aguardando DTF + Silk", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"]`
 
-## Permissão final por aba
+As demais entradas do mapa permanecem iguais. Assim o efeito vale automaticamente em Dashboard Master e todas as abas.
 
-```
-editavel = isManager || canEditX(pedido)
-```
+## 2. Opções por aba
 
-`isManager` (admin + gestor) já existe no `_authenticated/index.tsx`. Vamos passar para cada Tab como prop `canManage: boolean` (rename para evitar conflito conceitual com "manager" de tabela).
+Hoje todas as abas iteram sobre a constante única `ETAPA_FILTRO_OPCOES`. Vou criar listas filtradas por aba, exportadas do mesmo `shared.tsx`, mantendo nomes/rótulos/ordem originais:
 
-## Mudanças por arquivo
+- `ETAPA_FILTRO_OPCOES` → permanece intacta (usada pelo Dashboard Master).
+- `ETAPA_FILTRO_OPCOES_DADOS_IN` → tudo menos `pendencias_arte`.
+- `ETAPA_FILTRO_OPCOES_ARTE` → `ativas`, `arte`, `dtf_pronto_silk_arte`, `silk_pronto_dtf_arte`, `dtf`, `silk`, `dtf_silk`.
+- `ETAPA_FILTRO_OPCOES_DTF` → `ativas`, `arte`, `dtf_pronto_silk_arte`, `silk_pronto_dtf_arte`, `dtf`, `dtf_silk`.
+- `ETAPA_FILTRO_OPCOES_SILK` → `ativas`, `arte`, `dtf_pronto_silk_arte`, `silk_pronto_dtf_arte`, `silk`, `dtf_silk`.
+- `ETAPA_FILTRO_OPCOES_ACABAMENTO` → tudo menos `pendencias_arte`.
+- `ETAPA_FILTRO_OPCOES_EXPEDICAO` → `ativas`, `acabamento`, `expedicao`, `finalizados`.
 
-**1. `src/components/pcp/edicao-policy.ts` (novo)**
-- Exporta `canEditArte/DTF/Silk/Acabamento(pedido)`.
-- Exporta `useReadOnly(pedido, aba, canManage): boolean` que devolve `!(canManage || canEditX(p))`.
+Observação: o rótulo de `ativas` (`"Todas (menos finalizados)"`) é o que aparece como "Todas" no requisito; mantenho o texto original conforme a regra "não mudar nomes/rótulos".
 
-**2. `src/routes/_authenticated/index.tsx`**
-- Passar `canManage={isManager}` para `<ArteTab>`, `<DTFTab>`, `<SilkTab>`, `<AcabamentoTab>`.
+## 3. Trocas pontuais nos imports/usos
 
-**3. `ArteTab.tsx`, `DTFTab.tsx`, `SilkTab.tsx`, `AcabamentoTab.tsx`**
-Para cada uma:
-- Aceitar prop `canManage: boolean`.
-- Calcular `const readOnly = !(canManage || canEditX(selected))`.
-- Aplicar `disabled={readOnly || ...condições já existentes}` em **todos** os inputs, selects, checkboxes, textareas, multiselects, date pickers e botões de ação interna do formulário (incluindo o `RefazerDropdown`/`VoltarDropdown` se for ação do operador — confirmar: refazer fica disponível para operador? O documento não menciona; manter Refazer só onde já existe e travar igual aos outros campos, exceto na Expedição).
-- Esconder (não apenas desabilitar) o botão "Atualizar X" quando `readOnly`. Manter o restante da UI (cabeçalho, badges, lista de pedidos, "Baixar layout", observações em modo visual) renderizando normalmente.
-- Observações/anotações: também desabilitadas quando `readOnly` (são parte do formulário da aba).
+Em cada arquivo abaixo, trocar apenas a constante usada no `.map()` do SelectContent do filtro de etapa:
 
-**4. Banner sutil de aviso (opcional, recomendado)**
-Quando `readOnly && !canManage`, exibir uma linha discreta no topo do formulário: *"Esta etapa já foi concluída para este pedido. Visualização somente leitura."* Usa componentes existentes (`<Alert variant="default">` ou texto simples). Sem ícones coloridos novos.
+- `src/components/pcp/DadosInTab.tsx` → `ETAPA_FILTRO_OPCOES_DADOS_IN`
+- `src/components/pcp/ArteTab.tsx` → `ETAPA_FILTRO_OPCOES_ARTE`
+- `src/components/pcp/DTFTab.tsx` → `ETAPA_FILTRO_OPCOES_DTF`
+- `src/components/pcp/SilkTab.tsx` → `ETAPA_FILTRO_OPCOES_SILK`
+- `src/components/pcp/AcabamentoTab.tsx` → `ETAPA_FILTRO_OPCOES_ACABAMENTO`
+- `src/components/pcp/ExpedicaoTab.tsx` → `ETAPA_FILTRO_OPCOES_EXPEDICAO`
+- `src/components/pcp/DashboardTab.tsx` → **sem alteração** (continua usando a lista completa ou hardcoded existente).
 
-## O que NÃO muda
-- Dados In, Expedição, Finalizados, Retrabalho, Dashboard.
-- Lógica de negócio, mutations, cálculo de etapa, refação.
-- Estilos/layout dos formulários.
-- Visibilidade das abas no menu (já controlada por `canSee`).
-
-## Validação
-1. Operador Arte abre pedido com `status_arte = "Arte Finalizada"` → campos desabilitados, sem botão Atualizar.
-2. Operador DTF abre pedido com `dtf_estampado = "Sim"` → idem.
-3. Mesmo pedido aberto por gestor → tudo editável.
-4. Pedido reaberto (`embalado = "Sim"`, `reaberto = true`) → Arte/DTF/Silk/Acab travados para operador; Expedição funciona normal.
-5. Pedido Lisa → Arte travada para operador (não se aplica).
-
-Aguardo aprovação para implementar.
+Nada mais é tocado: lógica de `matchEtapaFiltro`, filtros adjacentes, colunas, StatCards e paleta de cores ficam inalterados.
