@@ -23,6 +23,8 @@ import { useFeriados } from "@/hooks/use-feriados";
 
 import { formatDateBR } from "@/lib/format";
 
+import { isReadOnly } from "./edicao-policy";
+
 interface Props {
   pedidos: Pedido[];
   selected: Pedido | null;
@@ -31,9 +33,11 @@ interface Props {
   saving: boolean;
   active?: boolean;
   onNavigate?: (tab: string) => void;
+  canManage?: boolean;
 }
 
-export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate }: Props) {
+export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate, canManage = false }: Props) {
+  const readOnly = isReadOnly("dtf", selected, canManage);
 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
@@ -86,6 +90,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   }
   function handleSave() {
     if (!selected) return;
+    if (readOnly) return;
     const pick = <K extends keyof Pedido>(k: K) =>
       (form[k] !== undefined ? form[k] : (selected as any)[k]) ?? null;
     onSave({
@@ -196,7 +201,13 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 <ReadOnlyField label="Nº Batidas DTF" value={selected.n_batidas_dtf ?? "—"} />
               </div>
 
+              {readOnly && (
+                <div className="text-xs text-muted-foreground bg-muted/50 border rounded-md px-3 py-2">
+                  Esta etapa já foi concluída para este pedido. Visualização somente leitura.
+                </div>
+              )}
               {/* Edição */}
+              <fieldset disabled={readOnly} className="contents disabled:opacity-60">
               <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t">
                 <FormField label="DTF Estampado?">
                   <Select value={form.dtf_estampado ?? ""} onValueChange={setEstampado}>
@@ -250,10 +261,11 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                       <Download className="h-4 w-4 mr-1" /> Baixar layout
                     </Button>
                   )}
-                  <UpdateButton onClick={handleSave} disabled={saving}>Atualizar DTF</UpdateButton>
+                  {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Atualizar DTF</UpdateButton>}
                 </div>
-                <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />
+                {!readOnly && <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />}
               </div>
+              </fieldset>
             </CardContent>
           </Card>
         )

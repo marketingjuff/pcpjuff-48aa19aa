@@ -23,6 +23,8 @@ import { useFeriados } from "@/hooks/use-feriados";
 
 import { formatDateBR } from "@/lib/format";
 
+import { isReadOnly } from "./edicao-policy";
+
 interface Props {
   pedidos: Pedido[];
   selected: Pedido | null;
@@ -31,9 +33,11 @@ interface Props {
   saving: boolean;
   active?: boolean;
   onNavigate?: (tab: string) => void;
+  canManage?: boolean;
 }
 
-export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate }: Props) {
+export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate, canManage = false }: Props) {
+  const readOnly = isReadOnly("silk", selected, canManage);
 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
@@ -77,6 +81,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   }
   function handleSave() {
     if (!selected) return;
+    if (readOnly) return;
     const pick = <K extends keyof Pedido>(k: K) =>
       (form[k] !== undefined ? form[k] : (selected as any)[k]) ?? null;
     onSave({
@@ -183,6 +188,12 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 <ReadOnlyField label="Nº Batidas Silk" value={selected.n_batidas_silk ?? "—"} />
               </div>
 
+              {readOnly && (
+                <div className="text-xs text-muted-foreground bg-muted/50 border rounded-md px-3 py-2">
+                  Esta etapa já foi concluída para este pedido. Visualização somente leitura.
+                </div>
+              )}
+              <fieldset disabled={readOnly} className="contents disabled:opacity-60">
               {/* A10 — Execuções em duas linhas */}
               <div className="pt-3 border-t space-y-2">
                 {/* Linha 1: Tela gravada / Data / Quem revelou */}
@@ -238,10 +249,11 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       <Download className="h-4 w-4 mr-1" /> Baixar layout
                     </Button>
                   )}
-                  <UpdateButton onClick={handleSave} disabled={saving}>Atualizar Silk</UpdateButton>
+                  {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Atualizar Silk</UpdateButton>}
                 </div>
-                <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />
+                {!readOnly && <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />}
               </div>
+              </fieldset>
             </CardContent>
           </Card>
         )

@@ -27,6 +27,7 @@ import {
 } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoBadge } from "./RefacaoBadge";
+import { isReadOnly } from "./edicao-policy";
 
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
@@ -40,9 +41,11 @@ interface Props {
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
   saving: boolean;
   active?: boolean;
+  canManage?: boolean;
 }
 
-export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = true }: Props) {
+export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = true, canManage = false }: Props) {
+  const readOnly = isReadOnly("arte", selected, canManage);
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { feriados } = useFeriados();
@@ -87,6 +90,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
   function handleSave() {
     if (!selected) return;
+    if (readOnly) return;
     // Validações: Sim + sem data é inválido
     if (form.dtf_impresso === "Sim" && !form.dtf_executado) {
       toast.error('DTF Impresso = "Sim" exige a data de impressão.');
@@ -202,7 +206,14 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             </div>
 
             {/* Parte de baixo — editável; sempre visível */}
-            <div className="space-y-4 pt-3 border-t">
+            {readOnly && (
+              <div className="text-xs text-muted-foreground bg-muted/50 border rounded-md px-3 py-2">
+                Esta etapa já foi concluída para este pedido. Visualização somente leitura.
+              </div>
+            )}
+            <fieldset disabled={readOnly} className="space-y-4 pt-3 border-t disabled:opacity-60">
+            <div className="space-y-4">
+            {/* original: space-y-4 pt-3 border-t */}
                 {/* Seção DTF */}
                 {showDTF && (
                   <div className="space-y-2">
@@ -297,8 +308,11 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   </div>
                 </div>
 
-                <div className="flex justify-start"><UpdateButton onClick={handleSave} disabled={saving}>Atualizar Arte</UpdateButton></div>
+                {!readOnly && (
+                  <div className="flex justify-start"><UpdateButton onClick={handleSave} disabled={saving}>Atualizar Arte</UpdateButton></div>
+                )}
               </div>
+              </fieldset>
 
 
           </CardContent>
