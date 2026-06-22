@@ -23,7 +23,7 @@ import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
   StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip,
   useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse,
-  ETAPA_FILTRO_OPCOES_ARTE, matchEtapaFiltro, UpdateButton,
+  ETAPA_FILTRO_OPCOES_ARTE, matchEtapaFiltro, UpdateButton, OrcamentoTitle,
 } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoBadge } from "./RefacaoBadge";
