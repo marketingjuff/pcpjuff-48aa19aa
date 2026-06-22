@@ -161,7 +161,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           case "entrada": return cmpDate(a.entrada_pedido, b.entrada_pedido, sort.dir);
           case "limite": return cmpDate(a.arte_data, b.arte_data, sort.dir);
           case "inicio": return cmpDate(a.inicio_estamparia, b.inicio_estamparia, sort.dir);
-          case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
+          case "iniAcab": return cmpDate(a.inicio_acabamento, b.inicio_acabamento, sort.dir);
         }
         return 0;
       });
