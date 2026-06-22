@@ -23,6 +23,8 @@ import { useFeriados } from "@/hooks/use-feriados";
 
 import { formatDateBR } from "@/lib/format";
 
+import { isReadOnly } from "./edicao-policy";
+
 interface Props {
   pedidos: Pedido[];
   selected: Pedido | null;
@@ -31,9 +33,11 @@ interface Props {
   saving: boolean;
   active?: boolean;
   onNavigate?: (tab: string) => void;
+  canManage?: boolean;
 }
 
-export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate }: Props) {
+export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate, canManage = false }: Props) {
+  const readOnly = isReadOnly("silk", selected, canManage);
 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
