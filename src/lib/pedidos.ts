@@ -218,15 +218,7 @@ export function calcularEtapaNatural(p: Pedido): {
   return calcularEtapaInterno(p, true);
 }
 
-const DESTINO_TO_ETAPA: Record<RefacaoEpisodio["etapa_destino"], { etapa: string; cor: "blue" | "yellow" | "gray" }> = {
-  dados: { etapa: "Aguardando Dados In", cor: "gray" },
-  arte: { etapa: "Aguardando Arte", cor: "blue" },
-  dtf: { etapa: "Aguardando DTF", cor: "yellow" },
-  silk: { etapa: "Aguardando Silk", cor: "yellow" },
-  acabamento: { etapa: "Aguardando Acabamento", cor: "blue" },
-};
-
-function calcularEtapaInterno(p: Pedido, ignorarEpisodioAberto: boolean): {
+function calcularEtapaInterno(p: Pedido, _ignorarEpisodioAberto: boolean): {
   etapa: string;
   percentual: number;
   cor: "green" | "yellow" | "red" | "gray" | "blue";
@@ -254,13 +246,7 @@ function calcularEtapaInterno(p: Pedido, ignorarEpisodioAberto: boolean): {
   let etapa = "Aguardando entrada";
   let cor: "green" | "yellow" | "red" | "gray" | "blue" = "gray";
 
-  // Sobreposição: enquanto houver episódio de refação aberto, o destino manda.
-  const aberto = ignorarEpisodioAberto ? null : episodioAberto(p);
-  if (!p.finalizado_em && aberto) {
-    const mapped = DESTINO_TO_ETAPA[aberto.etapa_destino];
-    etapa = mapped.etapa;
-    cor = mapped.cor;
-  } else if (p.finalizado_em) {
+  if (p.finalizado_em) {
     etapa = "Finalizado"; cor = "green";
   } else if (acabamentoOk) {
     etapa = "Aguardando Expedição"; cor = "blue";
@@ -291,6 +277,7 @@ function calcularEtapaInterno(p: Pedido, ignorarEpisodioAberto: boolean): {
   if (refs.length > 0 && etapa !== "Finalizado") etapa = `${etapa}${"*".repeat(refs.length)}`;
   return { etapa, percentual, cor };
 }
+
 
 /** Episódio em aberto (se houver). */
 export function episodioAberto(p: Pedido): RefacaoEpisodio | null {
