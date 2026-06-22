@@ -261,10 +261,11 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                       <Download className="h-4 w-4 mr-1" /> Baixar layout
                     </Button>
                   )}
-                  <UpdateButton onClick={handleSave} disabled={saving}>Atualizar DTF</UpdateButton>
+                  {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Atualizar DTF</UpdateButton>}
                 </div>
-                <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />
+                {!readOnly && <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />}
               </div>
+              </fieldset>
             </CardContent>
           </Card>
         )
