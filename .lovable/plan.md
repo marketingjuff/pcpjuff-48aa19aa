@@ -1,22 +1,18 @@
-## Objetivo
+Reutilizar o bloco de título grande de Orçamento Comercial que hoje só existe na aba DadosIn e aplicá-lo nas abas Arte, DTF, Silk, Acabamento e Expedição.
 
-Remover a opção **"Pendências de Arte"** de todos os filtros de Etapa e fazer com que **"Aguardando Arte"** passe a incluir tudo que era pendência de arte (Aguardando Arte + DTF Liberado / Silk na Arte + Silk Liberado / DTF na Arte).
+Alterações propostas:
 
-## Mudanças
+1. Criar componente reutilizável `OrcamentoTitle` em `src/components/pcp/shared.tsx` que renderize:
+   - Label "Orçamento Comercial" em texto pequeno/uppercase muted
+   - Valor do orçamento em texto grande/bold (igual ao padrão da DadosInTab)
 
-### `src/components/pcp/shared.tsx`
-- Em `ETAPA_FILTRO_OPCOES`, remover a entrada `{ value: "pendencias_arte", label: "Pendências de Arte" }`. Isso já faz a opção sumir do Dashboard Master e dos filtros derivados.
-- Em `_ETAPA_MAP`, ampliar `arte` para `["Aguardando Arte", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"]`.
-- Remover o `Set` `_ETAPA_PENDENCIAS_ARTE` e o ramo `if (value === "pendencias_arte") ...` em `matchEtapaFiltro` (não há mais opção que o use).
-- Os filtros `ETAPA_FILTRO_OPCOES_DADOS_IN` e `ETAPA_FILTRO_OPCOES_ACABAMENTO` continuam derivados de `ETAPA_FILTRO_OPCOES` — o `.filter(o => o.value !== "pendencias_arte")` vira no-op mas fica para legibilidade (sem mudança de comportamento).
+2. Inserir esse título no topo do card de cada aba quando um pedido estiver selecionado:
+   - `src/components/pcp/ArteTab.tsx`
+   - `src/components/pcp/DTFTab.tsx`
+   - `src/components/pcp/SilkTab.tsx`
+   - `src/components/pcp/AcabamentoTab.tsx`
+   - `src/components/pcp/ExpedicaoTab.tsx`
 
-### `src/components/pcp/DashboardTab.tsx`
-O dashboard tem sua própria implementação `pedidoEmEtapa`:
-- Remover `"pendencias_arte"` do tipo `Etapa`.
-- Remover o `Set` `ETAPA_PENDENCIAS_ARTE` e o ramo `if (e === "pendencias_arte") ...`.
-- Atualizar o map: `arte: ["Aguardando Arte", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"]`.
-- Remover o `<SelectItem value="pendencias_arte">Pendências de Arte</SelectItem>`.
+3. Ajustar o `CardHeader` de cada aba para não competir com o novo título (remover "Arte — {pedido}" etc. e deixar o título grande como destaque principal, mantendo os badges de status/refação ao lado).
 
-## Não muda
-
-Nenhum outro filtro, coluna, StatCard, banner ou cor é alterado. O comportamento das opções "Aguardando DTF" e "Aguardando Silk" (que já incluem os estágios intermediários) permanece como está.
+Resultado: o orçamento grande aparece destacado no topo de todas as abas operacionais, facilitando a leitura.
