@@ -178,7 +178,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ativas">Todas (menos finalizados)</SelectItem>
-                  <SelectItem value="pendencias_arte">Pendências de Arte</SelectItem>
+                  
                   <SelectItem value="aguardando_entrada">Aguardando entrada</SelectItem>
                   <SelectItem value="aguardando_input">Aguardando input de produção</SelectItem>
                   <SelectItem value="arte">Aguardando Arte</SelectItem>
