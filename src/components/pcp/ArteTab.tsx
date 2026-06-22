@@ -90,6 +90,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
   function handleSave() {
     if (!selected) return;
+    if (readOnly) return;
     // Validações: Sim + sem data é inválido
     if (form.dtf_impresso === "Sim" && !form.dtf_executado) {
       toast.error('DTF Impresso = "Sim" exige a data de impressão.');
