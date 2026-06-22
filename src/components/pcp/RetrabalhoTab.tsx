@@ -70,7 +70,7 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
   }
 
   function updateEpisodio(pedido: Pedido, idx: number, patch: Partial<RefacaoEpisodio>) {
-    const refs = [...(pedido.refacoes ?? [])];
+    const refs: RefacaoEpisodio[] = [...((pedido.refacoes ?? []) as RefacaoEpisodio[])];
     refs[idx] = { ...refs[idx], ...patch };
     onSave({ id: pedido.id, refacoes: refs } as any);
   }
