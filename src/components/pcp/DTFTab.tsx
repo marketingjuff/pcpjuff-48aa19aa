@@ -90,6 +90,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   }
   function handleSave() {
     if (!selected) return;
+    if (readOnly) return;
     const pick = <K extends keyof Pedido>(k: K) =>
       (form[k] !== undefined ? form[k] : (selected as any)[k]) ?? null;
     onSave({
