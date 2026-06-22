@@ -37,7 +37,7 @@ type Etapa =
 
 const ETAPA_PENDENCIAS_ARTE = new Set([
   "Aguardando Arte",
-  "DTF Pronto / Silk na Arte",
+  "DTF Liberado / Silk na Arte",
   "Silk Pronto / DTF na Arte",
 ]);
 
@@ -68,7 +68,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       aguardando_entrada: ["Aguardando entrada"],
       aguardando_input: ["Aguardando input de produção"],
       arte: ["Aguardando Arte"],
-      dtf_pronto_silk_arte: ["DTF Pronto / Silk na Arte"],
+      dtf_pronto_silk_arte: ["DTF Liberado / Silk na Arte"],
       silk_pronto_dtf_arte: ["Silk Pronto / DTF na Arte"],
       dtf: ["Aguardando DTF"],
       silk: ["Aguardando Silk"],
@@ -189,7 +189,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                   <SelectItem value="aguardando_entrada">Aguardando entrada</SelectItem>
                   <SelectItem value="aguardando_input">Aguardando input de produção</SelectItem>
                   <SelectItem value="arte">Aguardando Arte</SelectItem>
-                  <SelectItem value="dtf_pronto_silk_arte">DTF Pronto / Silk na Arte</SelectItem>
+                  <SelectItem value="dtf_pronto_silk_arte">DTF Liberado / Silk na Arte</SelectItem>
                   <SelectItem value="silk_pronto_dtf_arte">Silk Pronto / DTF na Arte</SelectItem>
                   <SelectItem value="dtf">Aguardando DTF</SelectItem>
                   <SelectItem value="silk">Aguardando Silk</SelectItem>
