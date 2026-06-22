@@ -222,7 +222,7 @@ export function calcularEtapaAtual(p: Pedido): {
   } else if (!arteOk) {
     // Para DTF+Silk: se um lado já está pronto e o outro ainda na arte, mostrar etapa mista
     if (tipo === "DTF+Silk" && dtfArteOk && !silkArteOk) {
-      etapa = "DTF Pronto / Silk na Arte"; cor = "blue";
+      etapa = "DTF Liberado / Silk na Arte"; cor = "blue";
     } else if (tipo === "DTF+Silk" && silkArteOk && !dtfArteOk) {
       etapa = "Silk Pronto / DTF na Arte"; cor = "blue";
     } else {
