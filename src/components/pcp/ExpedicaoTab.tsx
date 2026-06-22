@@ -318,6 +318,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
             </div>
           </CardContent>
         </Card>
+        </>
       ) : (
         <EmptyState>Selecione um pedido no dashboard abaixo.</EmptyState>
       )}
