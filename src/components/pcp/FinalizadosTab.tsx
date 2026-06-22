@@ -17,7 +17,7 @@ import {
 import { RotateCcw, Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
-import { PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, ReadOnlyField } from "./shared";
+import { PedidoMobileCard, Chip, QtdTotal, useSort, cmpDate, cmpNum, SortableTh, Th, ReadOnlyField } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 
 
