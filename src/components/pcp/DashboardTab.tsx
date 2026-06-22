@@ -57,15 +57,14 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
     if (!pedidoAtivoNasAreas(p)) return false;
     if (e === "todas" || e === "ativas") return true;
     const etapaAtual = calcularEtapaAtual(p).etapa.replace(/\*$/, "");
-    if (e === "pendencias_arte") return ETAPA_PENDENCIAS_ARTE.has(etapaAtual);
-    const map: Record<Exclude<Etapa, "todas"|"ativas"|"finalizados"|"pendencias_arte">, string[]> = {
+    const map: Record<Exclude<Etapa, "todas"|"ativas"|"finalizados">, string[]> = {
       aguardando_entrada: ["Aguardando entrada"],
       aguardando_input: ["Aguardando input de produção"],
-      arte: ["Aguardando Arte"],
+      arte: ["Aguardando Arte", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
       dtf_pronto_silk_arte: ["DTF Liberado / Silk na Arte"],
       silk_pronto_dtf_arte: ["Silk Liberado / DTF na Arte"],
-      dtf: ["Aguardando DTF"],
-      silk: ["Aguardando Silk"],
+      dtf: ["Aguardando DTF", "Aguardando DTF + Silk", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
+      silk: ["Aguardando Silk", "Aguardando DTF + Silk", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
       dtf_silk: ["Aguardando DTF + Silk"],
       acabamento: ["Aguardando Acabamento"],
       expedicao: ["Aguardando Expedição"],
