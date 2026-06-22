@@ -438,7 +438,6 @@ export function EmptyState({ children }: { children: React.ReactNode }) {
 
 export const ETAPA_FILTRO_OPCOES: { value: string; label: string }[] = [
   { value: "ativas", label: "Todas (menos finalizados)" },
-  { value: "pendencias_arte", label: "Pendências de Arte" },
   { value: "pendencias_data", label: "Pendências de Data" },
   { value: "aguardando_entrada", label: "Aguardando entrada" },
   { value: "aguardando_input", label: "Aguardando input de produção" },
@@ -453,16 +452,10 @@ export const ETAPA_FILTRO_OPCOES: { value: string; label: string }[] = [
   { value: "finalizados", label: "Finalizados" },
 ];
 
-const _ETAPA_PENDENCIAS_ARTE = new Set([
-  "Aguardando Arte",
-  "DTF Liberado / Silk na Arte",
-  "Silk Liberado / DTF na Arte",
-]);
-
 const _ETAPA_MAP: Record<string, string[]> = {
   aguardando_entrada: ["Aguardando entrada"],
   aguardando_input: ["Aguardando input de produção"],
-  arte: ["Aguardando Arte"],
+  arte: ["Aguardando Arte", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
   dtf_pronto_silk_arte: ["DTF Liberado / Silk na Arte"],
   silk_pronto_dtf_arte: ["Silk Liberado / DTF na Arte"],
   dtf: ["Aguardando DTF", "Aguardando DTF + Silk", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
@@ -526,6 +519,6 @@ export function matchEtapaFiltro(p: Pedido, value: string): boolean {
   if (value === "pendencias_data") return !!p.data_entrega_proposta;
   if (value === "ativas" || value === "todas") return true;
   const etapaAtual = calcularEtapaAtual(p).etapa.replace(/\*$/, "");
-  if (value === "pendencias_arte") return _ETAPA_PENDENCIAS_ARTE.has(etapaAtual);
+  
   return _ETAPA_MAP[value]?.includes(etapaAtual) ?? false;
 }

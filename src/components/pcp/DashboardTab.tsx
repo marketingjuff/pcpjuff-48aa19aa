@@ -29,17 +29,11 @@ interface Props {
 
 type Etapa =
   | "todas" | "ativas" | "finalizados"
-  | "pendencias_arte"
   | "aguardando_entrada" | "aguardando_input"
   | "arte" | "dtf_pronto_silk_arte" | "silk_pronto_dtf_arte"
   | "dtf" | "silk" | "dtf_silk"
   | "acabamento" | "expedicao";
 
-const ETAPA_PENDENCIAS_ARTE = new Set([
-  "Aguardando Arte",
-  "DTF Liberado / Silk na Arte",
-  "Silk Liberado / DTF na Arte",
-]);
 
 function emExpedicao(p: Pedido) {
   return p.embalado === "Sim" && !p.finalizado_em;
@@ -63,15 +57,14 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
     if (!pedidoAtivoNasAreas(p)) return false;
     if (e === "todas" || e === "ativas") return true;
     const etapaAtual = calcularEtapaAtual(p).etapa.replace(/\*$/, "");
-    if (e === "pendencias_arte") return ETAPA_PENDENCIAS_ARTE.has(etapaAtual);
-    const map: Record<Exclude<Etapa, "todas"|"ativas"|"finalizados"|"pendencias_arte">, string[]> = {
+    const map: Record<Exclude<Etapa, "todas"|"ativas"|"finalizados">, string[]> = {
       aguardando_entrada: ["Aguardando entrada"],
       aguardando_input: ["Aguardando input de produção"],
-      arte: ["Aguardando Arte"],
+      arte: ["Aguardando Arte", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
       dtf_pronto_silk_arte: ["DTF Liberado / Silk na Arte"],
       silk_pronto_dtf_arte: ["Silk Liberado / DTF na Arte"],
-      dtf: ["Aguardando DTF"],
-      silk: ["Aguardando Silk"],
+      dtf: ["Aguardando DTF", "Aguardando DTF + Silk", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
+      silk: ["Aguardando Silk", "Aguardando DTF + Silk", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
       dtf_silk: ["Aguardando DTF + Silk"],
       acabamento: ["Aguardando Acabamento"],
       expedicao: ["Aguardando Expedição"],
@@ -185,7 +178,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ativas">Todas (menos finalizados)</SelectItem>
-                  <SelectItem value="pendencias_arte">Pendências de Arte</SelectItem>
+                  
                   <SelectItem value="aguardando_entrada">Aguardando entrada</SelectItem>
                   <SelectItem value="aguardando_input">Aguardando input de produção</SelectItem>
                   <SelectItem value="arte">Aguardando Arte</SelectItem>
