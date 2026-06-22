@@ -184,6 +184,12 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 <div className="text-sm text-muted-foreground">Sem layout</div>
               )}
             </div>
+            {readOnly && (
+              <div className="text-xs text-muted-foreground bg-muted/50 border rounded-md px-3 py-2">
+                Esta etapa já foi concluída para este pedido. Visualização somente leitura.
+              </div>
+            )}
+            <fieldset disabled={readOnly} className="contents disabled:opacity-60">
             <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t">
               <FormField label="EMBALADO?">
                 <Select value={form.embalado ?? ""} onValueChange={setEmbalado}>
@@ -223,12 +229,15 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                     Enviado para Expedição
                   </Badge>
                 )}
-                <UpdateButton onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
-                  {enviadoParaExpedicao ? "Atualizar Acabamento" : "Atualizar"}
-                </UpdateButton>
+                {!readOnly && (
+                  <UpdateButton onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
+                    {enviadoParaExpedicao ? "Atualizar Acabamento" : "Atualizar"}
+                  </UpdateButton>
+                )}
               </div>
-              <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
+              {!readOnly && <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />}
             </div>
+            </fieldset>
           </CardContent>
         </Card>
       ) : (
