@@ -307,7 +307,7 @@ function EpisodioCard({
         <div className="text-sm whitespace-pre-wrap">{episodio.motivo || "—"}</div>
       </div>
 
-      {episodio.retrato && <RetratoView retrato={episodio.retrato} />}
+      {episodio.retrato && <RetratoView retrato={episodio.retrato} profilesMap={profilesMap} />}
 
       <div className="flex justify-between gap-2 pt-1">
         <Button variant="outline" size="sm" onClick={onDelete}>
