@@ -305,17 +305,17 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                 pedido={selected}
                 destinos={["dados", "arte", "dtf", "silk", "acabamento"]}
                 onVoltar={async (destino, payload) => {
-                  const { montarRefacoesAposRefazer } = await import("./refacao-helpers");
+                  const { montarRefacoesAposRefazer, camposAlimpar } = await import("./refacao-helpers");
                   const { refacoes, observacoes_pedido } = await montarRefacoesAposRefazer(selected, destino, payload);
                   onSave({
                     id: selected.id,
                     refacoes,
-                    expedicao_entrou_em: null,
-                    embalado: null,
+                    ...camposAlimpar(selected, destino),
                     ...(observacoes_pedido !== undefined ? { observacoes_pedido } : {}),
                   } as any);
                   if (onNavigate) onNavigate(destino);
                 }}
+
               />
             </div>
           </CardContent>

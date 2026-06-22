@@ -109,19 +109,17 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
     payload: import("./RefacaoDialog").RefacaoFormPayload | null,
   ) {
     if (!selected) return;
-    const { montarRefacoesAposRefazer } = await import("./refacao-helpers");
+    const { montarRefacoesAposRefazer, camposAlimpar } = await import("./refacao-helpers");
     const { refacoes, observacoes_pedido } = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
       refacoes,
-      dtf_estampado: null,
-      dtf_data_executada: null,
-      quem_bateu_dtf: null,
-      dtf_pessoas_qtd: null,
+      ...camposAlimpar(selected, destino),
       ...(observacoes_pedido !== undefined ? { observacoes_pedido } : {}),
     } as any);
     if (onNavigate) onNavigate(destino);
   }
+
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");

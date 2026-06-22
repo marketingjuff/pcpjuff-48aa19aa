@@ -101,18 +101,17 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
     payload: import("./RefacaoDialog").RefacaoFormPayload | null,
   ) {
     if (!selected) return;
-    const { montarRefacoesAposRefazer } = await import("./refacao-helpers");
+    const { montarRefacoesAposRefazer, camposAlimpar } = await import("./refacao-helpers");
     const { refacoes, observacoes_pedido } = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
       refacoes,
-      silk_feito: null,
-      silk_data_executada: null,
-      quem_bateu_silk: null,
+      ...camposAlimpar(selected, destino),
       ...(observacoes_pedido !== undefined ? { observacoes_pedido } : {}),
     } as any);
     if (onNavigate) onNavigate(destino);
   }
+
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
