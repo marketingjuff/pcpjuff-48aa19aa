@@ -12,6 +12,7 @@ export type RefacaoFormPayload = {
   pecas_refazer: number;
   perda_pecas: number;
   perda_adesivos: number;
+  pecas_extras?: number;
   motivo: string;
 };
 
@@ -19,17 +20,20 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   destinoLabel: string;
+  destino: "dados" | "arte" | "dtf" | "silk" | "acabamento";
   tipoEstampa: string | null | undefined;
   onConfirm: (payload: RefacaoFormPayload) => void;
 }
 
-export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, onConfirm }: Props) {
+export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoEstampa, onConfirm }: Props) {
   const mostraAdesivos = tipoIncluiDTF(tipoEstampa);
+  const mostraExtras = destino === "dados";
   const [pecasRefazer, setPecasRefazer] = useState<string>("");
   const [houvePerdaPecas, setHouvePerdaPecas] = useState<"sim" | "nao" | "">("");
   const [perdaPecas, setPerdaPecas] = useState<string>("");
   const [houvePerdaAdesivos, setHouvePerdaAdesivos] = useState<"sim" | "nao" | "">("");
   const [perdaAdesivos, setPerdaAdesivos] = useState<string>("");
+  const [pecasExtras, setPecasExtras] = useState<string>("");
   const [motivo, setMotivo] = useState<string>("");
   const [err, setErr] = useState<string>("");
 
@@ -40,6 +44,7 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
       setPerdaPecas("");
       setHouvePerdaAdesivos("");
       setPerdaAdesivos("");
+      setPecasExtras("");
       setMotivo("");
       setErr("");
     }
