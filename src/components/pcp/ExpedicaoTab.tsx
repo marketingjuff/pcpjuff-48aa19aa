@@ -294,7 +294,8 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                 </UpdateButton>
                 <FinalizarButton
                   onClick={handleFinalizar}
-                  disabled={saving}
+                  disabled={saving || !todosCompletos(selected, form)}
+                  title={!todosCompletos(selected, form) ? "Finalize todas as pendências da expedição antes de concluir o pedido" : undefined}
                   className="w-full sm:w-auto"
                 >
                   Finalizar Pedido

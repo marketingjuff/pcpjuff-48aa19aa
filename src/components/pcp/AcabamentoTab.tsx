@@ -188,7 +188,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             </div>
             {readOnly && (
               <div className="text-xs text-muted-foreground bg-muted/50 border rounded-md px-3 py-2">
-                Esta etapa já foi concluída para este pedido. Visualização somente leitura.
+                Esta etapa não está disponível para edição agora (ainda não foi liberada ou já foi concluída). Visualização somente leitura.
               </div>
             )}
             <fieldset disabled={readOnly} className="contents disabled:opacity-60">

@@ -49,7 +49,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { feriados } = useFeriados();
-  const sort = useSort<"pedido"|"qtd"|"entrada"|"limite"|"saida"|"inicio">();
+  const sort = useSort<"pedido"|"qtd"|"entrada"|"limite"|"iniAcab"|"inicio">();
   const { names: statusArteCustom } = useAppList("status_arte");
   const { names: opCorteDTF } = useAppList("corte_dtf");
 
@@ -161,7 +161,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           case "entrada": return cmpDate(a.entrada_pedido, b.entrada_pedido, sort.dir);
           case "limite": return cmpDate(a.arte_data, b.arte_data, sort.dir);
           case "inicio": return cmpDate(a.inicio_estamparia, b.inicio_estamparia, sort.dir);
-          case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
+          case "iniAcab": return cmpDate(a.inicio_acabamento, b.inicio_acabamento, sort.dir);
         }
         return 0;
       });
@@ -187,7 +187,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               <ReadOnlyField label="Vetorização" value={selected.necessita_vetorizacao ? "Sim" : "Não"} />
               <ReadOnlyField label="Data Limite da Arte" value={formatDateBR(selected.arte_data)} />
               <ReadOnlyField label="Início Est." value={formatDateBR(selected.inicio_estamparia)} />
-              <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
+              <ReadOnlyField label="Início de Acabamento" value={formatDateBR(selected.inicio_acabamento)} />
               {showDTF && <ReadOnlyField label="STATUS DTF" value={dtfFinalizadoLabel(selected)} />}
               {showSilk && <ReadOnlyField label="STATUS FOTOLITO" value={fotolitoFinalizadoLabel(selected)} />}
             </div>
@@ -210,7 +210,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             {/* Parte de baixo — editável; sempre visível */}
             {readOnly && (
               <div className="text-xs text-muted-foreground bg-muted/50 border rounded-md px-3 py-2">
-                Esta etapa já foi concluída para este pedido. Visualização somente leitura.
+                Esta etapa não está disponível para edição agora (ainda não foi liberada ou já foi concluída). Visualização somente leitura.
               </div>
             )}
             <fieldset disabled={readOnly} className="space-y-4 pt-3 border-t disabled:opacity-60">
@@ -424,7 +424,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   <Th>ANOTAÇÕES</Th>
                   <SortableTh label="DATA LIMITE" active={sort.key === "limite"} onClick={() => sort.toggle("limite")} />
                   <SortableTh label="INÍCIO EST." active={sort.key === "inicio"} onClick={() => sort.toggle("inicio")} />
-                  <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
+                  <SortableTh label="INÍCIO ACAB." active={sort.key === "iniAcab"} onClick={() => sort.toggle("iniAcab")} />
                 </tr>
               </thead>
 
@@ -449,7 +449,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       <td className="px-1.5 py-0.5">{p.status_arte ?? "—"}</td>
                       <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.arte_data)}</td>
                       <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.inicio_estamparia)}</td>
-                      <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                      <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.inicio_acabamento)}</td>
 
                     </tr>
                   );
