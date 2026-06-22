@@ -330,7 +330,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                         <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
                         <td className="px-1.5 py-0.5 !text-left">{p.orcamento}</td>
                         <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
-                        <td className="px-1.5 py-0.5">{p.qtd ?? "—"}</td>
+                        <td className="px-1.5 py-0.5"><QtdTotal pedido={p} /></td>
                         <td className="px-1.5 py-0.5"><StatusPecasBadge pedido={p} /></td>
                         <td className="px-1.5 py-0.5">{modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"}</td>
                         <td className="px-1.5 py-0.5">{modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"}</td>

@@ -302,7 +302,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                           <span className="block leading-tight line-clamp-2 break-words text-left" title={p.orcamento ?? ""}>{p.orcamento}</span>
                         </TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] align-top text-center">{p.vendedor}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] tabular-nums align-top text-center">{p.qtd}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] tabular-nums align-top text-center"><QtdTotal pedido={p} /></TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] align-top text-center"><Badge variant="outline" className="text-[10px] px-1.5 py-0">{p.tipo_estampa}</Badge></TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] align-top text-center"><StatusPecasBadge pedido={p} /></TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] align-top text-center">{p.frete ?? "—"}</TableCell>

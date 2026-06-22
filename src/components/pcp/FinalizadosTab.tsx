@@ -288,7 +288,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                     )}
                     <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
                     <td className="px-1.5 py-0.5 max-w-[200px] truncate !text-left">{p.orcamento}</td>
-                    <td className="px-1.5 py-0.5">{p.qtd}</td>
+                    <td className="px-1.5 py-0.5"><QtdTotal pedido={p} /></td>
                     <td className="px-1.5 py-0.5">{p.vendedor}</td>
                     <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                     <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>

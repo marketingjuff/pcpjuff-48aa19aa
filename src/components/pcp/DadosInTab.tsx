@@ -696,7 +696,7 @@ function DadosInDashboard({
                       <span className="block leading-tight line-clamp-2 break-words text-left" title={p.orcamento ?? ""}>{p.orcamento}</span>
                     </TableCell>
                     <TableCell className={TD_CLASS}>{p.vendedor}</TableCell>
-                    <TableCell className={`${TD_CLASS} tabular-nums`}>{p.qtd}</TableCell>
+                    <TableCell className={`${TD_CLASS} tabular-nums`}><QtdTotal pedido={p} /></TableCell>
                     <TableCell className={TD_CLASS}><Badge variant="outline" className={BADGE_SM_CLASS}>{p.tipo_estampa}</Badge></TableCell>
                     <TableCell className={TD_CLASS}><StatusPecasBadge pedido={p} /></TableCell>
                     <TableCell className={TD_CLASS}>{p.frete ?? "—"}</TableCell>
