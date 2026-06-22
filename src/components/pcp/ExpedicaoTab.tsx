@@ -299,11 +299,14 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                 </FinalizarButton>
               </div>
               <VoltarDropdown
+                pedido={selected}
                 destinos={["dados", "arte", "dtf", "silk", "acabamento"]}
-                onVoltar={(destino) => {
+                onVoltar={async (destino, payload) => {
+                  const { montarRefacoesAposRefazer } = await import("./refacao-helpers");
+                  const refacoes = await montarRefacoesAposRefazer(selected, destino, payload);
                   onSave({
                     id: selected.id,
-                    reaberto: true,
+                    refacoes,
                     expedicao_entrou_em: null,
                     embalado: null,
                   } as any);

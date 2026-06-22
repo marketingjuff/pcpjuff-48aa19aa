@@ -353,17 +353,22 @@ function AcabamentoVoltar({ selected, onSave, onNavigate }: { selected: Pedido; 
     if (modeloIncluiDTF(selected.tipo_estampa)) destinos.push("dtf");
     if (modeloIncluiSilk(selected.tipo_estampa)) destinos.push("silk");
   }
-  async function handle(destino: string) {
+  async function handle(
+    destino: "dados" | "arte" | "dtf" | "silk" | "acabamento",
+    payload: import("./RefacaoDialog").RefacaoFormPayload | null,
+  ) {
+    const { montarRefacoesAposRefazer } = await import("./refacao-helpers");
+    const refacoes = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
-      reaberto: true,
+      refacoes,
       embalado: null,
       data_saida_juff: null,
       responsavel_acabamento: null,
     });
     if (onNavigate) onNavigate(destino);
   }
-  return <VoltarDropdown destinos={destinos} onVoltar={handle} />;
+  return <VoltarDropdown pedido={selected} destinos={destinos} onVoltar={handle} />;
 }
 
 

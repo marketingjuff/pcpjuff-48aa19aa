@@ -90,11 +90,16 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   }
   useRegisterSave(handleSave, active);
 
-  async function handleVoltar(destino: "dados" | "arte" | "dtf" | "silk" | "acabamento") {
+  async function handleVoltar(
+    destino: "dados" | "arte" | "dtf" | "silk" | "acabamento",
+    payload: import("./RefacaoDialog").RefacaoFormPayload | null,
+  ) {
     if (!selected) return;
+    const { montarRefacoesAposRefazer } = await import("./refacao-helpers");
+    const refacoes = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
-      reaberto: true,
+      refacoes,
       silk_feito: null,
       silk_data_executada: null,
       quem_bateu_silk: null,
@@ -231,7 +236,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   )}
                   <UpdateButton onClick={handleSave} disabled={saving}>Atualizar Silk</UpdateButton>
                 </div>
-                <VoltarDropdown destinos={["arte"]} onVoltar={handleVoltar} />
+                <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />
               </div>
             </CardContent>
           </Card>

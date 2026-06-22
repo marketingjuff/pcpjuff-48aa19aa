@@ -103,35 +103,11 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
     payload: import("./RefacaoDialog").RefacaoFormPayload | null,
   ) {
     if (!selected) return;
-    const { episodioAberto, etapaAtualSemAsterisco } = await import("@/lib/pedidos");
-    const refsAtuais = Array.isArray(selected.refacoes) ? selected.refacoes : [];
-    let novasRefacoes = refsAtuais;
-    const aberto = episodioAberto(selected);
-    if (aberto) {
-      novasRefacoes = refsAtuais.map((e) =>
-        e === aberto ? { ...e, etapa_destino: destino } : e,
-      );
-    } else if (payload) {
-      const { data: u } = await supabaseAuthGetUser();
-      novasRefacoes = [
-        ...refsAtuais,
-        {
-          etapa_origem: etapaAtualSemAsterisco(selected),
-          etapa_destino: destino,
-          data: new Date().toISOString(),
-          quem: u?.user?.id ?? null,
-          pecas_refazer: payload.pecas_refazer,
-          perda_pecas: payload.perda_pecas,
-          perda_adesivos: payload.perda_adesivos,
-          motivo: payload.motivo,
-          aberto: true,
-        },
-      ];
-    }
+    const { montarRefacoesAposRefazer } = await import("./refacao-helpers");
+    const refacoes = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
-      refacoes: novasRefacoes,
-      // limpa o carimbo da etapa atual (DTF) para que o pedido volte
+      refacoes,
       dtf_estampado: null,
       dtf_data_executada: null,
       quem_bateu_dtf: null,
@@ -272,7 +248,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                   )}
                   <UpdateButton onClick={handleSave} disabled={saving}>Atualizar DTF</UpdateButton>
                 </div>
-                <VoltarDropdown destinos={["arte"]} onVoltar={handleVoltar} />
+                <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />
               </div>
             </CardContent>
           </Card>
