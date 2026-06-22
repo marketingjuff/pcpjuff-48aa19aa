@@ -151,7 +151,9 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   return (
     <div className="space-y-3">
       {selected ? (
-        !modeloIncluiSilk(selected.tipo_estampa) ? (
+        <>
+        <OrcamentoTitle orcamento={selected.orcamento} />
+        {!modeloIncluiSilk(selected.tipo_estampa) ? (
           <EmptyState>Este pedido não inclui Silk (modelo: {selected.tipo_estampa}).</EmptyState>
         ) : (
           <Card>
