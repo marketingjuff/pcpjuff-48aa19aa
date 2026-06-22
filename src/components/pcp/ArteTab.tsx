@@ -424,7 +424,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   <Th>ANOTAÇÕES</Th>
                   <SortableTh label="DATA LIMITE" active={sort.key === "limite"} onClick={() => sort.toggle("limite")} />
                   <SortableTh label="INÍCIO EST." active={sort.key === "inicio"} onClick={() => sort.toggle("inicio")} />
-                  <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
+                  <SortableTh label="INÍCIO ACAB." active={sort.key === "iniAcab"} onClick={() => sort.toggle("iniAcab")} />
                 </tr>
               </thead>
 
