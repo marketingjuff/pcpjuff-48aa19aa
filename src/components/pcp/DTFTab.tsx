@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES, matchEtapaFiltro, UpdateButton } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_DTF, matchEtapaFiltro, UpdateButton } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { MultiSelectPeople, parsePeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
@@ -280,7 +280,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
             <Select value={fEtapa} onValueChange={setFEtapa}>
               <SelectTrigger><SelectValue placeholder="Etapa" /></SelectTrigger>
               <SelectContent>
-                {ETAPA_FILTRO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {ETAPA_FILTRO_OPCOES_DTF.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
             <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />

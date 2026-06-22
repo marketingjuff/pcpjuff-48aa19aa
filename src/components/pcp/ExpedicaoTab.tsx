@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES, matchEtapaFiltro, UpdateButton, FinalizarButton } from "./shared";
+import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES_EXPEDICAO, matchEtapaFiltro, UpdateButton, FinalizarButton } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { VoltarDropdown } from "./VoltarDropdown";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -327,7 +327,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
             <Select value={fEtapa} onValueChange={setFEtapa}>
               <SelectTrigger><SelectValue placeholder="Etapa" /></SelectTrigger>
               <SelectContent>
-                {ETAPA_FILTRO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {ETAPA_FILTRO_OPCOES_EXPEDICAO.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
             <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
