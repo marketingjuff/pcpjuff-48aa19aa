@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_DTF, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_DTF, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { MultiSelectPeople, parsePeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
@@ -110,7 +110,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   ) {
     if (!selected) return;
     const { montarRefacoesAposRefazer } = await import("./refacao-helpers");
-    const refacoes = await montarRefacoesAposRefazer(selected, destino, payload);
+    const { refacoes, observacoes_pedido } = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
       refacoes,
@@ -118,6 +118,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
       dtf_data_executada: null,
       quem_bateu_dtf: null,
       dtf_pessoas_qtd: null,
+      ...(observacoes_pedido !== undefined ? { observacoes_pedido } : {}),
     } as any);
     if (onNavigate) onNavigate(destino);
   }
@@ -320,7 +321,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
             ) : dashboardPedidos.map((p) => (
               <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
                 <Chip label="Tipo" value={p.tipo_estampa} />
-                <Chip label="QTD" value={p.qtd} />
+                <Chip label="QTD" value={<QtdTotal pedido={p} />} />
                 <StatusPecasChip pedido={p} />
                 <Chip label="Pronto" value={p.dtf_impresso === "Sim" && p.dtf_cortado === "Sim" ? "Sim" : "Não"} />
                 <Chip label="Estampado" value={p.dtf_estampado} />
@@ -375,7 +376,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                         <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
                         <td className="px-1.5 py-0.5 !text-left">{p.orcamento}</td>
                         <td className="px-1.5 py-0.5">{p.vendedor ?? "—"}</td>
-                        <td className="px-1.5 py-0.5">{p.qtd ?? "—"}</td>
+                        <td className="px-1.5 py-0.5"><QtdTotal pedido={p} /></td>
                         <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                         <td className="px-1.5 py-0.5"><StatusPecasBadge pedido={p} /></td>
                         <td className="px-1.5 py-0.5">{pronto}</td>

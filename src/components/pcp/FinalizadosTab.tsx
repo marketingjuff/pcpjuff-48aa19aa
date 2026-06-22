@@ -17,7 +17,7 @@ import {
 import { RotateCcw, Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
-import { PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, ReadOnlyField } from "./shared";
+import { PedidoMobileCard, Chip, QtdTotal, useSort, cmpDate, cmpNum, SortableTh, Th, ReadOnlyField } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 
 
@@ -231,7 +231,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                   </div>
                   <div className="text-xs text-muted-foreground truncate">{p.orcamento}</div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    <Chip label="QTD" value={p.qtd} />
+                    <Chip label="QTD" value={<QtdTotal pedido={p} />} />
                     <Chip label="Vend" value={p.vendedor} />
                     <Chip label="Resp" value={p.responsavel_acabamento} />
                     <Chip label="Finalizado" value={formatDateBR(p.finalizado_em?.slice(0,10)) || "—"} />
@@ -288,7 +288,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                     )}
                     <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
                     <td className="px-1.5 py-0.5 max-w-[200px] truncate !text-left">{p.orcamento}</td>
-                    <td className="px-1.5 py-0.5">{p.qtd}</td>
+                    <td className="px-1.5 py-0.5"><QtdTotal pedido={p} /></td>
                     <td className="px-1.5 py-0.5">{p.vendedor}</td>
                     <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                     <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>

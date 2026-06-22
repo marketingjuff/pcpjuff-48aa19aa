@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { addDiasUteis, diasUteisEntre, diasUteisAteHoje, addDiasCorridos, proximoDiaUtil, isDataUtilISO } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { PedidoMobileCard, Chip, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES_DADOS_IN, matchEtapaFiltro, UpdateButton, EtapaBadgeView } from "./shared";
+import { PedidoMobileCard, Chip, QtdTotal, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES_DADOS_IN, matchEtapaFiltro, UpdateButton, EtapaBadgeView } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
@@ -626,7 +626,7 @@ function DadosInDashboard({
             <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido.</div>
           ) : rows.map((p) => (
             <PedidoMobileCard key={p.id} pedido={p} active={selectedId === p.id} onClick={() => onSelect(p.id)}>
-              <Chip label="QTD" value={p.qtd} />
+              <Chip label="QTD" value={<QtdTotal pedido={p} />} />
               <Chip label="Vend" value={p.vendedor} />
               <Chip label="Tipo" value={p.tipo_estampa} />
               <Chip label="Pgto" value={p.forma_pagamento} />
@@ -696,7 +696,7 @@ function DadosInDashboard({
                       <span className="block leading-tight line-clamp-2 break-words text-left" title={p.orcamento ?? ""}>{p.orcamento}</span>
                     </TableCell>
                     <TableCell className={TD_CLASS}>{p.vendedor}</TableCell>
-                    <TableCell className={`${TD_CLASS} tabular-nums`}>{p.qtd}</TableCell>
+                    <TableCell className={`${TD_CLASS} tabular-nums`}><QtdTotal pedido={p} /></TableCell>
                     <TableCell className={TD_CLASS}><Badge variant="outline" className={BADGE_SM_CLASS}>{p.tipo_estampa}</Badge></TableCell>
                     <TableCell className={TD_CLASS}><StatusPecasBadge pedido={p} /></TableCell>
                     <TableCell className={TD_CLASS}>{p.frete ?? "—"}</TableCell>

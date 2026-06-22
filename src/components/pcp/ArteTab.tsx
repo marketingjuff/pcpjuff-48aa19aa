@@ -21,7 +21,7 @@ import { toast } from "sonner";
 
 import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
-  StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip,
+  StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip,
   useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse,
   ETAPA_FILTRO_OPCOES_ARTE, matchEtapaFiltro, UpdateButton, OrcamentoTitle,
 } from "./shared";
@@ -398,7 +398,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               : dashboardRows.map((p) => (
                   <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
                     <Chip label="Estampa" value={p.tipo_estampa} />
-                    <Chip label="QTD" value={p.qtd} />
+                    <Chip label="QTD" value={<QtdTotal pedido={p} />} />
                     <StatusPecasChip pedido={p} />
                     <Chip label="DTF Final." value={dtfFinalizadoLabel(p)} />
                     <Chip label="Fotolito" value={fotolitoFinalizadoLabel(p)} />
@@ -441,7 +441,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
                       <td className="px-1.5 py-0.5 !text-left">{p.orcamento}</td>
                       <td className="px-1.5 py-0.5">{p.vendedor ?? "—"}</td>
-                      <td className="px-1.5 py-0.5 tabular-nums">{p.qtd ?? "—"}</td>
+                      <td className="px-1.5 py-0.5 tabular-nums"><QtdTotal pedido={p} /></td>
                       <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                       <td className="px-1.5 py-0.5"><StatusPecasBadge pedido={p} /></td>
                       <td className="px-1.5 py-0.5 whitespace-nowrap">{dtfFinalizadoLabel(p)}</td>

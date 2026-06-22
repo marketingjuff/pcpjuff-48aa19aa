@@ -4,6 +4,18 @@ import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 // `types.ts` é gerado automaticamente — fazemos o merge aqui até regenerar.
 type PedidoBase = Omit<Tables<"pedidos">, "modelo_estampa" | "status">;
 
+export type RefacaoRetratoEtapa = {
+  etapa: "Arte" | "DTF" | "Silk" | "Acabamento";
+  data: string | null;
+  responsavel: string | null;
+};
+
+export type RefacaoRetrato = {
+  entrada_pedido: string | null;
+  saida_juff: string | null;
+  etapas_concluidas: RefacaoRetratoEtapa[];
+};
+
 export type RefacaoEpisodio = {
   etapa_origem: string;
   etapa_destino: "dados" | "arte" | "dtf" | "silk" | "acabamento";
@@ -12,8 +24,18 @@ export type RefacaoEpisodio = {
   pecas_refazer: number;
   perda_pecas: number;
   perda_adesivos: number;
+  pecas_extras?: number;   // apenas quando destino === "dados"
   motivo: string;
   aberto: boolean;
+  retrato?: RefacaoRetrato;
+};
+
+export const ETAPA_DESTINO_LABEL: Record<RefacaoEpisodio["etapa_destino"], string> = {
+  dados: "Dados In",
+  arte: "Arte",
+  dtf: "DTF",
+  silk: "Silk",
+  acabamento: "Acabamento",
 };
 
 export type Pedido = PedidoBase & {
@@ -184,11 +206,35 @@ export function calcularEtapaAtual(p: Pedido): {
   percentual: number;
   cor: "green" | "yellow" | "red" | "gray" | "blue";
 } {
+  return calcularEtapaInterno(p, false);
+}
+
+/** Cálculo "natural" da etapa, ignorando episódio aberto. Uso interno. */
+export function calcularEtapaNatural(p: Pedido): {
+  etapa: string;
+  percentual: number;
+  cor: "green" | "yellow" | "red" | "gray" | "blue";
+} {
+  return calcularEtapaInterno(p, true);
+}
+
+const DESTINO_TO_ETAPA: Record<RefacaoEpisodio["etapa_destino"], { etapa: string; cor: "blue" | "yellow" | "gray" }> = {
+  dados: { etapa: "Aguardando Dados In", cor: "gray" },
+  arte: { etapa: "Aguardando Arte", cor: "blue" },
+  dtf: { etapa: "Aguardando DTF", cor: "yellow" },
+  silk: { etapa: "Aguardando Silk", cor: "yellow" },
+  acabamento: { etapa: "Aguardando Acabamento", cor: "blue" },
+};
+
+function calcularEtapaInterno(p: Pedido, ignorarEpisodioAberto: boolean): {
+  etapa: string;
+  percentual: number;
+  cor: "green" | "yellow" | "red" | "gray" | "blue";
+} {
   const tipo = p.tipo_estampa;
   const isLisa = tipo === "Lisa";
 
   const dadosInOk = !!p.pedido_olist;
-  // Lados da arte agora avançam independentemente
   const dtfArteOk = !tipoIncluiDTF(tipo) || ladoDtfPronto(p);
   const silkArteOk = !tipoIncluiSilk(tipo) || ladoSilkPronto(p);
   const arteOk = dtfArteOk && silkArteOk;
@@ -208,19 +254,23 @@ export function calcularEtapaAtual(p: Pedido): {
   let etapa = "Aguardando entrada";
   let cor: "green" | "yellow" | "red" | "gray" | "blue" = "gray";
 
-  if (p.finalizado_em) {
+  // Sobreposição: enquanto houver episódio de refação aberto, o destino manda.
+  const aberto = ignorarEpisodioAberto ? null : episodioAberto(p);
+  if (!p.finalizado_em && aberto) {
+    const mapped = DESTINO_TO_ETAPA[aberto.etapa_destino];
+    etapa = mapped.etapa;
+    cor = mapped.cor;
+  } else if (p.finalizado_em) {
     etapa = "Finalizado"; cor = "green";
   } else if (acabamentoOk) {
     etapa = "Aguardando Expedição"; cor = "blue";
   } else if (!dadosInOk) {
     etapa = "Aguardando entrada"; cor = "gray";
   } else if (isLisa) {
-    // Lisa pula direto para Acabamento — ignora Arte/DTF/Silk
     etapa = "Aguardando Acabamento"; cor = "blue";
   } else if (!producaoInputOk) {
     etapa = "Aguardando input de produção"; cor = "yellow";
   } else if (!arteOk) {
-    // Para DTF+Silk: se um lado já está pronto e o outro ainda na arte, mostrar etapa mista
     if (tipo === "DTF+Silk" && dtfArteOk && !silkArteOk) {
       etapa = "DTF Liberado / Silk na Arte"; cor = "blue";
     } else if (tipo === "DTF+Silk" && silkArteOk && !dtfArteOk) {
@@ -236,7 +286,6 @@ export function calcularEtapaAtual(p: Pedido): {
     else if (needSilk) { etapa = "Aguardando Silk"; cor = "yellow"; }
     else { etapa = "Aguardando Acabamento"; cor = "blue"; }
   }
-
 
   const refs = Array.isArray(p.refacoes) ? p.refacoes : [];
   if (refs.length > 0 && etapa !== "Finalizado") etapa = `${etapa}${"*".repeat(refs.length)}`;
@@ -257,17 +306,26 @@ export function etapaAtualSemAsterisco(p: Pedido): string {
   return calcularEtapaAtual(p).etapa.replace(/\*+$/, "");
 }
 
+/** Total de produção: qtd original + soma de peças extras dos episódios. */
+export function totalProducao(p: Pedido): { total: number; original: number; extras: number } {
+  const original = Number(p.qtd ?? 0) || 0;
+  const refs = Array.isArray(p.refacoes) ? p.refacoes : [];
+  const extras = refs.reduce((a, e) => a + (Number(e.pecas_extras ?? 0) || 0), 0);
+  return { total: original + extras, original, extras };
+}
+
 /**
  * Retorna `refacoes` atualizadas fechando episódios cuja etapa de origem
- * foi recuperada. Retorna null quando nada muda.
+ * foi recuperada. Compara contra a etapa NATURAL (sem destino sobrescrito).
+ * Retorna null quando nada muda.
  */
 export function fecharEpisodiosResolvidos(p: Pedido): RefacaoEpisodio[] | null {
   const refs = Array.isArray(p.refacoes) ? p.refacoes : [];
   if (refs.length === 0) return null;
-  const etapaAtual = etapaAtualSemAsterisco(p);
+  const etapaNatural = calcularEtapaNatural(p).etapa.replace(/\*+$/, "");
   let changed = false;
   const next = refs.map((e) => {
-    if (e.aberto && e.etapa_origem === etapaAtual) {
+    if (e.aberto && e.etapa_origem === etapaNatural) {
       changed = true;
       return { ...e, aberto: false };
     }

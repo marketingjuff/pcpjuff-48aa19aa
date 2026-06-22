@@ -73,6 +73,7 @@ export function VoltarDropdown({ destinos, pedido, onVoltar, disabled }: Props) 
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         destinoLabel={LABEL[sel]}
+        destino={sel}
         tipoEstampa={pedido?.tipo_estampa}
         onConfirm={(payload) => {
           setDialogOpen(false);
