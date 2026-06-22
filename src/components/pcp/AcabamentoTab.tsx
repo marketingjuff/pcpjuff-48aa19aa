@@ -242,6 +242,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             </fieldset>
           </CardContent>
         </Card>
+        </>
       ) : (
         <EmptyState>Selecione um pedido no dashboard abaixo.</EmptyState>
       )}
