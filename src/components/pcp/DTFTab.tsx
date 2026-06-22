@@ -270,7 +270,8 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               </fieldset>
             </CardContent>
           </Card>
-        )
+        )}
+        </>
       ) : (
         <EmptyState>Selecione um pedido DTF no dashboard abaixo.</EmptyState>
       )}
