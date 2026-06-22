@@ -120,6 +120,17 @@ export async function montarRefacoesAposRefazer(
   const uid = u?.user?.id ?? null;
   const nome = await nomeUsuarioAtual(uid);
   const origem = etapaAtualSemAsterisco(pedido);
+  // Snapshot completo dos campos que serão apagados (valores ANTES do wipe)
+  const wipe = camposAlimpar(pedido, destino);
+  const camposApagados: Record<string, any> = {};
+  Object.keys(wipe).forEach((k) => {
+    const v = (pedido as any)[k];
+    if (v !== null && v !== undefined && v !== "") camposApagados[k] = v;
+  });
+  const retrato: RefacaoRetrato = {
+    ...montarRetrato(pedido),
+    campos_apagados: camposApagados,
+  };
   const novo: RefacaoEpisodio = {
     etapa_origem: origem,
     etapa_destino: destino,
@@ -131,7 +142,7 @@ export async function montarRefacoesAposRefazer(
     ...(destino === "dados" && payload.pecas_extras ? { pecas_extras: payload.pecas_extras } : {}),
     motivo: payload.motivo,
     aberto: true,
-    retrato: montarRetrato(pedido),
+    retrato,
   };
   const linha = montarLinhaObservacao({
     origem,
