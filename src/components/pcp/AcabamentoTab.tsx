@@ -23,6 +23,8 @@ import { RefacaoBadge } from "./RefacaoBadge";
 import { todayISO } from "@/lib/dias-uteis";
 
 
+import { isReadOnly } from "./edicao-policy";
+
 interface Props {
   pedidos: Pedido[];
   selected: Pedido | null;
@@ -31,9 +33,11 @@ interface Props {
   saving: boolean;
   active?: boolean;
   onNavigate?: (tab: string) => void;
+  canManage?: boolean;
 }
 
-export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate }: Props) {
+export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate, canManage = false }: Props) {
+  const readOnly = isReadOnly("acabamento", selected, canManage);
 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
