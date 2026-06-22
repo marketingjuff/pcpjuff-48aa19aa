@@ -465,12 +465,60 @@ const _ETAPA_MAP: Record<string, string[]> = {
   arte: ["Aguardando Arte"],
   dtf_pronto_silk_arte: ["DTF Liberado / Silk na Arte"],
   silk_pronto_dtf_arte: ["Silk Liberado / DTF na Arte"],
-  dtf: ["Aguardando DTF"],
-  silk: ["Aguardando Silk"],
+  dtf: ["Aguardando DTF", "Aguardando DTF + Silk", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
+  silk: ["Aguardando Silk", "Aguardando DTF + Silk", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
   dtf_silk: ["Aguardando DTF + Silk"],
   acabamento: ["Aguardando Acabamento"],
   expedicao: ["Aguardando Expedição"],
 };
+
+const _pickEtapaOpcoes = (values: string[]) =>
+  values
+    .map((v) => ETAPA_FILTRO_OPCOES.find((o) => o.value === v))
+    .filter((o): o is { value: string; label: string } => !!o);
+
+export const ETAPA_FILTRO_OPCOES_DADOS_IN = ETAPA_FILTRO_OPCOES.filter(
+  (o) => o.value !== "pendencias_arte",
+);
+
+export const ETAPA_FILTRO_OPCOES_ARTE = _pickEtapaOpcoes([
+  "ativas",
+  "arte",
+  "dtf_pronto_silk_arte",
+  "silk_pronto_dtf_arte",
+  "dtf",
+  "silk",
+  "dtf_silk",
+]);
+
+export const ETAPA_FILTRO_OPCOES_DTF = _pickEtapaOpcoes([
+  "ativas",
+  "arte",
+  "dtf_pronto_silk_arte",
+  "silk_pronto_dtf_arte",
+  "dtf",
+  "dtf_silk",
+]);
+
+export const ETAPA_FILTRO_OPCOES_SILK = _pickEtapaOpcoes([
+  "ativas",
+  "arte",
+  "dtf_pronto_silk_arte",
+  "silk_pronto_dtf_arte",
+  "silk",
+  "dtf_silk",
+]);
+
+export const ETAPA_FILTRO_OPCOES_ACABAMENTO = ETAPA_FILTRO_OPCOES.filter(
+  (o) => o.value !== "pendencias_arte",
+);
+
+export const ETAPA_FILTRO_OPCOES_EXPEDICAO = _pickEtapaOpcoes([
+  "ativas",
+  "acabamento",
+  "expedicao",
+  "finalizados",
+]);
 
 export function matchEtapaFiltro(p: Pedido, value: string): boolean {
   if (value === "finalizados") return !!p.finalizado_em;
