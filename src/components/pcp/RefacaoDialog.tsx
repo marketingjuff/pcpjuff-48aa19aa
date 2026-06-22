@@ -169,6 +169,24 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
             </div>
           )}
 
+          {mostraExtras && (
+            <div className="space-y-1">
+              <Label>Quantas peças extras pedidas? (opcional)</Label>
+              <Input
+                type="number"
+                min="0"
+                value={pecasExtras}
+                onChange={(e) => setPecasExtras(e.target.value)}
+                placeholder="Ex.: 50"
+              />
+              <div className="text-[11px] text-muted-foreground">
+                Soma à quantidade original na produção (não altera a qtd do pedido).
+              </div>
+            </div>
+          )}
+
+
+
           <div className="space-y-1">
             <Label>Motivo *</Label>
             <Textarea
