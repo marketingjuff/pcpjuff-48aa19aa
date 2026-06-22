@@ -29,6 +29,9 @@ export type RefacaoEpisodio = {
   pecas_extras?: number;   // apenas quando destino === "dados"
   motivo: string;
   aberto: boolean;
+  /** Marcado como true quando o pedido passou pela etapa de destino
+   *  após o início da refação. Só com isso o auto-fechamento pode encerrar. */
+  visitou_destino?: boolean;
   retrato?: RefacaoRetrato;
 };
 
