@@ -164,7 +164,9 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   return (
     <div className="space-y-3">
       {selected ? (
-        !modeloIncluiDTF(selected.tipo_estampa) ? (
+        <>
+        <OrcamentoTitle orcamento={selected.orcamento} />
+        {!modeloIncluiDTF(selected.tipo_estampa) ? (
           <EmptyState>Este pedido não inclui DTF (modelo: {selected.tipo_estampa}).</EmptyState>
         ) : (
           <Card>
