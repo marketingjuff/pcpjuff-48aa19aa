@@ -82,6 +82,15 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
         }
       }
     }
+    let nExtras: number | undefined = undefined;
+    if (mostraExtras && pecasExtras.trim() !== "") {
+      const n = Number(pecasExtras);
+      if (!Number.isFinite(n) || n < 0) {
+        setErr("Peças extras: informe um número válido (0 ou mais).");
+        return;
+      }
+      if (n > 0) nExtras = n;
+    }
     if (!motivo.trim()) {
       setErr("O motivo é obrigatório.");
       return;
@@ -90,6 +99,7 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
       pecas_refazer: nPecas,
       perda_pecas: nPerdaPecas,
       perda_adesivos: nPerdaAdesivos,
+      ...(nExtras !== undefined ? { pecas_extras: nExtras } : {}),
       motivo: motivo.trim(),
     });
   }
