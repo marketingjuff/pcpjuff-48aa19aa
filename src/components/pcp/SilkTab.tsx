@@ -249,10 +249,11 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       <Download className="h-4 w-4 mr-1" /> Baixar layout
                     </Button>
                   )}
-                  <UpdateButton onClick={handleSave} disabled={saving}>Atualizar Silk</UpdateButton>
+                  {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Atualizar Silk</UpdateButton>}
                 </div>
-                <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />
+                {!readOnly && <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />}
               </div>
+              </fieldset>
             </CardContent>
           </Card>
         )
