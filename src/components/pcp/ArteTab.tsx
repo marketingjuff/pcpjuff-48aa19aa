@@ -319,6 +319,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
           </CardContent>
         </Card>
+        </>
       ) : (
         <EmptyState>Selecione um pedido no Dashboard abaixo.</EmptyState>
       )}
