@@ -294,9 +294,9 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               </SelectContent>
             </Select>
             <Select value={fImpresso} onValueChange={setFImpresso}>
-              <SelectTrigger><SelectValue placeholder="DTF Pronto" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="DTF Liberado" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">DTF Pronto (todos)</SelectItem>
+                <SelectItem value="todos">DTF Liberado (todos)</SelectItem>
                 <SelectItem value="Sim">Sim</SelectItem>
                 <SelectItem value="Não">Não</SelectItem>
               </SelectContent>
