@@ -19,7 +19,9 @@ import { AcabamentoTab } from "@/components/pcp/AcabamentoTab";
 import { DashboardTab } from "@/components/pcp/DashboardTab";
 import { FinalizadosTab } from "@/components/pcp/FinalizadosTab";
 import { ExpedicaoTab } from "@/components/pcp/ExpedicaoTab";
+import { RetrabalhoTab } from "@/components/pcp/RetrabalhoTab";
 import { DirtyFormProvider } from "@/components/pcp/dirty-form-context";
+import { fecharEpisodiosResolvidos } from "@/lib/pedidos";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: AppHome,
