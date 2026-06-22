@@ -23,7 +23,7 @@ import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
   StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip,
   useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse,
-  ETAPA_FILTRO_OPCOES_ARTE, matchEtapaFiltro, UpdateButton,
+  ETAPA_FILTRO_OPCOES_ARTE, matchEtapaFiltro, UpdateButton, OrcamentoTitle,
 } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoBadge } from "./RefacaoBadge";
@@ -172,6 +172,8 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   return (
     <div className="space-y-3">
       {selected ? (
+        <>
+        <OrcamentoTitle orcamento={selected.orcamento} />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2"><CardTitle>Arte — {selected.pedido_olist}</CardTitle><RefacaoBadge pedido={selected} /></CardHeader>
           <CardContent className="space-y-3">
@@ -317,6 +319,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
           </CardContent>
         </Card>
+        </>
       ) : (
         <EmptyState>Selecione um pedido no Dashboard abaixo.</EmptyState>
       )}

@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES_EXPEDICAO, matchEtapaFiltro, UpdateButton, FinalizarButton } from "./shared";
+import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES_EXPEDICAO, matchEtapaFiltro, UpdateButton, FinalizarButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { VoltarDropdown } from "./VoltarDropdown";
 import { DateInputBR } from "@/components/ui/date-input";
@@ -192,6 +192,8 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   return (
     <div className="space-y-3">
       {selected && selected.expedicao_entrou_em && !selected.finalizado_em ? (
+        <>
+        <OrcamentoTitle orcamento={selected.orcamento} />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base sm:text-lg truncate">Expedição — {selected.pedido_olist}</CardTitle>
@@ -316,6 +318,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
             </div>
           </CardContent>
         </Card>
+        </>
       ) : (
         <EmptyState>Selecione um pedido no dashboard abaixo.</EmptyState>
       )}

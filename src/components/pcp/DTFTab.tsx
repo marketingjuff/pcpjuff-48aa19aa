@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_DTF, matchEtapaFiltro, UpdateButton } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_DTF, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { MultiSelectPeople, parsePeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
@@ -164,7 +164,9 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   return (
     <div className="space-y-3">
       {selected ? (
-        !modeloIncluiDTF(selected.tipo_estampa) ? (
+        <>
+        <OrcamentoTitle orcamento={selected.orcamento} />
+        {!modeloIncluiDTF(selected.tipo_estampa) ? (
           <EmptyState>Este pedido não inclui DTF (modelo: {selected.tipo_estampa}).</EmptyState>
         ) : (
           <Card>
@@ -268,7 +270,8 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               </fieldset>
             </CardContent>
           </Card>
-        )
+        )}
+        </>
       ) : (
         <EmptyState>Selecione um pedido DTF no dashboard abaixo.</EmptyState>
       )}

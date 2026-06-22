@@ -113,6 +113,18 @@ export const FinalizarButton = forwardRef<HTMLButtonElement, ButtonProps & { ico
 );
 FinalizarButton.displayName = "FinalizarButton";
 
+/** Título grande "Orçamento Comercial" reutilizado no topo de todas as abas de pedido. */
+export function OrcamentoTitle({ orcamento }: { orcamento: string | null | undefined }) {
+  return (
+    <Card className="border-primary/30">
+      <CardContent className="py-2">
+        <div className="text-xs uppercase text-muted-foreground tracking-wider">Orçamento Comercial</div>
+        <div className="text-2xl sm:text-4xl font-bold tabular-nums truncate">{orcamento || "—"}</div>
+      </CardContent>
+    </Card>
+  );
+}
+
 /** ===== Estilos compartilhados de tabela compacta (padrão Dashboard Master) ===== */
 export const TABLE_FONT_STYLE = {
   fontFamily: '"Google Sans Flex", Arial, sans-serif',

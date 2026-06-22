@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_SILK, matchEtapaFiltro, UpdateButton } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_SILK, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { MultiSelectPeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
@@ -151,7 +151,9 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   return (
     <div className="space-y-3">
       {selected ? (
-        !modeloIncluiSilk(selected.tipo_estampa) ? (
+        <>
+        <OrcamentoTitle orcamento={selected.orcamento} />
+        {!modeloIncluiSilk(selected.tipo_estampa) ? (
           <EmptyState>Este pedido não inclui Silk (modelo: {selected.tipo_estampa}).</EmptyState>
         ) : (
           <Card>
@@ -256,7 +258,8 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
               </fieldset>
             </CardContent>
           </Card>
-        )
+        )}
+        </>
       ) : (
         <EmptyState>Selecione um pedido Silk no dashboard abaixo.</EmptyState>
       )}
