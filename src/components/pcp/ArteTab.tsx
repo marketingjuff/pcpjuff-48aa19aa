@@ -449,7 +449,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       <td className="px-1.5 py-0.5">{p.status_arte ?? "—"}</td>
                       <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.arte_data)}</td>
                       <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.inicio_estamparia)}</td>
-                      <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                      <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.inicio_acabamento)}</td>
 
                     </tr>
                   );
