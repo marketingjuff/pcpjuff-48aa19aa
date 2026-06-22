@@ -1,5 +1,11 @@
 import type { Pedido } from "@/lib/pedidos";
-import { tipoIncluiDTF, tipoIncluiSilk, etapaAtualSemAsterisco } from "@/lib/pedidos";
+import {
+  tipoIncluiDTF,
+  tipoIncluiSilk,
+  etapaAtualSemAsterisco,
+  ladoDtfPronto,
+  ladoSilkPronto,
+} from "@/lib/pedidos";
 
 export function canEditArte(p: Pedido | null | undefined): boolean {
   if (!p) return true;
@@ -12,14 +18,18 @@ export function canEditDTF(p: Pedido | null | undefined): boolean {
   if (!p) return true;
   if (p.finalizado_em) return false;
   if (!tipoIncluiDTF(p.tipo_estampa)) return false;
-  return p.dtf_estampado !== "Sim";
+  if (p.dtf_estampado === "Sim") return false;
+  // Só libera depois que a arte do DTF estiver pronta
+  return ladoDtfPronto(p);
 }
 
 export function canEditSilk(p: Pedido | null | undefined): boolean {
   if (!p) return true;
   if (p.finalizado_em) return false;
   if (!tipoIncluiSilk(p.tipo_estampa)) return false;
-  return p.silk_feito !== "Sim";
+  if (p.silk_feito === "Sim") return false;
+  // Só libera depois que a arte do Silk estiver pronta
+  return ladoSilkPronto(p);
 }
 
 export function canEditAcabamento(p: Pedido | null | undefined): boolean {
@@ -45,3 +55,4 @@ export function isReadOnly(
     case "acabamento": return !canEditAcabamento(pedido);
   }
 }
+
