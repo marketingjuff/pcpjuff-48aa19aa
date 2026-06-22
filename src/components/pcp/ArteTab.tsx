@@ -308,8 +308,11 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   </div>
                 </div>
 
-                <div className="flex justify-start"><UpdateButton onClick={handleSave} disabled={saving}>Atualizar Arte</UpdateButton></div>
+                {!readOnly && (
+                  <div className="flex justify-start"><UpdateButton onClick={handleSave} disabled={saving}>Atualizar Arte</UpdateButton></div>
+                )}
               </div>
+              </fieldset>
 
 
           </CardContent>
