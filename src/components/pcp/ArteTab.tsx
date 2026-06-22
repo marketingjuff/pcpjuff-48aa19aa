@@ -27,6 +27,7 @@ import {
 } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoBadge } from "./RefacaoBadge";
+import { isReadOnly } from "./edicao-policy";
 
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
@@ -40,9 +41,11 @@ interface Props {
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
   saving: boolean;
   active?: boolean;
+  canManage?: boolean;
 }
 
-export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = true }: Props) {
+export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = true, canManage = false }: Props) {
+  const readOnly = isReadOnly("arte", selected, canManage);
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { feriados } = useFeriados();
