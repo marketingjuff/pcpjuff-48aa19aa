@@ -135,6 +135,8 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   return (
     <div className="space-y-3">
       {selected ? (
+        <>
+        <OrcamentoTitle orcamento={selected.orcamento} />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base sm:text-lg truncate">Acabamento — {selected.pedido_olist}</CardTitle>
