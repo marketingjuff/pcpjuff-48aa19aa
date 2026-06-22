@@ -1,24 +1,84 @@
 import { useMemo, useState } from "react";
-import type { Pedido, RefacaoEpisodio } from "@/lib/pedidos";
+import {
+  ETAPA_DESTINO_LABEL,
+  tipoIncluiDTF,
+  totalProducao,
+  type Pedido,
+  type RefacaoEpisodio,
+  type RefacaoRetrato,
+} from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronDown, ChevronRight, Trash2, Save } from "lucide-react";
+import { ChevronDown, ChevronRight, Trash2, Save, Pencil, X } from "lucide-react";
+import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
 
 interface Props {
   pedidos: Pedido[];
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
 }
 
-function sumPedidoTotal(p: Pedido): number {
-  return Number(p.qtd ?? 0) || 0;
+// ----------- Formatadores ----------
+
+function fmtDataHoraBR(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return String(iso);
+  }
 }
+
+function fmtDataBR(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  try {
+    // Aceita "YYYY-MM-DD" ou ISO completo
+    const onlyDate = /^\d{4}-\d{2}-\d{2}$/.test(iso);
+    const d = onlyDate ? new Date(iso + "T00:00:00") : new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+  } catch {
+    return String(iso);
+  }
+}
+
+const ETAPA_LABEL_MAP: Record<string, string> = {
+  dados: "Dados In",
+  arte: "Arte",
+  dtf: "DTF",
+  silk: "Silk",
+  acabamento: "Acabamento",
+  expedicao: "Expedição",
+  "Aguardando entrada": "Dados In",
+  "Aguardando Dados In": "Dados In",
+  "Aguardando input de produção": "Dados In",
+  "Aguardando Arte": "Arte",
+  "DTF Liberado / Silk na Arte": "Arte",
+  "Silk Liberado / DTF na Arte": "Arte",
+  "Aguardando DTF": "DTF",
+  "Aguardando Silk": "Silk",
+  "Aguardando DTF + Silk": "DTF/Silk",
+  "Aguardando Acabamento": "Acabamento",
+  "Aguardando Expedição": "Expedição",
+};
+
+function fmtEtapa(v: string | null | undefined): string {
+  if (!v) return "—";
+  return ETAPA_LABEL_MAP[v] ?? v;
+}
+
+// ----------- Componente principal ----------
 
 export function RetrabalhoTab({ pedidos, onSave }: Props) {
   const [busca, setBusca] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const profilesMap = useProfilesMap();
 
   const pedidosComRefacao = useMemo(
     () =>
@@ -43,12 +103,12 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
     let totalProduzidas = 0;
     const porEtapa: Record<string, number> = {};
     pedidos.forEach((p) => {
-      totalProduzidas += sumPedidoTotal(p);
+      totalProduzidas += totalProducao(p).total;
       (p.refacoes ?? []).forEach((e) => {
         totalRefeitas += Number(e.pecas_refazer ?? 0);
         totalPerdaPecas += Number(e.perda_pecas ?? 0);
         totalPerdaAdesivos += Number(e.perda_adesivos ?? 0);
-        const k = e.etapa_origem || "—";
+        const k = fmtEtapa(e.etapa_origem);
         porEtapa[k] = (porEtapa[k] ?? 0) + Number(e.perda_pecas ?? 0) + Number(e.perda_adesivos ?? 0);
       });
     });
@@ -131,9 +191,11 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
                   {isOpen && (
                     <div className="border-t p-3 space-y-3">
                       {refs.map((e, idx) => (
-                        <EpisodioRow
+                        <EpisodioCard
                           key={idx}
+                          pedido={p}
                           episodio={e}
+                          profilesMap={profilesMap}
                           onUpdate={(patch) => updateEpisodio(p, idx, patch)}
                           onDelete={() => deleteEpisodio(p, idx)}
                         />
@@ -161,19 +223,156 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function EpisodioRow({
+// ----------- Card do episódio (read-only + Editar) ----------
+
+function EpisodioCard({
+  pedido,
   episodio,
+  profilesMap,
   onUpdate,
   onDelete,
 }: {
+  pedido: Pedido;
   episodio: RefacaoEpisodio;
+  profilesMap: Record<string, string>;
   onUpdate: (patch: Partial<RefacaoEpisodio>) => void;
   onDelete: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const mostraAdesivos = tipoIncluiDTF(pedido.tipo_estampa);
+  const responsavel = resolveNome(profilesMap, episodio.quem);
+
+  if (editing) {
+    return (
+      <EpisodioEditor
+        episodio={episodio}
+        onCancel={() => setEditing(false)}
+        onSave={(patch) => {
+          onUpdate(patch);
+          setEditing(false);
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className="rounded-md border bg-muted/20 p-3 space-y-3">
+      <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-sm">
+        <ReadField label="Etapa de origem" value={fmtEtapa(episodio.etapa_origem)} />
+        <ReadField label="Etapa de destino" value={ETAPA_DESTINO_LABEL[episodio.etapa_destino] ?? episodio.etapa_destino} />
+        <ReadField label="Data" value={fmtDataHoraBR(episodio.data)} />
+        <ReadField label="Responsável" value={responsavel} />
+        <ReadField
+          label="Peças a refazer"
+          value={String(episodio.pecas_refazer ?? 0)}
+        />
+        <ReadField
+          label="Peças perdidas"
+          value={
+            (episodio.perda_pecas ?? 0) > 0
+              ? `Sim — ${episodio.perda_pecas}`
+              : "Não"
+          }
+        />
+        {mostraAdesivos && (
+          <ReadField
+            label="Adesivos perdidos"
+            value={
+              (episodio.perda_adesivos ?? 0) > 0
+                ? `Sim — ${episodio.perda_adesivos}`
+                : "Não"
+            }
+          />
+        )}
+        {episodio.etapa_destino === "dados" && (
+          <ReadField
+            label="Peças extras pedidas"
+            value={
+              (episodio.pecas_extras ?? 0) > 0
+                ? `+${episodio.pecas_extras}`
+                : "—"
+            }
+          />
+        )}
+        <div className="sm:col-span-2">
+          <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Situação</div>
+          <Badge variant={episodio.aberto ? "default" : "secondary"}>
+            {episodio.aberto ? "Em aberto" : "Encerrado"}
+          </Badge>
+        </div>
+      </div>
+
+      <div>
+        <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Motivo</div>
+        <div className="text-sm whitespace-pre-wrap">{episodio.motivo || "—"}</div>
+      </div>
+
+      {episodio.retrato && <RetratoView retrato={episodio.retrato} />}
+
+      <div className="flex justify-between gap-2 pt-1">
+        <Button variant="outline" size="sm" onClick={onDelete}>
+          <Trash2 className="h-4 w-4 mr-1" /> Apagar episódio
+        </Button>
+        <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>
+          <Pencil className="h-4 w-4 mr-1" /> Editar episódio
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ReadField({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-[11px] text-muted-foreground font-medium">{label}</div>
+      <div className="text-sm">{value}</div>
+    </div>
+  );
+}
+
+function RetratoView({ retrato }: { retrato: RefacaoRetrato }) {
+  return (
+    <div className="rounded-md bg-background border p-2 text-xs space-y-1">
+      <div className="font-medium text-muted-foreground uppercase text-[10px]">
+        Retrato congelado no momento da refação
+      </div>
+      <div>
+        <span className="text-muted-foreground">Datas originais: </span>
+        entrada {fmtDataBR(retrato.entrada_pedido)} · saída Juff {fmtDataBR(retrato.saida_juff)}
+      </div>
+      <div>
+        <span className="text-muted-foreground">Etapas concluídas: </span>
+        {retrato.etapas_concluidas.length === 0 ? (
+          <span>—</span>
+        ) : (
+          retrato.etapas_concluidas.map((e, i) => (
+            <span key={i}>
+              {i > 0 && " · "}
+              {e.etapa} ✓ {fmtDataBR(e.data)}
+              {e.responsavel ? ` (${e.responsavel})` : ""}
+            </span>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ----------- Editor (gestor/admin) ----------
+
+function EpisodioEditor({
+  episodio,
+  onCancel,
+  onSave,
+}: {
+  episodio: RefacaoEpisodio;
+  onCancel: () => void;
+  onSave: (patch: Partial<RefacaoEpisodio>) => void;
 }) {
   const [local, setLocal] = useState<RefacaoEpisodio>(episodio);
   const dirty = JSON.stringify(local) !== JSON.stringify(episodio);
   return (
-    <div className="rounded-md border bg-muted/20 p-3 space-y-2">
+    <div className="rounded-md border bg-muted/30 p-3 space-y-2">
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
         <Field label="Etapa origem">
           <Input value={local.etapa_origem} onChange={(e) => setLocal({ ...local, etapa_origem: e.target.value })} />
@@ -181,7 +380,7 @@ function EpisodioRow({
         <Field label="Etapa destino">
           <Input value={local.etapa_destino} onChange={(e) => setLocal({ ...local, etapa_destino: e.target.value as any })} />
         </Field>
-        <Field label="Data">
+        <Field label="Data (ISO)">
           <Input value={local.data} onChange={(e) => setLocal({ ...local, data: e.target.value })} />
         </Field>
         <Field label="Quem (uuid)">
@@ -196,14 +395,23 @@ function EpisodioRow({
         <Field label="Perda adesivos">
           <Input type="number" value={local.perda_adesivos} onChange={(e) => setLocal({ ...local, perda_adesivos: Number(e.target.value) })} />
         </Field>
+        <Field label="Peças extras">
+          <Input
+            type="number"
+            value={local.pecas_extras ?? ""}
+            onChange={(e) =>
+              setLocal({ ...local, pecas_extras: e.target.value === "" ? undefined : Number(e.target.value) })
+            }
+          />
+        </Field>
         <Field label="Aberto">
           <select
             className="h-9 rounded-md border bg-background px-2 text-sm"
             value={local.aberto ? "sim" : "nao"}
             onChange={(e) => setLocal({ ...local, aberto: e.target.value === "sim" })}
           >
-            <option value="sim">Sim</option>
-            <option value="nao">Não</option>
+            <option value="sim">Em aberto</option>
+            <option value="nao">Encerrado</option>
           </select>
         </Field>
       </div>
@@ -211,10 +419,10 @@ function EpisodioRow({
         <Textarea rows={2} value={local.motivo} onChange={(e) => setLocal({ ...local, motivo: e.target.value })} />
       </Field>
       <div className="flex justify-between">
-        <Button variant="outline" size="sm" onClick={onDelete}>
-          <Trash2 className="h-4 w-4 mr-1" /> Apagar episódio
+        <Button variant="outline" size="sm" onClick={onCancel}>
+          <X className="h-4 w-4 mr-1" /> Cancelar
         </Button>
-        <Button size="sm" disabled={!dirty} onClick={() => onUpdate(local)}>
+        <Button size="sm" disabled={!dirty} onClick={() => onSave(local)}>
           <Save className="h-4 w-4 mr-1" /> Salvar episódio
         </Button>
       </div>
