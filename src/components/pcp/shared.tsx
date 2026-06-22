@@ -452,16 +452,10 @@ export const ETAPA_FILTRO_OPCOES: { value: string; label: string }[] = [
   { value: "finalizados", label: "Finalizados" },
 ];
 
-const _ETAPA_PENDENCIAS_ARTE = new Set([
-  "Aguardando Arte",
-  "DTF Liberado / Silk na Arte",
-  "Silk Liberado / DTF na Arte",
-]);
-
 const _ETAPA_MAP: Record<string, string[]> = {
   aguardando_entrada: ["Aguardando entrada"],
   aguardando_input: ["Aguardando input de produção"],
-  arte: ["Aguardando Arte"],
+  arte: ["Aguardando Arte", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
   dtf_pronto_silk_arte: ["DTF Liberado / Silk na Arte"],
   silk_pronto_dtf_arte: ["Silk Liberado / DTF na Arte"],
   dtf: ["Aguardando DTF", "Aguardando DTF + Silk", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
