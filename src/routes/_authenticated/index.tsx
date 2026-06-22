@@ -239,22 +239,22 @@ function AppHomeInner() {
           )}
           {canSee("arte") && (
             <TabsContent value="arte" forceMount hidden={tab !== "arte"}>
-              <ArteTab active={tab === "arte"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} />
+              <ArteTab active={tab === "arte"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} canManage={isManager} />
             </TabsContent>
           )}
           {canSee("dtf") && (
             <TabsContent value="dtf" forceMount hidden={tab !== "dtf"}>
-              <DTFTab active={tab === "dtf"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} />
+              <DTFTab active={tab === "dtf"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} canManage={isManager} />
             </TabsContent>
           )}
           {canSee("silk") && (
             <TabsContent value="silk" forceMount hidden={tab !== "silk"}>
-              <SilkTab active={tab === "silk"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} />
+              <SilkTab active={tab === "silk"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} canManage={isManager} />
             </TabsContent>
           )}
           {canSee("acabamento") && (
             <TabsContent value="acab" forceMount hidden={tab !== "acab"}>
-              <AcabamentoTab active={tab === "acab"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} />
+              <AcabamentoTab active={tab === "acab"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} canManage={isManager} />
             </TabsContent>
           )}
 
