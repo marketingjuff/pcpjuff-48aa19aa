@@ -42,6 +42,22 @@ export function nomeArquivoLayout(path: string | null | undefined): string {
   return path.replace(/^[0-9a-f-]{36}-/i, "") || path;
 }
 
+/**
+ * Exibe a quantidade do pedido somando peças extras pedidas em refações.
+ * - Sem extras: "500"
+ * - Com extras: "550 (500 +50)"
+ */
+export function QtdTotal({ pedido, className }: { pedido: Pedido; className?: string }) {
+  const { total, original, extras } = totalProducao(pedido);
+  if (!original && !extras) return <span className={className}>—</span>;
+  if (extras === 0) return <span className={className}>{original}</span>;
+  return (
+    <span className={className}>
+      {total} <span className="text-[10px] text-muted-foreground">({original} +{extras})</span>
+    </span>
+  );
+}
+
 export function EtapaBadge({ status, labels }: { status: EtapaStatus; labels: { pendente: string; andamento: string; concluido: string } }) {
   const cfg = status === "concluido"
     ? { cls: "bg-success/15 text-success border-success/30", icon: "🟢", text: labels.concluido }
