@@ -49,7 +49,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { feriados } = useFeriados();
-  const sort = useSort<"pedido"|"qtd"|"entrada"|"limite"|"saida"|"inicio">();
+  const sort = useSort<"pedido"|"qtd"|"entrada"|"limite"|"iniAcab"|"inicio">();
   const { names: statusArteCustom } = useAppList("status_arte");
   const { names: opCorteDTF } = useAppList("corte_dtf");
 
