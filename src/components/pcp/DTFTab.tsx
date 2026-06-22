@@ -15,6 +15,7 @@ import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPe
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { MultiSelectPeople, parsePeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
+import { RefacaoBadge } from "./RefacaoBadge";
 import { todayISO } from "@/lib/dias-uteis";
 
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
@@ -98,19 +99,22 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   }
   useRegisterSave(handleSave, active);
 
-  async function handleVoltar(destino: "dados" | "arte" | "dtf" | "silk" | "acabamento") {
+  async function handleVoltar(
+    destino: "dados" | "arte" | "dtf" | "silk" | "acabamento",
+    payload: import("./RefacaoDialog").RefacaoFormPayload | null,
+  ) {
     if (!selected) return;
-    const tabMap: Record<string, string> = { dados: "dados", arte: "arte", dtf: "dtf", silk: "silk", acabamento: "acabamento" };
+    const { montarRefacoesAposRefazer } = await import("./refacao-helpers");
+    const refacoes = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
-      reaberto: true,
-      // limpa o carimbo da etapa atual (DTF) para que o pedido volte
+      refacoes,
       dtf_estampado: null,
       dtf_data_executada: null,
       quem_bateu_dtf: null,
       dtf_pessoas_qtd: null,
     } as any);
-    if (onNavigate) onNavigate(tabMap[destino]);
+    if (onNavigate) onNavigate(destino);
   }
 
   async function baixarLayout(path: string) {
@@ -161,9 +165,12 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
           <Card>
             <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
               <CardTitle className="text-base sm:text-lg truncate">DTF — {selected.pedido_olist}</CardTitle>
-              <Badge variant="outline" className={statusColor}>
-                {form.dtf_estampado === "Sim" ? (atrasado ? "Atrasado" : "Concluído") : "Em andamento"}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <RefacaoBadge pedido={selected} />
+                <Badge variant="outline" className={statusColor}>
+                  {form.dtf_estampado === "Sim" ? (atrasado ? "Atrasado" : "Concluído") : "Em andamento"}
+                </Badge>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
             <EtapaTopoBanner pedido={selected} tab="dtf" />
@@ -245,7 +252,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                   )}
                   <UpdateButton onClick={handleSave} disabled={saving}>Atualizar DTF</UpdateButton>
                 </div>
-                <VoltarDropdown destinos={["arte"]} onVoltar={handleVoltar} />
+                <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />
               </div>
             </CardContent>
           </Card>

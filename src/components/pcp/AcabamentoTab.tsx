@@ -19,6 +19,7 @@ import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
 import { MultiSelectPeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
+import { RefacaoBadge } from "./RefacaoBadge";
 import { todayISO } from "@/lib/dias-uteis";
 
 
@@ -132,7 +133,10 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
         <Card>
           <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base sm:text-lg truncate">Acabamento — {selected.pedido_olist}</CardTitle>
-            <Badge variant="outline" className={status.color}>{status.label}</Badge>
+            <div className="flex items-center gap-2">
+              <RefacaoBadge pedido={selected} />
+              <Badge variant="outline" className={status.color}>{status.label}</Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <EtapaTopoBanner pedido={selected} tab="acabamento" />
@@ -353,17 +357,22 @@ function AcabamentoVoltar({ selected, onSave, onNavigate }: { selected: Pedido; 
     if (modeloIncluiDTF(selected.tipo_estampa)) destinos.push("dtf");
     if (modeloIncluiSilk(selected.tipo_estampa)) destinos.push("silk");
   }
-  async function handle(destino: string) {
+  async function handle(
+    destino: "dados" | "arte" | "dtf" | "silk" | "acabamento",
+    payload: import("./RefacaoDialog").RefacaoFormPayload | null,
+  ) {
+    const { montarRefacoesAposRefazer } = await import("./refacao-helpers");
+    const refacoes = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
-      reaberto: true,
+      refacoes,
       embalado: null,
       data_saida_juff: null,
       responsavel_acabamento: null,
     });
     if (onNavigate) onNavigate(destino);
   }
-  return <VoltarDropdown destinos={destinos} onVoltar={handle} />;
+  return <VoltarDropdown pedido={selected} destinos={destinos} onVoltar={handle} />;
 }
 
 

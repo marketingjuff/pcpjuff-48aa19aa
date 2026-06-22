@@ -26,6 +26,7 @@ import {
   ETAPA_FILTRO_OPCOES, matchEtapaFiltro, UpdateButton,
 } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+import { RefacaoBadge } from "./RefacaoBadge";
 
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
@@ -168,7 +169,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
     <div className="space-y-3">
       {selected ? (
         <Card>
-          <CardHeader><CardTitle>Arte — {selected.pedido_olist}</CardTitle></CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2"><CardTitle>Arte — {selected.pedido_olist}</CardTitle><RefacaoBadge pedido={selected} /></CardHeader>
           <CardContent className="space-y-3">
             <EtapaTopoBanner pedido={selected} tab="arte" />
 

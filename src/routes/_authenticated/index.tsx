@@ -19,7 +19,9 @@ import { AcabamentoTab } from "@/components/pcp/AcabamentoTab";
 import { DashboardTab } from "@/components/pcp/DashboardTab";
 import { FinalizadosTab } from "@/components/pcp/FinalizadosTab";
 import { ExpedicaoTab } from "@/components/pcp/ExpedicaoTab";
+import { RetrabalhoTab } from "@/components/pcp/RetrabalhoTab";
 import { DirtyFormProvider } from "@/components/pcp/dirty-form-context";
+import { fecharEpisodiosResolvidos } from "@/lib/pedidos";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: AppHome,
@@ -128,6 +130,15 @@ function AppHomeInner() {
     return () => window.clearTimeout(id);
   }, [selectedId, tab]);
 
+  // Auto-fecha episódios cuja etapa de origem foi recuperada.
+  useEffect(() => {
+    pedidos.forEach((p) => {
+      const novo = fecharEpisodiosResolvidos(p);
+      if (novo) upsert.mutate({ id: p.id, refacoes: novo } as any);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pedidos]);
+
   type TabDef = { value: string; label: string };
   const tabs: TabDef[] = [
     ...((isManager || canSee("dashboard")) ? [{ value: "dashboard", label: "Dashboard Master" }] : []),
@@ -138,6 +149,7 @@ function AppHomeInner() {
     ...(canSee("acabamento") ? [{ value: "acab", label: "Acabamento" }] : []),
     ...(canSee("expedicao") ? [{ value: "exp", label: "Expedição" }] : []),
     ...(isManager ? [{ value: "fin", label: "Finalizados" }] : []),
+    ...(isManager ? [{ value: "retrab", label: "Retrabalho" }] : []),
   ];
   const activeTabLabel = tabs.find((t) => t.value === tab)?.label ?? "";
 
@@ -265,6 +277,11 @@ function AppHomeInner() {
           {isManager && (
             <TabsContent value="fin" forceMount hidden={tab !== "fin"}>
               <FinalizadosTab pedidos={pedidos} onReabrir={(id) => upsert.mutate({ id, finalizado_em: null, reaberto: true })} />
+            </TabsContent>
+          )}
+          {isManager && (
+            <TabsContent value="retrab" forceMount hidden={tab !== "retrab"}>
+              <RetrabalhoTab pedidos={pedidos} onSave={(p) => upsert.mutate(p)} />
             </TabsContent>
           )}
 

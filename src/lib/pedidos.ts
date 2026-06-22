@@ -3,6 +3,19 @@ import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 // Tipo Pedido reflete o schema após Phase 2 (DB renomeado e colunas extras).
 // `types.ts` é gerado automaticamente — fazemos o merge aqui até regenerar.
 type PedidoBase = Omit<Tables<"pedidos">, "modelo_estampa" | "status">;
+
+export type RefacaoEpisodio = {
+  etapa_origem: string;
+  etapa_destino: "dados" | "arte" | "dtf" | "silk" | "acabamento";
+  data: string;            // ISO
+  quem: string | null;     // uuid do usuário logado
+  pecas_refazer: number;
+  perda_pecas: number;
+  perda_adesivos: number;
+  motivo: string;
+  aberto: boolean;
+};
+
 export type Pedido = PedidoBase & {
   tipo_estampa: string;
   status_pecas: string;
@@ -47,6 +60,8 @@ export type Pedido = PedidoBase & {
   quem_cortou_dtf: string | null;
   quem_revelou_tela: string | null;
   dtf_pessoas_qtd: Record<string, number> | null;
+  // Refação (Etapa 1)
+  refacoes: RefacaoEpisodio[] | null;
 };
 
 type PedidoInsertBase = Omit<TablesInsert<"pedidos">, "modelo_estampa" | "status">;
@@ -92,6 +107,7 @@ export type PedidoInsert = PedidoInsertBase & {
   quem_cortou_dtf?: string | null;
   quem_revelou_tela?: string | null;
   dtf_pessoas_qtd?: Record<string, number> | null;
+  refacoes?: RefacaoEpisodio[] | null;
 };
 
 export const VENDEDORES = ["Wander", "Mirela", "Gabriel", "Outros"] as const;
@@ -222,8 +238,42 @@ export function calcularEtapaAtual(p: Pedido): {
   }
 
 
-  if (p.reaberto && etapa !== "Finalizado") etapa = `${etapa}*`;
+  const refs = Array.isArray(p.refacoes) ? p.refacoes : [];
+  if (refs.length > 0 && etapa !== "Finalizado") etapa = `${etapa}${"*".repeat(refs.length)}`;
   return { etapa, percentual, cor };
+}
+
+/** Episódio em aberto (se houver). */
+export function episodioAberto(p: Pedido): RefacaoEpisodio | null {
+  const refs = Array.isArray(p.refacoes) ? p.refacoes : [];
+  return refs.find((e) => e.aberto) ?? null;
+}
+export function temEpisodioAberto(p: Pedido): boolean {
+  return !!episodioAberto(p);
+}
+
+/** Etapa atual (label) sem o sufixo de asteriscos. */
+export function etapaAtualSemAsterisco(p: Pedido): string {
+  return calcularEtapaAtual(p).etapa.replace(/\*+$/, "");
+}
+
+/**
+ * Retorna `refacoes` atualizadas fechando episódios cuja etapa de origem
+ * foi recuperada. Retorna null quando nada muda.
+ */
+export function fecharEpisodiosResolvidos(p: Pedido): RefacaoEpisodio[] | null {
+  const refs = Array.isArray(p.refacoes) ? p.refacoes : [];
+  if (refs.length === 0) return null;
+  const etapaAtual = etapaAtualSemAsterisco(p);
+  let changed = false;
+  const next = refs.map((e) => {
+    if (e.aberto && e.etapa_origem === etapaAtual) {
+      changed = true;
+      return { ...e, aberto: false };
+    }
+    return e;
+  });
+  return changed ? next : null;
 }
 
 export type SetorAtraso = "arte" | "dtf" | "silk" | "acabamento" | "expedicao";
