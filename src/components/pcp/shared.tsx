@@ -519,6 +519,6 @@ export function matchEtapaFiltro(p: Pedido, value: string): boolean {
   if (value === "pendencias_data") return !!p.data_entrega_proposta;
   if (value === "ativas" || value === "todas") return true;
   const etapaAtual = calcularEtapaAtual(p).etapa.replace(/\*$/, "");
-  if (value === "pendencias_arte") return _ETAPA_PENDENCIAS_ARTE.has(etapaAtual);
+  
   return _ETAPA_MAP[value]?.includes(etapaAtual) ?? false;
 }
