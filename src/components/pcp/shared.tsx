@@ -2,7 +2,7 @@ import type { Pedido } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, type ButtonProps } from "@/components/ui/button";
-import { calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk, isAtrasadoSetor, type EtapaStatus, type SetorAtraso } from "@/lib/pedidos";
+import { calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk, isAtrasadoSetor, totalProducao, type EtapaStatus, type SetorAtraso } from "@/lib/pedidos";
 import { CheckCircle2, Clock, AlertTriangle, Info, ArrowUpDown, Save, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
