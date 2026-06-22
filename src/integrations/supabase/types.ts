@@ -137,6 +137,7 @@ export type Database = {
           quem_cortou_dtf: string | null
           quem_revelou_tela: string | null
           reaberto: boolean
+          refacoes: Json
           responsavel_acabamento: string | null
           responsavel_conferencia: string | null
           saida_juff: string | null
@@ -211,6 +212,7 @@ export type Database = {
           quem_cortou_dtf?: string | null
           quem_revelou_tela?: string | null
           reaberto?: boolean
+          refacoes?: Json
           responsavel_acabamento?: string | null
           responsavel_conferencia?: string | null
           saida_juff?: string | null
@@ -285,6 +287,7 @@ export type Database = {
           quem_cortou_dtf?: string | null
           quem_revelou_tela?: string | null
           reaberto?: boolean
+          refacoes?: Json
           responsavel_acabamento?: string | null
           responsavel_conferencia?: string | null
           saida_juff?: string | null

@@ -1,35 +1,109 @@
-## Reorganização do trecho abaixo de "Baixar layout" na aba Arte
+## Etapa 1 — Fluxo de Refação + Reabrir para Expedição
 
-Arquivo único: `src/components/pcp/ArteTab.tsx` (linhas 203–294). Nada acima da linha 202 será tocado. Sem novos arquivos, sem mudanças de estilo/tamanho, sem mudança de lógica de negócio. Reaproveita `showDTF` / `showSilk` (já equivalentes a `visivelEmDTF` / `visivelEmSilk`) e os mesmos `FormField` / `Select` / `DateInputBR` / `Textarea` atuais.
+### 1. Migração de banco
+Nova migração SQL:
+- `ALTER TABLE public.pedidos ADD COLUMN refacoes jsonb NOT NULL DEFAULT '[]'::jsonb;`
+- Regenerar tipos (atualizar `src/integrations/supabase/types.ts` ou refletir via `schema-extras.ts` se for o padrão usado para extensões — vou adicionar `refacoes?: RefacaoEpisodio[]` em `schema-extras.ts` e no tipo `Pedido` em `src/lib/pedidos.ts`).
 
-### 1. Seção "DTF" (condicional a `showDTF`)
-- Título de texto simples acima do grid: `<h4>DTF</h4>` (classe neutra, sem cor/ícone, ex.: `text-sm font-medium`).
-- Todos os campos na MESMA linha (um único grid, mesmas classes de grid já usadas):
-  1. Vetorização de DTF Realizada (se `showVetorDTF`)
-  2. DTF Impresso
-  3. Data DTF Impresso (se `form.dtf_impresso === "Sim"`)
-  4. DTF Cortado
-  5. Data DTF Cortado (se `form.dtf_cortado === "Sim"`)
-  6. Quem cortou o DTF? (se `form.dtf_cortado === "Sim"`)
+Tipo:
+```ts
+type RefacaoEpisodio = {
+  etapa_origem: string;
+  etapa_destino: "dados" | "arte" | "dtf" | "silk" | "acabamento";
+  data: string;          // ISO
+  quem: string;          // uuid
+  pecas_refazer: number;
+  perda_pecas: number;
+  perda_adesivos: number;
+  motivo: string;
+  aberto: boolean;
+};
+```
 
-### 2. Seção "Silk" (condicional a `showSilk`)
-- Título de texto simples: `<h4>Silk</h4>`.
-- Todos os campos na MESMA linha:
-  1. Vetorização de Silk Realizada (se `showVetorSilk`)
-  2. Fotolito Impresso
-  3. Data de Impressão do Fotolito (se `form.fotolito_impresso === "Sim"`)
+### 2. `VoltarDropdown` → `RefazerDropdown`
+- Renomear o label visível para **"Refazer pedido"** (botão "OK" vira "Refazer pedido"; mantém o `Select` de destino).
+- Manter o nome do arquivo/componente para reduzir diff, apenas mudar o texto do botão.
+- Nova prop opcional `pedido` para sabermos `tipo_estampa` e episódio aberto.
+- Ao clicar:
+  - Se NÃO houver episódio aberto (`refacoes.find(e => e.aberto)` ausente) → abrir modal de Refação.
+  - Se houver episódio aberto → não abrir modal; apenas chamar `onVoltar(destino)` e atualizar o `etapa_destino` do episódio aberto.
 
-Em pedidos DTF+Silk as duas seções aparecem; em pedidos de um tipo só, apenas a correspondente — comportamento já garantido por `showDTF` / `showSilk`.
+### 3. Novo componente `RefacaoDialog`
+Campos (todos validados):
+- Etapa de destino (já vem do dropdown — exibido como confirmação).
+- Quantas peças serão refeitas (number, obrigatório, ≥1).
+- Houve perda de peças? Sim/Não → se Sim, quantas peças perdidas (number obrigatório).
+- Houve perda de adesivos? (apenas se `tipo_estampa ∈ {"DTF","DTF+Silk"}`) → se Sim, quantos adesivos perdidos.
+- Motivo (textarea, obrigatório, trim ≠ "").
 
-### 3. Seção "Observações e anotações"
-- Título de texto simples: `<h4>Observações e anotações</h4>`.
-- Inverter a ordem do bloco atual:
-  - PRIMEIRO: campo "Observações da Arte" (Textarea + `ObservacoesOutrosSetores`).
-  - DEPOIS: campo "Anotações da Arte" (Select `status_arte`).
-- Mantém o mesmo grid/colspans atuais, só trocando a ordem dos dois blocos internos.
+Ao confirmar: chama callback `onConfirmar(payload)` que monta o episódio e dispara `onVoltar`.
 
-### 4. Botão "Atualizar Arte"
-- Permanece exatamente onde está, logo abaixo da última seção.
+### 4. Destinos ampliados
+- `DTFTab`: `destinos={["dados","arte"]}`.
+- `SilkTab`: `destinos={["dados","arte"]}`.
+- `AcabamentoTab` / `ExpedicaoTab`: inalterados.
 
-### Observação técnica
-O label do Select `status_arte` hoje está como "Anotações da Arte" e o Textarea `arte_observacao` como "Observações da Arte" — mantenho esses labels como estão (a reordenação pede "Observações primeiro, Anotações depois", o que é satisfeito invertendo os dois blocos sem renomear nada).
+### 5. Integração nos handlers de Voltar (DTF, Silk, Acabamento, Expedição)
+Cada `handleVoltar` existente passa a:
+1. Determinar `etapaOrigem = calcularEtapaAtual(pedido).etapa.replace(/\*$/,"")`.
+2. Buscar episódio aberto.
+3. Caso haja → atualizar `refacoes` substituindo o episódio aberto com novo `etapa_destino`; manter o reset de campos já existente; **não** setar mais `reaberto: true` (ver §8).
+4. Caso não haja → o `RefacaoDialog` já foi preenchido; criar novo episódio com `aberto: true`, `quem = (await supabase.auth.getUser()).data.user?.id`, `data = new Date().toISOString()`, e fazer `upsert.mutate({ id, refacoes: [...existing, novoEpisodio], <resets das etapas seguintes> })`.
+
+O reset de campos das etapas seguintes (comportamento atual) é preservado.
+
+### 6. Fechamento automático de episódio
+Em `calcularEtapaAtual` (ou num helper chamado após upserts), quando a etapa atual recuperar e voltar a ser ≥ `etapa_origem` do episódio aberto, marcar `aberto:false`.
+
+Implementação: criar helper `fecharEpisodiosResolvidos(pedido)` em `src/lib/pedidos.ts` que retorna o array `refacoes` atualizado. Disparar nos save handlers de DadosIn / Arte / DTF / Silk / Acabamento — quando a etapa atual do pedido (calculada sem `*`) for igual à `etapa_origem`, fecha. Para simplificar: chamar essa função na invalidação após cada upsert principal (DTF/Silk/Acabamento/etc.) — se mudou alguma flag de progresso e algum episódio precisa fechar, faz um update extra. Vou centralizar dentro do mesmo `upsert.mutate` desses handlers.
+
+### 7. Asterisco = número de episódios
+Em `calcularEtapaAtual` linha 225, substituir:
+```ts
+if (p.reaberto && etapa !== "Finalizado") etapa = `${etapa}*`;
+```
+por:
+```ts
+const n = Array.isArray(p.refacoes) ? p.refacoes.length : 0;
+if (n > 0 && etapa !== "Finalizado") etapa = `${etapa}${"*".repeat(n)}`;
+```
+Remover a dependência de `reaberto` para o asterisco.
+
+### 8. `reaberto` passa a significar só "reaberto do Finalizados"
+- Remover `reaberto: true` dos handlers de Voltar (DTF/Silk/Acabamento/Expedição).
+- Manter `reaberto: true` somente no fluxo `onReabrir` em `FinalizadosTab` (chamado de `routes/_authenticated/index.tsx`).
+
+### 9. Reabrir Finalizados → Expedição
+Atual:
+```ts
+upsert.mutate({ id, finalizado_em: null, reaberto: true })
+```
+Mudar para também garantir que ele apareça na Expedição. Como a `ExpedicaoTab` já filtra por `p.expedicao_entrou_em && !p.finalizado_em` (linha 69), basta o pedido ter `expedicao_entrou_em` preenchido — todo finalizado já passou por lá, então geralmente já tem. Não precisa zerar nada de produção. Confirmar: vou manter o payload `{ finalizado_em: null, reaberto: true }`; o pedido reaparece na Expedição automaticamente.
+
+### 10. Aviso "em refação" nas abas operacionais
+- Helper `temEpisodioAberto(p)` em `src/lib/pedidos.ts`.
+- Em Arte/DTF/Silk/Acabamento (cabeçalho do card de detalhe e/ou linha da lista), exibir badge `<Badge variant="destructive">em refação</Badge>` quando `temEpisodioAberto(pedido)`.
+
+### 11. Aba "Retrabalho" (admin/gestor)
+Novo arquivo `src/components/pcp/RetrabalhoTab.tsx`, mesmo padrão visual de `DashboardTab`:
+- Cards de totais: peças refeitas (soma `pecas_refazer`), peças perdidas, adesivos perdidos, % retrabalho (refeitas ÷ Σ `qtde_pedido_total` dos pedidos), etapa de origem com maior soma de perdas.
+- Tabela de pedidos com `refacoes.length > 0`; expandir cada um para listar episódios com todos os campos.
+- Edição inline de episódio e botão Apagar episódio. Atualiza `refacoes` via `upsert`.
+
+Em `src/routes/_authenticated/index.tsx`, adicionar a aba "Retrabalho" usando `isManager` (igual a Finalizados). Filtros padrão de tabela como nas outras abas.
+
+### 12. Observações
+- Não tocar em trava/bloqueio por etapa (Etapa 2).
+- Não duplicar pedidos.
+
+### Arquivos afetados
+- nova migração SQL (coluna `refacoes`)
+- `src/integrations/supabase/schema-extras.ts`, `src/lib/pedidos.ts` (tipo `Pedido`, asterisco, helpers)
+- `src/components/pcp/VoltarDropdown.tsx` (label + integração com dialog)
+- novo `src/components/pcp/RefacaoDialog.tsx`
+- `src/components/pcp/DTFTab.tsx`, `SilkTab.tsx`, `AcabamentoTab.tsx`, `ExpedicaoTab.tsx` (destinos, handlers, badge)
+- `src/components/pcp/ArteTab.tsx` (badge "em refação")
+- `src/components/pcp/FinalizadosTab.tsx` / `routes/_authenticated/index.tsx` (Reabrir comportamento + nova aba Retrabalho)
+- novo `src/components/pcp/RetrabalhoTab.tsx`
+
+Aguardo aprovação para implementar.

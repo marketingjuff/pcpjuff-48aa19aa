@@ -1,0 +1,1 @@
+ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS refacoes jsonb NOT NULL DEFAULT '[]'::jsonb;
