@@ -102,13 +102,14 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   ) {
     if (!selected) return;
     const { montarRefacoesAposRefazer } = await import("./refacao-helpers");
-    const refacoes = await montarRefacoesAposRefazer(selected, destino, payload);
+    const { refacoes, observacoes_pedido } = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
       refacoes,
       silk_feito: null,
       silk_data_executada: null,
       quem_bateu_silk: null,
+      ...(observacoes_pedido !== undefined ? { observacoes_pedido } : {}),
     } as any);
     if (onNavigate) onNavigate(destino);
   }
