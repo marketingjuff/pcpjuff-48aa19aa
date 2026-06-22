@@ -19,6 +19,7 @@ import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
 import { MultiSelectPeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
+import { RefacaoBadge } from "./RefacaoBadge";
 import { todayISO } from "@/lib/dias-uteis";
 
 
@@ -132,7 +133,10 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
         <Card>
           <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base sm:text-lg truncate">Acabamento — {selected.pedido_olist}</CardTitle>
-            <Badge variant="outline" className={status.color}>{status.label}</Badge>
+            <div className="flex items-center gap-2">
+              <RefacaoBadge pedido={selected} />
+              <Badge variant="outline" className={status.color}>{status.label}</Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <EtapaTopoBanner pedido={selected} tab="acabamento" />
