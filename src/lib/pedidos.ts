@@ -14,6 +14,8 @@ export type RefacaoRetrato = {
   entrada_pedido: string | null;
   saida_juff: string | null;
   etapas_concluidas: RefacaoRetratoEtapa[];
+  /** Snapshot completo de todos os campos que foram apagados pela refação. */
+  campos_apagados?: Record<string, any>;
 };
 
 export type RefacaoEpisodio = {
