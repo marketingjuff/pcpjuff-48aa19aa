@@ -1,4 +1,4 @@
-import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc, episodioAberto } from "@/lib/pedidos";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
@@ -153,11 +153,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       toast.error(`Já existe um pedido com o número Olist "${form.pedido_olist}".`);
       return;
     }
+    const wipe = await wipeProducaoSeRefacaoDados();
     onSave({
       ...form,
       saida_juff: saidaJuffCalc ?? form.saida_juff ?? null,
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
       inicio_acabamento: inicioAcabamentoCalc ?? form.inicio_acabamento ?? null,
+      ...wipe,
     });
   }
   async function saveProducao() {
@@ -185,13 +187,29 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         return;
       }
     }
+    const wipe = await wipeProducaoSeRefacaoDados();
     onSave({
       ...form,
       saida_juff: saidaJuffCalc ?? form.saida_juff ?? null,
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
       inicio_acabamento: inicioAcabamentoCalc ?? form.inicio_acabamento ?? null,
+      ...wipe,
     });
   }
+
+  /**
+   * Quando há episódio de refação aberto com destino "dados", o salvar do
+   * Dados In dispara o wipe de toda a produção (Arte+DTF+Silk+Acabamento),
+   * liberando o pedido para "Aguardando Arte" no próximo cálculo.
+   */
+  async function wipeProducaoSeRefacaoDados(): Promise<Record<string, any>> {
+    if (!selected) return {};
+    const aberto = episodioAberto(selected);
+    if (!aberto || aberto.etapa_destino !== "dados") return {};
+    const { camposAlimpar } = await import("./refacao-helpers");
+    return camposAlimpar(selected, "arte");
+  }
+
   useRegisterSave(saveVendor, active);
 
   function handleNew() { onSelect(null); setForm(empty); }
