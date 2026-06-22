@@ -258,7 +258,8 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
               </fieldset>
             </CardContent>
           </Card>
-        )
+        )}
+        </>
       ) : (
         <EmptyState>Selecione um pedido Silk no dashboard abaixo.</EmptyState>
       )}
