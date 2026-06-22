@@ -306,9 +306,20 @@ export function totalProducao(p: Pedido): { total: number; original: number; ext
   return { total: original + extras, original, extras };
 }
 
+/** Etapas naturais associadas a cada destino de refação. */
+const DESTINO_ETAPAS_NATURAIS: Record<RefacaoEpisodio["etapa_destino"], string[]> = {
+  dados: ["Aguardando entrada", "Aguardando input de produção", "Aguardando Dados In"],
+  arte: ["Aguardando Arte", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
+  dtf: ["Aguardando DTF", "Aguardando DTF + Silk"],
+  silk: ["Aguardando Silk", "Aguardando DTF + Silk"],
+  acabamento: ["Aguardando Acabamento"],
+};
+
 /**
- * Retorna `refacoes` atualizadas fechando episódios cuja etapa de origem
- * foi recuperada. Compara contra a etapa NATURAL (sem destino sobrescrito).
+ * Retorna `refacoes` atualizadas:
+ * 1) Marca `visitou_destino=true` quando a etapa natural cai na etapa do destino.
+ * 2) Só fecha o episódio quando a etapa natural voltou para `etapa_origem`
+ *    E o pedido já passou pelo destino (visitou_destino).
  * Retorna null quando nada muda.
  */
 export function fecharEpisodiosResolvidos(p: Pedido): RefacaoEpisodio[] | null {
@@ -317,11 +328,18 @@ export function fecharEpisodiosResolvidos(p: Pedido): RefacaoEpisodio[] | null {
   const etapaNatural = calcularEtapaNatural(p).etapa.replace(/\*+$/, "");
   let changed = false;
   const next = refs.map((e) => {
-    if (e.aberto && e.etapa_origem === etapaNatural) {
+    if (!e.aberto) return e;
+    const destinos = DESTINO_ETAPAS_NATURAIS[e.etapa_destino] ?? [];
+    let merged = e;
+    if (!e.visitou_destino && destinos.includes(etapaNatural)) {
+      merged = { ...e, visitou_destino: true };
       changed = true;
-      return { ...e, aberto: false };
     }
-    return e;
+    if (merged.visitou_destino && merged.etapa_origem === etapaNatural) {
+      changed = true;
+      return { ...merged, aberto: false };
+    }
+    return merged;
   });
   return changed ? next : null;
 }
