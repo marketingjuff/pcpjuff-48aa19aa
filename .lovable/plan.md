@@ -1,129 +1,49 @@
-## Ajustes no esquema de refação — PCP Juff
+## Correção: refação trava o pedido no destino
 
-Plano para os 5 itens. Implementação ocorrerá um item por vez após aprovação.
+### 1. Tirar a sobreposição "destino manda" do cálculo de etapa
+**`src/lib/pedidos.ts` — `calcularEtapaInterno`**
 
----
+- Remover o bloco que força `etapa/cor` para `DESTINO_TO_ETAPA[aberto.etapa_destino]` quando há episódio aberto. Também remover o map `DESTINO_TO_ETAPA` (não usado em mais nenhum lugar).
+- O cálculo passa a ser sempre o natural; o asterisco no final continua sinalizando "tem refação aberta".
+- `calcularEtapaNatural` e `fecharEpisodiosResolvidos` ficam como estão — o fechamento já compara contra a etapa natural e vai funcionar porque o pedido agora percorre o caminho de verdade.
 
-### 1. Bug do destino do Refazer
+### 2. Novo helper central: "apagar a partir do destino"
+**`src/components/pcp/refacao-helpers.ts`** — adicionar `camposAlimpar(pedido, destino)` que devolve um `Partial<PedidoInsert>` com os campos zerados (status/data/responsável de execução), preservando datas de planejamento (`arte_data`, `inicio_estamparia`, `termino_estamparia`, `saida_juff`) e os dados do Olist.
 
-Hoje `calcularEtapaAtual()` (em `src/lib/pedidos.ts`) calcula a etapa a partir dos checks (`pedido_olist`, `arte_data`, `dtf_estampado`, `silk_feito`, `embalado`). Como o Refazer não limpa esses campos, o pedido continua sendo classificado na etapa anterior — ignorando o `etapa_destino` do episódio aberto.
+Mapeamento (somente campos de execução/conclusão, deixando os agendamentos):
 
-**Correção (sobreposição do destino quando há episódio aberto):** logo no início de `calcularEtapaAtual`, antes do cálculo normal, verificar `episodioAberto(p)`. Se houver, retornar a etapa correspondente ao `etapa_destino` do episódio:
+- **Arte** (`arte`): `status_arte`, `arte_observacao`, `vetorizacao_executada`, `vetorizacao_dtf`, `vetorizacao_silk`, `dtf_impresso`, `dtf_executado`, `dtf_cortado`, `dtf_cortado_data`, `fotolito_impresso`, `fotolito_executado` — e tudo de DTF + Silk + Acabamento abaixo.
+- **DTF** (`dtf`): `dtf_estampado`, `dtf_data_executada`, `quem_bateu_dtf`, `quem_cortou_dtf`, `n_batidas_dtf`, `dtf_pessoas_qtd`, `dtf_observacao` — e Acabamento.
+- **Silk** (`silk`): `tela_gravada`, `silk_feito`, `silk_data_executada`, `quem_bateu_silk`, `quem_revelou_tela`, `n_batidas_silk`, `silk_observacao` — e Acabamento.
+- **Acabamento** (`acabamento`): `embalado`, `acabamento_data`, `data_saida_juff`, `responsavel_acabamento`, `responsavel_conferencia`, `inicio_acabamento`, `termino_acabamento`, `dias_secagem`, `finalizado_em`, `tempo_producao`, `expedicao_entrou_em` + todos `exp_*`.
+- **Dados In** (`dados`): **não apaga nada no momento do Refazer** (só registra o episódio). O wipe acontece depois quando o Dados In for salvo (item 4).
 
-```text
-dados        → "Aguardando Dados In"
-arte         → "Aguardando Arte"
-dtf          → "Aguardando DTF"
-silk         → "Aguardando Silk"
-acabamento   → "Aguardando Acabamento"
-```
+**Lado pedido em DTF+Silk:** quando `destino === "dtf"`, **não** mexer em nenhum campo de Silk; quando `destino === "silk"`, **não** mexer em nenhum campo de DTF. Acabamento sempre é limpo junto.
 
-Asteriscos continuam sendo aplicados ao fim (1 por episódio existente). O fechamento automático (`fecharEpisodiosResolvidos`) precisa comparar contra a etapa **natural** (sem destino forçado) — então acrescentaremos um parâmetro/flag interno para esse cálculo cru, evitando loop. Resultado: o pedido aparece **só** na aba do destino enquanto o episódio estiver aberto; ao operador concluir essa etapa, o episódio fecha e o fluxo segue normal.
+### 3. Aplicar o wipe nos handlers de Refazer
+Substituir as listas hardcoded de campos em cada `handleVoltar/onVoltar` por `...camposAlimpar(selected, destino)`:
 
----
+- `src/components/pcp/DTFTab.tsx` (handleVoltar)
+- `src/components/pcp/SilkTab.tsx` (handleVoltar)
+- `src/components/pcp/AcabamentoTab.tsx` (handle)
+- `src/components/pcp/ExpedicaoTab.tsx` (onVoltar inline)
 
-### 2. Campo "Peças extras pedidas" no Dados In
+O `montarRefacoesAposRefazer` já captura o `retrato` **antes** do wipe (ele só lê do `pedido` recebido), então a ordem está garantida.
 
-- Adicionar campo `pecas_extras?: number` em `RefacaoEpisodio`.
-- No `RefacaoDialog`, quando `destino === "dados"`, exibir campo "Quantas peças extras pedidas?" (numérico, opcional, ≥ 0). Para outros destinos, não mostrar e não gravar.
-- O número fica preso no episódio (vai junto no item 5 — retrato).
-- `qtd` original do pedido **não muda**.
+### 4. Regra especial Dados In
+**`src/components/pcp/DadosInTab.tsx` — handleSave**
 
-**Helper novo** em `pedidos.ts`:
-```ts
-export function totalProducao(p: Pedido): { total: number; original: number; extras: number };
-```
-soma `qtd` + Σ `pecas_extras` dos episódios.
+Antes de enviar o `onSave`, verificar `episodioAberto(selected)`. Se aberto e `etapa_destino === "dados"`, adicionar ao payload `...camposAlimpar(selected, "arte")` (que cobre Arte + DTF + Silk + Acabamento). Isso libera o pedido para "Aguardando Arte" no próximo cálculo. O cadastro (Olist, nome, datas, etc.) continua sendo salvo normalmente.
 
-**Exibição em todos os cards/linhas (Arte, DTF, Silk, Acabamento, Expedição, Dashboard):** onde hoje renderiza `p.qtd`, trocar por um pequeno componente `QtdTotal` em `shared.tsx`:
-- sem extras → `500`
-- com extras → `550 (500 +50)`
+O fechamento do episódio acontece automaticamente quando a etapa natural voltar a ser a etapa de origem — sem código novo.
 
----
+### 5. Corrigir responsável da Arte no retrato
+**`refacao-helpers.ts` — `montarRetrato`**: a etapa "Arte" hoje grava `responsavel: null`. Trocar por `p.criado_por_arte ?? p.responsavel_arte ?? null` — verificar qual coluna existe no schema (provavelmente nenhuma das duas; nesse caso usar o último editor dos campos de arte, ou deixar consistente com como as outras etapas resolvem o nome). Resolver na implementação inspecionando o schema; se não houver campo de responsável de Arte, manter `null` mas documentar.
 
-### 3. Formatação dos dados na aba Retrabalho
+### Fora de escopo
+- Não mexer em UI/labels.
+- Não mexer no `RetrabalhoTab` nem em `RefacaoDialog`.
+- Não criar novo tipo de migration — `refacoes` jsonb continua igual.
 
-Em `RetrabalhoTab.tsx`, trocar inputs crus por exibição formatada (somente leitura para campos derivados; gestor continua podendo editar via botão "Editar episódio" → modal, ou mantemos campos editáveis com máscara — proposta: **read-only por padrão + botão Editar** que abre os mesmos inputs de hoje, evitando edição acidental de UUID/ISO).
-
-Formatadores:
-
-| Campo | De | Para |
-|---|---|---|
-| Data | `2026-06-22T18:43:36.027Z` | `22/06/2026 15:43` (fuso BR) |
-| Responsável | UUID | nome do `profiles.nome` (cache: hook `useProfilesMap()` carregando uma vez) |
-| Etapa origem/destino | `dados`, `arte`, `dtf`, `silk`, `acabamento`, ou rótulos como `Aguardando DTF` | `Dados In`, `Arte`, `DTF`, `Silk`, `Acabamento`, `Expedição` |
-| Peças perdidas | `0` ou `50` | `Não` ou `Sim — 50` |
-| Adesivos perdidos | `0` ou `100` | `Não` ou `Sim — 100` (omitir se pedido não tem DTF) |
-| Peças extras | `50` | `+50` |
-| Aberto | `Sim/Não` | `Em aberto` / `Encerrado` (badge) |
-
-Layout do card do episódio segue o exemplo enviado (grid 2 colunas + retrato no fim + botões Apagar / Salvar).
-
----
-
-### 4. Registro automático nas observações
-
-Quando um episódio é criado em `montarRefacoesAposRefazer` (`refacao-helpers.ts`):
-
-1. Buscar nome do responsável atual (`profiles.nome` pelo `auth.uid()`).
-2. Montar string formatada e prefixar (linha em cima) ao `observacoes_pedido` do pedido — o campo geral que já é exibido em todas as abas via `ObservacoesOutrosSetores` (mapeado a `producao`). Operador não digita nada.
-
-Formato exato:
-```
-22/06/2026 15:43 — Refação (automático)
-Voltou de Acabamento para Dados In · 50 peças a refazer · 50 peças perdidas · 100 adesivos perdidos · +50 extras · responsável: Jefferson · motivo: estampado na cor errada
-```
-
-Regras de omissão:
-- Sem adesivo quando `!tipoIncluiDTF(p.tipo_estampa)` ou `perda_adesivos === 0`.
-- Sem "+N extras" se `destino !== "dados"` ou `pecas_extras` não informado.
-- Sem "50 peças perdidas" se `perda_pecas === 0`.
-
-`montarRefacoesAposRefazer` passará a retornar `{ refacoes, observacoes_pedido }`; quem chama (DTF/Silk/Acabamento/Expedição tabs) salva os dois campos juntos.
-
----
-
-### 5. Retrato congelado por episódio
-
-Adicionar em `RefacaoEpisodio`:
-
-```ts
-retrato?: {
-  entrada_pedido: string | null;       // ISO da entrada
-  saida_juff: string | null;           // data Saída Juff (planejada)
-  etapas_concluidas: Array<{
-    etapa: "Arte" | "DTF" | "Silk" | "Acabamento";
-    data: string | null;               // ISO (campo já existente ou agora)
-    responsavel: string | null;        // nome (não UUID)
-  }>;
-};
-```
-
-**Captura no momento da criação do episódio** (em `montarRefacoesAposRefazer`):
-- `entrada_pedido` ← `p.entrada_pedido`
-- `saida_juff` ← `p.saida_juff`
-- Para cada etapa concluída até o momento, montar entrada baseada em:
-  - Arte → `arte_data` + responsável (carregar do `status_arte` finalizado / fallback "—")
-  - DTF → `dtf_data_executada` + `quem_bateu_dtf`
-  - Silk → `silk_data_executada` + `quem_bateu_silk`
-  - Acabamento → `acabamento_data` + `responsavel_acabamento`
-
-Só inclui etapas que de fato foram concluídas até o momento da refação (`dtfCompleto`, `silkCompleto`, etc.).
-
-**Exibição** no card do episódio na aba Retrabalho, no padrão do exemplo enviado (linha "Datas originais" + linha "Etapas concluídas" com ✓).
-
----
-
-### Arquivos afetados
-
-- `src/lib/pedidos.ts` — sobreposição de etapa, helper `totalProducao`, tipo `RefacaoEpisodio` (pecas_extras + retrato).
-- `src/components/pcp/RefacaoDialog.tsx` — campo "Peças extras" quando destino = dados.
-- `src/components/pcp/VoltarDropdown.tsx` — passar destino ao Dialog para condicional do extras.
-- `src/components/pcp/refacao-helpers.ts` — capturar retrato, gravar `pecas_extras`, montar observação automática, retornar `{ refacoes, observacoes_pedido }`.
-- `src/components/pcp/{DTF,Silk,Acabamento,Expedicao}Tab.tsx` — salvar `observacoes_pedido` retornado.
-- `src/components/pcp/RetrabalhoTab.tsx` — reescrita do card do episódio (read-only + Editar) com formatação + retrato.
-- `src/components/pcp/shared.tsx` — novo `QtdTotal` exibido em cards/linhas.
-- `src/hooks/use-profiles-map.ts` (novo) — mapa `uuid → nome` para Responsável.
-- Atualizar todas as tabs onde `p.qtd` aparece em cards/linhas para usar `QtdTotal`.
-
-Sem migrações de banco: tudo cabe no jsonb `refacoes` existente.
+### Arquivos editados
+`src/lib/pedidos.ts`, `src/components/pcp/refacao-helpers.ts`, `src/components/pcp/DTFTab.tsx`, `src/components/pcp/SilkTab.tsx`, `src/components/pcp/AcabamentoTab.tsx`, `src/components/pcp/ExpedicaoTab.tsx`, `src/components/pcp/DadosInTab.tsx`.

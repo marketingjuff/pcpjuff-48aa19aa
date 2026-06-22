@@ -378,18 +378,17 @@ function AcabamentoVoltar({ selected, onSave, onNavigate }: { selected: Pedido; 
     destino: "dados" | "arte" | "dtf" | "silk" | "acabamento",
     payload: import("./RefacaoDialog").RefacaoFormPayload | null,
   ) {
-    const { montarRefacoesAposRefazer } = await import("./refacao-helpers");
+    const { montarRefacoesAposRefazer, camposAlimpar } = await import("./refacao-helpers");
     const { refacoes, observacoes_pedido } = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
       refacoes,
-      embalado: null,
-      data_saida_juff: null,
-      responsavel_acabamento: null,
+      ...camposAlimpar(selected, destino),
       ...(observacoes_pedido !== undefined ? { observacoes_pedido } : {}),
     } as any);
     if (onNavigate) onNavigate(destino);
   }
+
   return <VoltarDropdown pedido={selected} destinos={destinos} onVoltar={handle} />;
 }
 

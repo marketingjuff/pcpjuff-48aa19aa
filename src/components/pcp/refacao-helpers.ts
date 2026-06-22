@@ -144,3 +144,94 @@ export async function montarRefacoesAposRefazer(
   const observacoes_pedido = obsAtual ? `${linha}\n\n${obsAtual}` : linha;
   return { refacoes: [...refsAtuais, novo], observacoes_pedido };
 }
+
+// ---------- Wipe de campos a partir do destino da refação ----------
+
+type WipeDestino = "dados" | "arte" | "dtf" | "silk" | "acabamento";
+
+const WIPE_ARTE_COMUM = {
+  status_arte: null,
+  arte_observacao: null,
+  vetorizacao_executada: null,
+} as const;
+const WIPE_ARTE_DTF = {
+  vetorizacao_dtf: null,
+  dtf_impresso: null,
+  dtf_executado: null,
+  dtf_cortado: null,
+  dtf_cortado_data: null,
+} as const;
+const WIPE_ARTE_SILK = {
+  vetorizacao_silk: null,
+  fotolito_impresso: null,
+  fotolito_executado: null,
+} as const;
+const WIPE_DTF = {
+  dtf_estampado: null,
+  dtf_data_executada: null,
+  quem_bateu_dtf: null,
+  quem_cortou_dtf: null,
+  n_batidas_dtf: null,
+  dtf_pessoas_qtd: null,
+  dtf_observacao: null,
+} as const;
+const WIPE_SILK = {
+  tela_gravada: null,
+  silk_feito: null,
+  silk_data_executada: null,
+  quem_bateu_silk: null,
+  quem_revelou_tela: null,
+  n_batidas_silk: null,
+  silk_observacao: null,
+} as const;
+const WIPE_ACABAMENTO = {
+  embalado: null,
+  acabamento_data: null,
+  data_saida_juff: null,
+  responsavel_acabamento: null,
+  responsavel_conferencia: null,
+  inicio_acabamento: null,
+  termino_acabamento: null,
+  dias_secagem: null,
+  finalizado_em: null,
+  tempo_producao: null,
+  expedicao_entrou_em: null,
+  exp_cobranca_pagamento: null,
+  exp_pagamento: null,
+  exp_etiqueta: null,
+  exp_frete_solicitado: null,
+  exp_frete_solicitado_em: null,
+  exp_despachado: null,
+  exp_despachado_em: null,
+  exp_observacoes: null,
+} as const;
+
+/**
+ * Campos a apagar (status/data/responsável de execução) ao mandar o pedido
+ * de volta para `destino`. Datas de planejamento (arte_data, inicio/termino
+ * estamparia, saida_juff) e cadastro do Olist NÃO são tocados.
+ *
+ * Em DTF+Silk, "dtf" só apaga DTF (+ acabamento) e "silk" só apaga Silk
+ * (+ acabamento) — o lado já pronto permanece pronto.
+ */
+export function camposAlimpar(pedido: Pedido, destino: WipeDestino): Record<string, any> {
+  if (destino === "dados") return {};
+  const incluiDTF = tipoIncluiDTF(pedido.tipo_estampa);
+  const incluiSilk = tipoIncluiSilk(pedido.tipo_estampa);
+  let out: Record<string, any> = { ...WIPE_ACABAMENTO };
+  if (destino === "acabamento") return out;
+  if (destino === "dtf") {
+    if (incluiDTF) out = { ...out, ...WIPE_DTF };
+    return out;
+  }
+  if (destino === "silk") {
+    if (incluiSilk) out = { ...out, ...WIPE_SILK };
+    return out;
+  }
+  // destino === "arte" → apaga Arte + DTF + Silk + Acabamento
+  out = { ...out, ...WIPE_ARTE_COMUM };
+  if (incluiDTF) out = { ...out, ...WIPE_ARTE_DTF, ...WIPE_DTF };
+  if (incluiSilk) out = { ...out, ...WIPE_ARTE_SILK, ...WIPE_SILK };
+  return out;
+}
+
