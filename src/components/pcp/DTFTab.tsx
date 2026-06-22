@@ -98,19 +98,46 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   }
   useRegisterSave(handleSave, active);
 
-  async function handleVoltar(destino: "dados" | "arte" | "dtf" | "silk" | "acabamento") {
+  async function handleVoltar(
+    destino: "dados" | "arte" | "dtf" | "silk" | "acabamento",
+    payload: import("./RefacaoDialog").RefacaoFormPayload | null,
+  ) {
     if (!selected) return;
-    const tabMap: Record<string, string> = { dados: "dados", arte: "arte", dtf: "dtf", silk: "silk", acabamento: "acabamento" };
+    const { episodioAberto, etapaAtualSemAsterisco } = await import("@/lib/pedidos");
+    const refsAtuais = Array.isArray(selected.refacoes) ? selected.refacoes : [];
+    let novasRefacoes = refsAtuais;
+    const aberto = episodioAberto(selected);
+    if (aberto) {
+      novasRefacoes = refsAtuais.map((e) =>
+        e === aberto ? { ...e, etapa_destino: destino } : e,
+      );
+    } else if (payload) {
+      const { data: u } = await supabaseAuthGetUser();
+      novasRefacoes = [
+        ...refsAtuais,
+        {
+          etapa_origem: etapaAtualSemAsterisco(selected),
+          etapa_destino: destino,
+          data: new Date().toISOString(),
+          quem: u?.user?.id ?? null,
+          pecas_refazer: payload.pecas_refazer,
+          perda_pecas: payload.perda_pecas,
+          perda_adesivos: payload.perda_adesivos,
+          motivo: payload.motivo,
+          aberto: true,
+        },
+      ];
+    }
     onSave({
       id: selected.id,
-      reaberto: true,
+      refacoes: novasRefacoes,
       // limpa o carimbo da etapa atual (DTF) para que o pedido volte
       dtf_estampado: null,
       dtf_data_executada: null,
       quem_bateu_dtf: null,
       dtf_pessoas_qtd: null,
     } as any);
-    if (onNavigate) onNavigate(tabMap[destino]);
+    if (onNavigate) onNavigate(destino);
   }
 
   async function baixarLayout(path: string) {
