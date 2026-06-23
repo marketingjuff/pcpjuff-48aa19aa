@@ -30,6 +30,7 @@ import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
+import { useIsAdmin, useHasRole } from "@/hooks/use-role";
 
 interface Props {
   pedidos: Pedido[];
@@ -56,6 +57,9 @@ const empty: Partial<Pedido> = {
 
 export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, saving, active = true }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>(empty);
+  const isAdmin = useIsAdmin();
+  const isGestor = useHasRole("gestor");
+  const podeDeletar = isAdmin || isGestor;
   const [uploading, setUploading] = useState(false);
   const { feriados } = useFeriados();
   const { isDirty } = useDirtyForm();
@@ -281,7 +285,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button size="sm" variant="outline" onClick={handleNew}><Plus className="h-4 w-4 mr-1" />Novo</Button>
-            {selected && (
+            {selected && podeDeletar && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button size="sm" variant="destructive"><Trash2 className="h-4 w-4 mr-1" />Deletar</Button>

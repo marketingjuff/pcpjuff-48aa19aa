@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Pedido } from "@/lib/pedidos";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +39,13 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
   const [deleting, setDeleting] = useState(false);
   const sort = useSort<"pedido"|"qtd"|"saida"|"data_saida"|"fin">();
   const [historico, setHistorico] = useState<Pedido | null>(null);
+  const [loteTamanho, setLoteTamanho] = useState<number>(100);
+  const [visiveis, setVisiveis] = useState<number>(100);
+
+  useEffect(() => {
+    setVisiveis(loteTamanho);
+  }, [search, periodo, de, ate, loteTamanho]);
+
 
 
   const finalizados = useMemo(() => {
@@ -73,7 +80,8 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
   }, [pedidos, search, periodo, de, ate, sort.key, sort.dir]);
 
 
-  const visibleIds = useMemo(() => finalizados.map((p) => p.id), [finalizados]);
+  const finalizadosVisiveis = useMemo(() => finalizados.slice(0, visiveis), [finalizados, visiveis]);
+  const visibleIds = useMemo(() => finalizadosVisiveis.map((p) => p.id), [finalizadosVisiveis]);
   const selectedVisibleCount = useMemo(
     () => visibleIds.filter((id) => selectedIds.has(id)).length,
     [visibleIds, selectedIds],
@@ -208,12 +216,20 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
               <DateInputBR value={ate} onChange={(v) => setAte(v ?? "")} />
             </>
           )}
+          <Select value={String(loteTamanho)} onValueChange={(v) => setLoteTamanho(Number(v))}>
+            <SelectTrigger><SelectValue placeholder="Mostrar por tela" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="50">Mostrar 50 por tela</SelectItem>
+              <SelectItem value="100">Mostrar 100 por tela</SelectItem>
+              <SelectItem value="200">Mostrar 200 por tela</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         {/* Mobile cards */}
         <div className="md:hidden rounded-md border divide-y">
-          {finalizados.length === 0 ? (
+          {finalizadosVisiveis.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido finalizado.</div>
-          ) : finalizados.map((p) => (
+          ) : finalizadosVisiveis.map((p) => (
             <div key={p.id} className={`p-3 ${selectedIds.has(p.id) ? "bg-accent" : ""}`}>
               <div className="flex items-start gap-2">
                 {isAdmin && (
@@ -272,10 +288,10 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
               </tr>
             </thead>
             <tbody>
-              {finalizados.length === 0 ? (
+              {finalizadosVisiveis.length === 0 ? (
                 <tr><td colSpan={isAdmin ? 11 : 10} className="text-center py-8 text-muted-foreground">Nenhum pedido finalizado.</td></tr>
               ) : (
-                finalizados.map((p) => (
+                finalizadosVisiveis.map((p) => (
                   <tr key={p.id} className="border-t cursor-pointer hover:bg-accent" onClick={() => setHistorico(p)}>
                     {isAdmin && (
                       <td className="px-1.5 py-0.5 w-10" onClick={(e) => e.stopPropagation()}>
@@ -307,7 +323,22 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
             </tbody>
           </table>
         </div>
+        <div className="flex items-center justify-between gap-3 flex-wrap pt-2">
+          <div className="text-xs text-muted-foreground">
+            mostrando {finalizadosVisiveis.length} de {finalizados.length}
+          </div>
+          {visiveis < finalizados.length && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setVisiveis((v) => v + loteTamanho)}
+            >
+              Carregar mais
+            </Button>
+          )}
+        </div>
       </CardContent>
+
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
