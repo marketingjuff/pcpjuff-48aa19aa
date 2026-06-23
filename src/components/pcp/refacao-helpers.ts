@@ -263,6 +263,8 @@ export function camposAlimpar(pedido: Pedido, destino: WipeDestino): Record<stri
 
 export function camposAlimparAposInputProducao(pedido: Pedido): Record<string, any> {
   const out = camposAlimpar(pedido, "arte");
+  delete out.n_batidas_dtf;
+  delete out.n_batidas_silk;
   delete out.inicio_acabamento;
   delete out.termino_acabamento;
   delete out.tempo_producao;
