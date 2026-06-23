@@ -392,7 +392,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                       <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
                     </div>
                   )}
-                  <PedidoMobileCard pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                  <PedidoMobileCard pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)} style={p.reaberto ? { backgroundColor: "#FFEDD5" } : undefined}>
                     <Chip label="UF" value={p.uf_entrega} />
                     <Chip label="Pgto" value={p.forma_pagamento} />
                     <Chip label="Saída" value={formatDateBR(p.saida_juff) || "—"} />
