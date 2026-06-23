@@ -49,6 +49,8 @@ function Chip({ p }: { p: PecaPerdida }) {
     >
       <span>{p.modelo || "—"}</span>
       <span className="opacity-80">·</span>
+      <span>{p.cor || "—"}</span>
+      <span className="opacity-80">·</span>
       <span>{p.tamanho || "—"}</span>
       <span className="opacity-80">·</span>
       <span>{p.qtd || 0}</span>
@@ -139,6 +141,8 @@ export function PecasPerdidasEditor({ value, onChange, readOnly = false }: Props
                 >
                   <Pencil className="h-3 w-3" />
                   <span>{p.modelo}</span>
+                  <span className="opacity-80">·</span>
+                  <span>{p.cor}</span>
                   <span className="opacity-80">·</span>
                   <span>{p.tamanho}</span>
                   <span className="opacity-80">·</span>
