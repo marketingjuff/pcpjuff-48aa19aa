@@ -90,7 +90,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
       responsavel_acabamento: pick("responsavel_acabamento"),
       responsavel_conferencia: pick("responsavel_conferencia"),
       data_saida_juff: pick("data_saida_juff"),
-      observacoes_pedido: pick("observacoes_pedido"),
+      acabamento_observacao: pick("acabamento_observacao" as any),
     };
     // 3A: ao marcar EMBALADO=Sim + Data da Embalagem + Responsável, envia automaticamente para Expedição.
     if (embalado === "Sim" && !!payload.data_saida_juff && !!payload.responsavel_acabamento && !selected.expedicao_entrou_em) {
@@ -213,7 +213,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </FormField>
               <div className="sm:col-span-2 lg:col-span-4">
                 <FormField label="Observações do Acabamento">
-                  <Textarea value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} rows={3} />
+                  <Textarea value={(form as any).acabamento_observacao ?? ""} onChange={(e) => set("acabamento_observacao" as any, e.target.value as any)} rows={3} />
                 </FormField>
                 <ObservacoesOutrosSetores pedido={selected} setorAtual="acabamento" />
               </div>

@@ -554,9 +554,11 @@ function EpisodioEditor({
           </select>
         </Field>
       </div>
-      <Field label="Motivo">
-        <Textarea rows={2} value={local.motivo} onChange={(e) => setLocal({ ...local, motivo: e.target.value })} />
-      </Field>
+      <div>
+        <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Motivo</div>
+        <div className="text-sm whitespace-pre-wrap rounded-md border bg-background px-3 py-2">{local.motivo || "—"}</div>
+      </div>
+
       <div className="flex justify-between">
         <Button variant="outline" size="sm" onClick={onCancel}>
           <X className="h-4 w-4 mr-1" /> Cancelar
