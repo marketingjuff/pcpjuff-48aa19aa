@@ -153,7 +153,7 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
 
       <Card>
         <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
-          <CardTitle className="text-base">Pedidos com refação</CardTitle>
+          <div className="flex items-baseline gap-2"><CardTitle className="text-base">Pedidos com refação</CardTitle><span className="text-xs text-muted-foreground tabular-nums">{filtrados.length} {filtrados.length === 1 ? "registro" : "registros"}</span></div>
           <Input
             placeholder="Buscar pedido ou orçamento"
             value={busca}

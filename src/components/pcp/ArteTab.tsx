@@ -326,7 +326,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
       {/* Dashboard da Arte */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Dashboard — Arte</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><div className="flex items-baseline justify-between gap-2"><CardTitle className="text-base">Dashboard — Arte</CardTitle><span className="text-xs text-muted-foreground tabular-nums">{dashboardRows.length} {dashboardRows.length === 1 ? "registro" : "registros"}</span></div></CardHeader>
         <CardContent className="p-3 space-y-2">
           {/* Filtros */}
           <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">

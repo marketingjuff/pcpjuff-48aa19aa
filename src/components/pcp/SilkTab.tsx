@@ -265,7 +265,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
       )}
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Dashboard — Silk</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><div className="flex items-baseline justify-between gap-2"><CardTitle className="text-base">Dashboard — Silk</CardTitle><span className="text-xs text-muted-foreground tabular-nums">{dashboardPedidos.length} {dashboardPedidos.length === 1 ? "registro" : "registros"}</span></div></CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-6">
             <Select value={fEtapa} onValueChange={setFEtapa}>
