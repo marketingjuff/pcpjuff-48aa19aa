@@ -227,9 +227,9 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
         </div>
         {/* Mobile cards */}
         <div className="md:hidden rounded-md border divide-y">
-          {finalizados.length === 0 ? (
+          {finalizadosVisiveis.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido finalizado.</div>
-          ) : finalizados.map((p) => (
+          ) : finalizadosVisiveis.map((p) => (
             <div key={p.id} className={`p-3 ${selectedIds.has(p.id) ? "bg-accent" : ""}`}>
               <div className="flex items-start gap-2">
                 {isAdmin && (
