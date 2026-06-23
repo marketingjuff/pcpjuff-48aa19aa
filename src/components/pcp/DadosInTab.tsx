@@ -57,6 +57,9 @@ const empty: Partial<Pedido> = {
 
 export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, saving, active = true }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>(empty);
+  const isAdmin = useIsAdmin();
+  const isGestor = useHasRole("gestor");
+  const podeDeletar = isAdmin || isGestor;
   const [uploading, setUploading] = useState(false);
   const { feriados } = useFeriados();
   const { isDirty } = useDirtyForm();
