@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Pedido } from "@/lib/pedidos";
 import { supabase } from "@/integrations/supabase/client";
