@@ -86,6 +86,7 @@ export type Database = {
       pedidos: {
         Row: {
           acabamento_data: string | null
+          acabamento_observacao: string | null
           arte_data: string | null
           arte_observacao: string | null
           created_at: string
@@ -161,6 +162,7 @@ export type Database = {
         }
         Insert: {
           acabamento_data?: string | null
+          acabamento_observacao?: string | null
           arte_data?: string | null
           arte_observacao?: string | null
           created_at?: string
@@ -236,6 +238,7 @@ export type Database = {
         }
         Update: {
           acabamento_data?: string | null
+          acabamento_observacao?: string | null
           arte_data?: string | null
           arte_observacao?: string | null
           created_at?: string
