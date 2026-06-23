@@ -285,7 +285,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button size="sm" variant="outline" onClick={handleNew}><Plus className="h-4 w-4 mr-1" />Novo</Button>
-            {selected && (
+            {selected && podeDeletar && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button size="sm" variant="destructive"><Trash2 className="h-4 w-4 mr-1" />Deletar</Button>
