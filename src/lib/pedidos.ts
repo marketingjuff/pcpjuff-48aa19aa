@@ -238,7 +238,7 @@ function calcularEtapaInterno(p: Pedido, _ignorarEpisodioAberto: boolean): {
   const dtfDone = p.dtf_estampado === "Sim";
   const silkDone = p.silk_feito === "Sim";
   const acabamentoOk = p.embalado === "Sim";
-  const producaoInputOk = notEmpty(p.status_pecas) && notEmpty(p.tipo_estampa) && (isLisa || notEmpty(p.arte_data));
+  const producaoInputOk = notEmpty(p.status_pecas) && notEmpty(p.tipo_estampa);
 
   const etapas = isLisa
     ? [dadosInOk, acabamentoOk]
