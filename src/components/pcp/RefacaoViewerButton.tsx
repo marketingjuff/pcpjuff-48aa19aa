@@ -7,12 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import {
   ETAPA_DESTINO_LABEL,
   tipoIncluiDTF,
+  type PecaPerdida,
   type Pedido,
   type RefacaoEpisodio,
   type RefacaoRetrato,
 } from "@/lib/pedidos";
 import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
-import { History } from "lucide-react";
+import { useMyRoles } from "@/hooks/use-role";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { History, Save } from "lucide-react";
+import { PecasPerdidasEditor, pecaLinhaCompleta, somaPecas } from "./PecasPerdidasEditor";
 
 const ORANGE = "#ff8c2f";
 
@@ -167,9 +173,68 @@ function RetratoView({ retrato, profilesMap }: { retrato: RefacaoRetrato; profil
   );
 }
 
-function EpisodioRead({ pedido, episodio, profilesMap }: { pedido: Pedido; episodio: RefacaoEpisodio; profilesMap: Record<string, string> }) {
+function useCanEditPecasPerdidas(): boolean {
+  const { data: roles = [] } = useMyRoles();
+  return roles.some(
+    (r) =>
+      r.role === "admin" ||
+      r.role === "gestor" ||
+      (Array.isArray(r.areas_extras) && r.areas_extras.includes("dados_in_producao")),
+  );
+}
+
+function EpisodioRead({
+  pedido,
+  episodio,
+  index,
+  profilesMap,
+  canEditPecas,
+}: {
+  pedido: Pedido;
+  episodio: RefacaoEpisodio;
+  index: number;
+  profilesMap: Record<string, string>;
+  canEditPecas: boolean;
+}) {
   const mostraAdesivos = tipoIncluiDTF(pedido.tipo_estampa);
   const responsavel = resolveNome(profilesMap, episodio.quem);
+  const qc = useQueryClient();
+
+  const inicial: PecaPerdida[] = Array.isArray(episodio.pecas_perdidas) ? episodio.pecas_perdidas : [];
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<PecaPerdida[]>(inicial);
+  const [saving, setSaving] = useState(false);
+
+  function startEdit() {
+    setDraft(Array.isArray(episodio.pecas_perdidas) ? [...episodio.pecas_perdidas] : []);
+    setEditing(true);
+  }
+  function cancelEdit() {
+    setEditing(false);
+  }
+  async function salvar() {
+    const limpas = draft.filter(pecaLinhaCompleta);
+    const total = somaPecas(limpas);
+    const refsAtuais = Array.isArray(pedido.refacoes) ? pedido.refacoes : [];
+    const novas = refsAtuais.map((e, i) =>
+      i === index ? { ...e, pecas_perdidas: limpas, perda_pecas: total } : e,
+    );
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("pedidos").update({ refacoes: novas as any }).eq("id", pedido.id);
+      if (error) throw error;
+      toast.success("Peças perdidas atualizadas.");
+      qc.invalidateQueries({ queryKey: ["pedidos"] });
+      setEditing(false);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao salvar peças perdidas.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const totalAtual = somaPecas(Array.isArray(episodio.pecas_perdidas) ? episodio.pecas_perdidas : []);
+
   return (
     <div className="rounded-md border bg-muted/20 p-3 space-y-3">
       <div className="flex items-center gap-2 text-sm font-medium">
@@ -184,16 +249,40 @@ function EpisodioRead({ pedido, episodio, profilesMap }: { pedido: Pedido; episo
         <Read label="Data" value={fmtDataHoraBR(episodio.data)} />
         <Read label="Responsável" value={responsavel} />
         <Read label="Peças a refazer" value={String(episodio.pecas_refazer ?? 0)} />
-        <Read label="Peças perdidas" value={(episodio.perda_pecas ?? 0) > 0 ? `Sim — ${episodio.perda_pecas}` : "Não"} />
+        <Read label="Peças perdidas" value={totalAtual > 0 ? `Sim — ${totalAtual}` : "Não"} />
         {mostraAdesivos && (
           <Read label="Adesivos perdidos" value={(episodio.perda_adesivos ?? 0) > 0 ? `Sim — ${episodio.perda_adesivos}` : "Não"} />
         )}
       </div>
+
+      <div className="pt-2 border-t">
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="text-[11px] text-muted-foreground font-medium">Peças perdidas (detalhe)</div>
+          {canEditPecas && !editing && (
+            <Button type="button" size="sm" variant="outline" onClick={startEdit}>
+              Editar peças perdidas
+            </Button>
+          )}
+        </div>
+        {editing ? (
+          <div className="space-y-2">
+            <PecasPerdidasEditor value={draft} onChange={setDraft} />
+            <div className="flex justify-end gap-2">
+              <Button type="button" size="sm" variant="ghost" onClick={cancelEdit} disabled={saving}>Cancelar</Button>
+              <Button type="button" size="sm" onClick={salvar} disabled={saving}>
+                <Save className="h-3.5 w-3.5 mr-1" />Salvar
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <PecasPerdidasEditor value={inicial} readOnly />
+        )}
+      </div>
+
       <div>
         <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Motivo</div>
         <div className="text-sm whitespace-pre-wrap">{episodio.motivo || "—"}</div>
       </div>
-      
     </div>
   );
 }
@@ -213,12 +302,14 @@ interface ButtonProps {
 }
 
 /**
- * Botão laranja "Visualizar dados de refação" + dialog read-only.
+ * Botão laranja "Visualizar dados de refação" + dialog read-only (com edição
+ * de peças perdidas para admin/gestor/dados_in_producao).
  * Só renderiza se o pedido tiver pelo menos um episódio de refação.
  */
 export function RefacaoViewerButton({ pedido, className }: ButtonProps) {
   const [open, setOpen] = useState(false);
   const profilesMap = useProfilesMap();
+  const canEditPecas = useCanEditPecasPerdidas();
   const refs = Array.isArray(pedido.refacoes) ? pedido.refacoes : [];
   if (refs.length === 0) return null;
   return (
@@ -242,7 +333,14 @@ export function RefacaoViewerButton({ pedido, className }: ButtonProps) {
           </DialogHeader>
           <div className="space-y-3">
             {refs.map((e, i) => (
-              <EpisodioRead key={i} pedido={pedido} episodio={e} profilesMap={profilesMap} />
+              <EpisodioRead
+                key={i}
+                pedido={pedido}
+                episodio={e}
+                index={i}
+                profilesMap={profilesMap}
+                canEditPecas={canEditPecas}
+              />
             ))}
           </div>
         </DialogContent>
@@ -250,3 +348,4 @@ export function RefacaoViewerButton({ pedido, className }: ButtonProps) {
     </>
   );
 }
+

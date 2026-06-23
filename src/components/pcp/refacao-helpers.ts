@@ -128,6 +128,7 @@ export async function montarRefacoesAposRefazer(
     pecas_refazer: payload.pecas_refazer,
     perda_pecas: payload.perda_pecas,
     perda_adesivos: payload.perda_adesivos,
+    pecas_perdidas: payload.pecas_perdidas ?? [],
     motivo: payload.motivo,
     aberto: true,
     retrato,
