@@ -407,11 +407,51 @@ function fmtCampo(key: string, value: any, profilesMap: Record<string, string>):
   return s;
 }
 
+const GRUPOS_CAMPOS: { titulo: string; chaves: string[] }[] = [
+  {
+    titulo: "Input de Produção",
+    chaves: ["status_pecas", "tipo_estampa", "arte_data", "inicio_estamparia", "termino_estamparia"],
+  },
+  {
+    titulo: "Arte",
+    chaves: [
+      "status_arte", "arte_observacao", "vetorizacao_executada",
+      "vetorizacao_dtf", "dtf_impresso", "dtf_executado", "dtf_cortado", "dtf_cortado_data",
+      "vetorizacao_silk", "fotolito_impresso", "fotolito_executado",
+    ],
+  },
+  {
+    titulo: "DTF",
+    chaves: ["dtf_estampado", "dtf_data_executada", "quem_bateu_dtf", "quem_cortou_dtf", "n_batidas_dtf", "dtf_pessoas_qtd", "dtf_observacao"],
+  },
+  {
+    titulo: "Silk",
+    chaves: ["tela_gravada", "silk_feito", "silk_data_executada", "quem_bateu_silk", "quem_revelou_tela", "n_batidas_silk", "silk_observacao"],
+  },
+  {
+    titulo: "Acabamento",
+    chaves: [
+      "embalado", "acabamento_data", "data_saida_juff", "responsavel_acabamento", "responsavel_conferencia",
+      "inicio_acabamento", "termino_acabamento", "dias_secagem", "finalizado_em", "tempo_producao",
+    ],
+  },
+  {
+    titulo: "Expedição",
+    chaves: [
+      "expedicao_entrou_em", "exp_cobranca_pagamento", "exp_pagamento", "exp_etiqueta",
+      "exp_frete_solicitado", "exp_frete_solicitado_em", "exp_despachado", "exp_despachado_em", "exp_observacoes",
+    ],
+  },
+];
+
 function RetratoView({ retrato, profilesMap }: { retrato: RefacaoRetrato; profilesMap: Record<string, string> }) {
   const campos = retrato.campos_apagados ?? {};
-  const entradasCampos = Object.entries(campos).filter(
-    ([, v]) => v !== null && v !== undefined && v !== "",
-  );
+  const grupos = GRUPOS_CAMPOS.map((g) => ({
+    ...g,
+    entradas: g.chaves
+      .map((k) => [k, campos[k]] as [string, any])
+      .filter(([, v]) => v !== null && v !== undefined && v !== ""),
+  })).filter((g) => g.entradas.length > 0);
   return (
     <div className="rounded-md bg-background border p-2 text-xs space-y-2">
       <div className="font-medium text-muted-foreground uppercase text-[10px]">
@@ -435,17 +475,22 @@ function RetratoView({ retrato, profilesMap }: { retrato: RefacaoRetrato; profil
           ))
         )}
       </div>
-      {entradasCampos.length > 0 && (
-        <div className="pt-1 border-t">
-          <div className="text-muted-foreground mb-1">Dados apagados pela refação:</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5">
-            {entradasCampos.map(([k, v]) => (
-              <div key={k} className="flex gap-1">
-                <span className="text-muted-foreground">{CAMPO_LABEL[k] ?? k}:</span>
-                <span className="font-medium">{fmtCampo(k, v, profilesMap)}</span>
+      {grupos.length > 0 && (
+        <div className="pt-1 border-t space-y-2">
+          <div className="text-muted-foreground">Registros das áreas no momento da refação:</div>
+          {grupos.map((g) => (
+            <div key={g.titulo}>
+              <div className="font-semibold text-[11px] mb-0.5">{g.titulo}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5 pl-2">
+                {g.entradas.map(([k, v]) => (
+                  <div key={k} className="flex gap-1">
+                    <span className="text-muted-foreground">{CAMPO_LABEL[k] ?? k}:</span>
+                    <span className="font-medium">{fmtCampo(k, v, profilesMap)}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
