@@ -39,6 +39,13 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
   const [deleting, setDeleting] = useState(false);
   const sort = useSort<"pedido"|"qtd"|"saida"|"data_saida"|"fin">();
   const [historico, setHistorico] = useState<Pedido | null>(null);
+  const [loteTamanho, setLoteTamanho] = useState<number>(100);
+  const [visiveis, setVisiveis] = useState<number>(100);
+
+  useEffect(() => {
+    setVisiveis(loteTamanho);
+  }, [search, periodo, de, ate, loteTamanho]);
+
 
 
   const finalizados = useMemo(() => {
