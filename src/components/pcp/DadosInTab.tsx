@@ -30,6 +30,7 @@ import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
+import { useIsAdmin, useHasRole } from "@/hooks/use-role";
 
 interface Props {
   pedidos: Pedido[];
