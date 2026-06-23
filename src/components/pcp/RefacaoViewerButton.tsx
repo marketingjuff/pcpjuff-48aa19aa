@@ -193,7 +193,7 @@ function EpisodioRead({ pedido, episodio, profilesMap }: { pedido: Pedido; episo
         <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Motivo</div>
         <div className="text-sm whitespace-pre-wrap">{episodio.motivo || "—"}</div>
       </div>
-      {episodio.retrato && <RetratoView retrato={episodio.retrato} profilesMap={profilesMap} />}
+      
     </div>
   );
 }
