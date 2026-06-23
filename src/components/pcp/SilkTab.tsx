@@ -251,6 +251,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                     </Button>
                   )}
                   {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Atualizar Silk</UpdateButton>}
+                  <RefacaoViewerButton pedido={selected} />
                 </div>
                 {!readOnly && <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />}
               </div>

@@ -236,6 +236,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                     {enviadoParaExpedicao ? "Atualizar Acabamento" : "Atualizar"}
                   </UpdateButton>
                 )}
+                <RefacaoViewerButton pedido={selected} />
               </div>
               {!readOnly && <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />}
             </div>

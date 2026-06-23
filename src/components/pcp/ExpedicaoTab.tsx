@@ -292,6 +292,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                 <UpdateButton onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
                   Atualizar Expedição
                 </UpdateButton>
+                <RefacaoViewerButton pedido={selected} />
                 <FinalizarButton
                   onClick={handleFinalizar}
                   disabled={saving || !todosCompletos(selected, form)}
