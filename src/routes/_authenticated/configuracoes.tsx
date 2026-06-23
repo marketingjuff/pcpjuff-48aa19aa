@@ -998,6 +998,7 @@ function CoresTab() {
     { key: "atualizar", label: "Botão Atualizar (todas as abas)" },
     { key: "finalizar", label: "Botão Finalizar Pedido (Expedição)" },
     { key: "voltar", label: "Dropdown / Botão Voltar" },
+    { key: "reabrir", label: "Botão Reabrir (Finalizados)" },
   ];
 
   return (
