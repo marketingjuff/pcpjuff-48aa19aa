@@ -143,7 +143,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <CardTitle>Pedidos finalizados ({finalizados.length})</CardTitle>
+          <div className="flex items-baseline gap-2"><CardTitle>Pedidos finalizados</CardTitle><span className="text-xs text-muted-foreground tabular-nums">{finalizadosVisiveis.length} de {finalizados.length} {finalizados.length === 1 ? "registro" : "registros"}</span></div>
           {isAdmin && selectedVisibleCount > 0 && (
             <Button
               variant="destructive"
