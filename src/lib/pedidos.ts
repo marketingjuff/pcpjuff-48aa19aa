@@ -18,6 +18,49 @@ export type RefacaoRetrato = {
   campos_apagados?: Record<string, any>;
 };
 
+export type PecaPerdida = {
+  modelo: string;
+  cor: string;     // nome (chave em REFACAO_CORES)
+  tamanho: string;
+  qtd: number;
+};
+
+export const REFACAO_MODELOS = [
+  "Camiseta", "Baby Look", "Regata Masculina", "Regata Feminina",
+  "ML Masculina", "ML Feminina", "Camiseta Infantil", "ML Infantil",
+  "Regata Cross", "Regata Wing", "Regata Move",
+  "ML Hide Masculina", "ML Hide Feminina", "ML Hide Infantil",
+] as const;
+
+export const REFACAO_TAMANHOS = ["PP", "P", "M", "G", "GG", "EXG", "EXXG"] as const;
+
+export const REFACAO_CORES: { nome: string; hex: string }[] = [
+  { nome: "amarelo",        hex: "#ffe938" },
+  { nome: "amarelo flúor",  hex: "#e0ff00" },
+  { nome: "azul índigo",    hex: "#4d6694" },
+  { nome: "bordô",          hex: "#551b2a" },
+  { nome: "branco",         hex: "#f6f6fb" },
+  { nome: "cinza chumbo",   hex: "#353439" },
+  { nome: "cinza claro",    hex: "#585858" },
+  { nome: "fúcsia",         hex: "#870065" },
+  { nome: "laranja",        hex: "#e36837" },
+  { nome: "laranja ultra",  hex: "#fd5f2f" },
+  { nome: "marinho",        hex: "#1d2546" },
+  { nome: "menta",          hex: "#93a393" },
+  { nome: "pink",           hex: "#b7357a" },
+  { nome: "preto",          hex: "#212120" },
+  { nome: "roial",          hex: "#323db8" },
+  { nome: "rosa flúor",     hex: "#f51eb1" },
+  { nome: "rosa pop",       hex: "#e0418e" },
+  { nome: "roxo",           hex: "#8354b5" },
+  { nome: "roxo ultra",     hex: "#533189" },
+  { nome: "turquesa",       hex: "#1581ae" },
+  { nome: "verde água",     hex: "#a1e1d9" },
+  { nome: "verde bandeira", hex: "#2e572d" },
+  { nome: "verde militar",  hex: "#2a352a" },
+  { nome: "vermelho",       hex: "#c12b3d" },
+];
+
 export type RefacaoEpisodio = {
   etapa_origem: string;
   etapa_destino: "dados" | "arte" | "dtf" | "silk" | "acabamento";
@@ -27,6 +70,7 @@ export type RefacaoEpisodio = {
   perda_pecas: number;
   perda_adesivos: number;
   pecas_extras?: number;   // apenas quando destino === "dados"
+  pecas_perdidas?: PecaPerdida[];
   motivo: string;
   aberto: boolean;
   /** Marcado como true quando o pedido passou pela etapa de destino
