@@ -216,6 +216,14 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
               <DateInputBR value={ate} onChange={(v) => setAte(v ?? "")} />
             </>
           )}
+          <Select value={String(loteTamanho)} onValueChange={(v) => setLoteTamanho(Number(v))}>
+            <SelectTrigger><SelectValue placeholder="Mostrar por tela" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="50">Mostrar 50 por tela</SelectItem>
+              <SelectItem value="100">Mostrar 100 por tela</SelectItem>
+              <SelectItem value="200">Mostrar 200 por tela</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         {/* Mobile cards */}
         <div className="md:hidden rounded-md border divide-y">
