@@ -120,13 +120,26 @@ export async function montarRefacoesAposRefazer(
   const uid = u?.user?.id ?? null;
   const nome = await nomeUsuarioAtual(uid);
   const origem = etapaAtualSemAsterisco(pedido);
-  // Snapshot completo dos campos que serão apagados (valores ANTES do wipe)
-  const wipe = camposAlimpar(pedido, destino);
+  // Snapshot COMPLETO de todas as etapas (independente do destino do wipe).
+  // Mantém registro de tudo que cada área já tinha assinalado antes da refação.
+  const camposSnapshot: string[] = [
+    // Input de produção
+    "status_pecas", "tipo_estampa", "arte_data",
+    "inicio_estamparia", "termino_estamparia",
+    // Arte
+    ...Object.keys(WIPE_ARTE_COMUM),
+    ...Object.keys(WIPE_ARTE_DTF),
+    ...Object.keys(WIPE_ARTE_SILK),
+    // DTF / Silk / Acabamento / Expedição
+    ...Object.keys(WIPE_DTF),
+    ...Object.keys(WIPE_SILK),
+    ...Object.keys(WIPE_ACABAMENTO),
+  ];
   const camposApagados: Record<string, any> = {};
-  Object.keys(wipe).forEach((k) => {
+  for (const k of camposSnapshot) {
     const v = (pedido as any)[k];
     if (v !== null && v !== undefined && v !== "") camposApagados[k] = v;
-  });
+  }
   const retrato: RefacaoRetrato = {
     ...montarRetrato(pedido),
     campos_apagados: camposApagados,
