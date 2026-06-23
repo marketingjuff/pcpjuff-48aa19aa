@@ -102,12 +102,11 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   ) {
     if (!selected) return;
     const { montarRefacoesAposRefazer, camposAlimpar } = await import("./refacao-helpers");
-    const { refacoes, observacoes_pedido } = await montarRefacoesAposRefazer(selected, destino, payload);
+    const { refacoes } = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
       refacoes,
       ...camposAlimpar(selected, destino),
-      ...(observacoes_pedido !== undefined ? { observacoes_pedido } : {}),
     } as any);
     if (onNavigate) onNavigate(destino);
   }

@@ -379,12 +379,11 @@ function AcabamentoVoltar({ selected, onSave, onNavigate }: { selected: Pedido; 
     payload: import("./RefacaoDialog").RefacaoFormPayload | null,
   ) {
     const { montarRefacoesAposRefazer, camposAlimpar } = await import("./refacao-helpers");
-    const { refacoes, observacoes_pedido } = await montarRefacoesAposRefazer(selected, destino, payload);
+    const { refacoes } = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
       refacoes,
       ...camposAlimpar(selected, destino),
-      ...(observacoes_pedido !== undefined ? { observacoes_pedido } : {}),
     } as any);
     if (onNavigate) onNavigate(destino);
   }
