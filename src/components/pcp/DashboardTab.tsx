@@ -54,10 +54,14 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
     if (e === "finalizados") return !!p.finalizado_em;
-    if (!pedidoAtivoNasAreas(p)) return false;
+    const ativoNormal = pedidoAtivoNasAreas(p);
+    const ativoExpedicao = emExpedicao(p);
+    if (!ativoNormal && !ativoExpedicao) return false;
     if (e === "todas" || e === "ativas") return true;
+    if (e === "expedicao") return ativoExpedicao;
+    if (!ativoNormal) return false;
     const etapaAtual = calcularEtapaAtual(p).etapa.replace(/\*$/, "");
-    const map: Record<Exclude<Etapa, "todas"|"ativas"|"finalizados">, string[]> = {
+    const map: Record<Exclude<Etapa, "todas"|"ativas"|"finalizados"|"expedicao">, string[]> = {
       aguardando_entrada: ["Aguardando entrada"],
       aguardando_input: ["Aguardando input de produção"],
       arte: ["Aguardando Arte", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
@@ -67,9 +71,8 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       silk: ["Aguardando Silk", "Aguardando DTF + Silk", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
       dtf_silk: ["Aguardando DTF + Silk"],
       acabamento: ["Aguardando Acabamento"],
-      expedicao: ["Aguardando Expedição"],
     };
-    return map[e]?.includes(etapaAtual) ?? false;
+    return (map as any)[e]?.includes(etapaAtual) ?? false;
   }
 
 
