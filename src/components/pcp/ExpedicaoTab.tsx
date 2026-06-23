@@ -195,7 +195,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
       {selected && selected.expedicao_entrou_em && !selected.finalizado_em ? (
         <>
         <OrcamentoTitle orcamento={selected.orcamento} />
-        <Card>
+        <Card style={selected.reaberto ? { backgroundColor: "#FFEDD5", borderColor: "#FB923C" } : undefined}>
           <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base sm:text-lg truncate">Expedição — {selected.pedido_olist}</CardTitle>
             <Badge variant="outline" className="bg-pink-500/15 text-pink-700 border-pink-500/30 dark:text-pink-300">
