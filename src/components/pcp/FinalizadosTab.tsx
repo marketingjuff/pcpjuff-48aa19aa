@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
 import { PedidoMobileCard, Chip, QtdTotal, useSort, cmpDate, cmpNum, SortableTh, Th, ReadOnlyField } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+import { useColorSettings } from "@/hooks/use-color-settings";
 
 
 interface Props {
@@ -29,6 +30,7 @@ interface Props {
 export function FinalizadosTab({ pedidos, onReabrir }: Props) {
   const qc = useQueryClient();
   const isAdmin = useIsAdmin();
+  const { btnStyle } = useColorSettings();
 
   const [search, setSearch] = useState("");
   const [periodo, setPeriodo] = useState<string>("tudo");
@@ -253,7 +255,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                     <Chip label="Finalizado" value={formatDateBR(p.finalizado_em?.slice(0,10)) || "—"} />
                   </div>
                   <div className="mt-2">
-                    <Button size="sm" variant="outline" onClick={() => onReabrir(p.id)} className="w-full">
+                    <Button size="sm" onClick={() => onReabrir(p.id)} className="w-full" style={btnStyle("reabrir")}>
                       <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
                     </Button>
                   </div>
@@ -312,7 +314,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                     <td className="px-1.5 py-0.5 text-xs">{p.responsavel_acabamento ?? "—"}</td>
                     <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.finalizado_em?.slice(0,10))}</td>
                     <td className="px-1.5 py-0.5 text-right" onClick={(e) => e.stopPropagation()}>
-                      <Button size="sm" variant="outline" onClick={() => onReabrir(p.id)}>
+                      <Button size="sm" onClick={() => onReabrir(p.id)} style={btnStyle("reabrir")}>
                         <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
                       </Button>
 
