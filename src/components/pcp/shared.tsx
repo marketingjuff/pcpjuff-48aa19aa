@@ -280,13 +280,15 @@ export function Chip({ label, value }: { label: string; value: React.ReactNode }
 
 /** Card clicável de pedido para os dashboards no mobile. */
 export function PedidoMobileCard({
-  pedido, active, onClick, children, right,
+  pedido, active, onClick, children, right, className, style,
 }: {
   pedido: Pedido;
   active?: boolean;
   onClick?: () => void;
   children?: React.ReactNode;
   right?: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
 }) {
   return (
     <div
@@ -299,7 +301,8 @@ export function PedidoMobileCard({
           onClick();
         }
       }}
-      className={`w-full text-left p-3 hover:bg-accent transition-colors cursor-pointer ${active ? "bg-accent" : ""}`}
+      className={`w-full text-left p-3 hover:bg-accent transition-colors cursor-pointer ${active ? "bg-accent" : ""} ${className ?? ""}`}
+      style={style}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">

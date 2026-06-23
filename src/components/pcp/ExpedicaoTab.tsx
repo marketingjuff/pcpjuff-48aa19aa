@@ -195,7 +195,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
       {selected && selected.expedicao_entrou_em && !selected.finalizado_em ? (
         <>
         <OrcamentoTitle orcamento={selected.orcamento} />
-        <Card style={selected.reaberto ? { backgroundColor: "#FFEDD5", borderColor: "#FB923C" } : undefined}>
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base sm:text-lg truncate">Expedição — {selected.pedido_olist}</CardTitle>
             <Badge variant="outline" className="bg-pink-500/15 text-pink-700 border-pink-500/30 dark:text-pink-300">
@@ -392,7 +392,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                       <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
                     </div>
                   )}
-                  <PedidoMobileCard pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                  <PedidoMobileCard pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)} style={p.reaberto ? { backgroundColor: "#FFEDD5" } : undefined}>
                     <Chip label="UF" value={p.uf_entrega} />
                     <Chip label="Pgto" value={p.forma_pagamento} />
                     <Chip label="Saída" value={formatDateBR(p.saida_juff) || "—"} />
@@ -462,8 +462,9 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   const pend = pendenciasDoPedido(p);
                   const bg = linhaAtrasoClasse(p, "expedicao") || rowAlertBgClass(p, feriados);
                   return (
-                    <tr key={p.id}
+                <tr key={p.id}
                       onClick={() => onSelect(p.id)}
+                      style={p.reaberto ? { backgroundColor: "#FFEDD5" } : undefined}
                       className={`border-t cursor-pointer hover:bg-accent ${bg} ${selected?.id === p.id ? "bg-accent" : ""}`}>
                       {onFinalizarMany && (
                         <td
