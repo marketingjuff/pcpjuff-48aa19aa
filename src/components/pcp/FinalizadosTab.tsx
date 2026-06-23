@@ -80,7 +80,8 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
   }, [pedidos, search, periodo, de, ate, sort.key, sort.dir]);
 
 
-  const visibleIds = useMemo(() => finalizados.map((p) => p.id), [finalizados]);
+  const finalizadosVisiveis = useMemo(() => finalizados.slice(0, visiveis), [finalizados, visiveis]);
+  const visibleIds = useMemo(() => finalizadosVisiveis.map((p) => p.id), [finalizadosVisiveis]);
   const selectedVisibleCount = useMemo(
     () => visibleIds.filter((id) => selectedIds.has(id)).length,
     [visibleIds, selectedIds],
