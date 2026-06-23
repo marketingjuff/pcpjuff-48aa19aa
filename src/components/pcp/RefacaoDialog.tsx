@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { tipoIncluiDTF } from "@/lib/pedidos";
+import { tipoIncluiDTF, type PecaPerdida } from "@/lib/pedidos";
+import { PecasPerdidasEditor, pecaLinhaCompleta, somaPecas } from "./PecasPerdidasEditor";
 
 export type RefacaoFormPayload = {
   pecas_refazer: number;
   perda_pecas: number;
   perda_adesivos: number;
   motivo: string;
+  pecas_perdidas: PecaPerdida[];
 };
 
 interface Props {
@@ -28,7 +30,7 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
   const mostraAdesivos = tipoIncluiDTF(tipoEstampa);
   const [pecasRefazer, setPecasRefazer] = useState<string>("");
   const [houvePerdaPecas, setHouvePerdaPecas] = useState<"sim" | "nao" | "">("");
-  const [perdaPecas, setPerdaPecas] = useState<string>("");
+  const [pecasPerdidas, setPecasPerdidas] = useState<PecaPerdida[]>([]);
   const [houvePerdaAdesivos, setHouvePerdaAdesivos] = useState<"sim" | "nao" | "">("");
   const [perdaAdesivos, setPerdaAdesivos] = useState<string>("");
   const [motivo, setMotivo] = useState<string>("");
@@ -38,7 +40,7 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
     if (open) {
       setPecasRefazer("");
       setHouvePerdaPecas("");
-      setPerdaPecas("");
+      setPecasPerdidas([]);
       setHouvePerdaAdesivos("");
       setPerdaAdesivos("");
       setMotivo("");
@@ -56,11 +58,17 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
       setErr("Informe se houve perda de peças.");
       return;
     }
+    let pecasPerdidasFinal: PecaPerdida[] = [];
     let nPerdaPecas = 0;
     if (houvePerdaPecas === "sim") {
-      nPerdaPecas = Number(perdaPecas);
-      if (!Number.isFinite(nPerdaPecas) || nPerdaPecas < 1) {
-        setErr("Informe quantas peças foram perdidas.");
+      pecasPerdidasFinal = pecasPerdidas.filter(pecaLinhaCompleta);
+      if (pecasPerdidasFinal.length === 0) {
+        setErr("Adicione pelo menos uma peça perdida (modelo, cor, tamanho e qtd).");
+        return;
+      }
+      nPerdaPecas = somaPecas(pecasPerdidasFinal);
+      if (nPerdaPecas < 1) {
+        setErr("A quantidade total de peças perdidas deve ser ≥ 1.");
         return;
       }
     }
@@ -87,12 +95,13 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
       perda_pecas: nPerdaPecas,
       perda_adesivos: nPerdaAdesivos,
       motivo: motivo.trim(),
+      pecas_perdidas: pecasPerdidasFinal,
     });
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Refazer pedido</DialogTitle>
           <DialogDescription>
@@ -111,26 +120,20 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
             <div className="space-y-1">
               <Label>Houve perda de peças? *</Label>
               <div className="flex gap-2">
                 <Button type="button" size="sm" variant={houvePerdaPecas === "sim" ? "default" : "outline"} onClick={() => setHouvePerdaPecas("sim")}>Sim</Button>
-                <Button type="button" size="sm" variant={houvePerdaPecas === "nao" ? "default" : "outline"} onClick={() => { setHouvePerdaPecas("nao"); setPerdaPecas(""); }}>Não</Button>
+                <Button type="button" size="sm" variant={houvePerdaPecas === "nao" ? "default" : "outline"} onClick={() => { setHouvePerdaPecas("nao"); setPecasPerdidas([]); }}>Não</Button>
               </div>
             </div>
             {houvePerdaPecas === "sim" && (
-              <div className="space-y-1">
-                <Label>Quantas peças perdidas? *</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={perdaPecas}
-                  onChange={(e) => setPerdaPecas(e.target.value)}
-                />
+              <div className="rounded-md border bg-background p-2 space-y-2">
                 <div className="text-[11px] text-muted-foreground">
-                  As peças perdidas somam à quantidade original na produção.
+                  Liste cada peça perdida (modelo, cor, tamanho e quantidade). O total soma à quantidade original na produção.
                 </div>
+                <PecasPerdidasEditor value={pecasPerdidas} onChange={setPecasPerdidas} />
               </div>
             )}
           </div>
