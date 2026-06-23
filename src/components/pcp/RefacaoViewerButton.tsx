@@ -7,12 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import {
   ETAPA_DESTINO_LABEL,
   tipoIncluiDTF,
+  type PecaPerdida,
   type Pedido,
   type RefacaoEpisodio,
   type RefacaoRetrato,
 } from "@/lib/pedidos";
 import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
-import { History } from "lucide-react";
+import { useMyRoles } from "@/hooks/use-role";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { History, Save } from "lucide-react";
+import { PecasPerdidasEditor, pecaLinhaCompleta, somaPecas } from "./PecasPerdidasEditor";
 
 const ORANGE = "#ff8c2f";
 
