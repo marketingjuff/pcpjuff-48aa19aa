@@ -27,6 +27,7 @@ import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
 import { PedidoMobileCard, Chip, QtdTotal, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES_DADOS_IN, matchEtapaFiltro, UpdateButton, EtapaBadgeView } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { RefacaoBadge } from "./RefacaoBadge";
 
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
@@ -499,10 +500,11 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               )}
             </div>
 
-            <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start">
+            <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start flex-wrap">
               <UpdateButton type="button" onClick={saveProducao} disabled={saving}>
                 {selected?.id ? "Atualizar" : "Salvar"} Input de Produção
               </UpdateButton>
+              {selected && <RefacaoViewerButton pedido={selected} />}
             </div>
             {selected?.data_entrega_proposta && (
               <div className="sm:col-span-2 lg:col-span-4">

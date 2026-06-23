@@ -11,6 +11,7 @@ import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag } from "lucid
 import { Checkbox } from "@/components/ui/checkbox";
 import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES_EXPEDICAO, matchEtapaFiltro, UpdateButton, FinalizarButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { VoltarDropdown } from "./VoltarDropdown";
 import { DateInputBR } from "@/components/ui/date-input";
 
@@ -292,6 +293,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                 <UpdateButton onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
                   Atualizar Expedição
                 </UpdateButton>
+                <RefacaoViewerButton pedido={selected} />
                 <FinalizarButton
                   onClick={handleFinalizar}
                   disabled={saving || !todosCompletos(selected, form)}
@@ -306,12 +308,11 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                 destinos={["dados", "arte", "dtf", "silk", "acabamento"]}
                 onVoltar={async (destino, payload) => {
                   const { montarRefacoesAposRefazer, camposAlimpar } = await import("./refacao-helpers");
-                  const { refacoes, observacoes_pedido } = await montarRefacoesAposRefazer(selected, destino, payload);
+                  const { refacoes } = await montarRefacoesAposRefazer(selected, destino, payload);
                   onSave({
                     id: selected.id,
                     refacoes,
                     ...camposAlimpar(selected, destino),
-                    ...(observacoes_pedido !== undefined ? { observacoes_pedido } : {}),
                   } as any);
                   if (onNavigate) onNavigate(destino);
                 }}

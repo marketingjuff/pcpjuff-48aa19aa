@@ -12,7 +12,6 @@ export type RefacaoFormPayload = {
   pecas_refazer: number;
   perda_pecas: number;
   perda_adesivos: number;
-  pecas_extras?: number;
   motivo: string;
 };
 
@@ -25,15 +24,13 @@ interface Props {
   onConfirm: (payload: RefacaoFormPayload) => void;
 }
 
-export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoEstampa, onConfirm }: Props) {
+export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, onConfirm }: Props) {
   const mostraAdesivos = tipoIncluiDTF(tipoEstampa);
-  const mostraExtras = destino === "dados";
   const [pecasRefazer, setPecasRefazer] = useState<string>("");
   const [houvePerdaPecas, setHouvePerdaPecas] = useState<"sim" | "nao" | "">("");
   const [perdaPecas, setPerdaPecas] = useState<string>("");
   const [houvePerdaAdesivos, setHouvePerdaAdesivos] = useState<"sim" | "nao" | "">("");
   const [perdaAdesivos, setPerdaAdesivos] = useState<string>("");
-  const [pecasExtras, setPecasExtras] = useState<string>("");
   const [motivo, setMotivo] = useState<string>("");
   const [err, setErr] = useState<string>("");
 
@@ -44,7 +41,6 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
       setPerdaPecas("");
       setHouvePerdaAdesivos("");
       setPerdaAdesivos("");
-      setPecasExtras("");
       setMotivo("");
       setErr("");
     }
@@ -82,15 +78,6 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
         }
       }
     }
-    let nExtras: number | undefined = undefined;
-    if (mostraExtras && pecasExtras.trim() !== "") {
-      const n = Number(pecasExtras);
-      if (!Number.isFinite(n) || n < 0) {
-        setErr("Peças extras: informe um número válido (0 ou mais).");
-        return;
-      }
-      if (n > 0) nExtras = n;
-    }
     if (!motivo.trim()) {
       setErr("O motivo é obrigatório.");
       return;
@@ -99,7 +86,6 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
       pecas_refazer: nPecas,
       perda_pecas: nPerdaPecas,
       perda_adesivos: nPerdaAdesivos,
-      ...(nExtras !== undefined ? { pecas_extras: nExtras } : {}),
       motivo: motivo.trim(),
     });
   }
@@ -142,6 +128,9 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
                   value={perdaPecas}
                   onChange={(e) => setPerdaPecas(e.target.value)}
                 />
+                <div className="text-[11px] text-muted-foreground">
+                  As peças perdidas somam à quantidade original na produção.
+                </div>
               </div>
             )}
           </div>
@@ -168,24 +157,6 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
               )}
             </div>
           )}
-
-          {mostraExtras && (
-            <div className="space-y-1">
-              <Label>Quantas peças extras pedidas? (opcional)</Label>
-              <Input
-                type="number"
-                min="0"
-                value={pecasExtras}
-                onChange={(e) => setPecasExtras(e.target.value)}
-                placeholder="Ex.: 50"
-              />
-              <div className="text-[11px] text-muted-foreground">
-                Soma à quantidade original na produção (não altera a qtd do pedido).
-              </div>
-            </div>
-          )}
-
-
 
           <div className="space-y-1">
             <Label>Motivo *</Label>

@@ -26,6 +26,7 @@ import {
   ETAPA_FILTRO_OPCOES_ARTE, matchEtapaFiltro, UpdateButton, OrcamentoTitle,
 } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { RefacaoBadge } from "./RefacaoBadge";
 import { isReadOnly } from "./edicao-policy";
 
@@ -311,7 +312,10 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 </div>
 
                 {!readOnly && (
-                  <div className="flex justify-start"><UpdateButton onClick={handleSave} disabled={saving}>Atualizar Arte</UpdateButton></div>
+                  <div className="flex justify-start gap-2 flex-wrap">
+                    <UpdateButton onClick={handleSave} disabled={saving}>Atualizar Arte</UpdateButton>
+                    <RefacaoViewerButton pedido={selected} />
+                  </div>
                 )}
               </div>
               </fieldset>

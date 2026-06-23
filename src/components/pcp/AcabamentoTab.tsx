@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, Download } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_ACABAMENTO, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+import { RefacaoViewerButton } from "./RefacaoViewerButton";
 
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
@@ -90,7 +91,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
       responsavel_acabamento: pick("responsavel_acabamento"),
       responsavel_conferencia: pick("responsavel_conferencia"),
       data_saida_juff: pick("data_saida_juff"),
-      observacoes_pedido: pick("observacoes_pedido"),
+      acabamento_observacao: pick("acabamento_observacao" as any),
     };
     // 3A: ao marcar EMBALADO=Sim + Data da Embalagem + Responsável, envia automaticamente para Expedição.
     if (embalado === "Sim" && !!payload.data_saida_juff && !!payload.responsavel_acabamento && !selected.expedicao_entrou_em) {
@@ -213,7 +214,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </FormField>
               <div className="sm:col-span-2 lg:col-span-4">
                 <FormField label="Observações do Acabamento">
-                  <Textarea value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} rows={3} />
+                  <Textarea value={(form as any).acabamento_observacao ?? ""} onChange={(e) => set("acabamento_observacao" as any, e.target.value as any)} rows={3} />
                 </FormField>
                 <ObservacoesOutrosSetores pedido={selected} setorAtual="acabamento" />
               </div>
@@ -236,6 +237,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                     {enviadoParaExpedicao ? "Atualizar Acabamento" : "Atualizar"}
                   </UpdateButton>
                 )}
+                <RefacaoViewerButton pedido={selected} />
               </div>
               {!readOnly && <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />}
             </div>
@@ -379,12 +381,11 @@ function AcabamentoVoltar({ selected, onSave, onNavigate }: { selected: Pedido; 
     payload: import("./RefacaoDialog").RefacaoFormPayload | null,
   ) {
     const { montarRefacoesAposRefazer, camposAlimpar } = await import("./refacao-helpers");
-    const { refacoes, observacoes_pedido } = await montarRefacoesAposRefazer(selected, destino, payload);
+    const { refacoes } = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
       refacoes,
       ...camposAlimpar(selected, destino),
-      ...(observacoes_pedido !== undefined ? { observacoes_pedido } : {}),
     } as any);
     if (onNavigate) onNavigate(destino);
   }

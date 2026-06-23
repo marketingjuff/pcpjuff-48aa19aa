@@ -73,40 +73,17 @@ async function nomeUsuarioAtual(uuid: string | null): Promise<string> {
   return (data as any)?.nome || (data as any)?.email || uuid.slice(0, 8);
 }
 
-function montarLinhaObservacao(args: {
-  origem: string;
-  destino: VoltarDestino;
-  payload: RefacaoFormPayload;
-  responsavel: string;
-  tipoEstampa: string | null | undefined;
-}): string {
-  const { origem, destino, payload, responsavel, tipoEstampa } = args;
-  const partes: string[] = [];
-  partes.push(`Voltou de ${origemHumano(origem)} para ${ETAPA_DESTINO_LABEL[destino]}`);
-  partes.push(`${payload.pecas_refazer} peças a refazer`);
-  if (payload.perda_pecas > 0) partes.push(`${payload.perda_pecas} peças perdidas`);
-  if (tipoIncluiDTF(tipoEstampa) && payload.perda_adesivos > 0) {
-    partes.push(`${payload.perda_adesivos} adesivos perdidos`);
-  }
-  if (destino === "dados" && payload.pecas_extras && payload.pecas_extras > 0) {
-    partes.push(`+${payload.pecas_extras} extras`);
-  }
-  partes.push(`responsável: ${responsavel}`);
-  partes.push(`motivo: ${payload.motivo}`);
-  return `${fmtBR(new Date().toISOString())} — Refação (automático)\n${partes.join(" · ")}`;
-}
-
 /**
  * Constrói o resultado de um Refazer:
- * - Se já há episódio aberto: apenas atualiza `etapa_destino` (sem nova observação).
- * - Caso contrário: cria novo episódio com retrato + acrescenta linha automática
- *   ao campo `observacoes_pedido`.
+ * - Se já há episódio aberto: apenas atualiza `etapa_destino`.
+ * - Caso contrário: cria novo episódio com retrato.
+ * Os dados da refação ficam apenas no array `refacoes` — não escreve em observações.
  */
 export async function montarRefacoesAposRefazer(
   pedido: Pedido,
   destino: VoltarDestino,
   payload: RefacaoFormPayload | null,
-): Promise<{ refacoes: RefacaoEpisodio[]; observacoes_pedido?: string | null }> {
+): Promise<{ refacoes: RefacaoEpisodio[] }> {
   const refsAtuais: RefacaoEpisodio[] = Array.isArray(pedido.refacoes) ? pedido.refacoes : [];
   const aberto = episodioAberto(pedido);
   if (aberto) {
@@ -118,7 +95,6 @@ export async function montarRefacoesAposRefazer(
   if (!payload) return { refacoes: refsAtuais };
   const { data: u } = await supabase.auth.getUser();
   const uid = u?.user?.id ?? null;
-  const nome = await nomeUsuarioAtual(uid);
   const origem = etapaAtualSemAsterisco(pedido);
   // Snapshot COMPLETO de todas as etapas (independente do destino do wipe).
   // Mantém registro de tudo que cada área já tinha assinalado antes da refação.
@@ -152,21 +128,11 @@ export async function montarRefacoesAposRefazer(
     pecas_refazer: payload.pecas_refazer,
     perda_pecas: payload.perda_pecas,
     perda_adesivos: payload.perda_adesivos,
-    ...(destino === "dados" && payload.pecas_extras ? { pecas_extras: payload.pecas_extras } : {}),
     motivo: payload.motivo,
     aberto: true,
     retrato,
   };
-  const linha = montarLinhaObservacao({
-    origem,
-    destino,
-    payload,
-    responsavel: nome,
-    tipoEstampa: pedido.tipo_estampa,
-  });
-  const obsAtual = (pedido.observacoes_pedido ?? "").trim();
-  const observacoes_pedido = obsAtual ? `${linha}\n\n${obsAtual}` : linha;
-  return { refacoes: [...refsAtuais, novo], observacoes_pedido };
+  return { refacoes: [...refsAtuais, novo] };
 }
 
 // ---------- Wipe de campos a partir do destino da refação ----------

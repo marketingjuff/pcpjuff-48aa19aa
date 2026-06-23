@@ -298,11 +298,11 @@ export function etapaAtualSemAsterisco(p: Pedido): string {
   return calcularEtapaAtual(p).etapa.replace(/\*+$/, "");
 }
 
-/** Total de produção: qtd original + soma de peças extras dos episódios. */
+/** Total de produção: qtd original + soma de peças perdidas dos episódios. */
 export function totalProducao(p: Pedido): { total: number; original: number; extras: number } {
   const original = Number(p.qtd ?? 0) || 0;
   const refs = Array.isArray(p.refacoes) ? p.refacoes : [];
-  const extras = refs.reduce((a, e) => a + (Number(e.pecas_extras ?? 0) || 0), 0);
+  const extras = refs.reduce((a, e) => a + (Number(e.perda_pecas ?? 0) || 0), 0);
   return { total: original + extras, original, extras };
 }
 

@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Save, Download } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_SILK, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { MultiSelectPeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
 import { RefacaoBadge } from "./RefacaoBadge";
@@ -102,12 +103,11 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   ) {
     if (!selected) return;
     const { montarRefacoesAposRefazer, camposAlimpar } = await import("./refacao-helpers");
-    const { refacoes, observacoes_pedido } = await montarRefacoesAposRefazer(selected, destino, payload);
+    const { refacoes } = await montarRefacoesAposRefazer(selected, destino, payload);
     onSave({
       id: selected.id,
       refacoes,
       ...camposAlimpar(selected, destino),
-      ...(observacoes_pedido !== undefined ? { observacoes_pedido } : {}),
     } as any);
     if (onNavigate) onNavigate(destino);
   }
@@ -252,6 +252,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                     </Button>
                   )}
                   {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Atualizar Silk</UpdateButton>}
+                  <RefacaoViewerButton pedido={selected} />
                 </div>
                 {!readOnly && <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />}
               </div>
