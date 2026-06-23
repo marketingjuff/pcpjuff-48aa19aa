@@ -323,7 +323,22 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
             </tbody>
           </table>
         </div>
+        <div className="flex items-center justify-between gap-3 flex-wrap pt-2">
+          <div className="text-xs text-muted-foreground">
+            mostrando {finalizadosVisiveis.length} de {finalizados.length}
+          </div>
+          {visiveis < finalizados.length && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setVisiveis((v) => v + loteTamanho)}
+            >
+              Carregar mais
+            </Button>
+          )}
+        </div>
       </CardContent>
+
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
