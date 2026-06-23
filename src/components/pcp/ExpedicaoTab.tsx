@@ -462,8 +462,9 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   const pend = pendenciasDoPedido(p);
                   const bg = linhaAtrasoClasse(p, "expedicao") || rowAlertBgClass(p, feriados);
                   return (
-                    <tr key={p.id}
+                <tr key={p.id}
                       onClick={() => onSelect(p.id)}
+                      style={p.reaberto ? { backgroundColor: "#FFEDD5" } : undefined}
                       className={`border-t cursor-pointer hover:bg-accent ${bg} ${selected?.id === p.id ? "bg-accent" : ""}`}>
                       {onFinalizarMany && (
                         <td
