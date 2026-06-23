@@ -238,7 +238,7 @@ function calcularEtapaInterno(p: Pedido, _ignorarEpisodioAberto: boolean): {
   const dtfDone = p.dtf_estampado === "Sim";
   const silkDone = p.silk_feito === "Sim";
   const acabamentoOk = p.embalado === "Sim";
-  const producaoInputOk = notEmpty(p.arte_data);
+  const producaoInputOk = notEmpty(p.status_pecas) && notEmpty(p.tipo_estampa);
 
   const etapas = isLisa
     ? [dadosInOk, acabamentoOk]
@@ -257,10 +257,10 @@ function calcularEtapaInterno(p: Pedido, _ignorarEpisodioAberto: boolean): {
     etapa = "Aguardando Expedição"; cor = "blue";
   } else if (!dadosInOk) {
     etapa = "Aguardando entrada"; cor = "gray";
-  } else if (isLisa) {
-    etapa = "Aguardando Acabamento"; cor = "blue";
   } else if (!producaoInputOk) {
     etapa = "Aguardando input de produção"; cor = "yellow";
+  } else if (isLisa) {
+    etapa = "Aguardando Acabamento"; cor = "blue";
   } else if (!arteOk) {
     if (tipo === "DTF+Silk" && dtfArteOk && !silkArteOk) {
       etapa = "DTF Liberado / Silk na Arte"; cor = "blue";

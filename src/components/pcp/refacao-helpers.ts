@@ -216,11 +216,24 @@ const WIPE_ACABAMENTO = {
   exp_despachado_em: null,
   exp_observacoes: null,
 } as const;
+const WIPE_INPUT_PRODUCAO = {
+  status_pecas: null,
+  tipo_estampa: null,
+  dias_secagem: null,
+  n_batidas_dtf: null,
+  n_batidas_silk: null,
+  arte_data: null,
+  inicio_estamparia: null,
+  termino_estamparia: null,
+  inicio_acabamento: null,
+  termino_acabamento: null,
+  tempo_producao: null,
+} as const;
 
 /**
  * Campos a apagar (status/data/responsável de execução) ao mandar o pedido
- * de volta para `destino`. Datas de planejamento (arte_data, inicio/termino
- * estamparia, saida_juff) e cadastro do Olist NÃO são tocados.
+ * de volta para `destino`. Para `dados`, também limpa o Input de Produção;
+ * para os demais destinos, preserva as datas de planejamento anteriores.
  *
  * Em DTF+Silk, "dtf" só apaga DTF (+ acabamento) e "silk" só apaga Silk
  * (+ acabamento) — o lado já pronto permanece pronto.
@@ -243,8 +256,18 @@ export function camposAlimpar(pedido: Pedido, destino: WipeDestino): Record<stri
   if (incluiDTF) out = { ...out, ...WIPE_ARTE_DTF, ...WIPE_DTF };
   if (incluiSilk) out = { ...out, ...WIPE_ARTE_SILK, ...WIPE_SILK };
   if (destino === "arte") return out;
-  // destino === "dados" → também limpa arte_data para voltar a "Aguardando input de produção"
-  out = { ...out, arte_data: null };
+  // destino === "dados" → também limpa o Input de Produção para refazer o fluxo normal desde essa etapa.
+  out = { ...out, ...WIPE_INPUT_PRODUCAO };
+  return out;
+}
+
+export function camposAlimparAposInputProducao(pedido: Pedido): Record<string, any> {
+  const out = camposAlimpar(pedido, "arte");
+  delete out.n_batidas_dtf;
+  delete out.n_batidas_silk;
+  delete out.inicio_acabamento;
+  delete out.termino_acabamento;
+  delete out.tempo_producao;
   return out;
 }
 

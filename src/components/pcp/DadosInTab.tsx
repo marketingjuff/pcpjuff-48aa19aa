@@ -27,6 +27,7 @@ import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
 import { PedidoMobileCard, Chip, QtdTotal, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES_DADOS_IN, matchEtapaFiltro, UpdateButton, EtapaBadgeView } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+import { RefacaoBadge } from "./RefacaoBadge";
 
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
@@ -202,16 +203,16 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }
 
   /**
-   * Quando há episódio de refação aberto com destino "dados", o salvar do
-   * Dados In dispara o wipe de toda a produção (Arte+DTF+Silk+Acabamento),
-   * liberando o pedido para "Aguardando Arte" no próximo cálculo.
+   * Quando há episódio de refação aberto com destino "dados", salvar o Input
+   * de Produção mantém os novos dados preenchidos e limpa as etapas seguintes,
+   * liberando o pedido para seguir o fluxo normal.
    */
   async function wipeProducaoSeRefacaoDados(): Promise<Record<string, any>> {
     if (!selected) return {};
     const aberto = episodioAberto(selected);
     if (!aberto || aberto.etapa_destino !== "dados") return {};
-    const { camposAlimpar } = await import("./refacao-helpers");
-    return camposAlimpar(selected, "arte");
+    const { camposAlimparAposInputProducao } = await import("./refacao-helpers");
+    return camposAlimparAposInputProducao(selected);
   }
 
   useRegisterSave(saveVendor, active);
@@ -407,7 +408,12 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
         {/* Produção */}
         <Card className="border-l-4 border-l-blue-500 bg-blue-50/40 dark:bg-blue-950/10">
-          <CardHeader className="py-2"><CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle></CardHeader>
+          <CardHeader className="py-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base text-blue-700 dark:text-blue-400">Input de Produção</CardTitle>
+              {selected && <RefacaoBadge pedido={selected} />}
+            </div>
+          </CardHeader>
           <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-0">
             {/* Linha 1: Status | Tipo | Batidas DTF/Silk (condicional) */}
             <Field label="Status de Peças *" invalid={missingProd.has("status_pecas")}>
