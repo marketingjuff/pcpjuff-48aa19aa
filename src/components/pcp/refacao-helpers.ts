@@ -226,7 +226,6 @@ const WIPE_ACABAMENTO = {
  * (+ acabamento) — o lado já pronto permanece pronto.
  */
 export function camposAlimpar(pedido: Pedido, destino: WipeDestino): Record<string, any> {
-  if (destino === "dados") return {};
   const incluiDTF = tipoIncluiDTF(pedido.tipo_estampa);
   const incluiSilk = tipoIncluiSilk(pedido.tipo_estampa);
   let out: Record<string, any> = { ...WIPE_ACABAMENTO };
@@ -243,6 +242,9 @@ export function camposAlimpar(pedido: Pedido, destino: WipeDestino): Record<stri
   out = { ...out, ...WIPE_ARTE_COMUM };
   if (incluiDTF) out = { ...out, ...WIPE_ARTE_DTF, ...WIPE_DTF };
   if (incluiSilk) out = { ...out, ...WIPE_ARTE_SILK, ...WIPE_SILK };
+  if (destino === "arte") return out;
+  // destino === "dados" → também limpa arte_data para voltar a "Aguardando input de produção"
+  out = { ...out, arte_data: null };
   return out;
 }
 
