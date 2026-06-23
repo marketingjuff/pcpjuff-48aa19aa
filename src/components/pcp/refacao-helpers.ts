@@ -232,8 +232,8 @@ const WIPE_INPUT_PRODUCAO = {
 
 /**
  * Campos a apagar (status/data/responsável de execução) ao mandar o pedido
- * de volta para `destino`. Datas de planejamento (arte_data, inicio/termino
- * estamparia, saida_juff) e cadastro do Olist NÃO são tocados.
+ * de volta para `destino`. Para `dados`, também limpa o Input de Produção;
+ * para os demais destinos, preserva as datas de planejamento anteriores.
  *
  * Em DTF+Silk, "dtf" só apaga DTF (+ acabamento) e "silk" só apaga Silk
  * (+ acabamento) — o lado já pronto permanece pronto.
