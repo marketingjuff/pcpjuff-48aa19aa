@@ -288,10 +288,10 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
               </tr>
             </thead>
             <tbody>
-              {finalizados.length === 0 ? (
+              {finalizadosVisiveis.length === 0 ? (
                 <tr><td colSpan={isAdmin ? 11 : 10} className="text-center py-8 text-muted-foreground">Nenhum pedido finalizado.</td></tr>
               ) : (
-                finalizados.map((p) => (
+                finalizadosVisiveis.map((p) => (
                   <tr key={p.id} className="border-t cursor-pointer hover:bg-accent" onClick={() => setHistorico(p)}>
                     {isAdmin && (
                       <td className="px-1.5 py-0.5 w-10" onClick={(e) => e.stopPropagation()}>
