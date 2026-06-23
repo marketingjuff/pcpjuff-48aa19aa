@@ -1,0 +1,1 @@
+CREATE POLICY "Team members can view all profiles" ON public.profiles FOR SELECT TO authenticated USING (public.is_team_member());
