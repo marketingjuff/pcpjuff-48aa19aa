@@ -100,15 +100,17 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }
 
   // Cálculos automáticos
-  const tempoFreteNum = Number(form.tempo_frete ?? 0) || 0;
+  const tempoFreteNum = Number(form.tempo_frete ?? NaN);
   const saidaJuffCalc = useMemo(() => {
-    if (!form.data_entrega || !tempoFreteNum) return null;
+    if (!form.data_entrega || !Number.isFinite(tempoFreteNum)) return null;
+    if (tempoFreteNum === 0) return form.data_entrega;
     return addDiasUteis(form.data_entrega, -tempoFreteNum, feriados);
   }, [form.data_entrega, tempoFreteNum, feriados]);
   const tempoProducaoCalc = useMemo(() => {
     if (!form.entrada_pedido || !saidaJuffCalc) return null;
     const ultimoDiaProducao = addDiasUteis(saidaJuffCalc, -1, feriados);
-    return diasUteisEntre(form.entrada_pedido, ultimoDiaProducao, feriados);
+    const d = diasUteisEntre(form.entrada_pedido, ultimoDiaProducao, feriados);
+    return Math.max(0, d);
   }, [form.entrada_pedido, saidaJuffCalc, feriados]);
 
   // A1 — Início de Acabamento
