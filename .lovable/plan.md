@@ -1,44 +1,31 @@
-## Problema
+## Ajustes nos cálculos automáticos (aba Dados de Entrada)
 
-O pedido #1 (Olist `1`) está com `expedicao_entrou_em` preenchido, `embalado = "Sim"` e ainda não foi finalizado. Ele aparece corretamente em todas as abas (Expedição, etc.), mas **somem do Dashboard Master**.
+Arquivo: `src/components/pcp/DadosInTab.tsx` (linhas 103-112)
 
-## Causa
+### 1. Data de saída Juff com frete = 0
+Hoje, quando `tempo_frete` é `0` (ou vazio), `saidaJuffCalc` retorna `null` e o campo mostra "—".
 
-Em `src/components/pcp/DashboardTab.tsx`, a função `pedidoEmEtapa` filtra por `pedidoAtivoNasAreas(p)` antes de qualquer coisa. Em `src/lib/pedidos.ts`, `pedidoAtivoNasAreas` retorna `false` quando `expedicao_entrou_em` está setado (e o pedido não está `reaberto`). Resultado:
-
-- Cards de stats: o card "Expedição" usa `emExpedicao(p)` (`embalado === "Sim" && !finalizado_em`) → conta o pedido 1 corretamente.
-- Tabela: o filtro de etapa rejeita o pedido 1 em **todas as etapas** (inclusive `expedicao` e `ativas`), porque `pedidoAtivoNasAreas` corta antes.
-
-Inconsistência: o número do card diz "1", mas clicar abre uma tabela vazia, e o pedido nunca aparece no Master.
-
-## Correção (apenas `src/components/pcp/DashboardTab.tsx`)
-
-Ajustar `pedidoEmEtapa` para que pedidos em expedição (não finalizados) sejam tratados como ativos:
+Mudança: tratar `0` como valor válido. Se houver `data_entrega` e o tempo de frete for `0`, a data de saída Juff fica igual à data de entrega.
 
 ```ts
-function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
-  if (e === "finalizados") return !!p.finalizado_em;
-
-  const ativoNormal = pedidoAtivoNasAreas(p);
-  const ativoExpedicao = emExpedicao(p); // embalado===Sim && !finalizado_em
-  const ativo = ativoNormal || ativoExpedicao;
-  if (!ativo) return false;
-
-  if (e === "todas" || e === "ativas") return true;
-  if (e === "expedicao") return ativoExpedicao;
-
-  // demais etapas continuam usando o label calculado
-  const etapaAtual = calcularEtapaAtual(p).etapa.replace(/\*$/, "");
-  const map = { /* inalterado */ };
-  return map[e]?.includes(etapaAtual) ?? false;
-}
+const tempoFreteNum = Number(form.tempo_frete ?? NaN);
+const saidaJuffCalc = useMemo(() => {
+  if (!form.data_entrega || !Number.isFinite(tempoFreteNum)) return null;
+  if (tempoFreteNum === 0) return form.data_entrega;
+  return addDiasUteis(form.data_entrega, -tempoFreteNum, feriados);
+}, [form.data_entrega, tempoFreteNum, feriados]);
 ```
 
-Com isso:
-- O pedido 1 aparece em "Total ativos" e ao clicar no card "Expedição".
-- O comportamento das outras abas (Silk, Arte, DTF, Dados In, Acabamento, Expedição, Finalizados) permanece inalterado — esse ajuste está restrito ao Dashboard Master.
-- Nenhuma mudança em `pedidos.ts` ou na regra global `pedidoAtivoNasAreas` (usada em outros lugares).
+### 2. Tempo de produção = 0 deve aparecer como "0"
+Com o ajuste acima, `tempoProducaoCalc` passa a ser calculável quando frete = 0. Para garantir que `0` (ou valores negativos por sobreposição de datas) apareçam como `0` e não como "—", clampar o resultado a 0 mínimo. O display `{tempoProducaoCalc ?? "—"}` (linha 486) já renderiza `0` corretamente, basta nunca devolver `null` quando há dados válidos.
 
-## Arquivos alterados
+```ts
+const tempoProducaoCalc = useMemo(() => {
+  if (!form.entrada_pedido || !saidaJuffCalc) return null;
+  const ultimoDiaProducao = addDiasUteis(saidaJuffCalc, -1, feriados);
+  const d = diasUteisEntre(form.entrada_pedido, ultimoDiaProducao, feriados);
+  return Math.max(0, d);
+}, [form.entrada_pedido, saidaJuffCalc, feriados]);
+```
 
-- `src/components/pcp/DashboardTab.tsx` — ajuste em `pedidoEmEtapa`.
+Nenhuma outra área (persistência, listagens) precisa ser tocada — os valores calculados continuam sendo salvos em `saida_juff` e `tempo_producao` pelos handlers existentes (linhas 165-166 e 199-200).
