@@ -195,12 +195,66 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         return;
       }
     }
+    // Validação das datas de produção (janela e ordem do fluxo)
+    {
+      const inicioAcabEfetivo = isLisa ? (form.inicio_acabamento ?? null) : (form.inicio_acabamento ?? inicioAcabamentoCalc ?? null);
+      const datasParaValidar: { key: string; label: string; value: string | null | undefined }[] = isLisa
+        ? [
+            { key: "inicio_acabamento", label: "Início de Acabamento", value: form.inicio_acabamento },
+            { key: "termino_acabamento", label: "Término de Acabamento", value: form.termino_acabamento },
+          ]
+        : [
+            { key: "arte_data", label: "Arte (limite)", value: form.arte_data },
+            { key: "inicio_estamparia", label: "Início de Estamparia", value: form.inicio_estamparia },
+            { key: "termino_estamparia", label: "Término de Estamparia", value: form.termino_estamparia },
+            { key: "inicio_acabamento", label: "Início de Acabamento", value: inicioAcabEfetivo },
+            { key: "termino_acabamento", label: "Término de Acabamento", value: form.termino_acabamento },
+          ];
+      const algumaPreenchida = datasParaValidar.some((d) => !!d.value);
+      if (algumaPreenchida && (!form.entrada_pedido || !saidaJuffCalc)) {
+        toast.error("Defina Entrada do Pedido e Data de Entrega/Tempo de Frete (Saída Juff) antes de informar datas de produção.");
+        return;
+      }
+      if (algumaPreenchida && form.entrada_pedido && saidaJuffCalc) {
+        for (const d of datasParaValidar) {
+          if (!d.value) continue;
+          if (d.value < form.entrada_pedido || d.value > saidaJuffCalc) {
+            setMissingProd(new Set([...missP, d.key]));
+            toast.error(`A data ${d.label} está fora da janela de produção (entrada do pedido até a Saída Juff).`);
+            return;
+          }
+        }
+      }
+      // Ordem do fluxo
+      const fail = (key: string, msg: string) => {
+        setMissingProd(new Set([...missP, key]));
+        toast.error(msg);
+      };
+      if (!isLisa) {
+        if (form.arte_data && form.inicio_estamparia && form.arte_data > form.inicio_estamparia) {
+          fail("inicio_estamparia", "Início de Estamparia não pode ser anterior à Arte (limite)."); return;
+        }
+        if (form.inicio_estamparia && form.termino_estamparia && form.inicio_estamparia > form.termino_estamparia) {
+          fail("termino_estamparia", "Término de Estamparia não pode ser anterior ao Início de Estamparia."); return;
+        }
+        if (form.termino_estamparia && inicioAcabEfetivo && form.termino_estamparia > inicioAcabEfetivo) {
+          fail("inicio_acabamento", "Início de Acabamento não pode ser anterior ao Término de Estamparia."); return;
+        }
+        if (inicioAcabEfetivo && form.termino_acabamento && inicioAcabEfetivo > form.termino_acabamento) {
+          fail("termino_acabamento", "Término de Acabamento não pode ser anterior ao Início de Acabamento."); return;
+        }
+      } else {
+        if (form.inicio_acabamento && form.termino_acabamento && form.inicio_acabamento > form.termino_acabamento) {
+          fail("termino_acabamento", "Término de Acabamento não pode ser anterior ao Início de Acabamento."); return;
+        }
+      }
+    }
     const wipe = await wipeProducaoSeRefacaoDados();
     onSave({
       ...form,
       saida_juff: saidaJuffCalc ?? form.saida_juff ?? null,
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
-      inicio_acabamento: inicioAcabamentoCalc ?? form.inicio_acabamento ?? null,
+      inicio_acabamento: isLisa ? (form.inicio_acabamento ?? null) : (inicioAcabamentoCalc ?? form.inicio_acabamento ?? null),
       ...wipe,
     });
   }
