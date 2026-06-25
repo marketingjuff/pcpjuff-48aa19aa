@@ -99,7 +99,8 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
           case "arte": return cmpDate(a.arte_data, b.arte_data, dir);
           case "inicio": return cmpDate(estampDatas(a).inicio, estampDatas(b).inicio, dir);
           case "termino": return cmpDate(estampDatas(a).termino, estampDatas(b).termino, dir);
-          case "acabamento": return cmpDate(a.acabamento_data, b.acabamento_data, dir);
+          case "inicioAcab": return cmpDate(a.inicio_acabamento, b.inicio_acabamento, dir);
+          case "acabamento": return cmpDate(a.termino_acabamento, b.termino_acabamento, dir);
           case "exped": return cmpDate(a.expedicao_entrou_em, b.expedicao_entrou_em, dir);
           case "saida": return cmpDate(a.saida_juff, b.saida_juff, dir);
           case "entrega": return cmpDate(a.data_entrega, b.data_entrega, dir);
