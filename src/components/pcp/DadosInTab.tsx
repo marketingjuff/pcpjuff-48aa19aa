@@ -166,7 +166,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       ...form,
       saida_juff: saidaJuffCalc ?? form.saida_juff ?? null,
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
-      inicio_acabamento: inicioAcabamentoCalc ?? form.inicio_acabamento ?? null,
+      inicio_acabamento: isLisa ? (form.inicio_acabamento ?? null) : (inicioAcabamentoCalc ?? form.inicio_acabamento ?? null),
       ...wipe,
     });
   }
