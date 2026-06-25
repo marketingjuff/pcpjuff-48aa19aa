@@ -597,7 +597,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             {/* Linha 4: Observações */}
             <div className="sm:col-span-2 lg:col-span-4">
               <Field label="Observações de produção">
-                <Textarea rows={2} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
+                <Textarea className="uppercase" rows={2} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
               </Field>
               {selected && (
                 <ObservacoesOutrosSetores
