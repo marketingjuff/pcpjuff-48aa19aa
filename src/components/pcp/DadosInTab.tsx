@@ -491,7 +491,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             </div>
             <div className="sm:col-span-2 lg:col-span-4">
               <Field label="Observações do vendedor">
-                <Textarea rows={2} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
+                <Textarea className="uppercase" rows={2} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
               </Field>
             </div>
             <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start">
