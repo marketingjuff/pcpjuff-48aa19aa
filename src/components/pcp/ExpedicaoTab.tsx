@@ -268,6 +268,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   <div>
                     <FormField label="Observações da Expedição">
                       <Textarea
+                        className="uppercase"
                         rows={3}
                         value={form.exp_observacoes ?? ""}
                         onChange={(e) => set("exp_observacoes", e.target.value)}

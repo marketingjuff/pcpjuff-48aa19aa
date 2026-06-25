@@ -214,7 +214,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </FormField>
               <div className="sm:col-span-2 lg:col-span-4">
                 <FormField label="Observações do Acabamento">
-                  <Textarea value={(form as any).acabamento_observacao ?? ""} onChange={(e) => set("acabamento_observacao" as any, e.target.value as any)} rows={3} />
+                  <Textarea className="uppercase" value={(form as any).acabamento_observacao ?? ""} onChange={(e) => set("acabamento_observacao" as any, e.target.value as any)} rows={3} />
                 </FormField>
                 <ObservacoesOutrosSetores pedido={selected} setorAtual="acabamento" />
               </div>

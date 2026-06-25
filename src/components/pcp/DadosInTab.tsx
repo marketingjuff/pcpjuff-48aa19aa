@@ -166,7 +166,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       ...form,
       saida_juff: saidaJuffCalc ?? form.saida_juff ?? null,
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
-      inicio_acabamento: inicioAcabamentoCalc ?? form.inicio_acabamento ?? null,
+      inicio_acabamento: isLisa ? (form.inicio_acabamento ?? null) : (inicioAcabamentoCalc ?? form.inicio_acabamento ?? null),
       ...wipe,
     });
   }
@@ -195,12 +195,66 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         return;
       }
     }
+    // Validação das datas de produção (janela e ordem do fluxo)
+    {
+      const inicioAcabEfetivo = isLisa ? (form.inicio_acabamento ?? null) : (form.inicio_acabamento ?? inicioAcabamentoCalc ?? null);
+      const datasParaValidar: { key: string; label: string; value: string | null | undefined }[] = isLisa
+        ? [
+            { key: "inicio_acabamento", label: "Início de Acabamento", value: form.inicio_acabamento },
+            { key: "termino_acabamento", label: "Término de Acabamento", value: form.termino_acabamento },
+          ]
+        : [
+            { key: "arte_data", label: "Arte (limite)", value: form.arte_data },
+            { key: "inicio_estamparia", label: "Início de Estamparia", value: form.inicio_estamparia },
+            { key: "termino_estamparia", label: "Término de Estamparia", value: form.termino_estamparia },
+            { key: "inicio_acabamento", label: "Início de Acabamento", value: inicioAcabEfetivo },
+            { key: "termino_acabamento", label: "Término de Acabamento", value: form.termino_acabamento },
+          ];
+      const algumaPreenchida = datasParaValidar.some((d) => !!d.value);
+      if (algumaPreenchida && (!form.entrada_pedido || !saidaJuffCalc)) {
+        toast.error("Defina Entrada do Pedido e Data de Entrega/Tempo de Frete (Saída Juff) antes de informar datas de produção.");
+        return;
+      }
+      if (algumaPreenchida && form.entrada_pedido && saidaJuffCalc) {
+        for (const d of datasParaValidar) {
+          if (!d.value) continue;
+          if (d.value < form.entrada_pedido || d.value > saidaJuffCalc) {
+            setMissingProd(new Set([...missP, d.key]));
+            toast.error(`A data ${d.label} está fora da janela de produção (entrada do pedido até a Saída Juff).`);
+            return;
+          }
+        }
+      }
+      // Ordem do fluxo
+      const fail = (key: string, msg: string) => {
+        setMissingProd(new Set([...missP, key]));
+        toast.error(msg);
+      };
+      if (!isLisa) {
+        if (form.arte_data && form.inicio_estamparia && form.arte_data > form.inicio_estamparia) {
+          fail("inicio_estamparia", "Início de Estamparia não pode ser anterior à Arte (limite)."); return;
+        }
+        if (form.inicio_estamparia && form.termino_estamparia && form.inicio_estamparia > form.termino_estamparia) {
+          fail("termino_estamparia", "Término de Estamparia não pode ser anterior ao Início de Estamparia."); return;
+        }
+        if (form.termino_estamparia && inicioAcabEfetivo && form.termino_estamparia > inicioAcabEfetivo) {
+          fail("inicio_acabamento", "Início de Acabamento não pode ser anterior ao Término de Estamparia."); return;
+        }
+        if (inicioAcabEfetivo && form.termino_acabamento && inicioAcabEfetivo > form.termino_acabamento) {
+          fail("termino_acabamento", "Término de Acabamento não pode ser anterior ao Início de Acabamento."); return;
+        }
+      } else {
+        if (form.inicio_acabamento && form.termino_acabamento && form.inicio_acabamento > form.termino_acabamento) {
+          fail("termino_acabamento", "Término de Acabamento não pode ser anterior ao Início de Acabamento."); return;
+        }
+      }
+    }
     const wipe = await wipeProducaoSeRefacaoDados();
     onSave({
       ...form,
       saida_juff: saidaJuffCalc ?? form.saida_juff ?? null,
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
-      inicio_acabamento: inicioAcabamentoCalc ?? form.inicio_acabamento ?? null,
+      inicio_acabamento: isLisa ? (form.inicio_acabamento ?? null) : (inicioAcabamentoCalc ?? form.inicio_acabamento ?? null),
       ...wipe,
     });
   }
@@ -437,7 +491,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             </div>
             <div className="sm:col-span-2 lg:col-span-4">
               <Field label="Observações do vendedor">
-                <Textarea rows={2} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
+                <Textarea className="uppercase" rows={2} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
               </Field>
             </div>
             <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start">
@@ -501,22 +555,32 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             )}
             {(!form.tipo_estampa || form.tipo_estampa === "Lisa") && (<><div /><div /></>)}
 
-            {/* Linha 2: Dias Secagem | Arte Limite | Início Estamparia | Término Estamparia */}
-            <Field label="Dias de Secagem (dias corridos)">
-              {(soDTF || isLisa) ? (
-                <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm text-muted-foreground">Não se aplica</div>
-              ) : (
-                <Input type="number" min="0" value={form.dias_secagem ?? ""} onChange={(e) => set("dias_secagem", e.target.value === "" ? null : Number(e.target.value))} />
-              )}
-            </Field>
-            <Field label="Arte (limite)"><DateInputBR value={form.arte_data} onChange={(v) => set("arte_data", v)} /></Field>
-            <Field label="Início Estamparia"><DateInputBR value={form.inicio_estamparia} onChange={(v) => set("inicio_estamparia", v)} /></Field>
-            <Field label="Término Estamparia"><DateInputBR value={form.termino_estamparia} onChange={(v) => set("termino_estamparia", v)} /></Field>
+            {/* Linha 2: Dias Secagem | Arte Limite | Início Estamparia | Término Estamparia (não renderiza para Lisa) */}
+            {!isLisa && (
+              <>
+                <Field label="Dias de Secagem (dias corridos)">
+                  {soDTF ? (
+                    <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm text-muted-foreground">Não se aplica</div>
+                  ) : (
+                    <Input type="number" min="0" value={form.dias_secagem ?? ""} onChange={(e) => set("dias_secagem", e.target.value === "" ? null : Number(e.target.value))} />
+                  )}
+                </Field>
+                <Field label="Arte (limite)" invalid={missingProd.has("arte_data")}><DateInputBR value={form.arte_data} onChange={(v) => set("arte_data", v)} /></Field>
+                <Field label="Início Estamparia" invalid={missingProd.has("inicio_estamparia")}><DateInputBR value={form.inicio_estamparia} onChange={(v) => set("inicio_estamparia", v)} /></Field>
+                <Field label="Término Estamparia" invalid={missingProd.has("termino_estamparia")}><DateInputBR value={form.termino_estamparia} onChange={(v) => set("termino_estamparia", v)} /></Field>
+              </>
+            )}
 
             {/* Linha 3: Início Acabamento | Término Acabamento | Saída Juff | Tempo Produção */}
-            <Field label="Início de Acabamento (calculado)">
-              <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{inicioAcabamentoCalc ? formatDateBR(inicioAcabamentoCalc) : "—"}</div>
-            </Field>
+            {isLisa ? (
+              <Field label="Início de Acabamento" invalid={missingProd.has("inicio_acabamento")}>
+                <DateInputBR value={form.inicio_acabamento} onChange={(v) => set("inicio_acabamento", v)} />
+              </Field>
+            ) : (
+              <Field label="Início de Acabamento (calculado)">
+                <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{inicioAcabamentoCalc ? formatDateBR(inicioAcabamentoCalc) : "—"}</div>
+              </Field>
+            )}
             <Field label="Término de Acabamento" invalid={missingProd.has("termino_acabamento")}>
               <DateInputBR value={form.termino_acabamento} onChange={(v) => set("termino_acabamento", v)} />
               {form.termino_acabamento && !isDataUtilISO(form.termino_acabamento, feriados) && (
@@ -533,7 +597,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             {/* Linha 4: Observações */}
             <div className="sm:col-span-2 lg:col-span-4">
               <Field label="Observações de produção">
-                <Textarea rows={2} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
+                <Textarea className="uppercase" rows={2} value={form.observacoes_pedido ?? ""} onChange={(e) => set("observacoes_pedido", e.target.value)} />
               </Field>
               {selected && (
                 <ObservacoesOutrosSetores

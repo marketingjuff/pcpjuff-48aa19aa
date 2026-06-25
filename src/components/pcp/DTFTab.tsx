@@ -230,7 +230,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 </FormField>
                 <div className="sm:col-span-2 lg:col-span-4">
                   <FormField label="Observações do DTF">
-                    <Textarea value={form.dtf_observacao ?? ""} onChange={(e) => set("dtf_observacao", e.target.value)} rows={2} />
+                    <Textarea className="uppercase" value={form.dtf_observacao ?? ""} onChange={(e) => set("dtf_observacao", e.target.value)} rows={2} />
                   </FormField>
                   <ObservacoesOutrosSetores pedido={selected} setorAtual="dtf" />
                 </div>

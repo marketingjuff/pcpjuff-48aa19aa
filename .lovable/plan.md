@@ -1,46 +1,50 @@
-## Parte 1 — Histórico da Data de Entrega
 
-**Migration (Supabase)**
-- Adiciona coluna `pedidos.historico_data_entrega jsonb NOT NULL DEFAULT '[]'`.
-- Cria função `registrar_alteracao_data_entrega()` (SECURITY DEFINER, search_path = public): em UPDATE, se `data_entrega` mudou e a antiga não era nula, empilha `{data: OLD.data_entrega, em: now(), por: auth.uid()}`.
-- Cria trigger `trg_hist_data_entrega` BEFORE UPDATE em `public.pedidos`.
-- Regenera os types do Supabase (a coluna aparece como `Json` no tipo `Pedido`).
+Três mudanças independentes.
 
-**Front — `FinalizadosTab.tsx`**
-- Importar `useProfilesMap` e `resolveNome` de `@/hooks/use-profiles-map`.
-- No painel Histórico, **logo abaixo** do `ReadOnlyField` "Entrega" (linha 191), renderizar o bloco "Histórico de Data de Entrega" apenas quando `historico_data_entrega` tiver ≥ 1 item.
-- Sequência exibida: todas as datas antigas (na ordem do array) + `historico.data_entrega` atual no fim.
-- Cada linha: `Nª: <data BR>`; da 2ª em diante adiciona ` — alterada em <data BR> por <nome>` (meta vem do item anterior do array, que é o carimbo da troca que gerou aquela data). Última linha recebe sufixo `(atual)`.
-- Não alterar nada que grava `data_entrega` — o trigger cuida.
+## 1) Peça Lisa — formulário e gate de etapa (sem bloquear salvar)
 
-## Parte 2 — Botão "Duplicar pedido" (Dados In)
+**`src/components/pcp/DadosInTab.tsx`** (CardContent do Input de Produção):
+- Envolver a "Linha 2" inteira (`Dias de Secagem`, `Arte (limite)`, `Início Estamparia`, `Término Estamparia`) em `{!isLisa && (<>...</>)}` — não renderiza para Lisa.
+- "Início de Acabamento":
+  - Se `isLisa`: renderizar `<Field label="Início de Acabamento"><DateInputBR value={form.inicio_acabamento} onChange={(v) => set("inicio_acabamento", v)} /></Field>`.
+  - Caso contrário: manter read-only com `inicioAcabamentoCalc` (sem mudança).
+- "Término de Acabamento", "Saída Juff" e "Tempo de Produção": sem mudança.
+- Em `saveVendor` e `saveProducao`, no payload do `onSave`, trocar `inicio_acabamento: inicioAcabamentoCalc ?? form.inicio_acabamento ?? null` por `inicio_acabamento: isLisa ? (form.inicio_acabamento ?? null) : (inicioAcabamentoCalc ?? form.inicio_acabamento ?? null)`.
+- **Não** adicionar gate de salvamento — salvar continua livre.
 
-**`DadosInTab.tsx`**
-- Importar ícone `Copy` de `lucide-react`.
-- Na toolbar, **entre "Novo" e "Deletar"**, adicionar:
-  ```tsx
-  {selected && (
-    <Button size="sm" variant="outline" onClick={handleDuplicar}>
-      <Copy className="h-4 w-4 mr-1" />Duplicar
-    </Button>
-  )}
-  ```
-  Visível para todos os perfis (não usar `podeDeletar`).
-- Implementar `handleDuplicar()` conforme spec: `onSelect(null)` + `setForm({ ...empty, <campos brancos> })`.
+**`src/lib/pedidos.ts` › `calcularEtapaInterno`** (ramo `isLisa`):
+- Substituir o atalho atual que joga direto para "Aguardando Acabamento" por uma checagem: só avança para "Aguardando Acabamento" quando `p.status_pecas === "completo"` **e** `notEmpty(p.inicio_acabamento)` **e** `notEmpty(p.termino_acabamento)`. Caso contrário, permanece em `"Aguardando input de produção"` (cor `yellow`).
+- Sem alterações em outros ramos.
 
-**Campos mantidos do `selected`:**
-- Vendedor: `orcamento`, `vendedor`, `frete`, `tempo_frete`, `uf_entrega`, `necessita_vetorizacao`, `obs_vendedor`, `layout_url`, `data_entrega`.
-- Produção: `status_pecas` (default `"incompleto"`), `tipo_estampa` (default `""`), `dias_secagem`, `arte_data`, `inicio_estamparia`, `termino_estamparia`, `termino_acabamento`, `observacoes_pedido`.
+## 2) Observações em MAIÚSCULO (só visual)
 
-**Campos zerados:**
-- Vendedor: `pedido_olist=""`, `qtd=null`, `forma_pagamento=null`, `nf_emitida=null`.
-- Produção: `n_batidas_dtf=null`, `n_batidas_silk=null`.
-- `entrada_pedido` = hoje (`YYYY-MM-DD`).
-- Todos os demais campos de execução (arte/dtf/silk/acabamento/expedição/refacoes/historico/reaberto/etc.) ficam com default por estarem fora da lista branca.
+Adicionar a classe Tailwind `uppercase` ao `className` dos `<Textarea>` de edição e dos blocos que exibem o texto (sem `.toUpperCase()` no valor; placeholders e labels intactos):
 
-**Sem alterações em:** lógica de gravação de `data_entrega`, fluxo "Solicitar Alteração de Data", RLS, `DataEntregaField` (novo pedido sem `id` já cai no caminho de edição direta), `checkDuplicado` no save (Olist único).
+- `DadosInTab.tsx` — `obs_vendedor` e `observacoes_pedido`.
+- `ArteTab.tsx` — `arte_observacao`.
+- `DTFTab.tsx` — `dtf_observacao`.
+- `SilkTab.tsx` — `silk_observacao`.
+- `AcabamentoTab.tsx` — `acabamento_observacao`.
+- `ExpedicaoTab.tsx` — `exp_observacoes`.
+- `ObservacoesOutrosSetores.tsx` — bloco de exibição do texto.
 
-## Arquivos tocados
-- `supabase/migrations/<timestamp>_historico_data_entrega.sql` (novo)
-- `src/components/pcp/FinalizadosTab.tsx`
-- `src/components/pcp/DadosInTab.tsx`
+## 3) Validação de datas no `saveProducao` (`DadosInTab.tsx`)
+
+Antes do `onSave` e após os gates já existentes, comparando strings ISO `YYYY-MM-DD` com `<=` / `>=` (datas iguais permitidas). Manter a checagem dia útil de `termino_acabamento` (`isDataUtilISO`).
+
+- Conjunto de datas relevantes:
+  - Lisa: `inicio_acabamento`, `termino_acabamento`.
+  - Demais: `arte_data`, `inicio_estamparia`, `termino_estamparia`, `inicio_acabamento` (usar `form.inicio_acabamento ?? inicioAcabamentoCalc`), `termino_acabamento`.
+- **Janela `[entrada_pedido, saidaJuffCalc]`**: se alguma data acima estiver preenchida e faltar `form.entrada_pedido` ou `saidaJuffCalc`, bloquear com `toast.error("Defina Entrada do Pedido e Data de Entrega/Tempo de Frete (Saída Juff) antes de informar datas de produção.")`. Quando ambos existem, cada data preenchida deve satisfazer `entrada_pedido <= data <= saidaJuffCalc`; falha → marcar campo em `missingProd` e `toast.error("A data <Label> está fora da janela de produção (entrada do pedido até a Saída Juff).")`.
+- **Ordem do fluxo** (só comparar pares onde ambas as datas existem); na primeira falha, dispara `toast.error` específico, marca o campo violador em `missingProd` e retorna:
+  - Não-Lisa:
+    - `arte_data <= inicio_estamparia` → "Início de Estamparia não pode ser anterior à Arte (limite)."
+    - `inicio_estamparia <= termino_estamparia` → "Término de Estamparia não pode ser anterior ao Início de Estamparia."
+    - `termino_estamparia <= inicio_acabamento` (efetivo) → "Início de Acabamento não pode ser anterior ao Término de Estamparia."
+    - `inicio_acabamento <= termino_acabamento` → "Término de Acabamento não pode ser anterior ao Início de Acabamento."
+  - Lisa:
+    - `inicio_acabamento <= termino_acabamento` → mesma mensagem acima.
+
+## Escopo / não-fazer
+- Não mexer em outras rotinas de `pedidos.ts` além do ramo Lisa em `calcularEtapaInterno`.
+- Sem mudanças de schema/banco.

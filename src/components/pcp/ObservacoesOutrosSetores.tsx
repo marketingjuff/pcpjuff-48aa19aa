@@ -51,7 +51,7 @@ export function ObservacoesOutrosSetores({ pedido, setorAtual, somente }: Props)
         <li key={setor} className="leading-snug">
           <span className="font-medium text-muted-foreground">Obs. {SETOR_LABEL[setor]}</span>
           <span className="text-muted-foreground"> - </span>
-          <span className="whitespace-pre-wrap">{txt}</span>
+          <span className="whitespace-pre-wrap uppercase">{txt}</span>
         </li>
       ))}
     </ul>
