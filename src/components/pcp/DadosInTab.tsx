@@ -70,7 +70,12 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const { names: formasPagamento } = useAppList("pagamento");
   const { names: nfOpcoes } = useAppList("nf");
 
+  const skipNextSelectedSync = useRef(false);
   useEffect(() => {
+    if (skipNextSelectedSync.current) {
+      skipNextSelectedSync.current = false;
+      return;
+    }
     if (!isDirty) setForm(selected ?? empty);
     else if (selected?.id) {
       // After a fresh insert, merge the new id into the dirty form so the
@@ -278,8 +283,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
   function handleDuplicar() {
     if (!selected) return;
-    onSelect(null);
-    setForm({
+    const dup: Partial<Pedido> = {
       ...empty,
       // Input do Vendedor: mantém
       orcamento: selected.orcamento ?? "",
@@ -310,7 +314,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       // Input de Produção: limpa
       n_batidas_dtf: null,
       n_batidas_silk: null,
-    });
+    };
+    skipNextSelectedSync.current = true;
+    onSelect(null);
+    setForm(dup);
   }
 
   async function handleUpload(file: File) {
