@@ -316,7 +316,8 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                         <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.arte_data) || "—"}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(inicio) || "—"}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(termino) || "—"}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.acabamento_data) || "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.inicio_acabamento) || "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.termino_acabamento) || "—"}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.expedicao_entrou_em) || "—"}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.saida_juff) || "—"}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.data_entrega) || "—"}</TableCell>
