@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.registrar_alteracao_data_entrega() FROM PUBLIC, anon, authenticated;

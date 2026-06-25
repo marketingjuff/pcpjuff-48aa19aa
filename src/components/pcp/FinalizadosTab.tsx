@@ -20,6 +20,7 @@ import { formatDateBR } from "@/lib/format";
 import { PedidoMobileCard, Chip, QtdTotal, useSort, cmpDate, cmpNum, SortableTh, Th, ReadOnlyField } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { useColorSettings } from "@/hooks/use-color-settings";
+import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
 
 
 interface Props {
@@ -31,6 +32,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
   const qc = useQueryClient();
   const isAdmin = useIsAdmin();
   const { btnStyle } = useColorSettings();
+  const profilesMap = useProfilesMap();
 
   const [search, setSearch] = useState("");
   const [periodo, setPeriodo] = useState<string>("tudo");
@@ -191,6 +193,35 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                 <ReadOnlyField label="Entrega" value={formatDateBR(historico.data_entrega)} />
                 <ReadOnlyField label="Finalizado em" value={formatDateBR(historico.finalizado_em?.slice(0,10))} />
               </div>
+              {(() => {
+                const hist = Array.isArray((historico as any)?.historico_data_entrega)
+                  ? ((historico as any).historico_data_entrega as any[])
+                  : [];
+                if (hist.length === 0) return null;
+                const seq = [...hist.map((h) => h?.data), historico.data_entrega];
+                return (
+                  <div className="mt-2 rounded-md border bg-muted/30 p-2">
+                    <div className="text-sm font-medium mb-1">Histórico de Data de Entrega</div>
+                    <ol className="space-y-0.5 text-sm">
+                      {seq.map((d, i, arr) => {
+                        const meta = i >= 1 ? hist[i - 1] : null;
+                        const atual = i === arr.length - 1;
+                        return (
+                          <li key={i}>
+                            <span className="font-medium tabular-nums">{i + 1}ª: {formatDateBR(d) || "—"}</span>
+                            {atual && <span className="text-muted-foreground"> (atual)</span>}
+                            {meta && (
+                              <span className="text-xs text-muted-foreground">
+                                {" "}— alterada em {formatDateBR(typeof meta.em === "string" ? meta.em.slice(0, 10) : meta.em)} por {resolveNome(profilesMap, meta.por)}
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </div>
+                );
+              })()}
             </div>
             <div className="border-t pt-3">
               <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">Observações</div>
