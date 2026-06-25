@@ -1,21 +1,36 @@
-## Alterações
+## Objetivo
 
-### 1. Dashboard (master) — `src/components/pcp/DashboardTab.tsx`
+Resolver os avisos do Dependency Audit (1 high + 1 medium) atualizando o `@tanstack/react-start` (que arrasta `@tanstack/start-server-core` corrigido) e forçando o `undici` transitivo para uma versão sem as CVEs listadas. Nenhuma mudança de lógica.
 
-Na tabela de pedidos:
+## Passos
 
-- Renomear a coluna `ACABAMENTO` para `TÉRM. ACAB.` e fazê-la exibir `p.termino_acabamento` (em vez de `p.acabamento_data`).
-- Adicionar uma nova coluna **antes** dela: `INÍC. DE ACAB.`, exibindo `p.inicio_acabamento`.
-- Atualizar a ordenação (`sort`):
-  - manter a chave `acabamento` apontando para a coluna de término (`termino_acabamento`);
-  - adicionar nova chave `inicioAcab` para a nova coluna (ordena por `inicio_acabamento`).
-- Ajustar os `colSpan={18}` para `19` nas linhas de "Carregando..." e "Nenhum pedido.", já que passa de 18 para 19 colunas.
+1. **Atualizar pacotes TanStack**
+   - `bun add @tanstack/react-start@latest @tanstack/react-router@latest`
+   - Manter ambos alinhados (são versionados juntos) para evitar mismatch de tipos do router.
 
-### 2. Dados In do Vendedor — `src/components/pcp/DadosInTab.tsx`
+2. **Forçar versão corrigida do undici via overrides**
+   - Editar `package.json` adicionando:
+     ```json
+     "overrides": {
+       "undici": "^7.28.0"
+     }
+     ```
+   - Isso cobre o `undici` puxado transitivamente (via `cheerio` dentro do `start-plugin-core`) que hoje está em 7.24.8 com as falhas de TLS bypass, WebSocket DoS, SOCKS5 pool reuse, header injection e cache disclosure.
 
-Tornar **Frete** e **Tempo de frete (dias úteis)** obrigatórios:
+3. **Regenerar lockfile**
+   - Rodar `bun install` para reescrever `bun.lock` com as versões novas e o override aplicado.
 
-- Adicionar `"frete"` e `"tempo_frete"` ao array `VENDOR_REQUIRED` (linha 134).
-- Acrescentar `*` aos rótulos dos dois campos e ligar `invalid={missingVendor.has("frete")}` e `invalid={missingVendor.has("tempo_frete")}` (linhas 343 e 349).
+4. **Validação**
+   - Conferir o build automático do harness (sem erro de tipo / SSR).
+   - Subir a preview e confirmar que carrega sem runtime error.
+   - Rodar novamente o Dependency Audit (`code--dependency_scan`) e reportar o resultado — marcar como `mark_as_fixed` os findings `vulnerable_dependencies_high` e `vulnerable_dependencies_medium` se sumirem, ou reportar o que sobrar.
 
-Sem alterações em lógica de cálculo, persistência ou demais campos.
+## Fora de escopo
+
+- Nenhuma alteração em `src/lib/pedidos.ts`, `refacao-helpers.ts`, abas de PCP, RLS, ou qualquer regra de negócio.
+- Sem refactor de imports — as APIs públicas do `@tanstack/react-start` e `react-router` usadas no projeto (createServerFn, createFileRoute, Link, useNavigate, etc.) são estáveis dentro do major 1.x.
+
+## Riscos e mitigação
+
+- **Breaking change menor no TanStack**: se o `latest` introduzir mudança incompatível, fixar na maior versão >= 1.167.50 que contenha o fix de `start-server-core` (GHSA-9m65-766c-r333) e reportar.
+- **Override do undici não aplicado pelo bun**: bun suporta `overrides` no formato npm; se o lockfile não refletir, alternar para `resolutions` (yarn-style) que o bun também aceita.
