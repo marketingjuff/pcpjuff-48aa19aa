@@ -304,7 +304,9 @@ function calcularEtapaInterno(p: Pedido, _ignorarEpisodioAberto: boolean): {
   } else if (!producaoInputOk) {
     etapa = "Aguardando input de produção"; cor = "yellow";
   } else if (isLisa) {
-    etapa = "Aguardando Acabamento"; cor = "blue";
+    const lisaPronta = p.status_pecas === "completo" && notEmpty(p.inicio_acabamento) && notEmpty(p.termino_acabamento);
+    if (lisaPronta) { etapa = "Aguardando Acabamento"; cor = "blue"; }
+    else { etapa = "Aguardando input de produção"; cor = "yellow"; }
   } else if (!arteOk) {
     if (tipo === "DTF+Silk" && dtfArteOk && !silkArteOk) {
       etapa = "DTF Liberado / Silk na Arte"; cor = "blue";
