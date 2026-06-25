@@ -283,8 +283,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
   function handleDuplicar() {
     if (!selected) return;
-    onSelect(null);
-    setForm({
+    const dup: Partial<Pedido> = {
       ...empty,
       // Input do Vendedor: mantém
       orcamento: selected.orcamento ?? "",
@@ -315,7 +314,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       // Input de Produção: limpa
       n_batidas_dtf: null,
       n_batidas_silk: null,
-    });
+    };
+    skipNextSelectedSync.current = true;
+    onSelect(null);
+    setForm(dup);
   }
 
   async function handleUpload(file: File) {
