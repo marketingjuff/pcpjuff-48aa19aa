@@ -32,6 +32,7 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
   const qc = useQueryClient();
   const isAdmin = useIsAdmin();
   const { btnStyle } = useColorSettings();
+  const profilesMap = useProfilesMap();
 
   const [search, setSearch] = useState("");
   const [periodo, setPeriodo] = useState<string>("tudo");
