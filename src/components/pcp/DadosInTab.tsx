@@ -501,22 +501,32 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             )}
             {(!form.tipo_estampa || form.tipo_estampa === "Lisa") && (<><div /><div /></>)}
 
-            {/* Linha 2: Dias Secagem | Arte Limite | Início Estamparia | Término Estamparia */}
-            <Field label="Dias de Secagem (dias corridos)">
-              {(soDTF || isLisa) ? (
-                <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm text-muted-foreground">Não se aplica</div>
-              ) : (
-                <Input type="number" min="0" value={form.dias_secagem ?? ""} onChange={(e) => set("dias_secagem", e.target.value === "" ? null : Number(e.target.value))} />
-              )}
-            </Field>
-            <Field label="Arte (limite)"><DateInputBR value={form.arte_data} onChange={(v) => set("arte_data", v)} /></Field>
-            <Field label="Início Estamparia"><DateInputBR value={form.inicio_estamparia} onChange={(v) => set("inicio_estamparia", v)} /></Field>
-            <Field label="Término Estamparia"><DateInputBR value={form.termino_estamparia} onChange={(v) => set("termino_estamparia", v)} /></Field>
+            {/* Linha 2: Dias Secagem | Arte Limite | Início Estamparia | Término Estamparia (não renderiza para Lisa) */}
+            {!isLisa && (
+              <>
+                <Field label="Dias de Secagem (dias corridos)">
+                  {soDTF ? (
+                    <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm text-muted-foreground">Não se aplica</div>
+                  ) : (
+                    <Input type="number" min="0" value={form.dias_secagem ?? ""} onChange={(e) => set("dias_secagem", e.target.value === "" ? null : Number(e.target.value))} />
+                  )}
+                </Field>
+                <Field label="Arte (limite)" invalid={missingProd.has("arte_data")}><DateInputBR value={form.arte_data} onChange={(v) => set("arte_data", v)} /></Field>
+                <Field label="Início Estamparia" invalid={missingProd.has("inicio_estamparia")}><DateInputBR value={form.inicio_estamparia} onChange={(v) => set("inicio_estamparia", v)} /></Field>
+                <Field label="Término Estamparia" invalid={missingProd.has("termino_estamparia")}><DateInputBR value={form.termino_estamparia} onChange={(v) => set("termino_estamparia", v)} /></Field>
+              </>
+            )}
 
             {/* Linha 3: Início Acabamento | Término Acabamento | Saída Juff | Tempo Produção */}
-            <Field label="Início de Acabamento (calculado)">
-              <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{inicioAcabamentoCalc ? formatDateBR(inicioAcabamentoCalc) : "—"}</div>
-            </Field>
+            {isLisa ? (
+              <Field label="Início de Acabamento" invalid={missingProd.has("inicio_acabamento")}>
+                <DateInputBR value={form.inicio_acabamento} onChange={(v) => set("inicio_acabamento", v)} />
+              </Field>
+            ) : (
+              <Field label="Início de Acabamento (calculado)">
+                <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm font-medium">{inicioAcabamentoCalc ? formatDateBR(inicioAcabamentoCalc) : "—"}</div>
+              </Field>
+            )}
             <Field label="Término de Acabamento" invalid={missingProd.has("termino_acabamento")}>
               <DateInputBR value={form.termino_acabamento} onChange={(v) => set("termino_acabamento", v)} />
               {form.termino_acabamento && !isDataUtilISO(form.termino_acabamento, feriados) && (
