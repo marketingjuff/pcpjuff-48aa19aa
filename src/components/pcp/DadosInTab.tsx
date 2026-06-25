@@ -222,6 +222,43 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
   function handleNew() { onSelect(null); setForm(empty); }
 
+  function handleDuplicar() {
+    if (!selected) return;
+    onSelect(null);
+    setForm({
+      ...empty,
+      // Input do Vendedor: mantém
+      orcamento: selected.orcamento ?? "",
+      vendedor: selected.vendedor ?? null,
+      frete: selected.frete ?? null,
+      tempo_frete: selected.tempo_frete ?? null,
+      uf_entrega: selected.uf_entrega ?? null,
+      necessita_vetorizacao: selected.necessita_vetorizacao ?? false,
+      obs_vendedor: selected.obs_vendedor ?? null,
+      layout_url: selected.layout_url ?? null,
+      data_entrega: selected.data_entrega ?? null,
+      // Input do Vendedor: limpa
+      pedido_olist: "",
+      qtd: null,
+      forma_pagamento: null,
+      nf_emitida: null,
+      // Data de entrada: hoje
+      entrada_pedido: new Date().toISOString().slice(0, 10),
+      // Input de Produção: mantém
+      status_pecas: selected.status_pecas ?? "incompleto",
+      tipo_estampa: selected.tipo_estampa ?? "",
+      dias_secagem: selected.dias_secagem ?? null,
+      arte_data: selected.arte_data ?? null,
+      inicio_estamparia: selected.inicio_estamparia ?? null,
+      termino_estamparia: selected.termino_estamparia ?? null,
+      termino_acabamento: selected.termino_acabamento ?? null,
+      observacoes_pedido: selected.observacoes_pedido ?? null,
+      // Input de Produção: limpa
+      n_batidas_dtf: null,
+      n_batidas_silk: null,
+    });
+  }
+
   async function handleUpload(file: File) {
     if (file.type !== "application/pdf") { toast.error("Apenas PDF."); return; }
     if (file.size > 30 * 1024 * 1024) { toast.error("Máx. 30MB."); return; }
