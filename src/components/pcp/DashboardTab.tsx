@@ -275,7 +275,8 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                   <SortHead label="ARTE LIMITE" k="arte" sort={sort} />
                   <SortHead label="INÍCIO EST." k="inicio" sort={sort} />
                   <SortHead label="TÉRM. EST." k="termino" sort={sort} />
-                  <SortHead label="ACABAMENTO" k="acabamento" sort={sort} />
+                  <SortHead label="INÍC. DE ACAB." k="inicioAcab" sort={sort} />
+                  <SortHead label="TÉRM. ACAB." k="acabamento" sort={sort} />
                   <SortHead label="EXPED." k="exped" sort={sort} />
                   <SortHead label="SAÍDA JUFF" k="saida" sort={sort} />
                   <SortHead label="ENTREGA" k="entrega" sort={sort} />
