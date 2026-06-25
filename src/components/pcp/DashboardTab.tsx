@@ -49,7 +49,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const [dataEntrega, setDataEntrega] = useState("");
   
   const [search, setSearch] = useState("");
-  const sort = useSort<"qtd"|"entrada"|"arte"|"inicio"|"termino"|"acabamento"|"exped"|"saida"|"entrega"|"dias">("saida", "asc");
+  const sort = useSort<"qtd"|"entrada"|"arte"|"inicio"|"termino"|"inicioAcab"|"acabamento"|"exped"|"saida"|"entrega"|"dias">("saida", "asc");
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
