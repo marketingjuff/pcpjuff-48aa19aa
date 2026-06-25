@@ -70,7 +70,12 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const { names: formasPagamento } = useAppList("pagamento");
   const { names: nfOpcoes } = useAppList("nf");
 
+  const skipNextSelectedSync = useRef(false);
   useEffect(() => {
+    if (skipNextSelectedSync.current) {
+      skipNextSelectedSync.current = false;
+      return;
+    }
     if (!isDirty) setForm(selected ?? empty);
     else if (selected?.id) {
       // After a fresh insert, merge the new id into the dirty form so the
