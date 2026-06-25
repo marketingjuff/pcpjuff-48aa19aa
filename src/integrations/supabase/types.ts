@@ -120,6 +120,7 @@ export type Database = {
           fotolito_executado: string | null
           fotolito_impresso: string | null
           frete: string | null
+          historico_data_entrega: Json
           id: string
           inicio_acabamento: string | null
           inicio_estamparia: string | null
@@ -196,6 +197,7 @@ export type Database = {
           fotolito_executado?: string | null
           fotolito_impresso?: string | null
           frete?: string | null
+          historico_data_entrega?: Json
           id?: string
           inicio_acabamento?: string | null
           inicio_estamparia?: string | null
@@ -272,6 +274,7 @@ export type Database = {
           fotolito_executado?: string | null
           fotolito_impresso?: string | null
           frete?: string | null
+          historico_data_entrega?: Json
           id?: string
           inicio_acabamento?: string | null
           inicio_estamparia?: string | null

@@ -1,36 +1,46 @@
-## Objetivo
+## Parte 1 — Histórico da Data de Entrega
 
-Resolver os avisos do Dependency Audit (1 high + 1 medium) atualizando o `@tanstack/react-start` (que arrasta `@tanstack/start-server-core` corrigido) e forçando o `undici` transitivo para uma versão sem as CVEs listadas. Nenhuma mudança de lógica.
+**Migration (Supabase)**
+- Adiciona coluna `pedidos.historico_data_entrega jsonb NOT NULL DEFAULT '[]'`.
+- Cria função `registrar_alteracao_data_entrega()` (SECURITY DEFINER, search_path = public): em UPDATE, se `data_entrega` mudou e a antiga não era nula, empilha `{data: OLD.data_entrega, em: now(), por: auth.uid()}`.
+- Cria trigger `trg_hist_data_entrega` BEFORE UPDATE em `public.pedidos`.
+- Regenera os types do Supabase (a coluna aparece como `Json` no tipo `Pedido`).
 
-## Passos
+**Front — `FinalizadosTab.tsx`**
+- Importar `useProfilesMap` e `resolveNome` de `@/hooks/use-profiles-map`.
+- No painel Histórico, **logo abaixo** do `ReadOnlyField` "Entrega" (linha 191), renderizar o bloco "Histórico de Data de Entrega" apenas quando `historico_data_entrega` tiver ≥ 1 item.
+- Sequência exibida: todas as datas antigas (na ordem do array) + `historico.data_entrega` atual no fim.
+- Cada linha: `Nª: <data BR>`; da 2ª em diante adiciona ` — alterada em <data BR> por <nome>` (meta vem do item anterior do array, que é o carimbo da troca que gerou aquela data). Última linha recebe sufixo `(atual)`.
+- Não alterar nada que grava `data_entrega` — o trigger cuida.
 
-1. **Atualizar pacotes TanStack**
-   - `bun add @tanstack/react-start@latest @tanstack/react-router@latest`
-   - Manter ambos alinhados (são versionados juntos) para evitar mismatch de tipos do router.
+## Parte 2 — Botão "Duplicar pedido" (Dados In)
 
-2. **Forçar versão corrigida do undici via overrides**
-   - Editar `package.json` adicionando:
-     ```json
-     "overrides": {
-       "undici": "^7.28.0"
-     }
-     ```
-   - Isso cobre o `undici` puxado transitivamente (via `cheerio` dentro do `start-plugin-core`) que hoje está em 7.24.8 com as falhas de TLS bypass, WebSocket DoS, SOCKS5 pool reuse, header injection e cache disclosure.
+**`DadosInTab.tsx`**
+- Importar ícone `Copy` de `lucide-react`.
+- Na toolbar, **entre "Novo" e "Deletar"**, adicionar:
+  ```tsx
+  {selected && (
+    <Button size="sm" variant="outline" onClick={handleDuplicar}>
+      <Copy className="h-4 w-4 mr-1" />Duplicar
+    </Button>
+  )}
+  ```
+  Visível para todos os perfis (não usar `podeDeletar`).
+- Implementar `handleDuplicar()` conforme spec: `onSelect(null)` + `setForm({ ...empty, <campos brancos> })`.
 
-3. **Regenerar lockfile**
-   - Rodar `bun install` para reescrever `bun.lock` com as versões novas e o override aplicado.
+**Campos mantidos do `selected`:**
+- Vendedor: `orcamento`, `vendedor`, `frete`, `tempo_frete`, `uf_entrega`, `necessita_vetorizacao`, `obs_vendedor`, `layout_url`, `data_entrega`.
+- Produção: `status_pecas` (default `"incompleto"`), `tipo_estampa` (default `""`), `dias_secagem`, `arte_data`, `inicio_estamparia`, `termino_estamparia`, `termino_acabamento`, `observacoes_pedido`.
 
-4. **Validação**
-   - Conferir o build automático do harness (sem erro de tipo / SSR).
-   - Subir a preview e confirmar que carrega sem runtime error.
-   - Rodar novamente o Dependency Audit (`code--dependency_scan`) e reportar o resultado — marcar como `mark_as_fixed` os findings `vulnerable_dependencies_high` e `vulnerable_dependencies_medium` se sumirem, ou reportar o que sobrar.
+**Campos zerados:**
+- Vendedor: `pedido_olist=""`, `qtd=null`, `forma_pagamento=null`, `nf_emitida=null`.
+- Produção: `n_batidas_dtf=null`, `n_batidas_silk=null`.
+- `entrada_pedido` = hoje (`YYYY-MM-DD`).
+- Todos os demais campos de execução (arte/dtf/silk/acabamento/expedição/refacoes/historico/reaberto/etc.) ficam com default por estarem fora da lista branca.
 
-## Fora de escopo
+**Sem alterações em:** lógica de gravação de `data_entrega`, fluxo "Solicitar Alteração de Data", RLS, `DataEntregaField` (novo pedido sem `id` já cai no caminho de edição direta), `checkDuplicado` no save (Olist único).
 
-- Nenhuma alteração em `src/lib/pedidos.ts`, `refacao-helpers.ts`, abas de PCP, RLS, ou qualquer regra de negócio.
-- Sem refactor de imports — as APIs públicas do `@tanstack/react-start` e `react-router` usadas no projeto (createServerFn, createFileRoute, Link, useNavigate, etc.) são estáveis dentro do major 1.x.
-
-## Riscos e mitigação
-
-- **Breaking change menor no TanStack**: se o `latest` introduzir mudança incompatível, fixar na maior versão >= 1.167.50 que contenha o fix de `start-server-core` (GHSA-9m65-766c-r333) e reportar.
-- **Override do undici não aplicado pelo bun**: bun suporta `overrides` no formato npm; se o lockfile não refletir, alternar para `resolutions` (yarn-style) que o bun também aceita.
+## Arquivos tocados
+- `supabase/migrations/<timestamp>_historico_data_entrega.sql` (novo)
+- `src/components/pcp/FinalizadosTab.tsx`
+- `src/components/pcp/DadosInTab.tsx`
