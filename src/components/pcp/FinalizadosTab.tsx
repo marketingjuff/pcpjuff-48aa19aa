@@ -20,6 +20,7 @@ import { formatDateBR } from "@/lib/format";
 import { PedidoMobileCard, Chip, QtdTotal, useSort, cmpDate, cmpNum, SortableTh, Th, ReadOnlyField } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { useColorSettings } from "@/hooks/use-color-settings";
+import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
 
 
 interface Props {
