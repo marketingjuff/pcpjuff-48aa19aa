@@ -131,7 +131,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }, [form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados]);
 
 
-  const VENDOR_REQUIRED: (keyof Pedido)[] = ["pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido"];
+  const VENDOR_REQUIRED: (keyof Pedido)[] = ["pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido", "frete", "tempo_frete"];
   const PROD_REQUIRED: (keyof Pedido)[] = ["status_pecas", "tipo_estampa"];
   const [missingVendor, setMissingVendor] = useState<Set<string>>(new Set());
   const [missingProd, setMissingProd] = useState<Set<string>>(new Set());
@@ -340,13 +340,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <SelectContent>{nfOpcoes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Frete">
+            <Field label="Frete *" invalid={missingVendor.has("frete")}>
               <Select value={form.frete ?? ""} onValueChange={(v) => set("frete", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{fretes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Tempo de frete (dias úteis)"><Input type="number" min="0" value={form.tempo_frete ?? ""} onChange={(e) => set("tempo_frete", e.target.value)} /></Field>
+            <Field label="Tempo de frete (dias úteis) *" invalid={missingVendor.has("tempo_frete")}><Input type="number" min="0" value={form.tempo_frete ?? ""} onChange={(e) => set("tempo_frete", e.target.value)} /></Field>
             <Field label="UF de Entrega">
               <Select value={form.uf_entrega ?? ""} onValueChange={(v) => set("uf_entrega", v)}>
                 <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>

@@ -49,7 +49,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const [dataEntrega, setDataEntrega] = useState("");
   
   const [search, setSearch] = useState("");
-  const sort = useSort<"qtd"|"entrada"|"arte"|"inicio"|"termino"|"acabamento"|"exped"|"saida"|"entrega"|"dias">("saida", "asc");
+  const sort = useSort<"qtd"|"entrada"|"arte"|"inicio"|"termino"|"inicioAcab"|"acabamento"|"exped"|"saida"|"entrega"|"dias">("saida", "asc");
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
@@ -99,7 +99,8 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
           case "arte": return cmpDate(a.arte_data, b.arte_data, dir);
           case "inicio": return cmpDate(estampDatas(a).inicio, estampDatas(b).inicio, dir);
           case "termino": return cmpDate(estampDatas(a).termino, estampDatas(b).termino, dir);
-          case "acabamento": return cmpDate(a.acabamento_data, b.acabamento_data, dir);
+          case "inicioAcab": return cmpDate(a.inicio_acabamento, b.inicio_acabamento, dir);
+          case "acabamento": return cmpDate(a.termino_acabamento, b.termino_acabamento, dir);
           case "exped": return cmpDate(a.expedicao_entrou_em, b.expedicao_entrou_em, dir);
           case "saida": return cmpDate(a.saida_juff, b.saida_juff, dir);
           case "entrega": return cmpDate(a.data_entrega, b.data_entrega, dir);
@@ -274,7 +275,8 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                   <SortHead label="ARTE LIMITE" k="arte" sort={sort} />
                   <SortHead label="INÍCIO EST." k="inicio" sort={sort} />
                   <SortHead label="TÉRM. EST." k="termino" sort={sort} />
-                  <SortHead label="ACABAMENTO" k="acabamento" sort={sort} />
+                  <SortHead label="INÍC. DE ACAB." k="inicioAcab" sort={sort} />
+                  <SortHead label="TÉRM. ACAB." k="acabamento" sort={sort} />
                   <SortHead label="EXPED." k="exped" sort={sort} />
                   <SortHead label="SAÍDA JUFF" k="saida" sort={sort} />
                   <SortHead label="ENTREGA" k="entrega" sort={sort} />
@@ -284,9 +286,9 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
 
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={18} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={19} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
                 ) : filtrados.length === 0 ? (
-                  <TableRow><TableCell colSpan={18} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={19} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
                 ) : (
                   filtrados.map((p) => {
                     const { inicio, termino } = estampariaDatas(p);
@@ -314,7 +316,8 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                         <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.arte_data) || "—"}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(inicio) || "—"}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(termino) || "—"}</TableCell>
-                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.acabamento_data) || "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.inicio_acabamento) || "—"}</TableCell>
+                        <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.termino_acabamento) || "—"}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.expedicao_entrou_em) || "—"}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.saida_juff) || "—"}</TableCell>
                         <TableCell className="py-0.5 px-1.5 text-[11px] whitespace-nowrap align-top text-center">{formatDateBR(p.data_entrega) || "—"}</TableCell>
