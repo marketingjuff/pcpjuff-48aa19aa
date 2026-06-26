@@ -25,15 +25,27 @@ function Calendar({
   buttonVariant = "ghost",
   formatters,
   components,
+  holidays,
+  modifiers,
+  modifiersClassNames,
+  locale,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"];
+  holidays?: Set<string>;
 }) {
   const defaultClassNames = getDefaultClassNames();
+
+  const naoUtil = (date: Date) => {
+    const dow = date.getDay();
+    if (dow === 0 || dow === 6) return true;
+    return holidays ? holidays.has(isoLocal(date)) : false;
+  };
 
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      locale={locale ?? ptBR}
       className={cn(
         "bg-background group/calendar p-3 [--cell-size:2rem] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
@@ -41,8 +53,15 @@ function Calendar({
         className,
       )}
       captionLayout={captionLayout}
+      modifiers={{ naoUtil, ...(modifiers ?? {}) }}
+      modifiersClassNames={{
+        naoUtil: "bg-muted-foreground/20 text-foreground",
+        ...(modifiersClassNames ?? {}),
+      }}
       formatters={{
-        formatMonthDropdown: (date) => date.toLocaleString("default", { month: "short" }),
+        formatMonthDropdown: (date) =>
+          date.toLocaleString("pt-BR", { month: "short" }),
+        formatWeekdayName: (date) => PT_WEEKDAYS[date.getDay()],
         ...formatters,
       }}
       classNames={{
