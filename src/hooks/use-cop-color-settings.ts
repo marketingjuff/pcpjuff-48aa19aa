@@ -39,6 +39,9 @@ export const DEFAULT_COP_BOTAO_COLORS: Record<CopBotaoKey, ColorPair> = {
   particionar:      { bg: "#a855f7", fg: "#ffffff" },
   baixar_pdf:       { bg: "#475569", fg: "#ffffff" },
   conferir:         { bg: "#059669", fg: "#ffffff" },
+  dar_baixa:        { bg: "#ff8c2f", fg: "#ffffff" },
+  liberar_pagamento:{ bg: "#2563eb", fg: "#ffffff" },
+  marcar_pago:      { bg: "#15803d", fg: "#ffffff" },
 };
 
 export type CopColorSettings = {
