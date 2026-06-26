@@ -444,13 +444,20 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
               <tbody>
                 {dashboardRows.length === 0 ? (
-                  <tr><td colSpan={13} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido.</td></tr>
+                  <tr><td colSpan={14} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido.</td></tr>
                 ) : dashboardRows.map((p) => {
                   const bg = linhaAtrasoClasse(p, "arte") || rowAlertBgClass(p, feriados);
                   return (
                     <tr key={p.id}
                       onClick={() => onSelect(p.id)}
                       className={`border-t cursor-pointer hover:bg-accent ${bg} ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                      <td className="px-1.5 py-0.5" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={!!p.arte_warning}
+                          disabled={!isOperador}
+                          onCheckedChange={() => onSave({ id: p.id, arte_warning: !p.arte_warning })}
+                        />
+                      </td>
                       <td className="px-1.5 py-0.5"><EtapaBadgeFromPedido pedido={p} /></td>
                       <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
                       <td className="px-1.5 py-0.5 !text-left">{p.orcamento}</td>
