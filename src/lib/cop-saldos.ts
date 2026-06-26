@@ -1,0 +1,86 @@
+// Helpers de saldo: produção (cortada) − faltantes (pedidos incompletos do PCP).
+import type { Cop } from "@/lib/cop";
+import type { Pedido, PecaSolicitada } from "@/lib/pedidos";
+
+/** Chave canônica para agregação por peça. */
+export function pkKey(modelo: string, cor: string, tamanho: string) {
+  return `${modelo}|${cor}|${tamanho}`;
+}
+
+/** Em produção = peças de COPs já cortados (status fora de Risco/Corte). */
+export function isCopEmProducao(c: Cop): boolean {
+  return c.status !== "Aguardando Risco" && c.status !== "Aguardando Corte";
+}
+
+/** Map M·C·T → qtd em produção (Σ pecas dos COPs cortados). */
+export function calcEmProducao(cops: Cop[]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const c of cops) {
+    if (!isCopEmProducao(c)) continue;
+    for (const p of c.pecas ?? []) {
+      const k = pkKey(p.modelo, p.cor, p.tamanho);
+      m.set(k, (m.get(k) ?? 0) + (Number(p.qtd) || 0));
+    }
+  }
+  return m;
+}
+
+/** Map M·C·T → qtd faltante (Σ qtd-qtd_enviada em pedidos.pecas_solicitadas incompletos). */
+export function calcFaltantes(pedidos: Pedido[]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const p of pedidos) {
+    if (p.status_pecas !== "incompleto") continue;
+    for (const ps of p.pecas_solicitadas ?? []) {
+      const falta = (Number(ps.qtd) || 0) - (Number(ps.qtd_enviada) || 0);
+      if (falta <= 0) continue;
+      const k = pkKey(ps.modelo, ps.cor, ps.tamanho);
+      m.set(k, (m.get(k) ?? 0) + falta);
+    }
+  }
+  return m;
+}
+
+/** Disponível = produção − faltantes (pode ser negativo). */
+export function calcDisponivel(producao: Map<string, number>, faltantes: Map<string, number>): Map<string, number> {
+  const out = new Map<string, number>();
+  const keys = new Set<string>([...producao.keys(), ...faltantes.keys()]);
+  for (const k of keys) {
+    out.set(k, (producao.get(k) ?? 0) - (faltantes.get(k) ?? 0));
+  }
+  return out;
+}
+
+/** Lista pedidos PCP que pedem aquele M·C·T (com faltantes daquele item). */
+export function pedidosDoItem(
+  pedidos: Pedido[],
+  modelo: string, cor: string, tamanho: string,
+): { pedido: Pedido; pecaSolic: PecaSolicitada }[] {
+  const out: { pedido: Pedido; pecaSolic: PecaSolicitada }[] = [];
+  for (const p of pedidos) {
+    for (const ps of p.pecas_solicitadas ?? []) {
+      if (ps.modelo === modelo && ps.cor === cor && ps.tamanho === tamanho) {
+        out.push({ pedido: p, pecaSolic: ps });
+      }
+    }
+  }
+  return out;
+}
+
+/** Determina a data-âncora de urgência do pedido (estamparia ou, para Lisa, acabamento). */
+export function dataUrgencia(p: Pedido): string | null {
+  // Heurística: se tem início de estamparia, usa-o; senão usa início_acabamento (Lisa).
+  return (p as any).inicio_estamparia || p.inicio_acabamento || null;
+}
+
+/** Adiciona N dias úteis (subtrai se negativo). Não considera feriados; sex+2 = ter. */
+export function addDiasUteis(iso: string, n: number): string {
+  const d = new Date(iso + "T00:00:00");
+  let restante = n;
+  const step = n >= 0 ? 1 : -1;
+  while (restante !== 0) {
+    d.setDate(d.getDate() + step);
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) restante -= step;
+  }
+  return d.toISOString().slice(0, 10);
+}
