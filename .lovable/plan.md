@@ -1,78 +1,29 @@
-# Plano: Checkbox de Warning na Aba Arte
-
 ## Objetivo
-Adicionar uma coluna com checkbox na tabela da aba **Arte** (antes da coluna "Etapa") que permita aos operadores marcar/desmarcar pedidos como "importante". O header dessa coluna será o ícone de warning (`AlertTriangle`), e clicar nele filtra apenas os pedidos marcados. O estado é persistido no banco de dados e visível para todos.
+Padronizar todos os calendários (date pickers) do app para:
+1. Exibir iniciais dos dias da semana em **português** (Dom, Seg, Ter, Qua, Qui, Sex, Sáb).
+2. Marcar com **fundo cinza médio** os dias que não são úteis (sábado, domingo e feriados cadastrados em `feriados`).
 
-## Escopo
-- Aba **Arte** apenas (tabela desktop + cards mobile).
-- Restrição de edição: **apenas operadores** podem marcar/desmarcar. Gestores e admins veem o checkbox desabilitado (read-only).
-- O checkbox é puramente informativo/visual — não afeta cálculos de etapa, filtros de estágio nem regras de negócio.
+A mudança fica centralizada no componente base `src/components/ui/calendar.tsx`, então vale automaticamente para qualquer date picker existente ou futuro que use esse Calendar (todos usam, via `DateInputBR`).
 
----
+## Mudanças
 
-## 1. Banco de Dados
+### 1. `src/components/ui/calendar.tsx` — localização PT-BR + modificador "não útil"
+- Importar `ptBR` de `date-fns/locale` e passar `locale={ptBR}` ao `DayPicker`.
+- Adicionar `formatters.formatWeekdayName` retornando a inicial em PT-BR (Dom/Seg/Ter/Qua/Qui/Sex/Sáb) — garante a abreviação correta mesmo quando o locale devolve "qua.".
+- Aceitar uma nova prop opcional `holidays?: Set<string>` (datas ISO `yyyy-mm-dd`).
+- Definir `modifiers={{ naoUtil: (date) => isWeekend(date) || holidays.has(isoLocal(date)) }}` combinado com quaisquer modifiers passados pelo chamador.
+- Adicionar `modifiersClassNames={{ naoUtil: "bg-muted-foreground/20 text-foreground" }}` (cinza médio, legível em claro/escuro) — mesclando com classNames já recebidos.
+- Não alterar comportamento de seleção/today; o estilo de selecionado continua sobrescrevendo o cinza.
 
-### Migração SQL
-Adicionar coluna `arte_warning` à tabela existente `pedidos`:
+### 2. `src/components/ui/date-input.tsx` — propagar feriados para o Calendar
+- Usar o hook `useFeriados()` (já existente) dentro de `DateInputBR` para obter o `Set` de feriados.
+- Passar `holidays={feriados}` ao `<Calendar />`.
+- Manter o highlight cinza já existente no `<Input>` quando a data digitada cai em fim de semana, e estendê-lo para considerar feriados também (mesma fonte de verdade) — mantém consistência entre input e popover.
 
-```sql
-ALTER TABLE public.pedidos ADD COLUMN arte_warning boolean NOT NULL DEFAULT false;
-```
+## Por que isso cobre "qualquer quadro existente ou futuro"
+Todos os date pickers do projeto passam pelo `Calendar` base de `components/ui/calendar.tsx` (shadcn). Os inputs de data BR usam `DateInputBR`, que já é o wrapper padrão. Centralizando a lógica nesses dois arquivos, qualquer novo campo de data herda o comportamento sem trabalho adicional.
 
-**Nota:** A tabela `pedidos` já possui RLS e policies existentes (`pedidos_select_team`, `pedidos_update_team`, `pedidos_insert_team`, `pedidos_delete_admin_gestor`). Como a policy `UPDATE` permite qualquer membro da equipe (`is_team_member()`) e a restrição de "apenas operadores" é um requisito de interface, a validação será feita no frontend (checkbox desabilitado para não-operadores). Não há necessidade de criar policy por coluna.
-
----
-
-## 2. Tipos TypeScript
-
-Atualizar o tipo `Pedido` em `src/lib/pedidos.ts` e `PedidoExtras` em `src/integrations/supabase/schema-extras.ts` para incluir:
-
-```ts
-arte_warning: boolean | null;
-```
-
----
-
-## 3. Frontend — Aba Arte (`ArteTab.tsx`)
-
-### 3.1 Tabela Desktop
-- Inserir nova coluna **imediatamente antes da coluna "Etapa"** no `<table>`.
-- **Header (`<th>`):** renderizar o ícone `AlertTriangle` (lucide-react) em amarelo (`text-yellow-500`). O `<th>` deve ser clicável e atuar como filtro: quando clicado, alterna entre "mostrar todos" e "mostrar apenas marcados".
-- **Célula (`<td>`):** renderizar um `<Checkbox>` (componente `@radix-ui/react-checkbox`) cuja marcação reflete `pedido.arte_warning`.
-- **Interação do checkbox:**
-  - Ao clicar, chama `onSave({ id: pedido.id, arte_warning: !pedido.arte_warning })`.
-  - Desabilitado (`disabled`) quando o usuário logado **não é operador** (gestor ou admin não podem alterar).
-- **Tooltip no header:** ao passar o mouse, exibir "Filtrar pedidos marcados com warning".
-
-### 3.2 Cards Mobile
-- No `PedidoMobileCard` (ou equivalente usado na aba Arte), adicionar um ícone de `AlertTriangle` pequeno (ou checkbox) no canto superior direito quando o pedido estiver marcado.
-- O checkbox no mobile também deve respeitar a regra de "apenas operadores".
-
-### 3.3 Filtro de Dashboard
-- Adicionar estado local `fWarning` (boolean | null) no `ArteTab`.
-- Quando `fWarning === true`, filtrar `dashboardRows` para manter apenas pedidos onde `p.arte_warning === true`.
-- O header clicável do warning controla esse estado.
-
----
-
-## 4. Reutilização
-- Não será reutilizado em outras abas neste momento, pois o requisito é específico da Arte.
-- O componente de checkbox e o comportamento de filtro seguem o padrão já existente nos filtros da aba (ex: `fEtapa`, `fSearch`).
-
----
-
-## 5. Critérios de Aceitação
-1. [ ] A coluna de warning aparece **antes** da coluna "Etapa" na tabela da aba Arte.
-2. [ ] O header da coluna exibe o ícone `AlertTriangle` (amarelo) e é clicável.
-3. [ ] Clicar no header alterna o filtro entre "todos" e "apenas marcados com warning".
-4. [ ] Cada linha exibe um checkbox que reflete o estado salvo no banco (`arte_warning`).
-5. [ ] Operadores conseguem marcar/desmarcar o checkbox e o estado persiste no banco.
-6. [ ] Gestores e admins veem o checkbox, mas não conseguem clicar (desabilitado).
-7. [ ] O número de registros no header do card "Dashboard — Arte" continua correto após aplicar o filtro.
-8. [ ] O checkbox não afeta cálculos de etapa, travas de edição nem regras de negócio.
-
-## 6. Arquivos a serem modificados
-- `src/lib/pedidos.ts` — tipo `Pedido`.
-- `src/integrations/supabase/schema-extras.ts` — tipo `PedidoExtras`.
-- `src/components/pcp/ArteTab.tsx` — tabela, filtros, checkbox, integração com Supabase.
-- **Nova migração** — coluna `arte_warning` na tabela `pedidos`.
+## Itens fora do escopo
+- Não alterar a tabela `feriados` nem o hook `useFeriados`.
+- Não mexer em estilos de cards/tabelas (apenas no calendário do popover e no input já existente).
+- Não trocar a biblioteca `react-day-picker`.
