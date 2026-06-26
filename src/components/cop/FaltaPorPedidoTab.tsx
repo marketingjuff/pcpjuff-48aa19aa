@@ -150,7 +150,7 @@ export function FaltaPorPedidoTab() {
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <CardTitle className="text-base">
                 Orç. <span className="font-mono">{l.pedido.orcamento ?? "—"}</span>
-                {" · "}<span className="font-normal text-sm">{(l.pedido as any).cliente ?? "—"}</span>
+                {" · Pedido Olist "}<span className="font-mono text-sm">{(l.pedido as any).pedido_olist ?? "—"}</span>
               </CardTitle>
               <div className="text-xs text-muted-foreground flex gap-3 flex-wrap">
                 <span>Início estamparia/acabamento: <b>{l.ancora ?? "—"}</b></span>
