@@ -96,11 +96,21 @@ function CopHome() {
           <TabsContent value="romaneio" forceMount hidden={tab !== "romaneio"}>
             <RomaneioTab />
           </TabsContent>
-          {TABS.filter((t) => t.value !== "corte" && t.value !== "romaneio").map((t) => (
-            <TabsContent key={t.value} value={t.value} forceMount hidden={tab !== t.value}>
-              <CopEmConstrucao titulo={t.label} />
-            </TabsContent>
-          ))}
+          <TabsContent value="dashboard" forceMount hidden={tab !== "dashboard"}>
+            <DashboardCopTab />
+          </TabsContent>
+          <TabsContent value="disponivel" forceMount hidden={tab !== "disponivel"}>
+            <DisponivelTab />
+          </TabsContent>
+          <TabsContent value="falta" forceMount hidden={tab !== "falta"}>
+            <FaltaPorPedidoTab />
+          </TabsContent>
+          <TabsContent value="pagamento" forceMount hidden={tab !== "pagamento"}>
+            <PagamentoOficinasTab />
+          </TabsContent>
+          <TabsContent value="perdas" forceMount hidden={tab !== "perdas"}>
+            <PerdasTab />
+          </TabsContent>
         </Tabs>
       </main>
     </div>
