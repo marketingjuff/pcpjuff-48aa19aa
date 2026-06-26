@@ -145,6 +145,20 @@ export function CorteTab() {
     onError: (e: any) => toast.error(e.message ?? "Erro ao salvar"),
   });
 
+  const excluir = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("cops" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cops"] });
+      setSelectedId(null);
+      setConfirmDelete(null);
+      toast.success("COP excluído.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao excluir COP"),
+  });
+
   async function handleAtualizar() {
     if (!selected) return;
     const pecas = desagrupar(grupos);
