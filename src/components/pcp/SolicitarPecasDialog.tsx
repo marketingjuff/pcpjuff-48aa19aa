@@ -29,6 +29,8 @@ interface Props {
   readOnly?: boolean;
   /** Quantidade máxima de peças permitida (qtd do vendedor). */
   limite?: number;
+  /** Libera para completo: apaga a solicitação e marca o pedido como completo. */
+  onLiberarCompleto?: () => void | Promise<void>;
 }
 
 type GrupoLinha = {
