@@ -540,10 +540,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-0">
             {/* Linha 1: Status | Tipo | Batidas DTF/Silk (condicional) */}
             <Field label="Status de Peças *" invalid={missingProd.has("status_pecas")}>
-              <Select value={form.status_pecas ?? ""} onValueChange={(v) => set("status_pecas", v)}>
+              <Select value={form.status_pecas ?? ""} onValueChange={(v) => set("status_pecas", v)} disabled={temPendencia}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{STATUS_PECAS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v.charAt(0).toUpperCase()+v.slice(1)}</SelectItem>)}</SelectContent>
               </Select>
+              {temPendencia && (
+                <div className="text-[11px] text-amber-700 mt-1">Travado em "incompleto" enquanto houver peças pendentes.</div>
+              )}
             </Field>
             <Field label="Tipo de Estampa *" invalid={missingProd.has("tipo_estampa")}>
               <Select value={form.tipo_estampa ?? ""} onValueChange={setTipoEstampa}>
