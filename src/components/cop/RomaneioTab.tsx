@@ -53,6 +53,9 @@ export function RomaneioTab() {
   const isAdmin = useIsAdmin();
   const [confirmVoltar, setConfirmVoltar] = useState<Cop | null>(null);
 
+  const { data: cops = [], isLoading } = useQuery({
+
+
     queryKey: ["cops"],
     queryFn: async () => {
       const { data, error } = await supabase.from("cops" as any).select("*").order("numero", { ascending: false });
