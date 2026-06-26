@@ -62,8 +62,69 @@ export type Database = {
         }
         Relationships: []
       }
+      cop_perdas: {
+        Row: {
+          cop_id: string | null
+          cor: string
+          created_at: string
+          etiqueta: string | null
+          id: string
+          modelo: string
+          motivo: string | null
+          oficina_id: string | null
+          qtd: number
+          registrado_por: string | null
+          tamanho: string
+          updated_at: string
+        }
+        Insert: {
+          cop_id?: string | null
+          cor: string
+          created_at?: string
+          etiqueta?: string | null
+          id?: string
+          modelo: string
+          motivo?: string | null
+          oficina_id?: string | null
+          qtd: number
+          registrado_por?: string | null
+          tamanho: string
+          updated_at?: string
+        }
+        Update: {
+          cop_id?: string | null
+          cor?: string
+          created_at?: string
+          etiqueta?: string | null
+          id?: string
+          modelo?: string
+          motivo?: string | null
+          oficina_id?: string | null
+          qtd?: number
+          registrado_por?: string | null
+          tamanho?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cop_perdas_cop_id_fkey"
+            columns: ["cop_id"]
+            isOneToOne: false
+            referencedRelation: "cops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cop_perdas_oficina_id_fkey"
+            columns: ["oficina_id"]
+            isOneToOne: false
+            referencedRelation: "oficinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cops: {
         Row: {
+          conferencia: Json
           conferido_em: string | null
           conferido_por: string | null
           cop_pai_id: string | null
@@ -82,8 +143,15 @@ export type Database = {
           observacoes_corte: string | null
           observacoes_romaneio: string | null
           oficina_id: string | null
+          pagamento_liberado_em: string | null
+          pagamento_liberado_por: string | null
+          pagamento_pago_em: string | null
+          pagamento_pago_por: string | null
+          pagamento_status: string
+          pagamento_valor_calculado: number | null
           pecas: Json
           pecas_recebidas: Json
+          perdas: Json
           romaneio_enviado_em: string | null
           solicitacao_corte: string | null
           solicitacao_risco: string | null
@@ -92,6 +160,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          conferencia?: Json
           conferido_em?: string | null
           conferido_por?: string | null
           cop_pai_id?: string | null
@@ -110,8 +179,15 @@ export type Database = {
           observacoes_corte?: string | null
           observacoes_romaneio?: string | null
           oficina_id?: string | null
+          pagamento_liberado_em?: string | null
+          pagamento_liberado_por?: string | null
+          pagamento_pago_em?: string | null
+          pagamento_pago_por?: string | null
+          pagamento_status?: string
+          pagamento_valor_calculado?: number | null
           pecas?: Json
           pecas_recebidas?: Json
+          perdas?: Json
           romaneio_enviado_em?: string | null
           solicitacao_corte?: string | null
           solicitacao_risco?: string | null
@@ -120,6 +196,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          conferencia?: Json
           conferido_em?: string | null
           conferido_por?: string | null
           cop_pai_id?: string | null
@@ -138,8 +215,15 @@ export type Database = {
           observacoes_corte?: string | null
           observacoes_romaneio?: string | null
           oficina_id?: string | null
+          pagamento_liberado_em?: string | null
+          pagamento_liberado_por?: string | null
+          pagamento_pago_em?: string | null
+          pagamento_pago_por?: string | null
+          pagamento_status?: string
+          pagamento_valor_calculado?: number | null
           pecas?: Json
           pecas_recebidas?: Json
+          perdas?: Json
           romaneio_enviado_em?: string | null
           solicitacao_corte?: string | null
           solicitacao_risco?: string | null
@@ -277,6 +361,7 @@ export type Database = {
           obs_vendedor: string | null
           observacoes_pedido: string | null
           orcamento: string | null
+          pecas_completadas_log: Json
           pecas_solicitadas: Json
           pedido_olist: string | null
           qtd: number | null
@@ -355,6 +440,7 @@ export type Database = {
           obs_vendedor?: string | null
           observacoes_pedido?: string | null
           orcamento?: string | null
+          pecas_completadas_log?: Json
           pecas_solicitadas?: Json
           pedido_olist?: string | null
           qtd?: number | null
@@ -433,6 +519,7 @@ export type Database = {
           obs_vendedor?: string | null
           observacoes_pedido?: string | null
           orcamento?: string | null
+          pecas_completadas_log?: Json
           pecas_solicitadas?: Json
           pedido_olist?: string | null
           qtd?: number | null
@@ -524,6 +611,14 @@ export type Database = {
         Returns: boolean
       }
       is_team_member: { Args: never; Returns: boolean }
+      liberar_pagamento_cop: {
+        Args: { _cop_id: string; _valor: number }
+        Returns: undefined
+      }
+      marcar_pagamento_cop: {
+        Args: { _cop_id: string; _pago: boolean }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "gestor" | "operador"
