@@ -133,7 +133,7 @@ export function FaltaPorPedidoTab() {
             qc.invalidateQueries({ queryKey: ["cops"] });
           }} title="Recarregar"><RefreshCw className="h-4 w-4" /></Button>
           <Input
-            placeholder="Buscar orçamento/cliente..."
+            placeholder="Buscar orçamento/pedido Olist..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="h-9 w-[260px]"
