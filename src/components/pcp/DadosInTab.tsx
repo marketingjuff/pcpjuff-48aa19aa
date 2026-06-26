@@ -29,6 +29,8 @@ import { PedidoMobileCard, Chip, QtdTotal, StatusPecasBadge, StatusPecasChip, et
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { RefacaoBadge } from "./RefacaoBadge";
+import { SolicitarPecasDialog } from "./SolicitarPecasDialog";
+import { useColorSettings } from "@/hooks/use-color-settings";
 
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
