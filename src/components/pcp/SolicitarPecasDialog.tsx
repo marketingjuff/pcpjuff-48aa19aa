@@ -261,11 +261,24 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3 pt-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap gap-3 pt-2 text-xs text-muted-foreground items-center">
             <span>Total solicitado: <span className="font-semibold tabular-nums text-foreground">{totals.sol}</span></span>
             <span>Total enviado: <span className="font-semibold tabular-nums text-foreground">{totals.env}</span></span>
             <span>Pendente: <span className="font-semibold tabular-nums text-foreground">{totals.pend}</span></span>
+            {typeof limite === "number" && limite > 0 && (
+              <span>
+                Limite do vendedor:{" "}
+                <span className={`font-semibold tabular-nums ${totals.sol > limite ? "text-red-600" : "text-foreground"}`}>
+                  {totals.sol}/{limite}
+                </span>
+              </span>
+            )}
           </div>
+          {typeof limite === "number" && limite > 0 && totals.sol > limite && (
+            <div className="text-[12px] text-red-600 font-medium">
+              O total solicitado ({totals.sol}) ultrapassa a quantidade do vendedor ({limite}).
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -273,7 +286,11 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
             {readOnly ? "Fechar" : "Cancelar"}
           </Button>
           {!readOnly && (
-            <Button type="button" onClick={handleSave} disabled={saving}>
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || (typeof limite === "number" && limite > 0 && totals.sol > limite)}
+            >
               {saving ? "Salvando..." : "Salvar"}
             </Button>
           )}
