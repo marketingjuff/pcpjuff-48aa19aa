@@ -24,7 +24,7 @@ import { useHasRole } from "@/hooks/use-role";
 import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
   StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip,
-  useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse,
+  useSort, cmpDate, cmpNum, SortableTh, Th, TH_RAW_CLASS, rowAlertBgClass, linhaAtrasoClasse,
   ETAPA_FILTRO_OPCOES_ARTE, matchEtapaFiltro, UpdateButton, OrcamentoTitle,
 } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
