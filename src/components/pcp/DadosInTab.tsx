@@ -90,6 +90,21 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
+  // ----- Solicitar Peças (ponte PCP→COP) -----
+  const { btnStyle } = useColorSettings();
+  const [solicitarOpen, setSolicitarOpen] = useState(false);
+  const pecasSolicitadas = (form.pecas_solicitadas ?? []) as import("@/lib/pedidos").PecaSolicitada[];
+  const temSolicitacao = pecasSolicitadas.length > 0;
+  const temPendencia = pecasSolicitadas.some((p) => (Number(p.qtd_enviada) || 0) < (Number(p.qtd) || 0));
+  const tudoEnviado = temSolicitacao && !temPendencia;
+
+  async function salvarPecasSolicitadas(next: import("@/lib/pedidos").PecaSolicitada[]) {
+    setForm((f) => ({ ...f, pecas_solicitadas: next }));
+    if (selected?.id) {
+      onSave({ id: selected.id, pecas_solicitadas: next } as any);
+    }
+  }
+
   function setTipoEstampa(v: string) {
     setForm((f) => {
       const next: Partial<Pedido> = { ...f, tipo_estampa: v };
