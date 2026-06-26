@@ -141,6 +141,7 @@ export type Pedido = PedidoBase & {
   dtf_pessoas_qtd: Record<string, number> | null;
   // Refação (Etapa 1)
   refacoes: RefacaoEpisodio[] | null;
+  arte_warning: boolean | null;
   // Solicitação de peças ao COP
   pecas_solicitadas: PecaSolicitada[] | null;
   // Histórico (read-only) gravado pelo COP ao dar baixa em peças incompletas
@@ -195,6 +196,7 @@ export type PedidoInsert = PedidoInsertBase & {
   quem_revelou_tela?: string | null;
   dtf_pessoas_qtd?: Record<string, number> | null;
   refacoes?: RefacaoEpisodio[] | null;
+  arte_warning?: boolean | null;
 };
 
 export const VENDEDORES = ["Wander", "Mirela", "Gabriel", "Outros"] as const;

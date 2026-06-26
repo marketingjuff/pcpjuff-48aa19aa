@@ -16,13 +16,15 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, Download } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Save, Download, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { useHasRole } from "@/hooks/use-role";
 
 import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
   StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip,
-  useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse,
+  useSort, cmpDate, cmpNum, SortableTh, Th, TH_RAW_CLASS, rowAlertBgClass, linhaAtrasoClasse,
   ETAPA_FILTRO_OPCOES_ARTE, matchEtapaFiltro, UpdateButton, OrcamentoTitle,
 } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
@@ -47,6 +49,7 @@ interface Props {
 
 export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = true, canManage = false }: Props) {
   const readOnly = isReadOnly("arte", selected, canManage);
+  const isOperador = useHasRole("operador");
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { feriados } = useFeriados();
@@ -142,6 +145,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [fDtf, setFDtf] = useState<string>("todos");
   const [fFoto, setFFoto] = useState<string>("todos");
   const [fStatusArte, setFStatusArte] = useState<string>("todos");
+  const [fWarning, setFWarning] = useState<boolean>(false);
 
   const dashboardRows = useMemo(() => {
     let arr = pedidos.filter((p) => visivelEmArte(p) && matchEtapaFiltro(p, fEtapa));
@@ -153,6 +157,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
     if (fDtf !== "todos") arr = arr.filter((p) => dtfFinalizadoLabel(p) === fDtf);
     if (fFoto !== "todos") arr = arr.filter((p) => fotolitoFinalizadoLabel(p) === fFoto);
     if (fStatusArte !== "todos") arr = arr.filter((p) => (p.status_arte ?? "") === fStatusArte);
+    if (fWarning) arr = arr.filter((p) => p.arte_warning);
     arr = sortByDataSaidaJuffAsc(arr);
     if (sort.key) {
       arr = [...arr].sort((a, b) => {
@@ -168,7 +173,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
       });
     }
     return arr;
-  }, [pedidos, fEtapa, fSearch, fTipo, fDtf, fFoto, fStatusArte, sort.key, sort.dir]);
+  }, [pedidos, fEtapa, fSearch, fTipo, fDtf, fFoto, fStatusArte, fWarning, sort.key, sort.dir]);
 
   return (
     <div className="space-y-3">
@@ -400,7 +405,22 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             {dashboardRows.length === 0
               ? <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido.</div>
               : dashboardRows.map((p) => (
-                  <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
+                  <PedidoMobileCard
+                    key={p.id}
+                    pedido={p}
+                    active={selected?.id === p.id}
+                    onClick={() => onSelect(p.id)}
+                    right={
+                      <div className="flex items-center gap-1">
+                        {p.arte_warning && <AlertTriangle className="h-4 w-4 text-yellow-500 fill-yellow-400" />}
+                        <Checkbox
+                          checked={!!p.arte_warning}
+                          disabled={!isOperador}
+                          onCheckedChange={() => onSave({ id: p.id, arte_warning: !p.arte_warning })}
+                        />
+                      </div>
+                    }
+                  >
                     <Chip label="Estampa" value={p.tipo_estampa} />
                     <Chip label="QTD" value={<QtdTotal pedido={p} />} />
                     <StatusPecasChip pedido={p} />
@@ -416,6 +436,11 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
                 <tr>
+                  <th className={`${TH_RAW_CLASS} cursor-pointer select-none ${fWarning ? "bg-yellow-50" : ""}`} onClick={() => setFWarning((w) => !w)} title="Filtrar pedidos marcados com warning">
+                    <div className="flex justify-center">
+                      <AlertTriangle className={`h-4 w-4 ${fWarning ? "text-yellow-600 fill-yellow-400" : "text-yellow-500"}`} />
+                    </div>
+                  </th>
                   <Th>ETAPA</Th>
                   <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
                   <Th>ORÇAMENTO</Th>
@@ -434,13 +459,20 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
               <tbody>
                 {dashboardRows.length === 0 ? (
-                  <tr><td colSpan={13} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido.</td></tr>
+                  <tr><td colSpan={14} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido.</td></tr>
                 ) : dashboardRows.map((p) => {
                   const bg = linhaAtrasoClasse(p, "arte") || rowAlertBgClass(p, feriados);
                   return (
                     <tr key={p.id}
                       onClick={() => onSelect(p.id)}
                       className={`border-t cursor-pointer hover:bg-accent ${bg} ${selected?.id === p.id ? "bg-accent" : ""}`}>
+                      <td className="px-1.5 py-0.5" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={!!p.arte_warning}
+                          disabled={!isOperador}
+                          onCheckedChange={() => onSave({ id: p.id, arte_warning: !p.arte_warning })}
+                        />
+                      </td>
                       <td className="px-1.5 py-0.5"><EtapaBadgeFromPedido pedido={p} /></td>
                       <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
                       <td className="px-1.5 py-0.5 !text-left">{p.orcamento}</td>

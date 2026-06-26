@@ -105,4 +105,5 @@ export type PedidoExtras = {
   exp_frete_solicitado_em: string | null;
   exp_observacoes: string | null;
   pecas_solicitadas: any[] | null;
+  arte_warning: boolean | null;
 };
