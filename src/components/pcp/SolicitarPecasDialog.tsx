@@ -79,7 +79,7 @@ function desagrupar(grupos: GrupoLinha[]): PecaSolicitada[] {
   return out;
 }
 
-export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOnly = false, limite }: Props) {
+export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOnly = false, limite, onLiberarCompleto }: Props) {
   const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value));
   const [saving, setSaving] = useState(false);
 
