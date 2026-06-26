@@ -635,6 +635,33 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               )}
             </div>
 
+            {(form.status_pecas === "incompleto" || temSolicitacao) && (
+              <div className="sm:col-span-2 lg:col-span-4">
+                <Button
+                  type="button"
+                  onClick={() => setSolicitarOpen(true)}
+                  style={btnStyle(tudoEnviado ? "pedido_completo" : "solicitar_pecas")}
+                  className="border"
+                >
+                  {tudoEnviado ? "Pedido Completo" : "Solicitar Peças"}
+                  {temSolicitacao && (
+                    <span className="ml-2 text-xs opacity-90">
+                      ({pecasSolicitadas.reduce((a, l) => a + (Number(l.qtd_enviada) || 0), 0)}/
+                      {pecasSolicitadas.reduce((a, l) => a + (Number(l.qtd) || 0), 0)})
+                    </span>
+                  )}
+                </Button>
+                <SolicitarPecasDialog
+                  open={solicitarOpen}
+                  onOpenChange={setSolicitarOpen}
+                  value={pecasSolicitadas}
+                  onSave={salvarPecasSolicitadas}
+                  readOnly={tudoEnviado}
+                />
+              </div>
+            )}
+
+
             <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start flex-wrap">
               <UpdateButton type="button" onClick={saveProducao} disabled={saving}>
                 {selected?.id ? "Atualizar" : "Salvar"} Input de Produção
