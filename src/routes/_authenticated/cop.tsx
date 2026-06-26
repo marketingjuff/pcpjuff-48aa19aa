@@ -14,7 +14,6 @@ import { FaltaPorPedidoTab } from "@/components/cop/FaltaPorPedidoTab";
 import { PagamentoOficinasTab } from "@/components/cop/PagamentoOficinasTab";
 import { PerdasTab } from "@/components/cop/PerdasTab";
 import { DashboardCopTab } from "@/components/cop/DashboardCopTab";
-import { CopEmConstrucao } from "@/components/cop/CopEmConstrucao";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cop")({
