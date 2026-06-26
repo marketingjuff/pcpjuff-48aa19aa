@@ -59,6 +59,8 @@ function desagrupar(grupos: LinhaGrupo[]): CopPeca[] {
 export function CorteTab() {
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
+  const isAdmin = useIsAdmin();
+  const [confirmDelete, setConfirmDelete] = useState<Cop | null>(null);
 
   const { data: cops = [], isLoading } = useQuery({
     queryKey: ["cops"],
