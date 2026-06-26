@@ -141,6 +141,8 @@ export type Pedido = PedidoBase & {
   dtf_pessoas_qtd: Record<string, number> | null;
   // Refação (Etapa 1)
   refacoes: RefacaoEpisodio[] | null;
+  // Solicitação de peças ao COP
+  pecas_solicitadas: PecaSolicitada[] | null;
 };
 
 type PedidoInsertBase = Omit<TablesInsert<"pedidos">, "modelo_estampa" | "status">;
