@@ -203,7 +203,7 @@ function AppHomeInner() {
               </p>
             </div>
           </div>
-          <div />
+          <div className="flex justify-center"><MacroSwitch active="pcp" /></div>
           <div className="flex items-center gap-1 sm:gap-2">
             {isManager && (
               <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes" })} aria-label="Configurações">
