@@ -25,6 +25,14 @@ export type PecaPerdida = {
   qtd: number;
 };
 
+export type PecaSolicitada = {
+  modelo: string;
+  cor: string;
+  tamanho: string;
+  qtd: number;
+  qtd_enviada: number;
+};
+
 export const REFACAO_MODELOS = [
   "Camiseta", "Baby Look", "Regata Masculina", "Regata Feminina",
   "ML Masculina", "ML Feminina", "Camiseta Infantil", "ML Infantil",
@@ -133,6 +141,8 @@ export type Pedido = PedidoBase & {
   dtf_pessoas_qtd: Record<string, number> | null;
   // Refação (Etapa 1)
   refacoes: RefacaoEpisodio[] | null;
+  // Solicitação de peças ao COP
+  pecas_solicitadas: PecaSolicitada[] | null;
 };
 
 type PedidoInsertBase = Omit<TablesInsert<"pedidos">, "modelo_estampa" | "status">;

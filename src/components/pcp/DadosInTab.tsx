@@ -29,6 +29,8 @@ import { PedidoMobileCard, Chip, QtdTotal, StatusPecasBadge, StatusPecasChip, et
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { RefacaoBadge } from "./RefacaoBadge";
+import { SolicitarPecasDialog } from "./SolicitarPecasDialog";
+import { useColorSettings } from "@/hooks/use-color-settings";
 
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
@@ -87,6 +89,21 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   useDirtyTracker(form, selected ?? empty, active);
 
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
+
+  // ----- Solicitar Peças (ponte PCP→COP) -----
+  const { btnStyle } = useColorSettings();
+  const [solicitarOpen, setSolicitarOpen] = useState(false);
+  const pecasSolicitadas = (form.pecas_solicitadas ?? []) as import("@/lib/pedidos").PecaSolicitada[];
+  const temSolicitacao = pecasSolicitadas.length > 0;
+  const temPendencia = pecasSolicitadas.some((p) => (Number(p.qtd_enviada) || 0) < (Number(p.qtd) || 0));
+  const tudoEnviado = temSolicitacao && !temPendencia;
+
+  async function salvarPecasSolicitadas(next: import("@/lib/pedidos").PecaSolicitada[]) {
+    setForm((f) => ({ ...f, pecas_solicitadas: next }));
+    if (selected?.id) {
+      onSave({ id: selected.id, pecas_solicitadas: next } as any);
+    }
+  }
 
   function setTipoEstampa(v: string) {
     setForm((f) => {
@@ -523,10 +540,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
           <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-0">
             {/* Linha 1: Status | Tipo | Batidas DTF/Silk (condicional) */}
             <Field label="Status de Peças *" invalid={missingProd.has("status_pecas")}>
-              <Select value={form.status_pecas ?? ""} onValueChange={(v) => set("status_pecas", v)}>
+              <Select value={form.status_pecas ?? ""} onValueChange={(v) => set("status_pecas", v)} disabled={temPendencia}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{STATUS_PECAS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v.charAt(0).toUpperCase()+v.slice(1)}</SelectItem>)}</SelectContent>
               </Select>
+              {temPendencia && (
+                <div className="text-[11px] text-amber-700 mt-1">Travado em "incompleto" enquanto houver peças pendentes.</div>
+              )}
             </Field>
             <Field label="Tipo de Estampa *" invalid={missingProd.has("tipo_estampa")}>
               <Select value={form.tipo_estampa ?? ""} onValueChange={setTipoEstampa}>
@@ -614,6 +634,33 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 />
               )}
             </div>
+
+            {(form.status_pecas === "incompleto" || temSolicitacao) && (
+              <div className="sm:col-span-2 lg:col-span-4">
+                <Button
+                  type="button"
+                  onClick={() => setSolicitarOpen(true)}
+                  style={btnStyle(tudoEnviado ? "pedido_completo" : "solicitar_pecas")}
+                  className="border"
+                >
+                  {tudoEnviado ? "Pedido Completo" : "Solicitar Peças"}
+                  {temSolicitacao && (
+                    <span className="ml-2 text-xs opacity-90">
+                      ({pecasSolicitadas.reduce((a, l) => a + (Number(l.qtd_enviada) || 0), 0)}/
+                      {pecasSolicitadas.reduce((a, l) => a + (Number(l.qtd) || 0), 0)})
+                    </span>
+                  )}
+                </Button>
+                <SolicitarPecasDialog
+                  open={solicitarOpen}
+                  onOpenChange={setSolicitarOpen}
+                  value={pecasSolicitadas}
+                  onSave={salvarPecasSolicitadas}
+                  readOnly={tudoEnviado}
+                />
+              </div>
+            )}
+
 
             <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start flex-wrap">
               <UpdateButton type="button" onClick={saveProducao} disabled={saving}>

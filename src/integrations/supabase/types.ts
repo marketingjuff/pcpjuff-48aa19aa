@@ -132,6 +132,7 @@ export type Database = {
           obs_vendedor: string | null
           observacoes_pedido: string | null
           orcamento: string | null
+          pecas_solicitadas: Json
           pedido_olist: string | null
           qtd: number | null
           quem_bateu_dtf: string | null
@@ -209,6 +210,7 @@ export type Database = {
           obs_vendedor?: string | null
           observacoes_pedido?: string | null
           orcamento?: string | null
+          pecas_solicitadas?: Json
           pedido_olist?: string | null
           qtd?: number | null
           quem_bateu_dtf?: string | null
@@ -286,6 +288,7 @@ export type Database = {
           obs_vendedor?: string | null
           observacoes_pedido?: string | null
           orcamento?: string | null
+          pecas_solicitadas?: Json
           pedido_olist?: string | null
           qtd?: number | null
           quem_bateu_dtf?: string | null
