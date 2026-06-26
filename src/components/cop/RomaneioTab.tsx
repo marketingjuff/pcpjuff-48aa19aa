@@ -1,0 +1,617 @@
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { DateInputBR } from "@/components/ui/date-input";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Send, RefreshCw, FileDown, PackageOpen, Split, Check } from "lucide-react";
+import { toast } from "sonner";
+import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+import {
+  type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
+  COP_STATUS_LIST, formatCopNumero, totalPecasCop, totalRecebidas,
+  todasCompletas, proximaLetra, rotuloCop, subtrairPecas,
+  getRecebida,
+} from "@/lib/cop";
+import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
+import { abrirRomaneioParaImpressao } from "@/lib/romaneio-pdf";
+import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
+import { ParticionarRomaneioDialog } from "./ParticionarRomaneioDialog";
+
+const STATUS_ROMANEIO: CopStatus[] = [
+  "Aguardando Romaneio",
+  "Na Oficina (Costura)",
+  "Romaneio Parcial",
+  "Romaneio Completo",
+];
+
+function agruparPorModeloCor(pecas: CopPeca[]): { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] }[] {
+  const map = new Map<string, { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] }>();
+  for (const p of pecas) {
+    const k = `${p.modelo}|${p.cor}`;
+    let g = map.get(k);
+    if (!g) { g = { modelo: p.modelo, cor: p.cor, tamanhos: [] }; map.set(k, g); }
+    g.tamanhos.push({ tamanho: p.tamanho, qtd: p.qtd });
+  }
+  return Array.from(map.values());
+}
+
+export function RomaneioTab() {
+  const qc = useQueryClient();
+  const { etapaStyle, btnStyle } = useCopColorSettings();
+
+  const { data: cops = [], isLoading } = useQuery({
+    queryKey: ["cops"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("cops" as any).select("*").order("numero", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as Cop[];
+    },
+  });
+
+  const { data: oficinas = [] } = useQuery({
+    queryKey: ["oficinas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("oficinas" as any).select("*").order("nome");
+      if (error) throw error;
+      return (data ?? []) as unknown as Oficina[];
+    },
+  });
+
+  useEffect(() => {
+    const ch = supabase
+      .channel("cops-romaneio")
+      .on("postgres_changes", { event: "*", schema: "public", table: "cops" }, () => {
+        qc.invalidateQueries({ queryKey: ["cops"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [qc]);
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [statusFiltro, setStatusFiltro] = useState<string>("__romaneio__");
+  const [busca, setBusca] = useState("");
+  const [showEntrega, setShowEntrega] = useState(false);
+  const [showParticionar, setShowParticionar] = useState(false);
+
+  const selected = useMemo(() => cops.find((c) => c.id === selectedId) ?? null, [cops, selectedId]);
+  const oficina = useMemo(
+    () => oficinas.find((o) => o.id === selected?.oficina_id) ?? null,
+    [oficinas, selected],
+  );
+
+  const lista = useMemo(() => {
+    return cops.filter((c) => {
+      if (statusFiltro === "__romaneio__") {
+        if (!STATUS_ROMANEIO.includes(c.status)) return false;
+      } else if (statusFiltro !== "todos" && c.status !== statusFiltro) return false;
+      if (busca) {
+        const num = formatCopNumero(c.numero);
+        const rot = rotuloCop(c.numero, c.letra);
+        if (!num.includes(busca.replace(/\D/g, "")) && !rot.toUpperCase().includes(busca.toUpperCase())) return false;
+      }
+      return true;
+    });
+  }, [cops, statusFiltro, busca]);
+
+  // ---- Draft ----
+  const [draft, setDraft] = useState<Partial<Cop>>({});
+  useEffect(() => {
+    if (!selected) { setDraft({}); return; }
+    setDraft({
+      oficina_id: selected.oficina_id,
+      data_saida_oficina: selected.data_saida_oficina,
+      data_recebimento: selected.data_recebimento,
+      observacoes_romaneio: selected.observacoes_romaneio,
+      num_fretes: selected.num_fretes ?? 1,
+    });
+  }, [selectedId]); // eslint-disable-line
+
+  const salvar = useMutation({
+    mutationFn: async (patch: Partial<Cop> & { id: string }) => {
+      const { id, ...rest } = patch;
+      const { error } = await supabase.from("cops" as any).update(rest as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cops"] });
+      toast.success("Salvo.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao salvar"),
+  });
+
+  function patchDraftToCop(): Partial<Cop> {
+    return {
+      oficina_id: draft.oficina_id ?? null,
+      data_saida_oficina: draft.data_saida_oficina ?? null,
+      data_recebimento: draft.data_recebimento ?? null,
+      observacoes_romaneio: (draft.observacoes_romaneio ?? "")?.toString().toUpperCase() || null,
+      num_fretes: Math.max(1, Math.floor(Number(draft.num_fretes) || 1)),
+    };
+  }
+
+  async function handleAtualizar() {
+    if (!selected) return;
+    await salvar.mutateAsync({ id: selected.id, ...patchDraftToCop() });
+  }
+
+  async function handleEnviarOficina() {
+    if (!selected) return;
+    if (!draft.oficina_id) { toast.error("Selecione a oficina."); return; }
+    if (!selected.pecas?.length) { toast.error("Romaneio sem peças."); return; }
+    await salvar.mutateAsync({
+      id: selected.id,
+      ...patchDraftToCop(),
+      status: "Na Oficina (Costura)" as CopStatus,
+      romaneio_enviado_em: new Date().toISOString(),
+    });
+    // pop-up PDF
+    const ofi = oficinas.find((o) => o.id === draft.oficina_id) ?? null;
+    const next: Cop = { ...selected, ...(patchDraftToCop() as any), status: "Na Oficina (Costura)" } as Cop;
+    abrirRomaneioParaImpressao(next, ofi);
+  }
+
+  async function handleEntregaConfirm(rec: CopPecaRecebida[]) {
+    if (!selected) return;
+    const completo = todasCompletas(selected.pecas || [], rec);
+    const algum = rec.some((r) => r.qtd_recebida > 0);
+    const novoStatus: CopStatus =
+      completo ? "Romaneio Completo" : algum ? "Romaneio Parcial" : "Na Oficina (Costura)";
+    await salvar.mutateAsync({
+      id: selected.id,
+      pecas_recebidas: rec as any,
+      status: novoStatus,
+      data_recebimento: completo && !selected.data_recebimento ? new Date().toISOString().slice(0, 10) : selected.data_recebimento,
+    } as any);
+  }
+
+  async function handleParticionar() {
+    if (!selected) return;
+    const recebidas = selected.pecas_recebidas ?? [];
+    const recCount = recebidas.reduce((s, r) => s + r.qtd_recebida, 0);
+    if (recCount === 0) { toast.error("Nada para particionar."); return; }
+    const original_id = selected.cop_romaneio_pai_id ?? selected.id;
+    // Buscar irmãos para definir letra
+    const familia = cops.filter((c) => c.id === original_id || c.cop_romaneio_pai_id === original_id);
+    const letrasUsadas = familia.map((c) => c.letra);
+    // Garantir 'A' para o pai/origem se ainda não tem letra
+    if (!letrasUsadas.includes("A")) letrasUsadas.push("A");
+    const novaLetra = proximaLetra(letrasUsadas);
+
+    // Mover as recebidas para um filho NOVO (status Romaneio Completo)
+    const pecasMovidas: CopPeca[] = recebidas
+      .filter((r) => r.qtd_recebida > 0)
+      .map((r) => ({ modelo: r.modelo, cor: r.cor, tamanho: r.tamanho, qtd: r.qtd_recebida }));
+    const pecasRestantes = subtrairPecas(selected.pecas || [], pecasMovidas);
+
+    // Inserir filho
+    const { data: filho, error: e1 } = await supabase.from("cops" as any).insert({
+      status: "Romaneio Completo" as CopStatus,
+      pecas: pecasMovidas as any,
+      pecas_recebidas: pecasMovidas.map((p) => ({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd_recebida: p.qtd })) as any,
+      oficina_id: selected.oficina_id,
+      data_saida_oficina: selected.data_saida_oficina,
+      data_recebimento: new Date().toISOString().slice(0, 10),
+      observacoes_romaneio: selected.observacoes_romaneio,
+      num_fretes: selected.num_fretes ?? 1,
+      letra: novaLetra,
+      cop_romaneio_pai_id: original_id,
+      // mantém o mesmo numero base na exibição via rotuloCop (mas é um id próprio)
+      numero: selected.numero,
+    }).select().single();
+    if (e1) { toast.error(e1.message); return; }
+
+    // Atualizar pai/origem: restantes, status Parcial, zera recebimentos, letra A se faltar
+    const patchPai: any = {
+      pecas: pecasRestantes as any,
+      pecas_recebidas: [] as any,
+      status: "Romaneio Parcial" as CopStatus,
+    };
+    if (selected.id === original_id && !selected.letra) patchPai.letra = "A";
+    const { error: e2 } = await supabase.from("cops" as any).update(patchPai).eq("id", selected.id);
+    if (e2) { toast.error(e2.message); return; }
+
+    qc.invalidateQueries({ queryKey: ["cops"] });
+    toast.success(`Romaneio ${rotuloCop(selected.numero, novaLetra)} criado.`);
+    // mantém seleção no pai (que segue parcial)
+  }
+
+  async function handleConferir() {
+    if (!selected) return;
+    if (selected.status !== "Romaneio Completo") return;
+    const { data: ses } = await supabase.auth.getUser();
+    await salvar.mutateAsync({
+      id: selected.id,
+      status: "Aguardando Pagamento" as CopStatus,
+      conferido_em: new Date().toISOString(),
+      conferido_por: ses.user?.id ?? null,
+    } as any);
+  }
+
+  const familia = useMemo(() => {
+    if (!selected) return [] as Cop[];
+    const pid = selected.cop_romaneio_pai_id ?? selected.id;
+    return cops.filter((c) => c.id === pid || c.cop_romaneio_pai_id === pid)
+      .sort((a, b) => (a.letra ?? "A").localeCompare(b.letra ?? "A"));
+  }, [cops, selected]);
+
+  const recebidas = selected?.pecas_recebidas ?? [];
+  const podeParticionar = !!selected
+    && (selected.status === "Romaneio Parcial" || (selected.status === "Na Oficina (Costura)" && totalRecebidas(recebidas) > 0))
+    && totalRecebidas(recebidas) > 0
+    && totalRecebidas(recebidas) < totalPecasCop(selected.pecas);
+
+  const original_id_atual = selected ? (selected.cop_romaneio_pai_id ?? selected.id) : null;
+  const letrasFamilia = familia.map((c) => c.letra);
+  if (selected && !letrasFamilia.includes("A")) letrasFamilia.push("A");
+  const letraNova = proximaLetra(letrasFamilia);
+
+  return (
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-2 justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => qc.invalidateQueries({ queryKey: ["cops"] })} title="Recarregar">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs">Status:</Label>
+            <Select value={statusFiltro} onValueChange={setStatusFiltro}>
+              <SelectTrigger className="h-9 w-[260px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__romaneio__">Em Romaneio (todos os estágios)</SelectItem>
+                <SelectItem value="todos">Todos</SelectItem>
+                {COP_STATUS_LIST.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Input
+            placeholder="Buscar número/letra..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="h-9 w-[200px]"
+          />
+        </div>
+        <div className="text-xs text-muted-foreground">{lista.length} registros</div>
+      </div>
+
+      {/* Editor */}
+      {selected && (
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] gap-4">
+          {/* Lado Esquerdo — Ordem de Produção */}
+          <Card className="border-primary/30">
+            <CardHeader className="pb-2">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground tracking-wider">ROMANEIO · COP</div>
+                  <div className="text-3xl sm:text-5xl font-bold tabular-nums">
+                    {rotuloCop(selected.numero, selected.letra)}
+                    {familia.length > 1 && (
+                      <span className="ml-3 text-sm font-normal text-muted-foreground">
+                        (
+                        {familia.map((c, idx) => (
+                          <span key={c.id}>
+                            {c.id === selected.id ? (
+                              <span className="font-semibold">{rotuloCop(c.numero, c.letra)}</span>
+                            ) : (
+                              <button type="button" className="underline hover:text-primary" onClick={() => setSelectedId(c.id)}>
+                                {rotuloCop(c.numero, c.letra)}
+                              </button>
+                            )}
+                            {idx < familia.length - 1 ? " / " : ""}
+                          </span>
+                        ))}
+                        )
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="px-2 py-1 rounded-md text-xs font-medium border" style={etapaStyle(selected.status)}>
+                  {selected.status}
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <Label>Oficina (fornecedor)</Label>
+                  <Select
+                    value={draft.oficina_id ?? ""}
+                    onValueChange={(v) => setDraft((d) => ({ ...d, oficina_id: v || null }))}
+                  >
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                      {oficinas.length === 0 && <SelectItem value="__none__" disabled>Nenhuma cadastrada</SelectItem>}
+                      {oficinas.map((o) => (
+                        <SelectItem key={o.id} value={o.id}>
+                          {o.nome} · frete R$ {Number(o.valor_frete ?? 0).toFixed(2)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Nº de fretes</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={draft.num_fretes ?? 1}
+                    onChange={(e) => setDraft((d) => ({ ...d, num_fretes: Math.max(1, Math.floor(Number(e.target.value) || 1)) }))}
+                    className="h-9"
+                  />
+                </div>
+                <div>
+                  <Label>Data de saída para a oficina</Label>
+                  <DateInputBR value={draft.data_saida_oficina ?? ""} onChange={(v) => setDraft((d) => ({ ...d, data_saida_oficina: v }))} />
+                </div>
+                <div>
+                  <Label>Data de recebimento</Label>
+                  <DateInputBR value={draft.data_recebimento ?? ""} onChange={(v) => setDraft((d) => ({ ...d, data_recebimento: v }))} />
+                </div>
+              </div>
+
+              {/* Peças (auto, read-only) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Peças do Romaneio (do Corte)</Label>
+                  <div className="text-xs text-muted-foreground">
+                    Total: <span className="font-semibold tabular-nums">{totalPecasCop(selected.pecas)}</span> ·
+                    Recebido: <span className="font-semibold tabular-nums text-green-700"> {totalRecebidas(recebidas)}</span>
+                  </div>
+                </div>
+                <div className="rounded-md border overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40 text-xs">
+                      <tr>
+                        <th className="p-2 text-left">Modelo</th>
+                        <th className="p-2 text-left">Cor</th>
+                        <th className="p-2 text-left">Tamanhos · Qtd</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {agruparPorModeloCor(selected.pecas || []).map((g, i) => {
+                        const hex = corHex(g.cor); const fg = corTextoSobre(hex);
+                        return (
+                          <tr key={i} className="border-t">
+                            <td className="p-2">{g.modelo}</td>
+                            <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
+                            <td className="p-2">
+                              <div className="flex flex-wrap gap-2">
+                                {g.tamanhos.map((t) => {
+                                  const r = getRecebida(recebidas, g.modelo, g.cor, t.tamanho);
+                                  const completo = r >= t.qtd && t.qtd > 0;
+                                  const parcial = r > 0 && r < t.qtd;
+                                  const bg = completo ? "#16a34a" : parcial ? "#9ca3af" : "#f3f4f6";
+                                  const cor = (completo || parcial) ? "#ffffff" : "#111827";
+                                  return (
+                                    <span key={t.tamanho} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                                      style={{ backgroundColor: bg, color: cor, border: "1px solid #d1d5db" }}>
+                                      <span className="font-semibold">{t.tamanho}</span>
+                                      <span className="tabular-nums">{t.qtd}</span>
+                                      {(completo || parcial) && <span className="opacity-90">· {r}</span>}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {(!selected.pecas || selected.pecas.length === 0) && (
+                        <tr><td colSpan={3} className="p-3 text-center text-muted-foreground">Sem peças.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <Label>Observações</Label>
+                <Textarea
+                  value={draft.observacoes_romaneio ?? ""}
+                  onChange={(e) => setDraft((d) => ({ ...d, observacoes_romaneio: e.target.value }))}
+                  rows={3}
+                  className="uppercase"
+                />
+              </div>
+
+              {/* Botões */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {selected.romaneio_enviado_em && (
+                    <Button
+                      variant="outline"
+                      style={btnStyle("baixar_pdf")}
+                      onClick={() => abrirRomaneioParaImpressao(selected, oficina)}
+                    >
+                      <FileDown className="h-4 w-4 mr-1" />
+                      romaneio-{formatCopNumero(selected.numero)}{selected.letra ?? ""}.pdf
+                    </Button>
+                  )}
+                  {podeParticionar && (
+                    <Button
+                      style={btnStyle("particionar")}
+                      onClick={() => setShowParticionar(true)}
+                      title="Particionar por letra"
+                    >
+                      <Split className="h-4 w-4 mr-1" /> Particionar (nova letra {letraNova})
+                    </Button>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button style={btnStyle("atualizar")} onClick={handleAtualizar} disabled={salvar.isPending}>
+                    Atualizar
+                  </Button>
+                  <Button
+                    style={btnStyle("enviar_oficina")}
+                    onClick={handleEnviarOficina}
+                    disabled={salvar.isPending || selected.status !== "Aguardando Romaneio"}
+                    title={selected.status !== "Aguardando Romaneio" ? "Romaneio já foi enviado" : "Enviar para a oficina"}
+                  >
+                    <Send className="h-4 w-4 mr-1" /> Enviar para Oficina
+                  </Button>
+                  <Button
+                    style={btnStyle("entrega_romaneio")}
+                    onClick={() => setShowEntrega(true)}
+                    disabled={salvar.isPending
+                      || (selected.status !== "Na Oficina (Costura)"
+                          && selected.status !== "Romaneio Parcial"
+                          && selected.status !== "Romaneio Completo")}
+                  >
+                    <PackageOpen className="h-4 w-4 mr-1" /> Entrega de Romaneio
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lado Direito — Conferência */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Conferência</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {selected.status === "Romaneio Completo" || selected.conferido_em ? (
+                <>
+                  <div className="rounded-md border bg-muted/30 p-3">
+                    Conferência liberada. Verifique se as <b>quantidades recebidas</b> batem com o que foi solicitado neste romaneio.
+                  </div>
+                  <div className="rounded-md border overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/40">
+                        <tr>
+                          <th className="p-2 text-left">Item</th>
+                          <th className="p-2 text-right">Solic.</th>
+                          <th className="p-2 text-right">Recebido</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(selected.pecas || []).map((p, i) => {
+                          const r = getRecebida(recebidas, p.modelo, p.cor, p.tamanho);
+                          const ok = r === p.qtd;
+                          return (
+                            <tr key={i} className="border-t">
+                              <td className="p-2">{p.modelo} · {p.cor} · {p.tamanho}</td>
+                              <td className="p-2 text-right tabular-nums">{p.qtd}</td>
+                              <td className={`p-2 text-right tabular-nums ${ok ? "text-green-700" : "text-amber-700"}`}>{r}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-muted/30">
+                          <td className="p-2 text-right"><b>Totais</b></td>
+                          <td className="p-2 text-right tabular-nums"><b>{totalPecasCop(selected.pecas)}</b></td>
+                          <td className="p-2 text-right tabular-nums"><b>{totalRecebidas(recebidas)}</b></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                  {selected.conferido_em ? (
+                    <div className="text-xs text-green-700">
+                      ✓ Conferido em {new Date(selected.conferido_em).toLocaleString("pt-BR")}.
+                    </div>
+                  ) : (
+                    <Button style={btnStyle("conferir")} onClick={handleConferir} disabled={salvar.isPending} className="w-full">
+                      <Check className="h-4 w-4 mr-1" /> Confirmar conferência
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <div className="rounded-md border bg-muted/20 p-3 text-muted-foreground">
+                  A conferência é liberada quando o romaneio estiver <b>Completo</b>. Romaneios parciais devem
+                  primeiro ser <b>particionados por letra</b> para que cada parte possa ser conferida e paga.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Lista */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Romaneios</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-sm text-muted-foreground">Carregando…</div>
+          ) : lista.length === 0 ? (
+            <div className="text-sm text-muted-foreground">Nenhum romaneio no filtro atual.</div>
+          ) : (
+            <div className="rounded-md border overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-xs">
+                  <tr>
+                    <th className="p-2 text-left">Romaneio</th>
+                    <th className="p-2 text-left">Status</th>
+                    <th className="p-2 text-left">Oficina</th>
+                    <th className="p-2 text-center">Peças</th>
+                    <th className="p-2 text-center">Recebido</th>
+                    <th className="p-2 text-left">Saída</th>
+                    <th className="p-2 text-left">Recebimento</th>
+                    <th className="p-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lista.map((c) => {
+                    const ofi = oficinas.find((o) => o.id === c.oficina_id);
+                    return (
+                      <tr key={c.id}
+                        className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : ""}`}
+                        onClick={() => setSelectedId(c.id)}
+                      >
+                        <td className="p-2 font-semibold tabular-nums">{rotuloCop(c.numero, c.letra)}</td>
+                        <td className="p-2">
+                          <span className="px-2 py-0.5 rounded text-xs border" style={etapaStyle(c.status)}>{c.status}</span>
+                        </td>
+                        <td className="p-2">{ofi?.nome ?? "—"}</td>
+                        <td className="p-2 text-center tabular-nums">{totalPecasCop(c.pecas)}</td>
+                        <td className="p-2 text-center tabular-nums">{totalRecebidas(c.pecas_recebidas)}</td>
+                        <td className="p-2">{c.data_saida_oficina ?? "—"}</td>
+                        <td className="p-2">{c.data_recebimento ?? "—"}</td>
+                        <td className="p-2 text-right">
+                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setSelectedId(c.id); }}>
+                            Abrir
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {selected && (
+        <>
+          <EntregaRomaneioDialog
+            open={showEntrega}
+            onOpenChange={setShowEntrega}
+            pecas={selected.pecas || []}
+            recebidas={recebidas}
+            onConfirm={handleEntregaConfirm}
+          />
+          <ParticionarRomaneioDialog
+            open={showParticionar}
+            onOpenChange={setShowParticionar}
+            letraAtual={selected.letra}
+            letraNova={letraNova}
+            recebidas={recebidas}
+            rotuloAtual={rotuloCop(selected.numero, selected.letra ?? (selected.id === original_id_atual ? "A" : null))}
+            rotuloNovo={rotuloCop(selected.numero, letraNova)}
+            onConfirm={handleParticionar}
+          />
+        </>
+      )}
+    </div>
+  );
+}

@@ -1,149 +1,76 @@
-## COP — Prompt 1: estrutura base, Configurações e aba Corte
+## Aba Romaneio do COP — Plano
 
-Implementação aditiva. Não toca em `pedidos`, nem na lógica do PCP, nem nas chaves atuais de `app_color_settings`.
+Tudo aditivo. Não toca em `pedidos` nem na lógica PCP. Mantém visual do COP (moldura verde, badges, cores). Vocabulário Modelo/Cor/Tamanho continua vindo das constantes `REFACAO_*` de `src/lib/pedidos.ts`.
 
-### 1. Macro-abas COP / PCP (roteamento)
+### 1) Banco (migração aditiva)
 
-Abordagem proposta: **rota nova dedicada**, reaproveitando o mesmo layout (`_authenticated`).
+Apenas `ADD COLUMN` em `public.cops` e novas policies se necessário. Nada de DROP/RENAME.
 
-- Mover o conteúdo atual de `src/routes/_authenticated/index.tsx` para um componente compartilhado `src/components/pcp/PcpHome.tsx` (apenas extração, sem mudança de lógica) e fazer `index.tsx` renderizá-lo.
-- Criar `src/routes/_authenticated/cop.tsx` (rota `/cop`), gated por `useIsAdmin()` — não-admin é redirecionado para `/`.
-- Adicionar no header (em `PcpHome` e na nova `CopHome`) um **macro-switch** "PCP | COP" à esquerda do logo. O botão COP só aparece se `isAdmin`. Navega via `navigate({to:"/"})` ou `navigate({to:"/cop"})`.
-- Botão "Configurações" no header do COP navega para `/configuracoes?area=cop` (a página existente ganha um seletor de área PCP/COP — ver §3).
+Colunas novas em `cops`:
+- `oficina_id uuid null references public.oficinas(id)`
+- `data_saida_oficina date null` ("Data de saída do COP")
+- `data_recebimento date null` ("Data de recebimento do COP")
+- `observacoes_romaneio text null`
+- `num_fretes integer not null default 1`
+- `pecas_recebidas jsonb not null default '[]'::jsonb`
+  Estrutura espelhando `pecas`: `[{modelo,cor,tamanho,qtd_recebida,completo:boolean}]`. Pendente = `qtd - qtd_recebida`.
+- `romaneio_enviado_em timestamptz null` (controla quando o PDF foi gerado pela 1ª vez)
+- `letra text null` (null = romaneio inteiro; `'A'`, `'B'`, `'C'`… quando particionado)
+- `cop_romaneio_pai_id uuid null references public.cops(id)` (relação A/B/C — distinta de `cop_pai_id` que é da Divisão de Corte)
 
-### 2. Página `/cop` — abas internas
+Aproveita policies já existentes de `cops` (admin-only); sem novas tabelas.
 
-`src/routes/_authenticated/cop.tsx` cria a página COP com `Tabs` no mesmo padrão visual, na ordem fixa:
+### 2) Novo status no fluxo COP
 
-`Dashboard COP · Disponível · Corte · Romaneio · Pagamento Oficinas · Falta por Pedido · Perdas`
+Em `src/lib/cop.ts` ampliar `CopStatus` (aditivo) com:
+- `"Na Oficina (Costura)"` — após "Enviar para Oficina"
+- `"Romaneio Parcial"` — recebimento iniciado, pendência > 0
+- `"Romaneio Completo"` — tudo recebido (libera Conferência)
 
-Apenas **Corte** é funcional. As outras 6 abas renderizam um placeholder "Em construção" (componente simples reutilizável `CopEmConstrucao`).
+Mantém os demais. Mapa de cores em `use-cop-color-settings` ganha entradas com defaults.
 
-Arquivos novos:
-- `src/components/cop/CorteTab.tsx` (funcional)
-- `src/components/cop/CopEmConstrucao.tsx` (placeholder)
-- `src/components/cop/DivisaoCorteDialog.tsx`
-- `src/components/cop/shared.tsx` (helpers, status, badges via `useCopColorSettings`)
-- `src/lib/cop.ts` (tipos `Cop`, `CopPeca`, constantes de status, helpers)
-- `src/hooks/use-cop-color-settings.ts`
+### 3) Componentes novos (em `src/components/cop/`)
 
-### 3. Configurações do COP
+- `RomaneioTab.tsx` — orquestra lista de COPs elegíveis (status `Aguardando Romaneio`, `Na Oficina (Costura)`, `Romaneio Parcial`, `Romaneio Completo`), filtros, contador "X registros", botão "Atualizar". Layout split: editor (esquerda Ordem de Produção, direita Conferência).
+- `OrdemProducaoPanel.tsx` — formulário do lado esquerdo:
+  - Dropdown Oficina (lê `oficinas`)
+  - Data de saída / Data de recebimento
+  - Tabela read-only das peças (Modelo · Cor · Tamanho · Qtd) puxada de `cops.pecas`
+  - Observações (textarea, uppercase como nas demais)
+  - `num_fretes` (input inteiro, mínimo 1)
+  - Botões: **Atualizar**, **Enviar para Oficina** (gate: oficina + data_saida obrigatórios), **Entrega de Romaneio**, **Baixar PDF** (aparece após envio), **Dividir Corte** (reusa `DivisaoCorteDialog`), **Particionar Romaneio** (só com Parcial)
+- `EntregaRomaneioDialog.tsx` — popup de recebimento:
+  - Por linha (Modelo · Cor): mostra cada tamanho como célula com número grande e ícone abaixo.
+  - Click no número → marca completo (bolinha verde, número branco), seta `qtd_recebida = qtd`.
+  - Click no ícone → input numérico para parcial (bolinha cinza, número branco).
+  - Rodapé por linha: entregue vs pendente.
+  - Salvar atualiza `pecas_recebidas` e recalcula status (parcial vs completo).
+- `ParticionarRomaneioDialog.tsx` — só habilitado em `Romaneio Parcial`:
+  - Cria filho `0001B` (próxima letra livre) com as **peças já recebidas** (snapshot do parcial), `cop_romaneio_pai_id` = atual, mesma `oficina_id`, status `Romaneio Completo`, `pecas_recebidas` = peças filhas marcadas completas.
+  - Pai vira `0001A` (primeira partição) ou mantém letra atual se já tem; subtrai as peças particionadas das peças e zera os recebimentos correspondentes. Pode reparticionar (C, D…).
+  - Exibição "0001 (0001A / 0001B)" análoga à Divisão de Corte.
+- `ConferenciaPanel.tsx` — lado direito, habilitado só com `Romaneio Completo`. Confere **somente quantidades** (sem defeitos). Marca conferido com data + responsável. (Defeitos = aba Perdas, prompt 3.)
+- `RomaneioPdf.tsx` — componente que monta o layout do romaneio para impressão.
 
-Editar `src/routes/_authenticated/configuracoes.tsx` adicionando um **seletor de área no topo: "PCP | COP"** (default PCP; lê `?area=`). A árvore atual permanece intacta sob PCP. Sob COP exibe três blocos:
+### 4) PDF do Romaneio — abordagem proposta
 
-1. **Oficinas (CRUD)** — lista + dialog de edição: nome, CNPJ/CPF, endereço, CEP, valor_frete, e tabela "valor por modelo" alimentada por `REFACAO_MODELOS`.
-2. **Cores das etapas e botões do COP** — mesmo componente visual do PCP, mas persistido em `app_color_settings` com `id = 'cop'` (aditivo; PCP continua em `id = 'global'`).
-3. **Controle de acesso** — bloco informativo "Atualmente apenas ADM acessa o COP. (Em breve: Gestores com COP habilitado.)" Sem switches ativos.
+Sem adicionar dependência pesada agora: **impressão via layout HTML + `@media print`**, abrindo em popup `window.open`. A4 vertical com **dois A5 horizontais** idênticos (cabeçalho com Logo Juff, datas, oficina, nº COP, peças por Modelo/Cor/Tamanho/Qtd, total, "Responsável pela conferência", Observações ~10%). Botão "Baixar PDF" usa o mesmo HTML e o `window.print()` → "Salvar como PDF" do navegador, com `document.title = "romaneio-0001"` para o nome sugerido. Se preferir um `.pdf` real baixável, adicionar `html2pdf.js` (leve, ~50kb) — peço confirmação antes de instalar.
 
-Cores padrão das etapas COP (chaves):
-- `Aguardando Risco`, `Aguardando Corte`, `Aguardando Romaneio`, `Em Oficina`, `Aguardando Pagamento`, `Finalizado`.
+### 5) Wiring
 
-Cores padrão dos botões COP: `atualizar`, `mandar_romaneio`, `dividir_corte`, `voltar`.
+- `src/routes/_authenticated/cop.tsx`: trocar `CopEmConstrucao` por `<RomaneioTab />` na aba `romaneio`. Demais abas continuam placeholders.
+- Sem alterações em PCP, configurações ou demais módulos.
 
-### 4. Aba CORTE (funcional)
+### 6) Regras invioláveis aplicadas
 
-Topo grande no padrão `OrcamentoTitle`:
-```
-COP
-0001
-```
-(se dividido: `0001 (0001/0047)` com o irmão como link clicável que troca o COP selecionado).
+- Sem `DROP`/`TRUNCATE`/`DELETE` em massa. Só `ADD COLUMN`.
+- Save nunca bloqueado por gate de etapa (gates apenas em ações como "Enviar para Oficina" e "Entrega").
+- Reusa constantes existentes; nenhuma lista nova de modelo/cor/tamanho.
+- Divisão de Corte segue regra existente (única; filho não divide). Partição por letra é independente e reparticionável.
 
-Layout no estilo das abas PCP: lista/tabela à esquerda + card de edição em cima quando há COP selecionado. Filtros: status (default "Aguardando Risco" + "Aguardando Corte"), busca por número.
+### Pendências antes de implementar
 
-Campos:
-- **Número do COP** — auto, somente leitura.
-- **Status** — badge colorido com `useCopColorSettings`.
-- **Solicitação do Risco** / **Execução do Risco** / **Solicitação do Corte** / **Execução do Corte** — `DateInputBR`.
-- **Descrição dos produtos** — editor de peças (reusa o padrão do `PecasPerdidasEditor`/`SolicitarPecasDialog`): linhas com dropdown Modelo, dropdown Cor (coloridas) e 7 inputs numéricos por tamanho (`PP P M G GG EXG EXXG`). Estado persistido em `pecas` jsonb como `[{modelo, cor, tamanho, qtd}]` (uma linha por tamanho), igual ao formato do PCP.
-- **Observações do Corte** — `Textarea` uppercase.
-- **Botões**: `Atualizar` (salva) · `Mandar pro Romaneio` (status → `Aguardando Romaneio`).
-- **Divisão de Corte** (`DivisaoCorteDialog`): exibe as peças do COP atual com input "mover para novo COP" por linha (cap = qtd atual). Ao confirmar:
-  - cria novo COP filho com status `Aguardando Risco`, `cop_pai_id = atual.id` e as peças movidas;
-  - subtrai as quantidades no COP pai (remove linhas zeradas);
-  - marca `corte_dividido = true` no pai.
-  - Bloqueado se `corte_dividido = true` (já dividiu) ou se o COP atual tem `cop_pai_id` (é filho).
-  - O par é mostrado consultando `cops` por `cop_pai_id = pai` e o próprio pai.
+1. **PDF**: ok usar `window.print()` (sem nova dep) ou prefere instalar `html2pdf.js` para download real `.pdf`?
+2. **Conferência (lado direito)**: além de confirmar quantidades, devo registrar `conferido_por` (usuário) e `conferido_em` (timestamp) como colunas novas em `cops`? Confirmo no plano antes de migrar.
 
-**Status inicial:** novo COP nasce com `status = 'Aguardando Risco'` direto na aba Corte (não há aba Risco).
-
-### 5. Banco — migration aditiva
-
-```sql
--- Oficinas
-CREATE TABLE public.oficinas (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  nome text NOT NULL,
-  cnpj_cpf text,
-  endereco text,
-  cep text,
-  valor_frete numeric(12,2) DEFAULT 0,
-  valores_por_modelo jsonb NOT NULL DEFAULT '{}'::jsonb,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.oficinas TO authenticated;
-GRANT ALL ON public.oficinas TO service_role;
-ALTER TABLE public.oficinas ENABLE ROW LEVEL SECURITY;
-CREATE POLICY oficinas_admin_all ON public.oficinas
-  FOR ALL TO authenticated
-  USING (public.has_role(auth.uid(),'admin'))
-  WITH CHECK (public.has_role(auth.uid(),'admin'));
-
--- Sequência para numero COP (começa em 1)
-CREATE SEQUENCE IF NOT EXISTS public.cops_numero_seq START 1;
-
--- COPs
-CREATE TABLE public.cops (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  numero integer NOT NULL UNIQUE DEFAULT nextval('public.cops_numero_seq'),
-  status text NOT NULL DEFAULT 'Aguardando Risco',
-  solicitacao_risco date,
-  execucao_risco date,
-  solicitacao_corte date,
-  execucao_corte date,
-  observacoes_corte text,
-  pecas jsonb NOT NULL DEFAULT '[]'::jsonb,
-  cop_pai_id uuid REFERENCES public.cops(id) ON DELETE SET NULL,
-  corte_dividido boolean NOT NULL DEFAULT false,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  created_by uuid,
-  updated_by uuid
-);
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.cops TO authenticated;
-GRANT ALL ON public.cops TO service_role;
-ALTER TABLE public.cops ENABLE ROW LEVEL SECURITY;
-CREATE POLICY cops_admin_all ON public.cops
-  FOR ALL TO authenticated
-  USING (public.has_role(auth.uid(),'admin'))
-  WITH CHECK (public.has_role(auth.uid(),'admin'));
-
--- updated_at triggers (reusa função já existente se houver; senão cria)
-```
-
-`app_color_settings` ganha **um novo registro** `id = 'cop'`. Sem alterar o registro `'global'` do PCP, sem alterar policies existentes. `types.ts` será regenerado para incluir `oficinas` e `cops`.
-
-### 6. Arquivos a criar / editar
-
-**Criar**
-- `src/routes/_authenticated/cop.tsx`
-- `src/components/cop/CorteTab.tsx`
-- `src/components/cop/DivisaoCorteDialog.tsx`
-- `src/components/cop/CopEmConstrucao.tsx`
-- `src/components/cop/shared.tsx`
-- `src/lib/cop.ts`
-- `src/hooks/use-cop-color-settings.ts`
-- migration SQL (oficinas, cops, sequence, policies, grants)
-
-**Editar (mínimo)**
-- `src/routes/_authenticated/index.tsx` → renderiza `PcpHome` (extração) + macro-switch PCP/COP no header.
-- `src/components/pcp/PcpHome.tsx` (novo, recebe o corpo atual de `index.tsx` sem alterações de lógica).
-- `src/routes/_authenticated/configuracoes.tsx` → seletor PCP/COP no topo + bloco COP (oficinas, cores COP, aviso de acesso).
-
-### Pontos para confirmar antes de codar
-
-1. **Roteamento**: ok usar rota dedicada `/cop` (com extração do conteúdo atual para `PcpHome`)? Alternativa é um estado macro dentro do mesmo `index.tsx` sem rota nova.
-2. **Numeração**: usar `sequence` no Postgres (sempre crescente, sem reuso) — ok? O exibido continua sendo `String(numero).padStart(4,'0')`.
-3. **Cor padrão dos botões COP**: posso reusar a paleta atual (`atualizar` azul, `voltar` vermelho) e definir `mandar_romaneio` verde, `dividir_corte` laranja?
-4. **Configurações**: ok juntar PCP e COP na mesma página `/configuracoes` com seletor no topo, em vez de criar `/configuracoes/cop`?
+Aguardo "ok" para implementar.

@@ -3,12 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import type { CSSProperties } from "react";
 
 export type ColorPair = { fg: string; bg: string };
-export type CopBotaoKey = "atualizar" | "mandar_romaneio" | "dividir_corte" | "voltar";
+export type CopBotaoKey = "atualizar" | "mandar_romaneio" | "dividir_corte" | "voltar" | "enviar_oficina" | "entrega_romaneio" | "particionar" | "baixar_pdf" | "conferir";
 
 export const COP_ETAPAS_CONFIGURAVEIS: string[] = [
   "Aguardando Risco",
   "Aguardando Corte",
   "Aguardando Romaneio",
+  "Na Oficina (Costura)",
+  "Romaneio Parcial",
+  "Romaneio Completo",
   "Em Oficina",
   "Aguardando Pagamento",
   "Finalizado",
@@ -18,16 +21,24 @@ export const DEFAULT_COP_ETAPA_COLORS: Record<string, ColorPair> = {
   "Aguardando Risco":      { bg: "#fef3c7", fg: "#92400e" },
   "Aguardando Corte":      { bg: "#ffedd5", fg: "#9a3412" },
   "Aguardando Romaneio":   { bg: "#eef2ff", fg: "#3730a3" },
+  "Na Oficina (Costura)":  { bg: "#e0f2fe", fg: "#075985" },
+  "Romaneio Parcial":      { bg: "#fef9c3", fg: "#854d0e" },
+  "Romaneio Completo":     { bg: "#d1fae5", fg: "#065f46" },
   "Em Oficina":            { bg: "#ccfbf1", fg: "#115e59" },
   "Aguardando Pagamento":  { bg: "#fce7f3", fg: "#9f1239" },
   "Finalizado":            { bg: "#dcfce7", fg: "#15803d" },
 };
 
 export const DEFAULT_COP_BOTAO_COLORS: Record<CopBotaoKey, ColorPair> = {
-  atualizar:       { bg: "#2563eb", fg: "#ffffff" },
-  mandar_romaneio: { bg: "#059669", fg: "#ffffff" },
-  dividir_corte:   { bg: "#ff8c2f", fg: "#ffffff" },
-  voltar:          { bg: "#cf0e0e", fg: "#ffffff" },
+  atualizar:        { bg: "#2563eb", fg: "#ffffff" },
+  mandar_romaneio:  { bg: "#059669", fg: "#ffffff" },
+  dividir_corte:    { bg: "#ff8c2f", fg: "#ffffff" },
+  voltar:           { bg: "#cf0e0e", fg: "#ffffff" },
+  enviar_oficina:   { bg: "#0ea5e9", fg: "#ffffff" },
+  entrega_romaneio: { bg: "#16a34a", fg: "#ffffff" },
+  particionar:      { bg: "#a855f7", fg: "#ffffff" },
+  baixar_pdf:       { bg: "#475569", fg: "#ffffff" },
+  conferir:         { bg: "#059669", fg: "#ffffff" },
 };
 
 export type CopColorSettings = {
@@ -53,7 +64,7 @@ function mergeSettings(raw: any): CopColorSettings {
       }
     }
     if (raw.botoes && typeof raw.botoes === "object") {
-      for (const k of ["atualizar", "mandar_romaneio", "dividir_corte", "voltar"] as CopBotaoKey[]) {
+      for (const k of ["atualizar","mandar_romaneio","dividir_corte","voltar","enviar_oficina","entrega_romaneio","particionar","baixar_pdf","conferir"] as CopBotaoKey[]) {
         const v = raw.botoes[k];
         if (v && typeof v.bg === "string" && typeof v.fg === "string") botoes[k] = { bg: v.bg, fg: v.fg };
       }
