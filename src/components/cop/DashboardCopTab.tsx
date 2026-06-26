@@ -147,7 +147,7 @@ export function DashboardCopTab() {
             <table className="w-full text-sm">
               <thead className="text-xs text-muted-foreground"><tr>
                 <th className="text-left p-1">Orçamento</th>
-                <th className="text-left p-1">Cliente</th>
+                <th className="text-left p-1">Pedido Olist</th>
                 <th className="text-left p-1">Início estamp./acab.</th>
                 <th className="text-left p-1">Limite (-2 d.ú.)</th>
               </tr></thead>
@@ -155,7 +155,7 @@ export function DashboardCopTab() {
                 {urgentes.map(({ p, ancora }) => (
                   <tr key={p.id} className="border-t">
                     <td className="p-1 font-mono">{p.orcamento ?? "—"}</td>
-                    <td className="p-1">{(p as any).cliente ?? "—"}</td>
+                    <td className="p-1 font-mono">{(p as any).pedido_olist ?? "—"}</td>
                     <td className="p-1">{ancora ?? "—"}</td>
                     <td className="p-1">{ancora ? addDiasUteis(ancora, -2) : "—"}</td>
                   </tr>
