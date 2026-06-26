@@ -44,10 +44,30 @@ export type Cop = {
   pecas: CopPeca[];
   cop_pai_id: string | null;
   corte_dividido: boolean;
+  // Romaneio
+  oficina_id: string | null;
+  data_saida_oficina: string | null;
+  data_recebimento: string | null;
+  observacoes_romaneio: string | null;
+  num_fretes: number;
+  pecas_recebidas: CopPecaRecebida[];
+  romaneio_enviado_em: string | null;
+  letra: string | null;
+  cop_romaneio_pai_id: string | null;
+  conferido_em: string | null;
+  conferido_por: string | null;
   created_at: string;
   updated_at: string;
   created_by: string | null;
   updated_by: string | null;
+};
+
+/** Recebimento por linha (Modelo|Cor|Tamanho). qtd_recebida<=qtd; completo opcional. */
+export type CopPecaRecebida = {
+  modelo: string;
+  cor: string;
+  tamanho: string;
+  qtd_recebida: number;
 };
 
 export type Oficina = {
