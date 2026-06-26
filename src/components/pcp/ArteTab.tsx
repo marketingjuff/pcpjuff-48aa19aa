@@ -16,8 +16,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, Download } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Save, Download, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { useHasRole } from "@/hooks/use-role";
 
 import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
