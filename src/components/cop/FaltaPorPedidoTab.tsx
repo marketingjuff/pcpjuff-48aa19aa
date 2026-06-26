@@ -93,8 +93,8 @@ export function FaltaPorPedidoTab() {
     mutationFn: async ({ pedido, idx, copId, qtd }: { pedido: Pedido; idx: number; copId: string; qtd: number }) => {
       const cop = cops.find((c) => c.id === copId);
       if (!cop) throw new Error("COP não encontrado.");
-      const arr = (pedido.pecas_solicitadas ?? []).slice();
-      const linha = { ...arr[idx] };
+      const arr = ((pedido.pecas_solicitadas as PecaSolicitada[] | null) ?? []).slice();
+      const linha = { ...(arr[idx] as PecaSolicitada) };
       const novaEnviada = Math.min(linha.qtd, (Number(linha.qtd_enviada) || 0) + qtd);
       arr[idx] = { ...linha, qtd_enviada: novaEnviada };
 
