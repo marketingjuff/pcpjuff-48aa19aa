@@ -26,9 +26,10 @@ import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
 interface Props {
   pedidos: Pedido[];
   onReabrir: (id: string) => void;
+  canReabrir?: boolean;
 }
 
-export function FinalizadosTab({ pedidos, onReabrir }: Props) {
+export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props) {
   const qc = useQueryClient();
   const isAdmin = useIsAdmin();
   const { btnStyle } = useColorSettings();
@@ -285,11 +286,13 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                     <Chip label="Resp" value={p.responsavel_acabamento} />
                     <Chip label="Finalizado" value={formatDateBR(p.finalizado_em?.slice(0,10)) || "—"} />
                   </div>
-                  <div className="mt-2">
-                    <Button size="sm" onClick={() => onReabrir(p.id)} className="w-full" style={btnStyle("reabrir")}>
-                      <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
-                    </Button>
-                  </div>
+                  {canReabrir && (
+                    <div className="mt-2">
+                      <Button size="sm" onClick={() => onReabrir(p.id)} className="w-full" style={btnStyle("reabrir")}>
+                        <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -345,10 +348,11 @@ export function FinalizadosTab({ pedidos, onReabrir }: Props) {
                     <td className="px-1.5 py-0.5 text-xs">{p.responsavel_acabamento ?? "—"}</td>
                     <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.finalizado_em?.slice(0,10))}</td>
                     <td className="px-1.5 py-0.5 text-right" onClick={(e) => e.stopPropagation()}>
-                      <Button size="sm" onClick={() => onReabrir(p.id)} style={btnStyle("reabrir")}>
-                        <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
-                      </Button>
-
+                      {canReabrir && (
+                        <Button size="sm" onClick={() => onReabrir(p.id)} style={btnStyle("reabrir")}>
+                          <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))

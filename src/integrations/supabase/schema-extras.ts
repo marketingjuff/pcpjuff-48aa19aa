@@ -13,7 +13,8 @@ export type AppArea =
   | "dtf"
   | "silk"
   | "acabamento"
-  | "expedicao";
+  | "expedicao"
+  | "finalizados";
 
 export const APP_AREAS_GESTOR: AppArea[] = [
   "dashboard",
@@ -24,6 +25,7 @@ export const APP_AREAS_GESTOR: AppArea[] = [
   "silk",
   "acabamento",
   "expedicao",
+  "finalizados",
 ];
 export const APP_AREAS_OPERADOR: AppArea[] = [
   "dashboard",
@@ -33,6 +35,7 @@ export const APP_AREAS_OPERADOR: AppArea[] = [
   "dtf",
   "silk",
   "acabamento",
+  "finalizados",
 ];
 export const APP_AREA_LABEL: Record<AppArea, string> = {
   dashboard: "Dashboard Master",
@@ -43,6 +46,7 @@ export const APP_AREA_LABEL: Record<AppArea, string> = {
   silk: "Silk Screen",
   acabamento: "Acabamento",
   expedicao: "Expedição",
+  finalizados: "Finalizados",
 };
 
 export type Profile = {

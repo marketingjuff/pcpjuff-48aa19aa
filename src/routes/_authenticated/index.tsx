@@ -149,7 +149,7 @@ function AppHomeInner() {
     ...(canSee("silk") ? [{ value: "silk", label: "Silk Screen" }] : []),
     ...(canSee("acabamento") ? [{ value: "acab", label: "Acabamento" }] : []),
     ...(canSee("expedicao") ? [{ value: "exp", label: "Expedição" }] : []),
-    ...(isManager ? [{ value: "fin", label: "Finalizados" }] : []),
+    ...((isManager || canSee("finalizados")) ? [{ value: "fin", label: "Finalizados" }] : []),
     ...(isManager ? [{ value: "retrab", label: "Retrabalho" }] : []),
   ];
   const activeTabLabel = tabs.find((t) => t.value === tab)?.label ?? "";
@@ -275,9 +275,13 @@ function AppHomeInner() {
               />
             </TabsContent>
           )}
-          {isManager && (
+          {(isManager || canSee("finalizados")) && (
             <TabsContent value="fin" forceMount hidden={tab !== "fin"}>
-              <FinalizadosTab pedidos={pedidos} onReabrir={(id) => upsert.mutate({ id, finalizado_em: null, reaberto: true })} />
+              <FinalizadosTab
+                pedidos={pedidos}
+                onReabrir={(id) => upsert.mutate({ id, finalizado_em: null, reaberto: true })}
+                canReabrir={isAdmin || (isGestor && canSee("expedicao"))}
+              />
             </TabsContent>
           )}
           {isManager && (
