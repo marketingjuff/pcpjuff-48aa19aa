@@ -145,6 +145,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [fDtf, setFDtf] = useState<string>("todos");
   const [fFoto, setFFoto] = useState<string>("todos");
   const [fStatusArte, setFStatusArte] = useState<string>("todos");
+  const [fWarning, setFWarning] = useState<boolean>(false);
 
   const dashboardRows = useMemo(() => {
     let arr = pedidos.filter((p) => visivelEmArte(p) && matchEtapaFiltro(p, fEtapa));
