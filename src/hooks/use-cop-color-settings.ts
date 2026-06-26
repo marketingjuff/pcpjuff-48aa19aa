@@ -64,7 +64,7 @@ function mergeSettings(raw: any): CopColorSettings {
       }
     }
     if (raw.botoes && typeof raw.botoes === "object") {
-      for (const k of ["atualizar", "mandar_romaneio", "dividir_corte", "voltar"] as CopBotaoKey[]) {
+      for (const k of ["atualizar","mandar_romaneio","dividir_corte","voltar","enviar_oficina","entrega_romaneio","particionar","baixar_pdf","conferir"] as CopBotaoKey[]) {
         const v = raw.botoes[k];
         if (v && typeof v.bg === "string" && typeof v.fg === "string") botoes[k] = { bg: v.bg, fg: v.fg };
       }
