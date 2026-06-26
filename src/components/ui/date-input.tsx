@@ -72,10 +72,13 @@ export const DateInputBR = React.forwardRef<HTMLInputElement, DateInputBRProps>(
       setText(isoToBR(value));
     }, [value]);
 
+    const { feriados } = useFeriados();
     const selectedDate = isoToDate(value);
     const isWeekend = selectedDate
       ? selectedDate.getDay() === 0 || selectedDate.getDay() === 6
       : false;
+    const isHoliday = !!value && feriados.has(value.slice(0, 10));
+    const isNaoUtil = isWeekend || isHoliday;
 
     return (
       <div className={cn("relative", className)}>
@@ -87,8 +90,14 @@ export const DateInputBR = React.forwardRef<HTMLInputElement, DateInputBRProps>(
           maxLength={8}
           value={text}
           disabled={disabled}
-          className={cn("pr-10", isWeekend && "bg-muted")}
-          title={isWeekend ? "Atenção: data cai em fim de semana (não é dia útil)" : undefined}
+          className={cn("pr-10", isNaoUtil && "bg-muted-foreground/20")}
+          title={
+            isHoliday
+              ? "Atenção: feriado (não é dia útil)"
+              : isWeekend
+              ? "Atenção: data cai em fim de semana (não é dia útil)"
+              : undefined
+          }
           onChange={(e) => {
             const masked = maskBR(e.target.value);
             setText(masked);
