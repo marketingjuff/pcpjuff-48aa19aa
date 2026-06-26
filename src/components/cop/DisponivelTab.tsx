@@ -200,7 +200,7 @@ export function DisponivelTab() {
                         <thead className="bg-muted/40 text-xs sticky top-0">
                           <tr>
                             <th className="p-2 text-left">Orçamento</th>
-                            <th className="p-2 text-left">Cliente</th>
+                            <th className="p-2 text-left">Pedido Olist</th>
                             <th className="p-2 text-right">Qtd item</th>
                             <th className="p-2 text-right">Enviado</th>
                             <th className="p-2 text-right">Falta</th>
@@ -216,7 +216,7 @@ export function DisponivelTab() {
                             return (
                               <tr key={idx} className="border-t">
                                 <td className="p-2 font-mono">{pedido.orcamento ?? "—"}</td>
-                                <td className="p-2">{(pedido as any).cliente ?? "—"}</td>
+                                <td className="p-2 font-mono">{(pedido as any).pedido_olist ?? "—"}</td>
                                 <td className="p-2 text-right tabular-nums">{pecaSolic.qtd}</td>
                                 <td className="p-2 text-right tabular-nums">{pecaSolic.qtd_enviada}</td>
                                 <td className={`p-2 text-right tabular-nums ${falta > 0 ? "text-amber-700 font-semibold" : "text-green-700"}`}>{falta}</td>

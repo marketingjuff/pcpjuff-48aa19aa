@@ -119,12 +119,19 @@ function CopHome() {
 export function MacroSwitch({ active }: { active: "pcp" | "cop" }) {
   const navigate = useNavigate();
   const isAdmin = useIsAdmin();
+  const baseBtn = "px-6 py-2 rounded font-bold text-base transition-colors";
+  const pcpActive = active === "pcp"
+    ? "bg-blue-600 text-white"
+    : "hover:bg-accent text-foreground";
+  const copActive = active === "cop"
+    ? "bg-green-600 text-white"
+    : "hover:bg-accent text-foreground";
   return (
-    <div className="inline-flex rounded-md border bg-card p-0.5 text-xs">
+    <div className="inline-flex rounded-md border bg-card p-1">
       <button
         type="button"
         onClick={() => navigate({ to: "/" })}
-        className={`px-3 py-1 rounded font-medium transition-colors ${active === "pcp" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+        className={`${baseBtn} ${pcpActive}`}
       >
         PCP
       </button>
@@ -132,7 +139,7 @@ export function MacroSwitch({ active }: { active: "pcp" | "cop" }) {
         <button
           type="button"
           onClick={() => navigate({ to: "/cop" })}
-          className={`px-3 py-1 rounded font-medium transition-colors ${active === "cop" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+          className={`${baseBtn} ${copActive}`}
         >
           COP
         </button>

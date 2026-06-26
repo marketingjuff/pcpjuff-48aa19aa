@@ -68,8 +68,8 @@ export function FaltaPorPedidoTab() {
       if (itens.length === 0) continue;
       if (busca) {
         const orc = String(p.orcamento ?? "").toLowerCase();
-        const cli = String((p as any).cliente ?? "").toLowerCase();
-        if (!orc.includes(busca.toLowerCase()) && !cli.includes(busca.toLowerCase())) continue;
+        const ped = String((p as any).pedido_olist ?? "").toLowerCase();
+        if (!orc.includes(busca.toLowerCase()) && !ped.includes(busca.toLowerCase())) continue;
       }
       const faltaTotal = itens.reduce((s, x) => s + x.falta, 0);
       const ancora = dataUrgencia(p);
@@ -133,7 +133,7 @@ export function FaltaPorPedidoTab() {
             qc.invalidateQueries({ queryKey: ["cops"] });
           }} title="Recarregar"><RefreshCw className="h-4 w-4" /></Button>
           <Input
-            placeholder="Buscar orçamento/cliente..."
+            placeholder="Buscar orçamento/pedido Olist..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="h-9 w-[260px]"
@@ -150,7 +150,7 @@ export function FaltaPorPedidoTab() {
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <CardTitle className="text-base">
                 Orç. <span className="font-mono">{l.pedido.orcamento ?? "—"}</span>
-                {" · "}<span className="font-normal text-sm">{(l.pedido as any).cliente ?? "—"}</span>
+                {" · Pedido Olist "}<span className="font-mono text-sm">{(l.pedido as any).pedido_olist ?? "—"}</span>
               </CardTitle>
               <div className="text-xs text-muted-foreground flex gap-3 flex-wrap">
                 <span>Início estamparia/acabamento: <b>{l.ancora ?? "—"}</b></span>
