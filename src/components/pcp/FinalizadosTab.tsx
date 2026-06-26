@@ -286,11 +286,13 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
                     <Chip label="Resp" value={p.responsavel_acabamento} />
                     <Chip label="Finalizado" value={formatDateBR(p.finalizado_em?.slice(0,10)) || "—"} />
                   </div>
-                  <div className="mt-2">
-                    <Button size="sm" onClick={() => onReabrir(p.id)} className="w-full" style={btnStyle("reabrir")}>
-                      <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
-                    </Button>
-                  </div>
+                  {canReabrir && (
+                    <div className="mt-2">
+                      <Button size="sm" onClick={() => onReabrir(p.id)} className="w-full" style={btnStyle("reabrir")}>
+                        <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
