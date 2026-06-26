@@ -22,6 +22,8 @@ interface Props {
   value: PecaSolicitada[];
   onSave: (next: PecaSolicitada[]) => void | Promise<void>;
   readOnly?: boolean;
+  /** Quantidade máxima de peças permitida (qtd do vendedor). */
+  limite?: number;
 }
 
 type GrupoLinha = {
