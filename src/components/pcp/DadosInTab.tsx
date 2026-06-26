@@ -30,6 +30,7 @@ import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { RefacaoBadge } from "./RefacaoBadge";
 import { SolicitarPecasDialog } from "./SolicitarPecasDialog";
+import { PecasCompletadasPanel } from "./PecasCompletadasPanel";
 import { useColorSettings } from "@/hooks/use-color-settings";
 
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
