@@ -405,15 +405,28 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             {dashboardRows.length === 0
               ? <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido.</div>
               : dashboardRows.map((p) => (
-                  <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Chip label="Estampa" value={p.tipo_estampa} />
-                      <Chip label="QTD" value={<QtdTotal pedido={p} />} />
-                      <StatusPecasChip pedido={p} />
-                      <Chip label="DTF Final." value={dtfFinalizadoLabel(p)} />
-                      <Chip label="Fotolito" value={fotolitoFinalizadoLabel(p)} />
-                      <Chip label="Status Arte" value={p.status_arte} />
-                    </div>
+                  <PedidoMobileCard
+                    key={p.id}
+                    pedido={p}
+                    active={selected?.id === p.id}
+                    onClick={() => onSelect(p.id)}
+                    right={
+                      <div className="flex items-center gap-1">
+                        {p.arte_warning && <AlertTriangle className="h-4 w-4 text-yellow-500 fill-yellow-400" />}
+                        <Checkbox
+                          checked={!!p.arte_warning}
+                          disabled={!isOperador}
+                          onCheckedChange={() => onSave({ id: p.id, arte_warning: !p.arte_warning })}
+                        />
+                      </div>
+                    }
+                  >
+                    <Chip label="Estampa" value={p.tipo_estampa} />
+                    <Chip label="QTD" value={<QtdTotal pedido={p} />} />
+                    <StatusPecasChip pedido={p} />
+                    <Chip label="DTF Final." value={dtfFinalizadoLabel(p)} />
+                    <Chip label="Fotolito" value={fotolitoFinalizadoLabel(p)} />
+                    <Chip label="Status Arte" value={p.status_arte} />
                   </PedidoMobileCard>
                 ))}
           </div>
