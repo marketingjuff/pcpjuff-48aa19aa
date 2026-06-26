@@ -4,7 +4,7 @@ import { rotuloCop } from "@/lib/cop";
 interface Props { pedido: Pedido | null }
 
 export function PecasCompletadasPanel({ pedido }: Props) {
-  const log = (pedido?.pecas_completadas_log ?? []) as NonNullable<Pedido["pecas_completadas_log"]>;
+  const log = ((pedido?.pecas_completadas_log as NonNullable<Pedido["pecas_completadas_log"]> | null | undefined) ?? []);
   if (!pedido || log.length === 0) return null;
   return (
     <div className="mt-2 rounded-md border bg-emerald-50/50 border-emerald-200 p-3">
