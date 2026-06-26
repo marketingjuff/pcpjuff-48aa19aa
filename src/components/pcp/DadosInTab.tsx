@@ -106,6 +106,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     }
   }
 
+  async function liberarParaCompleto() {
+    setForm((f) => ({ ...f, pecas_solicitadas: [], status_pecas: "completo" }));
+    if (selected?.id) {
+      onSave({ id: selected.id, pecas_solicitadas: [], status_pecas: "completo" } as any);
+    }
+  }
+
   function setTipoEstampa(v: string) {
     setForm((f) => {
       const next: Partial<Pedido> = { ...f, tipo_estampa: v };
