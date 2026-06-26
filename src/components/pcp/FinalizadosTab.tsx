@@ -348,10 +348,11 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
                     <td className="px-1.5 py-0.5 text-xs">{p.responsavel_acabamento ?? "—"}</td>
                     <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.finalizado_em?.slice(0,10))}</td>
                     <td className="px-1.5 py-0.5 text-right" onClick={(e) => e.stopPropagation()}>
-                      <Button size="sm" onClick={() => onReabrir(p.id)} style={btnStyle("reabrir")}>
-                        <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
-                      </Button>
-
+                      {canReabrir && (
+                        <Button size="sm" onClick={() => onReabrir(p.id)} style={btnStyle("reabrir")}>
+                          <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))
