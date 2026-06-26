@@ -25,6 +25,14 @@ export type PecaPerdida = {
   qtd: number;
 };
 
+export type PecaSolicitada = {
+  modelo: string;
+  cor: string;
+  tamanho: string;
+  qtd: number;
+  qtd_enviada: number;
+};
+
 export const REFACAO_MODELOS = [
   "Camiseta", "Baby Look", "Regata Masculina", "Regata Feminina",
   "ML Masculina", "ML Feminina", "Camiseta Infantil", "ML Infantil",
