@@ -9,6 +9,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
 import { CorteTab } from "@/components/cop/CorteTab";
 import { RomaneioTab } from "@/components/cop/RomaneioTab";
+import { DisponivelTab } from "@/components/cop/DisponivelTab";
+import { FaltaPorPedidoTab } from "@/components/cop/FaltaPorPedidoTab";
+import { PagamentoOficinasTab } from "@/components/cop/PagamentoOficinasTab";
+import { PerdasTab } from "@/components/cop/PerdasTab";
+import { DashboardCopTab } from "@/components/cop/DashboardCopTab";
 import { CopEmConstrucao } from "@/components/cop/CopEmConstrucao";
 import { toast } from "sonner";
 
