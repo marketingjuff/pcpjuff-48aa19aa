@@ -64,16 +64,27 @@ export type Database = {
       }
       cops: {
         Row: {
+          conferido_em: string | null
+          conferido_por: string | null
           cop_pai_id: string | null
+          cop_romaneio_pai_id: string | null
           corte_dividido: boolean
           created_at: string
           created_by: string | null
+          data_recebimento: string | null
+          data_saida_oficina: string | null
           execucao_corte: string | null
           execucao_risco: string | null
           id: string
+          letra: string | null
+          num_fretes: number
           numero: number
           observacoes_corte: string | null
+          observacoes_romaneio: string | null
+          oficina_id: string | null
           pecas: Json
+          pecas_recebidas: Json
+          romaneio_enviado_em: string | null
           solicitacao_corte: string | null
           solicitacao_risco: string | null
           status: string
@@ -81,16 +92,27 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          conferido_em?: string | null
+          conferido_por?: string | null
           cop_pai_id?: string | null
+          cop_romaneio_pai_id?: string | null
           corte_dividido?: boolean
           created_at?: string
           created_by?: string | null
+          data_recebimento?: string | null
+          data_saida_oficina?: string | null
           execucao_corte?: string | null
           execucao_risco?: string | null
           id?: string
+          letra?: string | null
+          num_fretes?: number
           numero?: number
           observacoes_corte?: string | null
+          observacoes_romaneio?: string | null
+          oficina_id?: string | null
           pecas?: Json
+          pecas_recebidas?: Json
+          romaneio_enviado_em?: string | null
           solicitacao_corte?: string | null
           solicitacao_risco?: string | null
           status?: string
@@ -98,16 +120,27 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          conferido_em?: string | null
+          conferido_por?: string | null
           cop_pai_id?: string | null
+          cop_romaneio_pai_id?: string | null
           corte_dividido?: boolean
           created_at?: string
           created_by?: string | null
+          data_recebimento?: string | null
+          data_saida_oficina?: string | null
           execucao_corte?: string | null
           execucao_risco?: string | null
           id?: string
+          letra?: string | null
+          num_fretes?: number
           numero?: number
           observacoes_corte?: string | null
+          observacoes_romaneio?: string | null
+          oficina_id?: string | null
           pecas?: Json
+          pecas_recebidas?: Json
+          romaneio_enviado_em?: string | null
           solicitacao_corte?: string | null
           solicitacao_risco?: string | null
           status?: string
@@ -120,6 +153,20 @@ export type Database = {
             columns: ["cop_pai_id"]
             isOneToOne: false
             referencedRelation: "cops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cops_cop_romaneio_pai_id_fkey"
+            columns: ["cop_romaneio_pai_id"]
+            isOneToOne: false
+            referencedRelation: "cops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cops_oficina_id_fkey"
+            columns: ["oficina_id"]
+            isOneToOne: false
+            referencedRelation: "oficinas"
             referencedColumns: ["id"]
           },
         ]
