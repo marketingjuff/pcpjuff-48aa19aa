@@ -200,7 +200,7 @@ export function DisponivelTab() {
                         <thead className="bg-muted/40 text-xs sticky top-0">
                           <tr>
                             <th className="p-2 text-left">Orçamento</th>
-                            <th className="p-2 text-left">Cliente</th>
+                            <th className="p-2 text-left">Pedido Olist</th>
                             <th className="p-2 text-right">Qtd item</th>
                             <th className="p-2 text-right">Enviado</th>
                             <th className="p-2 text-right">Falta</th>
