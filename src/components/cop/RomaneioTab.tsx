@@ -50,8 +50,9 @@ function agruparPorModeloCor(pecas: CopPeca[]): { modelo: string; cor: string; t
 export function RomaneioTab() {
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
+  const isAdmin = useIsAdmin();
+  const [confirmVoltar, setConfirmVoltar] = useState<Cop | null>(null);
 
-  const { data: cops = [], isLoading } = useQuery({
     queryKey: ["cops"],
     queryFn: async () => {
       const { data, error } = await supabase.from("cops" as any).select("*").order("numero", { ascending: false });
