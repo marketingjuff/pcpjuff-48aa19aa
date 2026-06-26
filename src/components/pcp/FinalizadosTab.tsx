@@ -26,9 +26,10 @@ import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
 interface Props {
   pedidos: Pedido[];
   onReabrir: (id: string) => void;
+  canReabrir?: boolean;
 }
 
-export function FinalizadosTab({ pedidos, onReabrir }: Props) {
+export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props) {
   const qc = useQueryClient();
   const isAdmin = useIsAdmin();
   const { btnStyle } = useColorSettings();
