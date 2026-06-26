@@ -311,6 +311,17 @@ export function CorteTab() {
                 {ehFilho && (
                   <span className="text-xs text-muted-foreground">(COP filho de divisão)</span>
                 )}
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => setConfirmDelete(selected)}
+                    title="Excluir COP (apaga também o romaneio)"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" /> Excluir COP
+                  </Button>
+                )}
               </div>
             </div>
           </CardHeader>
