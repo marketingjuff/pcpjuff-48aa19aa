@@ -13,7 +13,12 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, X } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Plus, X, CheckCheck } from "lucide-react";
 import { corHex, corTextoSobre } from "./PecasPerdidasEditor";
 
 interface Props {
@@ -24,6 +29,8 @@ interface Props {
   readOnly?: boolean;
   /** Quantidade máxima de peças permitida (qtd do vendedor). */
   limite?: number;
+  /** Libera para completo: apaga a solicitação e marca o pedido como completo. */
+  onLiberarCompleto?: () => void | Promise<void>;
 }
 
 type GrupoLinha = {
@@ -72,7 +79,7 @@ function desagrupar(grupos: GrupoLinha[]): PecaSolicitada[] {
   return out;
 }
 
-export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOnly = false, limite }: Props) {
+export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOnly = false, limite, onLiberarCompleto }: Props) {
   const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value));
   const [saving, setSaving] = useState(false);
 
@@ -281,7 +288,41 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-2">
+          {!readOnly && onLiberarCompleto && totals.pend > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-emerald-500 text-emerald-700 hover:bg-emerald-50 mr-auto"
+                >
+                  <CheckCheck className="h-4 w-4 mr-1" />
+                  Liberar para completo
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Liberar pedido como completo?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Isso vai apagar a solicitação de peças desse pedido e marcar o status como{" "}
+                    <b>completo</b>, destravando o fluxo. Confirmar?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Não</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => {
+                      await onLiberarCompleto();
+                      onOpenChange(false);
+                    }}
+                  >
+                    Sim, liberar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {readOnly ? "Fechar" : "Cancelar"}
           </Button>
