@@ -45,6 +45,7 @@ import {
   type ColorSettings as ColorSettingsType,
   type BotaoKey as BotaoKeyType,
 } from "@/hooks/use-color-settings";
+import { CopConfigPanel } from "@/components/cop/CopConfigPanel";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   validateSearch: (s: Record<string, unknown>) => ({
