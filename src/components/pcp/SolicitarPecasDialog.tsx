@@ -22,6 +22,8 @@ interface Props {
   value: PecaSolicitada[];
   onSave: (next: PecaSolicitada[]) => void | Promise<void>;
   readOnly?: boolean;
+  /** Quantidade máxima de peças permitida (qtd do vendedor). */
+  limite?: number;
 }
 
 type GrupoLinha = {
@@ -70,7 +72,7 @@ function desagrupar(grupos: GrupoLinha[]): PecaSolicitada[] {
   return out;
 }
 
-export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOnly = false }: Props) {
+export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOnly = false, limite }: Props) {
   const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value));
   const [saving, setSaving] = useState(false);
 
@@ -81,11 +83,26 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
   function setGrupo(i: number, patch: Partial<GrupoLinha>) {
     setGrupos((arr) => arr.map((g, idx) => (idx === i ? { ...g, ...patch } : g)));
   }
+  function totalAtual(arr: GrupoLinha[], excluirIdx?: number, excluirTam?: string): number {
+    let s = 0;
+    arr.forEach((g, idx) => {
+      for (const tam of REFACAO_TAMANHOS) {
+        if (idx === excluirIdx && tam === excluirTam) continue;
+        s += Number(g.qtd[tam]) || 0;
+      }
+    });
+    return s;
+  }
   function setQtd(i: number, tam: string, n: number) {
     setGrupos((arr) => arr.map((g, idx) => {
       if (idx !== i) return g;
-      const nextQtd = { ...g.qtd, [tam]: Math.max(0, n) };
-      return { ...g, qtd: nextQtd };
+      let valor = Math.max(0, n);
+      if (typeof limite === "number" && limite > 0) {
+        const outros = totalAtual(arr, i, tam);
+        const max = Math.max(0, limite - outros);
+        if (valor > max) valor = max;
+      }
+      return { ...g, qtd: { ...g.qtd, [tam]: valor } };
     }));
   }
   function adicionar() {
@@ -244,11 +261,24 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3 pt-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap gap-3 pt-2 text-xs text-muted-foreground items-center">
             <span>Total solicitado: <span className="font-semibold tabular-nums text-foreground">{totals.sol}</span></span>
             <span>Total enviado: <span className="font-semibold tabular-nums text-foreground">{totals.env}</span></span>
             <span>Pendente: <span className="font-semibold tabular-nums text-foreground">{totals.pend}</span></span>
+            {typeof limite === "number" && limite > 0 && (
+              <span>
+                Limite do vendedor:{" "}
+                <span className={`font-semibold tabular-nums ${totals.sol > limite ? "text-red-600" : "text-foreground"}`}>
+                  {totals.sol}/{limite}
+                </span>
+              </span>
+            )}
           </div>
+          {typeof limite === "number" && limite > 0 && totals.sol > limite && (
+            <div className="text-[12px] text-red-600 font-medium">
+              O total solicitado ({totals.sol}) ultrapassa a quantidade do vendedor ({limite}).
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -256,7 +286,11 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
             {readOnly ? "Fechar" : "Cancelar"}
           </Button>
           {!readOnly && (
-            <Button type="button" onClick={handleSave} disabled={saving}>
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || (typeof limite === "number" && limite > 0 && totals.sol > limite)}
+            >
               {saving ? "Salvando..." : "Salvar"}
             </Button>
           )}

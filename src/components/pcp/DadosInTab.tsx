@@ -657,6 +657,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   value={pecasSolicitadas}
                   onSave={salvarPecasSolicitadas}
                   readOnly={tudoEnviado}
+                  limite={Number(form.qtd ?? selected?.qtd ?? 0) || 0}
                 />
               </div>
             )}
