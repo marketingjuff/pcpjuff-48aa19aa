@@ -406,12 +406,14 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               ? <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido.</div>
               : dashboardRows.map((p) => (
                   <PedidoMobileCard key={p.id} pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)}>
-                    <Chip label="Estampa" value={p.tipo_estampa} />
-                    <Chip label="QTD" value={<QtdTotal pedido={p} />} />
-                    <StatusPecasChip pedido={p} />
-                    <Chip label="DTF Final." value={dtfFinalizadoLabel(p)} />
-                    <Chip label="Fotolito" value={fotolitoFinalizadoLabel(p)} />
-                    <Chip label="Status Arte" value={p.status_arte} />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Chip label="Estampa" value={p.tipo_estampa} />
+                      <Chip label="QTD" value={<QtdTotal pedido={p} />} />
+                      <StatusPecasChip pedido={p} />
+                      <Chip label="DTF Final." value={dtfFinalizadoLabel(p)} />
+                      <Chip label="Fotolito" value={fotolitoFinalizadoLabel(p)} />
+                      <Chip label="Status Arte" value={p.status_arte} />
+                    </div>
                   </PedidoMobileCard>
                 ))}
           </div>
