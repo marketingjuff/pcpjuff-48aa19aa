@@ -318,6 +318,7 @@ export type Database = {
           acabamento_observacao: string | null
           arte_data: string | null
           arte_observacao: string | null
+          arte_warning: boolean
           created_at: string
           data_entrega: string | null
           data_entrega_proposta: string | null
@@ -397,6 +398,7 @@ export type Database = {
           acabamento_observacao?: string | null
           arte_data?: string | null
           arte_observacao?: string | null
+          arte_warning?: boolean
           created_at?: string
           data_entrega?: string | null
           data_entrega_proposta?: string | null
@@ -476,6 +478,7 @@ export type Database = {
           acabamento_observacao?: string | null
           arte_data?: string | null
           arte_observacao?: string | null
+          arte_warning?: boolean
           created_at?: string
           data_entrega?: string | null
           data_entrega_proposta?: string | null

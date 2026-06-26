@@ -1,0 +1,1 @@
+ALTER TABLE public.pedidos ADD COLUMN arte_warning boolean NOT NULL DEFAULT false;
