@@ -120,23 +120,31 @@ export function MacroSwitch({ active }: { active: "pcp" | "cop" }) {
   const navigate = useNavigate();
   const isAdmin = useIsAdmin();
   return (
-    <div className="inline-flex rounded-md border bg-card p-0.5 text-xs">
-      <button
-        type="button"
-        onClick={() => navigate({ to: "/" })}
-        className={`px-3 py-1 rounded font-medium transition-colors ${active === "pcp" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
-      >
-        PCP
-      </button>
-      {isAdmin && (
+    const baseBtn = "px-6 py-2 rounded font-bold text-base transition-colors";
+    const pcpActive = active === "pcp"
+      ? "bg-blue-600 text-white"
+      : "hover:bg-accent text-foreground";
+    const copActive = active === "cop"
+      ? "bg-green-600 text-white"
+      : "hover:bg-accent text-foreground";
+    return (
+      <div className="inline-flex rounded-md border bg-card p-1">
         <button
           type="button"
-          onClick={() => navigate({ to: "/cop" })}
-          className={`px-3 py-1 rounded font-medium transition-colors ${active === "cop" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+          onClick={() => navigate({ to: "/" })}
+          className={`${baseBtn} ${pcpActive}`}
         >
-          COP
+          PCP
         </button>
-      )}
-    </div>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/cop" })}
+            className={`${baseBtn} ${copActive}`}
+          >
+            COP
+          </button>
+        )}
+      </div>
   );
 }
