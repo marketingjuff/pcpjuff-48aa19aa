@@ -964,7 +964,7 @@ function DataEntregaField({
   const [novaData, setNovaData] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const producaoPreenchida = !!selected?.arte_data;
+  const producaoPreenchida = !!selected?.arte_data || !!selected?.inicio_acabamento || !!selected?.termino_acabamento;
   const temDataEntrega = !!selected?.data_entrega;
   const exigeSolicitacao = !!selected?.id && producaoPreenchida && temDataEntrega;
 
