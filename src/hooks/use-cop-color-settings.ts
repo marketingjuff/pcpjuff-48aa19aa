@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { CSSProperties } from "react";
 
 export type ColorPair = { fg: string; bg: string };
-export type CopBotaoKey = "atualizar" | "mandar_romaneio" | "dividir_corte" | "voltar" | "enviar_oficina" | "entrega_romaneio" | "particionar" | "baixar_pdf" | "conferir";
+export type CopBotaoKey = "atualizar" | "mandar_romaneio" | "dividir_corte" | "voltar" | "enviar_oficina" | "entrega_romaneio" | "particionar" | "baixar_pdf" | "conferir" | "dar_baixa" | "liberar_pagamento" | "marcar_pago";
 
 export const COP_ETAPAS_CONFIGURAVEIS: string[] = [
   "Aguardando Risco",
