@@ -30,6 +30,7 @@ import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { RefacaoBadge } from "./RefacaoBadge";
 import { SolicitarPecasDialog } from "./SolicitarPecasDialog";
+import { PecasCompletadasPanel } from "./PecasCompletadasPanel";
 import { useColorSettings } from "@/hooks/use-color-settings";
 
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
@@ -661,6 +662,11 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 />
               </div>
             )}
+
+            <div className="sm:col-span-2 lg:col-span-4">
+              <PecasCompletadasPanel pedido={selected ?? null} />
+            </div>
+
 
 
             <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start flex-wrap">

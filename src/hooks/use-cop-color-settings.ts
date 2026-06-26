@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { CSSProperties } from "react";
 
 export type ColorPair = { fg: string; bg: string };
-export type CopBotaoKey = "atualizar" | "mandar_romaneio" | "dividir_corte" | "voltar" | "enviar_oficina" | "entrega_romaneio" | "particionar" | "baixar_pdf" | "conferir";
+export type CopBotaoKey = "atualizar" | "mandar_romaneio" | "dividir_corte" | "voltar" | "enviar_oficina" | "entrega_romaneio" | "particionar" | "baixar_pdf" | "conferir" | "dar_baixa" | "liberar_pagamento" | "marcar_pago";
 
 export const COP_ETAPAS_CONFIGURAVEIS: string[] = [
   "Aguardando Risco",
@@ -39,6 +39,9 @@ export const DEFAULT_COP_BOTAO_COLORS: Record<CopBotaoKey, ColorPair> = {
   particionar:      { bg: "#a855f7", fg: "#ffffff" },
   baixar_pdf:       { bg: "#475569", fg: "#ffffff" },
   conferir:         { bg: "#059669", fg: "#ffffff" },
+  dar_baixa:        { bg: "#ff8c2f", fg: "#ffffff" },
+  liberar_pagamento:{ bg: "#2563eb", fg: "#ffffff" },
+  marcar_pago:      { bg: "#15803d", fg: "#ffffff" },
 };
 
 export type CopColorSettings = {

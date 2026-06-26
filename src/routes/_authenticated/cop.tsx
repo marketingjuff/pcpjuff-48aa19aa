@@ -9,7 +9,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
 import { CorteTab } from "@/components/cop/CorteTab";
 import { RomaneioTab } from "@/components/cop/RomaneioTab";
-import { CopEmConstrucao } from "@/components/cop/CopEmConstrucao";
+import { DisponivelTab } from "@/components/cop/DisponivelTab";
+import { FaltaPorPedidoTab } from "@/components/cop/FaltaPorPedidoTab";
+import { PagamentoOficinasTab } from "@/components/cop/PagamentoOficinasTab";
+import { PerdasTab } from "@/components/cop/PerdasTab";
+import { DashboardCopTab } from "@/components/cop/DashboardCopTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cop")({
@@ -91,11 +95,21 @@ function CopHome() {
           <TabsContent value="romaneio" forceMount hidden={tab !== "romaneio"}>
             <RomaneioTab />
           </TabsContent>
-          {TABS.filter((t) => t.value !== "corte" && t.value !== "romaneio").map((t) => (
-            <TabsContent key={t.value} value={t.value} forceMount hidden={tab !== t.value}>
-              <CopEmConstrucao titulo={t.label} />
-            </TabsContent>
-          ))}
+          <TabsContent value="dashboard" forceMount hidden={tab !== "dashboard"}>
+            <DashboardCopTab />
+          </TabsContent>
+          <TabsContent value="disponivel" forceMount hidden={tab !== "disponivel"}>
+            <DisponivelTab />
+          </TabsContent>
+          <TabsContent value="falta" forceMount hidden={tab !== "falta"}>
+            <FaltaPorPedidoTab />
+          </TabsContent>
+          <TabsContent value="pagamento" forceMount hidden={tab !== "pagamento"}>
+            <PagamentoOficinasTab />
+          </TabsContent>
+          <TabsContent value="perdas" forceMount hidden={tab !== "perdas"}>
+            <PerdasTab />
+          </TabsContent>
         </Tabs>
       </main>
     </div>

@@ -143,6 +143,12 @@ export type Pedido = PedidoBase & {
   refacoes: RefacaoEpisodio[] | null;
   // Solicitação de peças ao COP
   pecas_solicitadas: PecaSolicitada[] | null;
+  // Histórico (read-only) gravado pelo COP ao dar baixa em peças incompletas
+  pecas_completadas_log?: Array<{
+    modelo: string; cor: string; tamanho: string; qtd: number;
+    em: string; por: string | null;
+    cop_id: string; cop_numero: number; cop_letra: string | null;
+  }> | null;
 };
 
 type PedidoInsertBase = Omit<TablesInsert<"pedidos">, "modelo_estampa" | "status">;

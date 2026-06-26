@@ -56,10 +56,56 @@ export type Cop = {
   cop_romaneio_pai_id: string | null;
   conferido_em: string | null;
   conferido_por: string | null;
+  // Conferência + Pagamento + Perdas
+  conferencia: CopConferenciaItem[];
+  pagamento_status: "nao_pago" | "liberado" | "pago";
+  pagamento_liberado_em: string | null;
+  pagamento_liberado_por: string | null;
+  pagamento_pago_em: string | null;
+  pagamento_pago_por: string | null;
+  pagamento_valor_calculado: number | null;
+  perdas: unknown[];
   created_at: string;
   updated_at: string;
   created_by: string | null;
   updated_by: string | null;
+};
+
+/** Quantidade conferida por linha (após Conferência no Romaneio). */
+export type CopConferenciaItem = {
+  modelo: string;
+  cor: string;
+  tamanho: string;
+  qtd_conferida: number;
+};
+
+/** Registro de perda (peça que foi para conserto e voltou). */
+export type CopPerdaRegistro = {
+  id: string;
+  cop_id: string | null;
+  oficina_id: string | null;
+  etiqueta: string | null;
+  modelo: string;
+  cor: string;
+  tamanho: string;
+  qtd: number;
+  motivo: string | null;
+  registrado_por: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Item de log de baixa do COP gravado em pedidos.pecas_completadas_log */
+export type PecaCompletadaLog = {
+  modelo: string;
+  cor: string;
+  tamanho: string;
+  qtd: number;
+  em: string;
+  por: string | null;
+  cop_id: string;
+  cop_numero: number;
+  cop_letra: string | null;
 };
 
 /** Recebimento por linha (Modelo|Cor|Tamanho). qtd_recebida<=qtd; completo opcional. */
