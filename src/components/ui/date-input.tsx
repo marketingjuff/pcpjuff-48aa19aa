@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useFeriados } from "@/hooks/use-feriados";
 
 /**
  * DateInputBR — input de data no formato DD/MM/AA com popover de calendário.
