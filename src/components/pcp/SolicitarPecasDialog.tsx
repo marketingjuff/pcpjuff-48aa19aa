@@ -83,11 +83,26 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
   function setGrupo(i: number, patch: Partial<GrupoLinha>) {
     setGrupos((arr) => arr.map((g, idx) => (idx === i ? { ...g, ...patch } : g)));
   }
+  function totalAtual(arr: GrupoLinha[], excluirIdx?: number, excluirTam?: string): number {
+    let s = 0;
+    arr.forEach((g, idx) => {
+      for (const tam of REFACAO_TAMANHOS) {
+        if (idx === excluirIdx && tam === excluirTam) continue;
+        s += Number(g.qtd[tam]) || 0;
+      }
+    });
+    return s;
+  }
   function setQtd(i: number, tam: string, n: number) {
     setGrupos((arr) => arr.map((g, idx) => {
       if (idx !== i) return g;
-      const nextQtd = { ...g.qtd, [tam]: Math.max(0, n) };
-      return { ...g, qtd: nextQtd };
+      let valor = Math.max(0, n);
+      if (typeof limite === "number" && limite > 0) {
+        const outros = totalAtual(arr, i, tam);
+        const max = Math.max(0, limite - outros);
+        if (valor > max) valor = max;
+      }
+      return { ...g, qtd: { ...g.qtd, [tam]: valor } };
     }));
   }
   function adicionar() {
