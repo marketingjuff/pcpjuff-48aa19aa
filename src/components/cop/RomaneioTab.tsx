@@ -135,6 +135,67 @@ export function RomaneioTab() {
     onError: (e: any) => toast.error(e.message ?? "Erro ao salvar"),
   });
 
+  const voltarParaCorte = useMutation({
+    mutationFn: async (cop: Cop) => {
+      const pid = cop.cop_romaneio_pai_id ?? cop.id;
+      const familia = cops.filter((c) => c.id === pid || c.cop_romaneio_pai_id === pid);
+      const filhos = familia.filter((c) => c.id !== pid);
+      // Se há filhos particionados, apaga-os e devolve as peças ao pai
+      if (filhos.length > 0) {
+        const { error: eDel } = await supabase.from("cops" as any).delete().in("id", filhos.map((c) => c.id));
+        if (eDel) throw eDel;
+      }
+      // Pai (ou cop sem família) volta pro Corte com tudo de romaneio limpo
+      const pai = cops.find((c) => c.id === pid) ?? cop;
+      const pecasOriginais: CopPeca[] = filhos.length > 0
+        ? (() => {
+            // soma pai + filhos para reconstruir peças originais
+            const acc = new Map<string, CopPeca>();
+            for (const c of familia) {
+              for (const p of (c.pecas || [])) {
+                const k = `${p.modelo}|${p.cor}|${p.tamanho}`;
+                const cur = acc.get(k);
+                if (cur) cur.qtd += p.qtd; else acc.set(k, { ...p });
+              }
+            }
+            return Array.from(acc.values());
+          })()
+        : (pai.pecas || []);
+      const { error } = await supabase.from("cops" as any).update({
+        status: "Aguardando Corte" as CopStatus,
+        pecas: pecasOriginais as any,
+        oficina_id: null,
+        data_saida_oficina: null,
+        data_recebimento: null,
+        observacoes_romaneio: null,
+        num_fretes: 1,
+        pecas_recebidas: [] as any,
+        romaneio_enviado_em: null,
+        letra: null,
+        cop_romaneio_pai_id: null,
+        conferido_em: null,
+        conferido_por: null,
+        conferencia: [] as any,
+        pagamento_status: "nao_pago",
+        pagamento_liberado_em: null,
+        pagamento_liberado_por: null,
+        pagamento_pago_em: null,
+        pagamento_pago_por: null,
+        pagamento_valor_calculado: null,
+      } as any).eq("id", pid);
+      if (error) throw error;
+      return pid;
+    },
+    onSuccess: (pid) => {
+      qc.invalidateQueries({ queryKey: ["cops"] });
+      setConfirmVoltar(null);
+      setSelectedId(pid);
+      toast.success("COP devolvido para o Corte.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao voltar para o Corte"),
+  });
+
+
   function patchDraftToCop(): Partial<Cop> {
     return {
       oficina_id: draft.oficina_id ?? null,
