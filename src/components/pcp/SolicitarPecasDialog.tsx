@@ -288,7 +288,41 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-2">
+          {!readOnly && onLiberarCompleto && totals.pend > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-emerald-500 text-emerald-700 hover:bg-emerald-50 mr-auto"
+                >
+                  <CheckCheck className="h-4 w-4 mr-1" />
+                  Liberar para completo
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Liberar pedido como completo?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Isso vai apagar a solicitação de peças desse pedido e marcar o status como{" "}
+                    <b>completo</b>, destravando o fluxo. Confirmar?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Não</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => {
+                      await onLiberarCompleto();
+                      onOpenChange(false);
+                    }}
+                  >
+                    Sim, liberar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {readOnly ? "Fechar" : "Cancelar"}
           </Button>
