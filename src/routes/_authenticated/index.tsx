@@ -220,7 +220,7 @@ function AppHomeInner() {
       </header>
 
 
-      <main className="max-w-[1600px] mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      <main className="max-w-[1600px] mx-auto px-3 sm:px-4 py-4 sm:py-6 bg-blue-50/60 rounded-b-xl">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="hidden md:flex flex-wrap mb-6">
             {tabs.map((t) => (
