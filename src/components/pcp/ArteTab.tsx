@@ -173,7 +173,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
       });
     }
     return arr;
-  }, [pedidos, fEtapa, fSearch, fTipo, fDtf, fFoto, fStatusArte, sort.key, sort.dir]);
+  }, [pedidos, fEtapa, fSearch, fTipo, fDtf, fFoto, fStatusArte, fWarning, sort.key, sort.dir]);
 
   return (
     <div className="space-y-3">
