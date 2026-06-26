@@ -138,6 +138,7 @@ export const DateInputBR = React.forwardRef<HTMLInputElement, DateInputBRProps>(
                 }
                 setOpen(false);
               }}
+              holidays={feriados}
               initialFocus
             />
           </PopoverContent>
