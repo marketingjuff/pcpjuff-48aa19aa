@@ -157,6 +157,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
     if (fDtf !== "todos") arr = arr.filter((p) => dtfFinalizadoLabel(p) === fDtf);
     if (fFoto !== "todos") arr = arr.filter((p) => fotolitoFinalizadoLabel(p) === fFoto);
     if (fStatusArte !== "todos") arr = arr.filter((p) => (p.status_arte ?? "") === fStatusArte);
+    if (fWarning) arr = arr.filter((p) => p.arte_warning);
     arr = sortByDataSaidaJuffAsc(arr);
     if (sort.key) {
       arr = [...arr].sort((a, b) => {
