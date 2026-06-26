@@ -62,6 +62,68 @@ export type Database = {
         }
         Relationships: []
       }
+      cops: {
+        Row: {
+          cop_pai_id: string | null
+          corte_dividido: boolean
+          created_at: string
+          created_by: string | null
+          execucao_corte: string | null
+          execucao_risco: string | null
+          id: string
+          numero: number
+          observacoes_corte: string | null
+          pecas: Json
+          solicitacao_corte: string | null
+          solicitacao_risco: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cop_pai_id?: string | null
+          corte_dividido?: boolean
+          created_at?: string
+          created_by?: string | null
+          execucao_corte?: string | null
+          execucao_risco?: string | null
+          id?: string
+          numero?: number
+          observacoes_corte?: string | null
+          pecas?: Json
+          solicitacao_corte?: string | null
+          solicitacao_risco?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cop_pai_id?: string | null
+          corte_dividido?: boolean
+          created_at?: string
+          created_by?: string | null
+          execucao_corte?: string | null
+          execucao_risco?: string | null
+          id?: string
+          numero?: number
+          observacoes_corte?: string | null
+          pecas?: Json
+          solicitacao_corte?: string | null
+          solicitacao_risco?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cops_cop_pai_id_fkey"
+            columns: ["cop_pai_id"]
+            isOneToOne: false
+            referencedRelation: "cops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feriados: {
         Row: {
           created_at: string
@@ -80,6 +142,42 @@ export type Database = {
           data?: string
           descricao?: string | null
           id?: string
+        }
+        Relationships: []
+      }
+      oficinas: {
+        Row: {
+          cep: string | null
+          cnpj_cpf: string | null
+          created_at: string
+          endereco: string | null
+          id: string
+          nome: string
+          updated_at: string
+          valor_frete: number
+          valores_por_modelo: Json
+        }
+        Insert: {
+          cep?: string | null
+          cnpj_cpf?: string | null
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+          valor_frete?: number
+          valores_por_modelo?: Json
+        }
+        Update: {
+          cep?: string | null
+          cnpj_cpf?: string | null
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+          valor_frete?: number
+          valores_por_modelo?: Json
         }
         Relationships: []
       }
