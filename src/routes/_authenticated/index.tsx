@@ -149,7 +149,7 @@ function AppHomeInner() {
     ...(canSee("silk") ? [{ value: "silk", label: "Silk Screen" }] : []),
     ...(canSee("acabamento") ? [{ value: "acab", label: "Acabamento" }] : []),
     ...(canSee("expedicao") ? [{ value: "exp", label: "Expedição" }] : []),
-    ...(isManager ? [{ value: "fin", label: "Finalizados" }] : []),
+    ...((isManager || canSee("finalizados")) ? [{ value: "fin", label: "Finalizados" }] : []),
     ...(isManager ? [{ value: "retrab", label: "Retrabalho" }] : []),
   ];
   const activeTabLabel = tabs.find((t) => t.value === tab)?.label ?? "";
