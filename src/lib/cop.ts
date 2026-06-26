@@ -5,6 +5,9 @@ export type CopStatus =
   | "Aguardando Risco"
   | "Aguardando Corte"
   | "Aguardando Romaneio"
+  | "Na Oficina (Costura)"
+  | "Romaneio Parcial"
+  | "Romaneio Completo"
   | "Em Oficina"
   | "Aguardando Pagamento"
   | "Finalizado";
@@ -13,6 +16,9 @@ export const COP_STATUS_LIST: CopStatus[] = [
   "Aguardando Risco",
   "Aguardando Corte",
   "Aguardando Romaneio",
+  "Na Oficina (Costura)",
+  "Romaneio Parcial",
+  "Romaneio Completo",
   "Em Oficina",
   "Aguardando Pagamento",
   "Finalizado",
