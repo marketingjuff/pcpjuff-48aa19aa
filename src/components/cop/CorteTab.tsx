@@ -527,6 +527,33 @@ export function CorteTab() {
           onConfirm={handleDivisao}
         />
       )}
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir COP {confirmDelete ? formatCopNumero(confirmDelete.numero) : ""}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação <b>não pode ser desfeita</b>. O COP será removido permanentemente,
+              junto com todos os dados de risco, corte e <b>romaneio</b> vinculados a ele.
+              {confirmDelete?.corte_dividido && (
+                <span className="block mt-2 text-amber-700">
+                  Atenção: este COP foi dividido. Os COPs filhos continuarão existindo independentemente.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={excluir.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              disabled={excluir.isPending}
+              onClick={(e) => { e.preventDefault(); if (confirmDelete) excluir.mutate(confirmDelete.id); }}
+            >
+              {excluir.isPending ? "Excluindo..." : "Excluir definitivamente"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
