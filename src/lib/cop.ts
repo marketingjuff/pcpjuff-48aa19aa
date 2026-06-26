@@ -124,3 +124,48 @@ export function subtrairPecas(a: CopPeca[], b: CopPeca[]): CopPeca[] {
   }
   return Array.from(map.values());
 }
+
+/** Lê qtd_recebida para uma chave (modelo|cor|tamanho). */
+export function getRecebida(rec: CopPecaRecebida[] | null | undefined, m: string, c: string, t: string): number {
+  if (!rec) return 0;
+  const f = rec.find((r) => r.modelo === m && r.cor === c && r.tamanho === t);
+  return f ? Number(f.qtd_recebida) || 0 : 0;
+}
+
+/** Define qtd_recebida para uma chave; remove se 0. */
+export function setRecebida(rec: CopPecaRecebida[], m: string, c: string, t: string, q: number): CopPecaRecebida[] {
+  const out = rec.filter((r) => !(r.modelo === m && r.cor === c && r.tamanho === t));
+  if (q > 0) out.push({ modelo: m, cor: c, tamanho: t, qtd_recebida: q });
+  return out;
+}
+
+/** Total recebido. */
+export function totalRecebidas(rec: CopPecaRecebida[] | null | undefined): number {
+  if (!rec) return 0;
+  return rec.reduce((s, r) => s + (Number(r.qtd_recebida) || 0), 0);
+}
+
+/** True quando todas as linhas têm qtd_recebida === qtd. */
+export function todasCompletas(pecas: CopPeca[], rec: CopPecaRecebida[]): boolean {
+  if (!pecas?.length) return false;
+  for (const p of pecas) {
+    if (getRecebida(rec, p.modelo, p.cor, p.tamanho) < p.qtd) return false;
+  }
+  return true;
+}
+
+/** Próxima letra livre dado um conjunto de letras já usadas (A,B,C,...). */
+export function proximaLetra(usadas: (string | null | undefined)[]): string {
+  const set = new Set(usadas.filter(Boolean).map((s) => String(s).toUpperCase()));
+  for (let i = 0; i < 26; i++) {
+    const c = String.fromCharCode(65 + i);
+    if (!set.has(c)) return c;
+  }
+  return "Z";
+}
+
+/** Rótulo "0001" ou "0001A" quando há letra. */
+export function rotuloCop(n: number | null | undefined, letra: string | null | undefined): string {
+  const base = formatCopNumero(n);
+  return letra ? `${base}${letra.toUpperCase()}` : base;
+}
