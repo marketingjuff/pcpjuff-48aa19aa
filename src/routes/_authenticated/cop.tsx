@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
 import { CorteTab } from "@/components/cop/CorteTab";
+import { RomaneioTab } from "@/components/cop/RomaneioTab";
 import { CopEmConstrucao } from "@/components/cop/CopEmConstrucao";
 import { toast } from "sonner";
 
