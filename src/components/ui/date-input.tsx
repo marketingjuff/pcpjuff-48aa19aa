@@ -72,6 +72,9 @@ export const DateInputBR = React.forwardRef<HTMLInputElement, DateInputBRProps>(
     }, [value]);
 
     const selectedDate = isoToDate(value);
+    const isWeekend = selectedDate
+      ? selectedDate.getDay() === 0 || selectedDate.getDay() === 6
+      : false;
 
     return (
       <div className={cn("relative", className)}>
@@ -83,7 +86,8 @@ export const DateInputBR = React.forwardRef<HTMLInputElement, DateInputBRProps>(
           maxLength={8}
           value={text}
           disabled={disabled}
-          className="pr-10"
+          className={cn("pr-10", isWeekend && "bg-muted")}
+          title={isWeekend ? "Atenção: data cai em fim de semana (não é dia útil)" : undefined}
           onChange={(e) => {
             const masked = maskBR(e.target.value);
             setText(masked);
@@ -98,6 +102,7 @@ export const DateInputBR = React.forwardRef<HTMLInputElement, DateInputBRProps>(
           }}
           {...props}
         />
+
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
