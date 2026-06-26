@@ -76,7 +76,7 @@ function CopHome() {
         </div>
       </header>
 
-      <main className="max-w-[1600px] mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      <main className="max-w-[1600px] mx-auto px-3 sm:px-4 py-4 sm:py-6 bg-green-50/60 rounded-b-xl">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="flex flex-wrap mb-6">
             {TABS.map((t) => (
