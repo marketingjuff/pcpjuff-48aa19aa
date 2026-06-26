@@ -100,4 +100,5 @@ export type PedidoExtras = {
   exp_despachado_em: string | null;
   exp_frete_solicitado_em: string | null;
   exp_observacoes: string | null;
+  pecas_solicitadas: any[] | null;
 };

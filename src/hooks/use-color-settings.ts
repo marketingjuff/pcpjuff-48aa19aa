@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { CSSProperties } from "react";
 
 export type ColorPair = { fg: string; bg: string };
-export type BotaoKey = "atualizar" | "finalizar" | "voltar" | "reabrir";
+export type BotaoKey = "atualizar" | "finalizar" | "voltar" | "reabrir" | "solicitar_pecas" | "pedido_completo";
 
 export const ETAPAS_CONFIGURAVEIS: string[] = [
   "Aguardando entrada",
@@ -38,6 +38,8 @@ export const DEFAULT_BOTAO_COLORS: Record<BotaoKey, ColorPair> = {
   finalizar: { bg: "#059669", fg: "#ffffff" },
   voltar: { bg: "#cf0e0e", fg: "#ffffff" },
   reabrir: { bg: "#ff8c2f", fg: "#ffffff" },
+  solicitar_pecas: { bg: "#503c82", fg: "#ffffff" },
+  pedido_completo: { bg: "#00894e", fg: "#ffffff" },
 };
 
 export type ColorSettings = {
@@ -63,7 +65,7 @@ function mergeSettings(raw: any): ColorSettings {
       }
     }
     if (raw.botoes && typeof raw.botoes === "object") {
-      for (const k of ["atualizar", "finalizar", "voltar", "reabrir"] as BotaoKey[]) {
+      for (const k of ["atualizar", "finalizar", "voltar", "reabrir", "solicitar_pecas", "pedido_completo"] as BotaoKey[]) {
         const v = raw.botoes[k];
         if (v && typeof v.bg === "string" && typeof v.fg === "string") botoes[k] = { bg: v.bg, fg: v.fg };
       }

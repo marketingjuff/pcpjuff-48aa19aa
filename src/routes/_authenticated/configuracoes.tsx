@@ -999,6 +999,8 @@ function CoresTab() {
     { key: "finalizar", label: "Botão Finalizar Pedido (Expedição)" },
     { key: "voltar", label: "Dropdown / Botão Voltar" },
     { key: "reabrir", label: "Botão Reabrir (Finalizados)" },
+    { key: "solicitar_pecas", label: "Botão Solicitar Peças (Input de Produção)" },
+    { key: "pedido_completo", label: "Botão Pedido Completo (Input de Produção)" },
   ];
 
   return (
