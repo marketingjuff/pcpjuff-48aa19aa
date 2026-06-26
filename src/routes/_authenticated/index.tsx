@@ -275,9 +275,13 @@ function AppHomeInner() {
               />
             </TabsContent>
           )}
-          {isManager && (
+          {(isManager || canSee("finalizados")) && (
             <TabsContent value="fin" forceMount hidden={tab !== "fin"}>
-              <FinalizadosTab pedidos={pedidos} onReabrir={(id) => upsert.mutate({ id, finalizado_em: null, reaberto: true })} />
+              <FinalizadosTab
+                pedidos={pedidos}
+                onReabrir={(id) => upsert.mutate({ id, finalizado_em: null, reaberto: true })}
+                canReabrir={isAdmin || (isGestor && canSee("expedicao"))}
+              />
             </TabsContent>
           )}
           {isManager && (
