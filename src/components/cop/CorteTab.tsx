@@ -10,7 +10,7 @@ import { DateInputBR } from "@/components/ui/date-input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Scissors, Send, RefreshCw } from "lucide-react";
+import { Plus, X, Scissors, Send, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
@@ -20,6 +20,11 @@ import {
 } from "@/lib/cop";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { DivisaoCorteDialog } from "./DivisaoCorteDialog";
+import { useIsAdmin } from "@/hooks/use-role";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type LinhaGrupo = {
   modelo: string;
@@ -54,6 +59,8 @@ function desagrupar(grupos: LinhaGrupo[]): CopPeca[] {
 export function CorteTab() {
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
+  const isAdmin = useIsAdmin();
+  const [confirmDelete, setConfirmDelete] = useState<Cop | null>(null);
 
   const { data: cops = [], isLoading } = useQuery({
     queryKey: ["cops"],
@@ -136,6 +143,20 @@ export function CorteTab() {
       toast.success("Salvo.");
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao salvar"),
+  });
+
+  const excluir = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("cops" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cops"] });
+      setSelectedId(null);
+      setConfirmDelete(null);
+      toast.success("COP excluído.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao excluir COP"),
   });
 
   async function handleAtualizar() {
@@ -289,6 +310,17 @@ export function CorteTab() {
                 </span>
                 {ehFilho && (
                   <span className="text-xs text-muted-foreground">(COP filho de divisão)</span>
+                )}
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => setConfirmDelete(selected)}
+                    title="Excluir COP (apaga também o romaneio)"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" /> Excluir COP
+                  </Button>
                 )}
               </div>
             </div>
@@ -495,6 +527,33 @@ export function CorteTab() {
           onConfirm={handleDivisao}
         />
       )}
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir COP {confirmDelete ? formatCopNumero(confirmDelete.numero) : ""}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação <b>não pode ser desfeita</b>. O COP será removido permanentemente,
+              junto com todos os dados de risco, corte e <b>romaneio</b> vinculados a ele.
+              {confirmDelete?.corte_dividido && (
+                <span className="block mt-2 text-amber-700">
+                  Atenção: este COP foi dividido. Os COPs filhos continuarão existindo independentemente.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={excluir.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              disabled={excluir.isPending}
+              onClick={(e) => { e.preventDefault(); if (confirmDelete) excluir.mutate(confirmDelete.id); }}
+            >
+              {excluir.isPending ? "Excluindo..." : "Excluir definitivamente"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
