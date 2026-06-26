@@ -513,7 +513,18 @@ export function RomaneioTab() {
                       <Split className="h-4 w-4 mr-1" /> Particionar (nova letra {letraNova})
                     </Button>
                   )}
+                  {isAdmin && selected.status !== "Aguardando Pagamento" && selected.status !== "Finalizado" && (
+                    <Button
+                      variant="outline"
+                      className="border-orange-400 text-orange-700 hover:bg-orange-50"
+                      onClick={() => setConfirmVoltar(selected)}
+                      title="Voltar este COP para a aba Corte (apaga romaneio e filhos particionados)"
+                    >
+                      <Undo2 className="h-4 w-4 mr-1" /> Voltar para Corte
+                    </Button>
+                  )}
                 </div>
+
                 <div className="flex flex-wrap items-center gap-2">
                   <Button style={btnStyle("atualizar")} onClick={handleAtualizar} disabled={salvar.isPending}>
                     Atualizar
