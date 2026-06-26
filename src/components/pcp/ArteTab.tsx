@@ -49,6 +49,7 @@ interface Props {
 
 export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = true, canManage = false }: Props) {
   const readOnly = isReadOnly("arte", selected, canManage);
+  const isOperador = useHasRole("operador");
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { feriados } = useFeriados();
