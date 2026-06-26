@@ -45,8 +45,12 @@ import {
   type ColorSettings as ColorSettingsType,
   type BotaoKey as BotaoKeyType,
 } from "@/hooks/use-color-settings";
+import { CopConfigPanel } from "@/components/cop/CopConfigPanel";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    area: (s.area === "cop" ? "cop" : "pcp") as "pcp" | "cop",
+  }),
   component: ConfiguracoesPage,
 });
 
@@ -58,6 +62,7 @@ function ConfiguracoesPage() {
   const isAdmin = roles.some((r) => r.role === "admin");
   const isGestor = roles.some((r) => r.role === "gestor");
   const canAccess = isAdmin || isGestor;
+  const { area } = Route.useSearch();
 
   useEffect(() => {
     if (!isLoading && !canAccess) {
@@ -70,31 +75,47 @@ function ConfiguracoesPage() {
     return <div className="p-8 text-sm text-muted-foreground">Carregando…</div>;
   }
 
+  function setArea(a: "pcp" | "cop") {
+    navigate({ to: "/configuracoes", search: { area: a } });
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-30">
         <div className="container mx-auto flex items-center justify-between gap-2 px-3 py-2 sm:px-4 sm:py-3">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <Link to="/"><Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Voltar</span></Button></Link>
+            <Link to={area === "cop" ? "/cop" : "/"}>
+              <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Voltar</span></Button>
+            </Link>
             <h1 className="text-base sm:text-lg font-semibold truncate">Configurações</h1>
           </div>
+          {isAdmin && (
+            <div className="inline-flex rounded-md border bg-card p-0.5 text-xs">
+              <button type="button" onClick={() => setArea("pcp")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "pcp" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}>PCP</button>
+              <button type="button" onClick={() => setArea("cop")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "cop" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}>COP</button>
+            </div>
+          )}
         </div>
       </header>
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        <Tabs defaultValue={isAdmin ? "feriados" : "listas"}>
-          <TabsList className="mb-6 flex flex-wrap h-auto w-full sm:w-auto">
-            {isAdmin && <TabsTrigger value="feriados">Feriados</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
-            <TabsTrigger value="listas">Listas</TabsTrigger>
-            <TabsTrigger value="backup">Backup</TabsTrigger>
-            {isAdmin && <TabsTrigger value="cores">Cores</TabsTrigger>}
-          </TabsList>
-          {isAdmin && <TabsContent value="feriados"><FeriadosTab /></TabsContent>}
-          {isAdmin && <TabsContent value="usuarios"><UsuariosTab /></TabsContent>}
-          <TabsContent value="listas"><ListasTab /></TabsContent>
-          <TabsContent value="backup"><BackupTab /></TabsContent>
-          {isAdmin && <TabsContent value="cores"><CoresTab /></TabsContent>}
-        </Tabs>
+        {area === "cop" && isAdmin ? (
+          <CopConfigPanel />
+        ) : (
+          <Tabs defaultValue={isAdmin ? "feriados" : "listas"}>
+            <TabsList className="mb-6 flex flex-wrap h-auto w-full sm:w-auto">
+              {isAdmin && <TabsTrigger value="feriados">Feriados</TabsTrigger>}
+              {isAdmin && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
+              <TabsTrigger value="listas">Listas</TabsTrigger>
+              <TabsTrigger value="backup">Backup</TabsTrigger>
+              {isAdmin && <TabsTrigger value="cores">Cores</TabsTrigger>}
+            </TabsList>
+            {isAdmin && <TabsContent value="feriados"><FeriadosTab /></TabsContent>}
+            {isAdmin && <TabsContent value="usuarios"><UsuariosTab /></TabsContent>}
+            <TabsContent value="listas"><ListasTab /></TabsContent>
+            <TabsContent value="backup"><BackupTab /></TabsContent>
+            {isAdmin && <TabsContent value="cores"><CoresTab /></TabsContent>}
+          </Tabs>
+        )}
       </main>
     </div>
   );

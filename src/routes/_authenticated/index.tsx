@@ -22,6 +22,7 @@ import { ExpedicaoTab } from "@/components/pcp/ExpedicaoTab";
 import { RetrabalhoTab } from "@/components/pcp/RetrabalhoTab";
 import { DirtyFormProvider } from "@/components/pcp/dirty-form-context";
 import { fecharEpisodiosResolvidos } from "@/lib/pedidos";
+import { MacroSwitch } from "@/routes/_authenticated/cop";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: AppHome,
@@ -202,7 +203,7 @@ function AppHomeInner() {
               </p>
             </div>
           </div>
-          <div />
+          <div className="flex justify-center"><MacroSwitch active="pcp" /></div>
           <div className="flex items-center gap-1 sm:gap-2">
             {isManager && (
               <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes" })} aria-label="Configurações">
