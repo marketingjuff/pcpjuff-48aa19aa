@@ -68,8 +68,8 @@ export function FaltaPorPedidoTab() {
       if (itens.length === 0) continue;
       if (busca) {
         const orc = String(p.orcamento ?? "").toLowerCase();
-        const cli = String((p as any).cliente ?? "").toLowerCase();
-        if (!orc.includes(busca.toLowerCase()) && !cli.includes(busca.toLowerCase())) continue;
+        const ped = String((p as any).pedido_olist ?? "").toLowerCase();
+        if (!orc.includes(busca.toLowerCase()) && !ped.includes(busca.toLowerCase())) continue;
       }
       const faltaTotal = itens.reduce((s, x) => s + x.falta, 0);
       const ancora = dataUrgencia(p);
