@@ -10,8 +10,13 @@ import { DateInputBR } from "@/components/ui/date-input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Send, RefreshCw, FileDown, PackageOpen, Split, Check } from "lucide-react";
+import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2 } from "lucide-react";
 import { toast } from "sonner";
+import { useIsAdmin } from "@/hooks/use-role";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
@@ -45,8 +50,12 @@ function agruparPorModeloCor(pecas: CopPeca[]): { modelo: string; cor: string; t
 export function RomaneioTab() {
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
+  const isAdmin = useIsAdmin();
+  const [confirmVoltar, setConfirmVoltar] = useState<Cop | null>(null);
 
   const { data: cops = [], isLoading } = useQuery({
+
+
     queryKey: ["cops"],
     queryFn: async () => {
       const { data, error } = await supabase.from("cops" as any).select("*").order("numero", { ascending: false });
@@ -125,6 +134,67 @@ export function RomaneioTab() {
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao salvar"),
   });
+
+  const voltarParaCorte = useMutation({
+    mutationFn: async (cop: Cop) => {
+      const pid = cop.cop_romaneio_pai_id ?? cop.id;
+      const familia = cops.filter((c) => c.id === pid || c.cop_romaneio_pai_id === pid);
+      const filhos = familia.filter((c) => c.id !== pid);
+      // Se há filhos particionados, apaga-os e devolve as peças ao pai
+      if (filhos.length > 0) {
+        const { error: eDel } = await supabase.from("cops" as any).delete().in("id", filhos.map((c) => c.id));
+        if (eDel) throw eDel;
+      }
+      // Pai (ou cop sem família) volta pro Corte com tudo de romaneio limpo
+      const pai = cops.find((c) => c.id === pid) ?? cop;
+      const pecasOriginais: CopPeca[] = filhos.length > 0
+        ? (() => {
+            // soma pai + filhos para reconstruir peças originais
+            const acc = new Map<string, CopPeca>();
+            for (const c of familia) {
+              for (const p of (c.pecas || [])) {
+                const k = `${p.modelo}|${p.cor}|${p.tamanho}`;
+                const cur = acc.get(k);
+                if (cur) cur.qtd += p.qtd; else acc.set(k, { ...p });
+              }
+            }
+            return Array.from(acc.values());
+          })()
+        : (pai.pecas || []);
+      const { error } = await supabase.from("cops" as any).update({
+        status: "Aguardando Corte" as CopStatus,
+        pecas: pecasOriginais as any,
+        oficina_id: null,
+        data_saida_oficina: null,
+        data_recebimento: null,
+        observacoes_romaneio: null,
+        num_fretes: 1,
+        pecas_recebidas: [] as any,
+        romaneio_enviado_em: null,
+        letra: null,
+        cop_romaneio_pai_id: null,
+        conferido_em: null,
+        conferido_por: null,
+        conferencia: [] as any,
+        pagamento_status: "nao_pago",
+        pagamento_liberado_em: null,
+        pagamento_liberado_por: null,
+        pagamento_pago_em: null,
+        pagamento_pago_por: null,
+        pagamento_valor_calculado: null,
+      } as any).eq("id", pid);
+      if (error) throw error;
+      return pid;
+    },
+    onSuccess: (pid) => {
+      qc.invalidateQueries({ queryKey: ["cops"] });
+      setConfirmVoltar(null);
+      setSelectedId(pid);
+      toast.success("COP devolvido para o Corte.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao voltar para o Corte"),
+  });
+
 
   function patchDraftToCop(): Partial<Cop> {
     return {
@@ -443,7 +513,18 @@ export function RomaneioTab() {
                       <Split className="h-4 w-4 mr-1" /> Particionar (nova letra {letraNova})
                     </Button>
                   )}
+                  {isAdmin && selected.status !== "Aguardando Pagamento" && selected.status !== "Finalizado" && (
+                    <Button
+                      variant="outline"
+                      className="border-orange-400 text-orange-700 hover:bg-orange-50"
+                      onClick={() => setConfirmVoltar(selected)}
+                      title="Voltar este COP para a aba Corte (apaga romaneio e filhos particionados)"
+                    >
+                      <Undo2 className="h-4 w-4 mr-1" /> Voltar para Corte
+                    </Button>
+                  )}
                 </div>
+
                 <div className="flex flex-wrap items-center gap-2">
                   <Button style={btnStyle("atualizar")} onClick={handleAtualizar} disabled={salvar.isPending}>
                     Atualizar
@@ -612,6 +693,30 @@ export function RomaneioTab() {
           />
         </>
       )}
+
+      <AlertDialog open={!!confirmVoltar} onOpenChange={(o) => !o && setConfirmVoltar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Voltar COP {confirmVoltar ? formatCopNumero(confirmVoltar.numero) : ""} para o Corte?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação apaga todos os dados de romaneio (oficina, datas, recebimentos, conferência e pagamento) e devolve o COP para a aba Corte com status "Aguardando Corte". Se houver romaneios particionados (letras), eles serão apagados e as peças retornam ao COP original. Não é possível desfazer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={voltarParaCorte.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-orange-600 hover:bg-orange-700"
+              disabled={voltarParaCorte.isPending}
+              onClick={(e) => { e.preventDefault(); if (confirmVoltar) voltarParaCorte.mutate(confirmVoltar); }}
+            >
+              {voltarParaCorte.isPending ? "Voltando..." : "Voltar para Corte"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+
   );
 }
