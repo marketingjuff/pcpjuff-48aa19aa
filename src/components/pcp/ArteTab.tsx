@@ -421,6 +421,11 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
                 <tr>
+                  <Th className={`cursor-pointer ${fWarning ? "bg-yellow-50" : ""}`} onClick={() => setFWarning((w) => !w)}>
+                    <div className="flex justify-center" title="Filtrar pedidos marcados com warning">
+                      <AlertTriangle className={`h-4 w-4 ${fWarning ? "text-yellow-600 fill-yellow-400" : "text-yellow-500"}`} />
+                    </div>
+                  </Th>
                   <Th>ETAPA</Th>
                   <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
                   <Th>ORÇAMENTO</Th>
