@@ -460,7 +460,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <SelectContent>{vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Forma de pagamento">
+            <Field label="Forma de pagamento *" invalid={missingVendor.has("forma_pagamento")}>
               <Select value={form.forma_pagamento ?? ""} onValueChange={(v) => set("forma_pagamento", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{formasPagamento.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
