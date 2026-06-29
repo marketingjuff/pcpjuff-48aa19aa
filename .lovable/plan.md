@@ -1,30 +1,30 @@
-## Correção do saldo "Disponível" do COP
+## Ignorar logs de pedidos sem solicitação atual no cálculo de "Baixado"
 
-### Bug
-`Disponível = Produção − Faltantes`. Quando uma baixa zera `pecas_solicitadas` de um pedido e o trigger marca `status_pecas = 'completo'`, o pedido some de `calcFaltantes` e o Disponível volta para o total da Produção — como se as peças baixadas nunca tivessem saído.
+### Alteração
+Em `src/lib/cop-saldos.ts`, modificar `calcBaixado` para pular pedidos cujo `pecas_solicitadas` esteja vazio ou ausente:
 
-### Correção
-Usar o histórico imutável `pedidos.pecas_completadas_log` (varrendo todos os pedidos, sem filtrar status) como "Baixado":
+```ts
+export function calcBaixado(pedidos: Pedido[]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const p of pedidos) {
+    // Pular pedidos sem solicitação atual (testes ou solicitações limpas):
+    // se não há nada pedido, o log histórico não deve afetar o Disponível.
+    const solic = p.pecas_solicitadas ?? [];
+    if (solic.length === 0) continue;
+    const log = (p as any).pecas_completadas_log as Array<...> | null | undefined;
+    if (!Array.isArray(log)) continue;
+    for (const item of log) { ... soma normal ... }
+  }
+  return m;
+}
 ```
-Disponível = Produção − Faltante (pendente atual) − Baixado (histórico)
-```
 
-### Arquivos alterados
+### Efeito
+- Pedido "0000 teste" (e similares) cujas solicitações foram zeradas deixam de contribuir → a linha "preto" desaparece do Disponível.
+- Pedidos reais com solicitações ativas continuam contando o histórico normalmente.
 
-**1. `src/lib/cop-saldos.ts`**
-- Nova função `calcBaixado(pedidos: Pedido[]): Map<string, number>` — soma `qtd` de cada entrada de `pecas_completadas_log` por `pkKey(modelo, cor, tamanho)`, percorrendo todos os pedidos.
-- Alterar assinatura: `calcDisponivel(producao, faltantes, baixado?)` — `baixado` opcional (default Map vazio) para manter chamadas que não precisarem dele compilando; subtrai faltantes + baixado da produção.
+### Trade-off conhecido
+Se no futuro um pedido legítimo tiver suas peças totalmente baixadas e depois o vendedor usar "Liberar para Completo" (que limpa `pecas_solicitadas`), essas baixas também sumirão do Disponível. Aceito conforme sua escolha.
 
-**2. `src/components/cop/DisponivelTab.tsx`**
-- `const baixado = useMemo(() => calcBaixado(pedidos), [pedidos])`.
-- `calcDisponivel(producao, faltantes, baixado)`.
-- `title` da célula: incluir `· Baixado {baix}`.
-- Modal de detalhe: adicionar terceiro card "Baixado" (mesmo estilo neutro/azul) e ajustar Saldo = `prod − falt − baix`.
-
-**3. `src/components/cop/DashboardCopTab.tsx`**
-- `const baixado = useMemo(() => calcBaixado(pedidos), [pedidos])`.
-- `calcDisponivel(producao, faltantes, baixado)` — propaga para "Saldo geral" e "Top urgências".
-
-### Não tocado
-- `calcFaltantes` e `calcEmProducao` permanecem como estão.
-- Nenhuma migração, nenhuma mudança de schema, nenhuma outra lógica de COP/PCP.
+### Arquivos
+- `src/lib/cop-saldos.ts` — apenas `calcBaixado`. Nenhum outro arquivo, nenhuma migração.
