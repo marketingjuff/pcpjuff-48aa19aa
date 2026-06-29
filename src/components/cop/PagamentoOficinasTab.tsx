@@ -308,6 +308,16 @@ export function PagamentoOficinasTab() {
                   <X className="h-4 w-4 mr-1" /> Reverter para Liberado
                 </Button>
               )}
+              {isAdmin && selected.pagamento_status !== "nao_pago" && (
+                <Button
+                  variant="outline"
+                  className="border-red-400 text-red-700 hover:bg-red-50"
+                  onClick={() => setConfirmApagar(true)}
+                  title="Apagar pagamento e voltar status para Romaneio Completo"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" /> Apagar pagamento
+                </Button>
+              )}
             </div>
 
             {(selected.pagamento_liberado_em || selected.pagamento_pago_em) && (
