@@ -263,7 +263,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                       <Download className="h-4 w-4 mr-1" /> Baixar layout
                     </Button>
                   )}
-                  {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Atualizar DTF</UpdateButton>}
+                  {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Salvar DTF</UpdateButton>}
                   <RefacaoViewerButton pedido={selected} />
                 </div>
               </div>

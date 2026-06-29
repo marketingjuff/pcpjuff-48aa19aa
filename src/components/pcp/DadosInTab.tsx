@@ -539,7 +539,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <Button type="button" variant="outline" onClick={handleNew}><X className="h-4 w-4 mr-1" />Cancelar edição</Button>
               )}
               <UpdateButton type="button" onClick={saveVendor} disabled={saving}>
-                {selected?.id ? "Atualizar" : "Salvar"} Input do Vendedor
+                Salvar Input do Vendedor
               </UpdateButton>
             </div>
           </CardContent>
@@ -687,7 +687,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
             <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start flex-wrap">
               <UpdateButton type="button" onClick={saveProducao} disabled={saving}>
-                {selected?.id ? "Atualizar" : "Salvar"} Input de Produção
+                Salvar Input de Produção
               </UpdateButton>
               {selected && <RefacaoViewerButton pedido={selected} />}
             </div>

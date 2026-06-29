@@ -101,7 +101,7 @@ export function EtapaBadgeView({ etapa, compact, className }: { etapa: string; c
   );
 }
 
-/** Botão de ação principal (Atualizar/Salvar) com cor configurável (default azul). */
+/** Botão de ação principal (Salvar) com cor configurável (default azul). */
 export const UpdateButton = forwardRef<HTMLButtonElement, ButtonProps & { icon?: boolean }>(
   ({ icon = true, children, style, className, ...rest }, ref) => {
     const { btnStyle } = useColorSettings();

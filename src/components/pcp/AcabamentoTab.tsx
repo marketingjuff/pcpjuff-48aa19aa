@@ -150,7 +150,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             <EtapaTopoBanner pedido={selected} tab="acabamento" />
             {podeFinalizar && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-success/10 text-success text-sm border border-success/30">
-                <CheckCircle2 className="h-4 w-4" /> Pronto para Expedição. Ao clicar em <strong className="mx-1">Atualizar Acabamento</strong>, o pedido vai automaticamente para a Expedição.
+                <CheckCircle2 className="h-4 w-4" /> Pronto para Expedição. Ao clicar em <strong className="mx-1">Salvar Acabamento</strong>, o pedido vai automaticamente para a Expedição.
               </div>
             )}
             {selected.status_pecas !== "completo" && selected.arte_data && (
@@ -235,7 +235,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 )}
                 {!readOnly && (
                   <UpdateButton onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
-                    {enviadoParaExpedicao ? "Atualizar Acabamento" : "Atualizar"}
+                    {enviadoParaExpedicao ? "Salvar Acabamento" : "Salvar"}
                   </UpdateButton>
                 )}
                 <RefacaoViewerButton pedido={selected} />

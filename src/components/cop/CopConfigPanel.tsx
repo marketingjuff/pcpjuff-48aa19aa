@@ -199,7 +199,7 @@ function CoresCopCard() {
   }
 
   const BOTOES: { key: CopBotaoKey; label: string }[] = [
-    { key: "atualizar", label: "Botão Atualizar" },
+    { key: "atualizar", label: "Botão Salvar" },
     { key: "mandar_romaneio", label: "Botão Mandar pro Romaneio" },
     { key: "dividir_corte", label: "Botão Divisão de Corte" },
     { key: "voltar", label: "Botão Voltar" },

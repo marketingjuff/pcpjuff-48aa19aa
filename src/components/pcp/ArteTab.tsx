@@ -318,7 +318,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
                 {!readOnly && (
                   <div className="flex justify-start gap-2 flex-wrap">
-                    <UpdateButton onClick={handleSave} disabled={saving}>Atualizar Arte</UpdateButton>
+                    <UpdateButton onClick={handleSave} disabled={saving}>Salvar Arte</UpdateButton>
                     <RefacaoViewerButton pedido={selected} />
                   </div>
                 )}
