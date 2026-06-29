@@ -228,32 +228,33 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                     placeholder={!form.dtf_data_executada ? "Preencha a data primeiro" : "Selecione..."}
                   />
                 </FormField>
-                <div className="sm:col-span-2 lg:col-span-4">
-                  <FormField label="Observações do DTF">
-                    <Textarea className="uppercase" value={form.dtf_observacao ?? ""} onChange={(e) => set("dtf_observacao", e.target.value)} rows={2} />
-                  </FormField>
-                  <ObservacoesOutrosSetores pedido={selected} setorAtual="dtf" />
-                </div>
+
+                {/* qtd por pessoa quando >1 pessoa — mesma linha do "Quem bateu" */}
+                {pessoasSelecionadas.length > 1 && (
+                  <>
+                    {pessoasSelecionadas.map((nome) => {
+                      const qtd = (form.dtf_pessoas_qtd ?? {})[nome] ?? "";
+                      return (
+                        <FormField key={nome} label={`Qtd peças — ${nome}`}>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={qtd}
+                            onChange={(e) => setPessoaQtd(nome, e.target.value === "" ? null : Number(e.target.value))}
+                          />
+                        </FormField>
+                      );
+                    })}
+                  </>
+                )}
               </div>
 
-              {/* A5 — qtd por pessoa quando >1 pessoa */}
-              {pessoasSelecionadas.length > 1 && (
-                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-2">
-                  {pessoasSelecionadas.map((nome) => {
-                    const qtd = (form.dtf_pessoas_qtd ?? {})[nome] ?? "";
-                    return (
-                      <FormField key={nome} label={`Qtd peças — ${nome}`}>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={qtd}
-                          onChange={(e) => setPessoaQtd(nome, e.target.value === "" ? null : Number(e.target.value))}
-                        />
-                      </FormField>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="pt-2">
+                <FormField label="Observações do DTF">
+                  <Textarea className="uppercase" value={form.dtf_observacao ?? ""} onChange={(e) => set("dtf_observacao", e.target.value)} rows={2} />
+                </FormField>
+                <ObservacoesOutrosSetores pedido={selected} setorAtual="dtf" />
+              </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-3 border-t">
                 <div className="flex flex-wrap gap-2 sm:justify-start items-center">
