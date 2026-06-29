@@ -186,9 +186,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
   async function saveVendor() {
     const miss = findMissing(VENDOR_REQUIRED);
+    if (!validarOrcamento(form.orcamento)) miss.add("orcamento");
     setMissingVendor(miss);
     if (miss.size > 0) {
-      toast.error("Preencha os campos obrigatórios do Input do Vendedor.");
+      toast.error("Preencha os campos obrigatórios do Input do Vendedor. O orçamento precisa conter números e no mínimo 2 letras.");
       return;
     }
     if (await checkDuplicado(String(form.pedido_olist ?? ""), selected?.id)) {
