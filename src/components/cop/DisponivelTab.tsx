@@ -149,7 +149,8 @@ export function DisponivelTab() {
                       const v = disponivel.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const prod = producao.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const falt = faltantes.get(pkKey(l.modelo, l.cor, t)) ?? 0;
-                      const presente = prod > 0 || falt > 0;
+                      const baix = baixado.get(pkKey(l.modelo, l.cor, t)) ?? 0;
+                      const presente = prod > 0 || falt > 0 || baix > 0;
                       const color = !presente ? "text-muted-foreground"
                                   : v < 0 ? "text-red-700 font-bold"
                                   : v === 0 ? "text-amber-700 font-semibold"
@@ -161,7 +162,7 @@ export function DisponivelTab() {
                             className={`w-full rounded px-2 py-1 tabular-nums hover:bg-accent/60 ${color}`}
                             onClick={() => presente && setPopup({ modelo: l.modelo, cor: l.cor, tamanho: t })}
                             disabled={!presente}
-                            title={presente ? `Produção ${prod} · Faltantes ${falt}` : "Sem registro"}
+                            title={presente ? `Produção ${prod} · Faltantes ${falt} · Baixado ${baix}` : "Sem registro"}
                           >
                             {presente ? v : "—"}
                           </button>
