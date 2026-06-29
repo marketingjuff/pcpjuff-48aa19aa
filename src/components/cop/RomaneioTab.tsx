@@ -225,7 +225,7 @@ export function RomaneioTab() {
     // pop-up PDF
     const ofi = oficinas.find((o) => o.id === draft.oficina_id) ?? null;
     const next: Cop = { ...selected, ...(patchDraftToCop() as any), status: "Na Oficina (Costura)" } as Cop;
-    abrirRomaneioParaImpressao(next, ofi);
+    abrirRomaneioParaImpressao(next, ofi, cops);
   }
 
   async function handleEntregaConfirm(rec: CopPecaRecebida[]) {
@@ -498,7 +498,7 @@ export function RomaneioTab() {
                     <Button
                       variant="outline"
                       style={btnStyle("baixar_pdf")}
-                      onClick={() => abrirRomaneioParaImpressao(selected, oficina)}
+                      onClick={() => abrirRomaneioParaImpressao(selected, oficina, cops)}
                     >
                       <FileDown className="h-4 w-4 mr-1" />
                       romaneio-{formatCopNumero(selected.numero)}{selected.letra ?? ""}.pdf
