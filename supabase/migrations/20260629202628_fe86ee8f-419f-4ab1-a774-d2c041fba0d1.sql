@@ -1,0 +1,1 @@
+ALTER TABLE public.cops ADD COLUMN IF NOT EXISTS observacoes_pagamento text;

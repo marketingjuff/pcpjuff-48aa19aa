@@ -141,6 +141,7 @@ export type Database = {
           num_fretes: number
           numero: number
           observacoes_corte: string | null
+          observacoes_pagamento: string | null
           observacoes_romaneio: string | null
           oficina_id: string | null
           pagamento_liberado_em: string | null
@@ -177,6 +178,7 @@ export type Database = {
           num_fretes?: number
           numero?: number
           observacoes_corte?: string | null
+          observacoes_pagamento?: string | null
           observacoes_romaneio?: string | null
           oficina_id?: string | null
           pagamento_liberado_em?: string | null
@@ -213,6 +215,7 @@ export type Database = {
           num_fretes?: number
           numero?: number
           observacoes_corte?: string | null
+          observacoes_pagamento?: string | null
           observacoes_romaneio?: string | null
           oficina_id?: string | null
           pagamento_liberado_em?: string | null
