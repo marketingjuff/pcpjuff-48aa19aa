@@ -565,12 +565,12 @@ export function RomaneioTab() {
                       <Split className="h-4 w-4 mr-1" /> Particionar (nova letra {letraNova})
                     </Button>
                   )}
-                  {isAdmin && selected.status !== "Aguardando Pagamento" && selected.status !== "Finalizado" && (
+                  {isAdmin && (
                     <Button
                       variant="outline"
                       className="border-orange-400 text-orange-700 hover:bg-orange-50"
                       onClick={() => setConfirmVoltar(selected)}
-                      title="Voltar este COP para a aba Corte (apaga romaneio e filhos particionados)"
+                      title="Voltar este COP para a aba Corte (apaga romaneio, pagamentos e filhos particionados)"
                     >
                       <Undo2 className="h-4 w-4 mr-1" /> Voltar para Corte
                     </Button>
