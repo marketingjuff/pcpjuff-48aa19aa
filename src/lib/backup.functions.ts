@@ -2,7 +2,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const TABLES = ["pedidos", "feriados", "profiles", "user_roles"] as const;
+const TABLES = [
+  "profiles",
+  "user_roles",
+  "app_color_settings",
+  "app_lists",
+  "feriados",
+  "oficinas",
+  "pedidos",
+  "cops",
+  "cop_perdas",
+] as const;
 type TableName = (typeof TABLES)[number];
 
 async function assertAdminOrGestor(supabase: any, userId: string) {
