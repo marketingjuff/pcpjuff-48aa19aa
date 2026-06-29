@@ -1,25 +1,25 @@
 import { useMemo, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import type { Pedido, PecaSolicitada } from "@/lib/pedidos";
 import type { Cop } from "@/lib/cop";
-import { rotuloCop } from "@/lib/cop";
+import { rotuloCop, colunasTamanhos } from "@/lib/cop";
 import { dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
 import { BaixaCopDialog, type ItemFalta } from "./BaixaCopDialog";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 
-const TAMANHOS_PADRAO = ["PP", "P", "M", "G", "GG", "EXG", "EXXG"];
-
 type GrupoFalta = {
   modelo: string;
   cor: string;
-  // idx no array pedido.pecas_solicitadas e falta por tamanho
   porTamanho: Map<string, { idx: number; ps: PecaSolicitada; falta: number }>;
   faltaTotal: number;
 };
@@ -30,7 +30,14 @@ type LinhaFalta = {
   faltaTotal: number;
   ancora: string | null;
   limite: string | null;
+  inicioEstamparia: string | null;
 };
+
+function fmtBR(d: string | null | undefined): string {
+  if (!d) return "—";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : d;
+}
 
 export function FaltaPorPedidoTab() {
   const qc = useQueryClient();
@@ -66,13 +73,13 @@ export function FaltaPorPedidoTab() {
   }, [qc]);
 
   const [busca, setBusca] = useState("");
+  const [historico, setHistorico] = useState<Pedido | null>(null);
 
   const linhas: LinhaFalta[] = useMemo(() => {
     const arr: LinhaFalta[] = [];
     for (const p of pedidos) {
       const itens = (p.pecas_solicitadas ?? []).map((ps, idx) => ({
-        idx,
-        ps,
+        idx, ps,
         falta: Math.max(0, (Number(ps.qtd) || 0) - (Number(ps.qtd_enviada) || 0)),
       })).filter((x) => x.falta > 0);
       if (itens.length === 0) continue;
@@ -81,8 +88,6 @@ export function FaltaPorPedidoTab() {
         const ped = String((p as any).pedido_olist ?? "").toLowerCase();
         if (!orc.includes(busca.toLowerCase()) && !ped.includes(busca.toLowerCase())) continue;
       }
-
-      // Agrupar por modelo+cor
       const mapa = new Map<string, GrupoFalta>();
       for (const it of itens) {
         const k = `${it.ps.modelo}|${it.ps.cor}`;
@@ -95,7 +100,8 @@ export function FaltaPorPedidoTab() {
       const faltaTotal = grupos.reduce((s, g) => s + g.faltaTotal, 0);
       const ancora = dataUrgencia(p);
       const limite = ancora ? addDiasUteis(ancora, -2) : null;
-      arr.push({ pedido: p, grupos, faltaTotal, ancora, limite });
+      const inicioEstamparia = (p as any).inicio_estamparia ?? ancora ?? null;
+      arr.push({ pedido: p, grupos, faltaTotal, ancora, limite, inicioEstamparia });
     }
     arr.sort((a, b) => {
       const da = a.ancora ?? "9999-12-31";
@@ -105,16 +111,24 @@ export function FaltaPorPedidoTab() {
     return arr;
   }, [pedidos, busca]);
 
-  // Tamanhos presentes globalmente (para colunas dinâmicas, na ordem padrão + extras)
+  // Colunas fixas: PP P M G GG EXG EXXG + extras alfabéticos
   const tamanhosColunas = useMemo(() => {
     const set = new Set<string>();
     for (const l of linhas) for (const g of l.grupos) for (const t of g.porTamanho.keys()) set.add(t);
-    const ord = TAMANHOS_PADRAO.filter((t) => set.has(t));
-    const extras = Array.from(set).filter((t) => !TAMANHOS_PADRAO.includes(t)).sort();
-    return [...ord, ...extras];
+    return colunasTamanhos(set);
   }, [linhas]);
 
-  // Baixa dialog
+  // Flatten: 1 linha por (pedido, modelo, cor)
+  type Row = LinhaFalta & { grupo: GrupoFalta; primeira: boolean; rowSpan: number };
+  const rows: Row[] = useMemo(() => {
+    const out: Row[] = [];
+    for (const l of linhas) {
+      const total = l.grupos.length;
+      l.grupos.forEach((g, i) => out.push({ ...l, grupo: g, primeira: i === 0, rowSpan: total }));
+    }
+    return out;
+  }, [linhas]);
+
   const [baixa, setBaixa] = useState<{ pedido: Pedido; grupo: GrupoFalta } | null>(null);
 
   const baixar = useMutation({
@@ -124,7 +138,6 @@ export function FaltaPorPedidoTab() {
       const arr = ((pedido.pecas_solicitadas as PecaSolicitada[] | null) ?? []).slice();
       const { data: ses } = await supabase.auth.getUser();
       const novoLog: any[] = [...((pedido.pecas_completadas_log ?? []) as any[])];
-
       for (const b of baixas) {
         if (b.qtd <= 0) continue;
         const linha = { ...(arr[b.idx] as PecaSolicitada) };
@@ -137,7 +150,6 @@ export function FaltaPorPedidoTab() {
           observacao: observacao || null,
         });
       }
-
       const { error } = await supabase
         .from("pedidos" as any)
         .update({ pecas_solicitadas: arr as any, pecas_completadas_log: novoLog as any })
@@ -153,16 +165,17 @@ export function FaltaPorPedidoTab() {
     onError: (e: any) => toast.error(e.message ?? "Erro na baixa."),
   });
 
-
   const itensDialog: ItemFalta[] = useMemo(() => {
     if (!baixa) return [];
     return Array.from(baixa.grupo.porTamanho.entries())
       .sort((a, b) => {
-        const ia = TAMANHOS_PADRAO.indexOf(a[0]); const ib = TAMANHOS_PADRAO.indexOf(b[0]);
-        return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
+        const ord = colunasTamanhos([a[0], b[0]]);
+        return ord.indexOf(a[0]) - ord.indexOf(b[0]);
       })
       .map(([tam, info]) => ({ idx: info.idx, tamanho: tam, falta: info.falta }));
   }, [baixa]);
+
+  const hoje = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="space-y-4">
@@ -184,87 +197,70 @@ export function FaltaPorPedidoTab() {
 
       {linhas.length === 0 ? (
         <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhum pedido com peças faltantes.</CardContent></Card>
-      ) : linhas.map((l) => {
-        const atrasado = !!(l.limite && l.limite < new Date().toISOString().slice(0, 10));
-        return (
-          <Card key={l.pedido.id} className="border-l-4" style={{ borderLeftColor: atrasado ? "#dc2626" : "#0ea5e9" }}>
-            <CardHeader className="pb-2">
-              <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <CardTitle className="text-base">
-                  Orç. <span className="font-mono">{l.pedido.orcamento ?? "—"}</span>
-                  {" · Pedido Olist "}<span className="font-mono text-sm">{(l.pedido as any).pedido_olist ?? "—"}</span>
-                </CardTitle>
-                <div className="text-xs text-muted-foreground flex gap-3 flex-wrap">
-                  <span>Início estamparia/acabamento: <b>{l.ancora ?? "—"}</b></span>
-                  <span>Limite de recebimento (-2 dias úteis): <b className={atrasado ? "text-red-700" : ""}>{l.limite ?? "—"}</b></span>
-                  <span>Falta total: <b className="text-amber-700 tabular-nums">{l.faltaTotal}</b></span>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/40 text-xs">
-                    <tr>
-                      <th className="p-2 text-left">Modelo</th>
-                      <th className="p-2 text-left">Cor</th>
-                      {tamanhosColunas.map((t) => (
-                        <th key={t} className="p-2 text-center">{t}</th>
-                      ))}
-                      <th className="p-2 text-right">Falta total</th>
-                      <th className="p-2"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {l.grupos.map((g) => {
-                      const hex = corHex(g.cor); const fg = corTextoSobre(hex);
+      ) : (
+        <div className="rounded-md border overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-xs">
+              <tr>
+                <th className="p-2 text-left">Início Estamparia</th>
+                <th className="p-2 text-left">Orçamento</th>
+                <th className="p-2 text-left">Modelo</th>
+                <th className="p-2 text-left">Cor</th>
+                {tamanhosColunas.map((t) => (
+                  <th key={t} className="p-2 text-center">{t}</th>
+                ))}
+                <th className="p-2 text-right">Total Geral</th>
+                <th className="p-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => {
+                const hex = corHex(r.grupo.cor); const fg = corTextoSobre(hex);
+                const atrasado = !!(r.limite && r.limite < hoje);
+                return (
+                  <tr
+                    key={`${r.pedido.id}|${r.grupo.modelo}|${r.grupo.cor}`}
+                    className="border-t hover:bg-accent/40 cursor-pointer"
+                    onClick={() => setHistorico(r.pedido)}
+                  >
+                    {r.primeira ? (
+                      <>
+                        <td className={`p-2 align-top ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
+                          {fmtBR(r.inicioEstamparia)}
+                        </td>
+                        <td className="p-2 align-top font-mono" rowSpan={r.rowSpan}>
+                          {r.pedido.orcamento ?? "—"}
+                          {(r.pedido as any).pedido_olist && (
+                            <div className="text-[10px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
+                          )}
+                        </td>
+                      </>
+                    ) : null}
+                    <td className="p-2">{r.grupo.modelo}</td>
+                    <td className="p-2">
+                      <span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{r.grupo.cor}</span>
+                    </td>
+                    {tamanhosColunas.map((t) => {
+                      const info = r.grupo.porTamanho.get(t);
                       return (
-                        <tr key={`${g.modelo}|${g.cor}`} className="border-t">
-                          <td className="p-2">{g.modelo}</td>
-                          <td className="p-2">
-                            <span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span>
-                          </td>
-                          {tamanhosColunas.map((t) => {
-                            const info = g.porTamanho.get(t);
-                            return (
-                              <td key={t} className="p-2 text-center tabular-nums">
-                                {info ? <span className="text-amber-700 font-semibold">{info.falta}</span> : <span className="text-muted-foreground/40">—</span>}
-                              </td>
-                            );
-                          })}
-                          <td className="p-2 text-right tabular-nums text-amber-700 font-semibold">{g.faltaTotal}</td>
-                          <td className="p-2 text-right">
-                            <Button size="sm" style={btnStyle("dar_baixa")} onClick={() => setBaixa({ pedido: l.pedido, grupo: g })}>
-                              Dar baixa
-                            </Button>
-                          </td>
-                        </tr>
+                        <td key={t} className="p-2 text-center tabular-nums">
+                          {info ? <span className="text-amber-700 font-semibold">{info.falta}</span> : <span className="text-muted-foreground/40">—</span>}
+                        </td>
                       );
                     })}
-                  </tbody>
-                </table>
-              </div>
-              {(l.pedido.pecas_completadas_log?.length ?? 0) > 0 && (
-                <details className="mt-2 text-xs">
-                  <summary className="cursor-pointer text-muted-foreground">Histórico de baixas ({l.pedido.pecas_completadas_log!.length})</summary>
-                  <ul className="mt-1 space-y-0.5">
-                    {l.pedido.pecas_completadas_log!.map((log, i) => (
-                      <li key={i}>
-                        <span className="font-mono">{new Date(log.em).toLocaleString("pt-BR")}</span>
-                        {" — "}{log.qtd}× {log.modelo} · {log.cor} · {log.tamanho}
-                        {log.cop_numero != null && (
-                          <> {" (COP "}<b>{rotuloCop(log.cop_numero, log.cop_letra ?? null)}</b>{")"}</>
-                        )}
-                        {log.observacao && <> {" — "}<i className="text-muted-foreground">{log.observacao}</i></>}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+                    <td className="p-2 text-right tabular-nums text-amber-700 font-semibold">{r.grupo.faltaTotal}</td>
+                    <td className="p-2 text-right" onClick={(e) => e.stopPropagation()}>
+                      <Button size="sm" style={btnStyle("dar_baixa")} onClick={() => setBaixa({ pedido: r.pedido, grupo: r.grupo })}>
+                        Dar baixa
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {baixa && (
         <BaixaCopDialog
@@ -272,6 +268,7 @@ export function FaltaPorPedidoTab() {
           onOpenChange={(o) => !o && setBaixa(null)}
           modelo={baixa.grupo.modelo}
           cor={baixa.grupo.cor}
+          orcamento={baixa.pedido.orcamento ?? null}
           itens={itensDialog}
           onConfirm={async (observacao, baixas) => {
             await baixar.mutateAsync({ pedido: baixa.pedido, observacao, baixas });
@@ -279,6 +276,47 @@ export function FaltaPorPedidoTab() {
         />
       )}
 
+      <Dialog open={!!historico} onOpenChange={(o) => !o && setHistorico(null)}>
+        <DialogContent className="max-w-[720px]">
+          <DialogHeader>
+            <DialogTitle>
+              Histórico de baixas — Orçamento <span className="font-mono">{historico?.orcamento ?? "—"}</span>
+            </DialogTitle>
+          </DialogHeader>
+          {historico && (historico.pecas_completadas_log?.length ?? 0) === 0 ? (
+            <div className="text-sm text-muted-foreground">Nenhuma baixa registrada ainda.</div>
+          ) : historico ? (
+            <div className="rounded-md border overflow-x-auto max-h-[60vh] overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-xs sticky top-0">
+                  <tr>
+                    <th className="p-2 text-left">Data/Hora</th>
+                    <th className="p-2 text-left">Modelo</th>
+                    <th className="p-2 text-left">Cor</th>
+                    <th className="p-2 text-left">Tam.</th>
+                    <th className="p-2 text-right">Qtd</th>
+                    <th className="p-2 text-left">COP</th>
+                    <th className="p-2 text-left">Observação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...(historico.pecas_completadas_log ?? [])].sort((a, b) => b.em.localeCompare(a.em)).map((log, i) => (
+                    <tr key={i} className="border-t">
+                      <td className="p-2 font-mono text-xs">{new Date(log.em).toLocaleString("pt-BR")}</td>
+                      <td className="p-2">{log.modelo}</td>
+                      <td className="p-2">{log.cor}</td>
+                      <td className="p-2">{log.tamanho}</td>
+                      <td className="p-2 text-right tabular-nums">{log.qtd}</td>
+                      <td className="p-2 font-mono">{log.cop_numero != null ? rotuloCop(log.cop_numero, log.cop_letra ?? null) : "—"}</td>
+                      <td className="p-2 text-xs text-muted-foreground">{log.observacao ?? ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
