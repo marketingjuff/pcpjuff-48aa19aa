@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Check, Pencil } from "lucide-react";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import type { CopPeca, CopPecaRecebida } from "@/lib/cop";
-import { getRecebida, setRecebida } from "@/lib/cop";
+import { getRecebida, setRecebida, colunasTamanhos } from "@/lib/cop";
 
 interface Props {
   open: boolean;
