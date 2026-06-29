@@ -99,6 +99,7 @@ export type Cop = {
   pagamento_pago_por: string | null;
   pagamento_valor_calculado: number | null;
   observacoes_pagamento: string | null;
+  historico_recebimentos: HistoricoRecebimento[];
   perdas: unknown[];
   created_at: string;
   updated_at: string;
@@ -150,6 +151,16 @@ export type CopPecaRecebida = {
   tamanho: string;
   qtd_recebida: number;
 };
+
+/** Registro de uma chegada do romaneio (parcial ou completa). */
+export type HistoricoRecebimento = {
+  em: string;             // ISO datetime
+  tipo: "parcial" | "completo";
+  total: number;          // total de peças recebidas nesse evento
+  itens: CopPecaRecebida[];
+  letra?: string | null;  // letra do filho gerado, quando partição
+};
+
 
 export type Oficina = {
   id: string;

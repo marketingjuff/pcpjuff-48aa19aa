@@ -20,10 +20,12 @@ import {
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
+  type HistoricoRecebimento,
   COP_STATUS_LIST, formatCopNumero, totalPecasCop, totalRecebidas,
   todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
   getRecebida,
 } from "@/lib/cop";
+import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { abrirRomaneioParaImpressao } from "@/lib/romaneio-pdf";
 import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
@@ -234,10 +236,31 @@ export function RomaneioTab() {
     const algum = rec.some((r) => r.qtd_recebida > 0);
     const novoStatus: CopStatus =
       completo ? "Romaneio Completo" : algum ? "Romaneio Parcial" : "Na Oficina (Costura)";
+
+    // Diff: o que mudou (recebido novo) desde o último estado salvo
+    const prev = selected.pecas_recebidas ?? [];
+    const novosItens: CopPecaRecebida[] = [];
+    for (const r of rec) {
+      const ant = prev.find((x) => x.modelo === r.modelo && x.cor === r.cor && x.tamanho === r.tamanho);
+      const delta = r.qtd_recebida - (ant?.qtd_recebida ?? 0);
+      if (delta > 0) novosItens.push({ ...r, qtd_recebida: delta });
+    }
+    const totalNovo = novosItens.reduce((s, r) => s + r.qtd_recebida, 0);
+    const hist = [...(selected.historico_recebimentos ?? [])];
+    if (totalNovo > 0) {
+      hist.push({
+        em: new Date().toISOString(),
+        tipo: completo ? "completo" : "parcial",
+        total: totalNovo,
+        itens: novosItens,
+      });
+    }
+
     await salvar.mutateAsync({
       id: selected.id,
       pecas_recebidas: rec as any,
       status: novoStatus,
+      historico_recebimentos: hist as any,
       data_recebimento: completo && !selected.data_recebimento ? new Date().toISOString().slice(0, 10) : selected.data_recebimento,
     } as any);
   }
@@ -261,6 +284,13 @@ export function RomaneioTab() {
       .map((r) => ({ modelo: r.modelo, cor: r.cor, tamanho: r.tamanho, qtd: r.qtd_recebida }));
     const pecasRestantes = subtrairPecas(selected.pecas || [], pecasMovidas);
 
+    const agora = new Date().toISOString();
+    const histFilho: HistoricoRecebimento[] = [{
+      em: agora, tipo: "completo", total: recCount,
+      itens: pecasMovidas.map((p) => ({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd_recebida: p.qtd })),
+      letra: novaLetra,
+    }];
+
     // Inserir filho (sem `numero` — usa o sequence; rótulo resolve via pai)
     const { data: filho, error: e1 } = await supabase.from("cops" as any).insert({
       status: "Romaneio Completo" as CopStatus,
@@ -268,19 +298,26 @@ export function RomaneioTab() {
       pecas_recebidas: pecasMovidas.map((p) => ({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd_recebida: p.qtd })) as any,
       oficina_id: selected.oficina_id,
       data_saida_oficina: selected.data_saida_oficina,
-      data_recebimento: new Date().toISOString().slice(0, 10),
+      data_recebimento: agora.slice(0, 10),
       observacoes_romaneio: selected.observacoes_romaneio,
       num_fretes: selected.num_fretes ?? 1,
       letra: novaLetra,
       cop_romaneio_pai_id: original_id,
+      historico_recebimentos: histFilho as any,
     }).select().single();
     if (e1) { toast.error(e1.message); return; }
 
     // Atualizar pai/origem: restantes, status Parcial, zera recebimentos, letra A se faltar
+    const histPai = [...(selected.historico_recebimentos ?? []), {
+      em: agora, tipo: "parcial" as const, total: recCount,
+      itens: pecasMovidas.map((p) => ({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd_recebida: p.qtd })),
+      letra: novaLetra,
+    }];
     const patchPai: any = {
       pecas: pecasRestantes as any,
       pecas_recebidas: [] as any,
       status: "Romaneio Parcial" as CopStatus,
+      historico_recebimentos: histPai as any,
     };
     if (selected.id === original_id && !selected.letra) patchPai.letra = "A";
     const { error: e2 } = await supabase.from("cops" as any).update(patchPai).eq("id", selected.id);
@@ -558,10 +595,12 @@ export function RomaneioTab() {
               <CardTitle className="text-base">Conferência</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              {selected.status === "Romaneio Completo" || selected.conferido_em ? (
+              {selected.status === "Romaneio Completo" || selected.status === "Romaneio Parcial" || selected.conferido_em ? (
                 <>
                   <div className="rounded-md border bg-muted/30 p-3">
-                    Conferência liberada. Verifique se as <b>quantidades recebidas</b> batem com o que foi solicitado neste romaneio.
+                    {selected.status === "Romaneio Parcial"
+                      ? <>Romaneio <b>parcial</b>. Confira o que já chegou e use <b>Particionar</b> para liberar a parte recebida para pagamento.</>
+                      : <>Conferência liberada. Verifique se as <b>quantidades recebidas</b> batem com o que foi solicitado neste romaneio.</>}
                   </div>
                   <div className="rounded-md border overflow-hidden">
                     <table className="w-full text-xs">
@@ -594,26 +633,53 @@ export function RomaneioTab() {
                       </tfoot>
                     </table>
                   </div>
-                  {selected.conferido_em ? (
-                    <div className="text-xs text-green-700">
-                      ✓ Conferido em {new Date(selected.conferido_em).toLocaleString("pt-BR")}.
+
+                  {/* Histórico de chegadas */}
+                  {(selected.historico_recebimentos?.length ?? 0) > 0 && (
+                    <div className="rounded-md border p-2">
+                      <div className="text-xs font-semibold mb-1">Histórico de chegadas</div>
+                      <ul className="space-y-1 text-xs">
+                        {selected.historico_recebimentos!.slice().reverse().map((h, i) => (
+                          <li key={i} className="flex justify-between gap-2">
+                            <span>
+                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] mr-1 ${h.tipo === "completo" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>
+                                {h.tipo}
+                              </span>
+                              {new Date(h.em).toLocaleString("pt-BR")}
+                              {h.letra && <> · letra <b>{h.letra}</b></>}
+                            </span>
+                            <span className="tabular-nums font-semibold">{h.total}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  ) : (
-                    <Button style={btnStyle("conferir")} onClick={handleConferir} disabled={salvar.isPending} className="w-full">
-                      <Check className="h-4 w-4 mr-1" /> Confirmar conferência
-                    </Button>
+                  )}
+
+                  {selected.status === "Romaneio Completo" && (
+                    selected.conferido_em ? (
+                      <div className="text-xs text-green-700">
+                        ✓ Conferido em {new Date(selected.conferido_em).toLocaleString("pt-BR")}.
+                      </div>
+                    ) : (
+                      <Button style={btnStyle("conferir")} onClick={handleConferir} disabled={salvar.isPending} className="w-full">
+                        <Check className="h-4 w-4 mr-1" /> Confirmar conferência
+                      </Button>
+                    )
                   )}
                 </>
               ) : (
                 <div className="rounded-md border bg-muted/20 p-3 text-muted-foreground">
-                  A conferência é liberada quando o romaneio estiver <b>Completo</b>. Romaneios parciais devem
-                  primeiro ser <b>particionados por letra</b> para que cada parte possa ser conferida e paga.
+                  A conferência é liberada quando o romaneio começar a receber peças.
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
       )}
+
+      {/* Busca de peças */}
+      <BuscaPecasBlock cops={cops} onSelect={setSelectedId} />
+
 
       {/* Lista */}
       <Card>
@@ -720,3 +786,114 @@ export function RomaneioTab() {
 
   );
 }
+
+function BuscaPecasBlock({ cops, onSelect }: { cops: Cop[]; onSelect: (id: string) => void }) {
+  const [modelo, setModelo] = useState<string>("");
+  const [cor, setCor] = useState<string>("");
+  const [tamanho, setTamanho] = useState<string>("");
+
+  const aplicado = !!(modelo || cor || tamanho);
+
+  const resultados = useMemo(() => {
+    if (!aplicado) return [] as { cop: Cop; qtd: number; rotulo: string }[];
+    const out: { cop: Cop; qtd: number; rotulo: string }[] = [];
+    for (const c of cops) {
+      const qtd = (c.pecas || []).reduce((s, p) => {
+        if (modelo && p.modelo !== modelo) return s;
+        if (cor && p.cor !== cor) return s;
+        if (tamanho && p.tamanho !== tamanho) return s;
+        return s + (Number(p.qtd) || 0);
+      }, 0);
+      if (qtd > 0) out.push({ cop: c, qtd, rotulo: rotuloRomaneio(c, cops) });
+    }
+    return out.sort((a, b) => a.rotulo.localeCompare(b.rotulo));
+  }, [cops, modelo, cor, tamanho, aplicado]);
+
+  const totalGeral = resultados.reduce((s, r) => s + r.qtd, 0);
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Busca de peças nos Romaneios</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+          <div>
+            <Label className="text-xs">Modelo</Label>
+            <Select value={modelo || "__all__"} onValueChange={(v) => setModelo(v === "__all__" ? "" : v)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todos</SelectItem>
+                {REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Cor</Label>
+            <Select value={cor || "__all__"} onValueChange={(v) => setCor(v === "__all__" ? "" : v)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todas</SelectItem>
+                {REFACAO_CORES.map((c) => <SelectItem key={c.nome} value={c.nome}>{c.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Tamanho</Label>
+            <Select value={tamanho || "__all__"} onValueChange={(v) => setTamanho(v === "__all__" ? "" : v)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todos</SelectItem>
+                {REFACAO_TAMANHOS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-end">
+            <Button variant="outline" className="h-9 w-full" onClick={() => { setModelo(""); setCor(""); setTamanho(""); }}>
+              Limpar
+            </Button>
+          </div>
+        </div>
+
+        {!aplicado ? (
+          <div className="text-xs text-muted-foreground">Selecione ao menos um filtro para listar os romaneios em que a peça aparece.</div>
+        ) : resultados.length === 0 ? (
+          <div className="text-xs text-muted-foreground">Nenhum romaneio com essa combinação.</div>
+        ) : (
+          <div className="rounded-md border overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs">
+                <tr>
+                  <th className="p-2 text-left">Romaneio</th>
+                  <th className="p-2 text-left">Status</th>
+                  <th className="p-2 text-right">Qtd</th>
+                  <th className="p-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {resultados.map((r) => (
+                  <tr key={r.cop.id} className="border-t">
+                    <td className="p-2 font-semibold tabular-nums">{r.rotulo}</td>
+                    <td className="p-2">{r.cop.status}</td>
+                    <td className="p-2 text-right tabular-nums">{r.qtd}</td>
+                    <td className="p-2 text-right">
+                      <Button size="sm" variant="ghost" onClick={() => onSelect(r.cop.id)}>Abrir</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/30">
+                  <td className="p-2" colSpan={2}><b>Total</b></td>
+                  <td className="p-2 text-right tabular-nums"><b>{totalGeral}</b></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
