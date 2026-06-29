@@ -51,7 +51,8 @@ export function DisponivelTab() {
 
   const producao = useMemo(() => calcEmProducao(cops), [cops]);
   const faltantes = useMemo(() => calcFaltantes(pedidos), [pedidos]);
-  const disponivel = useMemo(() => calcDisponivel(producao, faltantes), [producao, faltantes]);
+  const baixado = useMemo(() => calcBaixado(pedidos), [pedidos]);
+  const disponivel = useMemo(() => calcDisponivel(producao, faltantes, baixado), [producao, faltantes, baixado]);
 
   // Lista de cores presentes (alfabética), opcionalmente filtrada
   const coresDisponiveis = useMemo(() => {
