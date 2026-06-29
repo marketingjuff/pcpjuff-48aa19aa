@@ -11,10 +11,17 @@ export function canEditArte(p: Pedido | null | undefined): boolean {
   if (!p) return true;
   if (p.finalizado_em) return false;
   if (p.tipo_estampa === "Lisa") return false;
-  // Enquanto a etapa ainda for de Arte (Aguardando Arte ou variantes
-  // DTF Liberado / Silk na Arte e Silk Liberado / DTF na Arte), a edição
-  // permanece liberada — mesmo que status_arte tenha sido marcado como
-  // "Arte Finalizada" pelo operador no meio do processo.
+
+  // Enquanto ainda faltar concluir algum lado de arte do tipo de estampa,
+  // a aba Arte continua editável para o operador, mesmo se status_arte já
+  // tiver sido marcado como "Arte Finalizada" no meio do processo.
+  const temArtePendente =
+    (tipoIncluiDTF(p.tipo_estampa) && !ladoDtfPronto(p)) ||
+    (tipoIncluiSilk(p.tipo_estampa) && !ladoSilkPronto(p));
+  if (temArtePendente) return true;
+
+  // Mantém também a liberação por etapa exibida, para cobrir variantes e
+  // pedidos antigos cujo cálculo de campos ainda aponte visualmente para Arte.
   const etapa = etapaAtualSemAsterisco(p);
   if (
     etapa === "Aguardando Arte" ||
