@@ -10,6 +10,9 @@ import { DateInputBR } from "@/components/ui/date-input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useIsAdmin } from "@/hooks/use-role";
@@ -91,6 +94,7 @@ export function RomaneioTab() {
   const [busca, setBusca] = useState("");
   const [showEntrega, setShowEntrega] = useState(false);
   const [showParticionar, setShowParticionar] = useState(false);
+  const [selectedHist, setSelectedHist] = useState<HistoricoRecebimento | null>(null);
 
   const selected = useMemo(() => cops.find((c) => c.id === selectedId) ?? null, [cops, selectedId]);
   const oficina = useMemo(
@@ -656,7 +660,12 @@ export function RomaneioTab() {
                       <div className="text-xs font-semibold mb-1">Histórico de chegadas</div>
                       <ul className="space-y-1 text-xs">
                         {selected.historico_recebimentos!.slice().reverse().map((h, i) => (
-                          <li key={i} className="flex justify-between gap-2">
+                          <li
+                            key={i}
+                            className="flex justify-between gap-2 cursor-pointer hover:bg-accent/40 rounded px-1 py-0.5 transition-colors"
+                            onClick={() => setSelectedHist(h)}
+                            title="Clique para ver as peças entregues"
+                          >
                             <span>
                               <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] mr-1 ${h.tipo === "completo" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>
                                 {h.tipo}
@@ -670,6 +679,58 @@ export function RomaneioTab() {
                       </ul>
                     </div>
                   )}
+
+                  <Dialog open={!!selectedHist} onOpenChange={(o) => !o && setSelectedHist(null)}>
+                    <DialogContent className="max-w-lg">
+                      <DialogHeader>
+                        <DialogTitle>Peças entregues</DialogTitle>
+                        <DialogDescription>
+                          {selectedHist && (
+                            <span>
+                              {new Date(selectedHist.em).toLocaleString("pt-BR")} — {" "}
+                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] ${selectedHist.tipo === "completo" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>
+                                {selectedHist.tipo}
+                              </span>
+                              {selectedHist.letra && <> · letra <b>{selectedHist.letra}</b></>}
+                            </span>
+                          )}
+                        </DialogDescription>
+                      </DialogHeader>
+                      {selectedHist && (
+                        <div className="rounded-md border overflow-hidden">
+                          <table className="w-full text-xs">
+                            <thead className="bg-muted/40">
+                              <tr>
+                                <th className="p-2 text-left">Modelo</th>
+                                <th className="p-2 text-left">Cor</th>
+                                <th className="p-2 text-left">Tamanho</th>
+                                <th className="p-2 text-right">Qtd</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {selectedHist.itens.map((item, idx) => (
+                                <tr key={idx} className="border-t">
+                                  <td className="p-2">{item.modelo}</td>
+                                  <td className="p-2">{item.cor}</td>
+                                  <td className="p-2">{item.tamanho}</td>
+                                  <td className="p-2 text-right tabular-nums font-semibold">{item.qtd_recebida}</td>
+                                </tr>
+                              ))}
+                              {selectedHist.itens.length === 0 && (
+                                <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">Nenhuma peça registrada.</td></tr>
+                              )}
+                            </tbody>
+                            <tfoot>
+                              <tr className="bg-muted/30">
+                                <td className="p-2 text-right" colSpan={3}><b>Total</b></td>
+                                <td className="p-2 text-right tabular-nums"><b>{selectedHist.total}</b></td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                      )}
+                    </DialogContent>
+                  </Dialog>
 
                   {selected.status === "Romaneio Completo" && (
                     selected.conferido_em ? (
