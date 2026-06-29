@@ -539,7 +539,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <Button type="button" variant="outline" onClick={handleNew}><X className="h-4 w-4 mr-1" />Cancelar edição</Button>
               )}
               <UpdateButton type="button" onClick={saveVendor} disabled={saving}>
-                {selected?.id ? "Atualizar" : "Salvar"} Input do Vendedor
+                Salvar Input do Vendedor
               </UpdateButton>
             </div>
           </CardContent>
