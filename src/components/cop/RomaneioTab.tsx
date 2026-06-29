@@ -102,8 +102,8 @@ export function RomaneioTab() {
         if (!STATUS_ROMANEIO.includes(c.status)) return false;
       } else if (statusFiltro !== "todos" && c.status !== statusFiltro) return false;
       if (busca) {
-        const num = formatCopNumero(c.numero);
-        const rot = rotuloCop(c.numero, c.letra);
+        const num = formatCopNumero(numeroBaseCop(c, cops));
+        const rot = rotuloRomaneio(c, cops);
         if (!num.includes(busca.replace(/\D/g, "")) && !rot.toUpperCase().includes(busca.toUpperCase())) return false;
       }
       return true;
