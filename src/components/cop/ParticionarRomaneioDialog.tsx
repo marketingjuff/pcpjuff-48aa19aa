@@ -13,12 +13,13 @@ interface Props {
   letraNova: string;
   recebidas: CopPecaRecebida[];
   rotuloAtual: string;
+  rotuloRestante: string;
   rotuloNovo: string;
   onConfirm: () => void | Promise<void>;
 }
 
 export function ParticionarRomaneioDialog({
-  open, onOpenChange, letraAtual, letraNova, recebidas, rotuloAtual, rotuloNovo, onConfirm,
+  open, onOpenChange, letraAtual, letraNova, recebidas, rotuloAtual, rotuloRestante, rotuloNovo, onConfirm,
 }: Props) {
   const [saving, setSaving] = useState(false);
   const total = useMemo(() => recebidas.reduce((s, r) => s + r.qtd_recebida, 0), [recebidas]);
