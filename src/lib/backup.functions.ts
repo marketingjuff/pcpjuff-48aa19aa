@@ -2,7 +2,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const TABLES = ["pedidos", "feriados", "profiles", "user_roles"] as const;
+const TABLES = [
+  "profiles",
+  "user_roles",
+  "app_color_settings",
+  "app_lists",
+  "feriados",
+  "oficinas",
+  "pedidos",
+  "cops",
+  "cop_perdas",
+] as const;
 type TableName = (typeof TABLES)[number];
 
 async function assertAdminOrGestor(supabase: any, userId: string) {
@@ -60,7 +70,17 @@ export const importBackup = createServerFn({ method: "POST" })
     const summary: Record<string, { inserted: number; deleted: number }> = {};
 
     // Ordem de inserção respeita dependências (profiles antes de user_roles).
-    const insertOrder: TableName[] = ["profiles", "user_roles", "feriados", "pedidos"];
+    const insertOrder: TableName[] = [
+      "profiles",
+      "user_roles",
+      "app_color_settings",
+      "app_lists",
+      "feriados",
+      "oficinas",
+      "pedidos",
+      "cops",
+      "cop_perdas",
+    ];
     // Ordem de remoção é a inversa.
     const deleteOrder = [...insertOrder].reverse();
 
