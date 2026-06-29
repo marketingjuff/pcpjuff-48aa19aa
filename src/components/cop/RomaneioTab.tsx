@@ -361,17 +361,17 @@ export function RomaneioTab() {
                 <div>
                   <div className="text-xs uppercase text-muted-foreground tracking-wider">ROMANEIO · COP</div>
                   <div className="text-3xl sm:text-5xl font-bold tabular-nums">
-                    {rotuloCop(selected.numero, selected.letra)}
+                    {rotuloRomaneio(selected, cops)}
                     {familia.length > 1 && (
                       <span className="ml-3 text-sm font-normal text-muted-foreground">
                         (
                         {familia.map((c, idx) => (
                           <span key={c.id}>
                             {c.id === selected.id ? (
-                              <span className="font-semibold">{rotuloCop(c.numero, c.letra)}</span>
+                              <span className="font-semibold">{rotuloRomaneio(c, cops)}</span>
                             ) : (
                               <button type="button" className="underline hover:text-primary" onClick={() => setSelectedId(c.id)}>
-                                {rotuloCop(c.numero, c.letra)}
+                                {rotuloRomaneio(c, cops)}
                               </button>
                             )}
                             {idx < familia.length - 1 ? " / " : ""}
