@@ -79,95 +79,113 @@ export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, on
           Clique no <b>lápis</b> para informar uma quantidade <b>parcial</b> (bolinha cinza).
         </div>
         <div className="rounded-md border overflow-x-auto max-h-[60vh]">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-xs sticky top-0">
-              <tr>
-                <th className="p-2 text-left min-w-[160px]">Modelo</th>
-                <th className="p-2 text-left min-w-[140px]">Cor</th>
-                <th className="p-2 text-left">Tamanhos · Quantidades</th>
-                <th className="p-2 text-right w-[160px]">Entregue / Pendente</th>
-              </tr>
-            </thead>
-            <tbody>
-              {grupos.map((g) => {
-                const hex = corHex(g.cor);
-                const fg = corTextoSobre(hex);
-                const entregueLinha = g.tamanhos.reduce((s, t) => s + getRecebida(rec, g.modelo, g.cor, t.tamanho), 0);
-                const totalLinha = g.tamanhos.reduce((s, t) => s + t.qtd, 0);
-                const pend = totalLinha - entregueLinha;
-                return (
-                  <tr key={`${g.modelo}|${g.cor}`} className="border-t align-top">
-                    <td className="p-2 font-medium">{g.modelo}</td>
-                    <td className="p-2">
-                      <span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span>
-                    </td>
-                    <td className="p-2">
-                      <div className="flex flex-wrap gap-2">
-                        {g.tamanhos.map((tt) => {
-                          const k = key(g.modelo, g.cor, tt.tamanho);
-                          const r = getRecebida(rec, g.modelo, g.cor, tt.tamanho);
-                          const completo = r >= tt.qtd && tt.qtd > 0;
-                          const parcial = r > 0 && r < tt.qtd;
+          {(() => {
+            const cols = colunasTamanhos(pecas.map((p) => p.tamanho));
+            return (
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40 text-[10px] sticky top-0">
+                  <tr>
+                    <th className="px-2 py-1 text-left min-w-[140px]">Modelo</th>
+                    <th className="px-2 py-1 text-left min-w-[110px]">Cor</th>
+                    {cols.map((c) => (
+                      <th key={c} className="px-1 py-1 text-center w-[68px]">{c}</th>
+                    ))}
+                    <th className="px-2 py-1 text-right w-[140px]">Entregue / Pendente</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grupos.map((g) => {
+                    const hex = corHex(g.cor);
+                    const fg = corTextoSobre(hex);
+                    const entregueLinha = g.tamanhos.reduce((s, t) => s + getRecebida(rec, g.modelo, g.cor, t.tamanho), 0);
+                    const totalLinha = g.tamanhos.reduce((s, t) => s + t.qtd, 0);
+                    const pend = totalLinha - entregueLinha;
+                    const byTam = new Map(g.tamanhos.map((t) => [t.tamanho, t.qtd]));
+                    return (
+                      <tr key={`${g.modelo}|${g.cor}`} className="border-t align-middle leading-tight">
+                        <td className="px-2 py-1 font-medium">{g.modelo}</td>
+                        <td className="px-2 py-1">
+                          <span className="inline-block px-1.5 py-0 rounded text-[10px]" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span>
+                        </td>
+                        {cols.map((tam) => {
+                          const qtd = byTam.get(tam) ?? 0;
+                          if (!qtd) {
+                            return (
+                              <td key={tam} className="px-1 py-1 text-center">
+                                <div className="rounded-full w-8 h-8 mx-auto flex items-center justify-center text-[11px] tabular-nums text-muted-foreground/40 border border-dashed">0</div>
+                              </td>
+                            );
+                          }
+                          const k = key(g.modelo, g.cor, tam);
+                          const r = getRecebida(rec, g.modelo, g.cor, tam);
+                          const completo = r >= qtd && qtd > 0;
+                          const parcial = r > 0 && r < qtd;
+                          const falta = qtd - r;
                           const bolaCor = completo ? "#16a34a" : parcial ? "#9ca3af" : "transparent";
                           const numCor = (completo || parcial) ? "#ffffff" : "#111827";
                           const numBg = (completo || parcial) ? bolaCor : "#f3f4f6";
                           return (
-                            <div key={k} className="flex flex-col items-center gap-1 min-w-[64px]">
-                              <div className="text-[10px] uppercase text-muted-foreground">{tt.tamanho}</div>
-                              <button
-                                type="button"
-                                onClick={() => marcarCompleto(g.modelo, g.cor, tt.tamanho, tt.qtd)}
-                                title="Marcar completo"
-                                className="rounded-full w-12 h-12 flex items-center justify-center font-bold tabular-nums text-base border"
-                                style={{ backgroundColor: numBg, color: numCor, borderColor: completo ? "#15803d" : parcial ? "#6b7280" : "#d1d5db" }}
-                              >
-                                {tt.qtd}
-                              </button>
-                              {parcialEdit === k ? (
-                                <div className="flex items-center gap-1">
-                                  <Input
-                                    type="number"
-                                    autoFocus
-                                    min={0}
-                                    max={tt.qtd}
-                                    value={parcialVal}
-                                    onChange={(e) => setParcialVal(e.target.value)}
-                                    onKeyDown={(e) => { if (e.key === "Enter") salvarParcial(g.modelo, g.cor, tt.tamanho, tt.qtd); }}
-                                    className="h-7 w-14 text-center text-xs"
-                                  />
-                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => salvarParcial(g.modelo, g.cor, tt.tamanho, tt.qtd)}>
-                                    <Check className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              ) : (
+                            <td key={tam} className="px-1 py-1 text-center">
+                              <div className="flex flex-col items-center gap-0.5">
                                 <button
                                   type="button"
-                                  onClick={() => abrirParcial(g.modelo, g.cor, tt.tamanho)}
-                                  title="Recebimento parcial"
-                                  className="text-muted-foreground hover:text-foreground"
+                                  onClick={() => marcarCompleto(g.modelo, g.cor, tam, qtd)}
+                                  title="Marcar completo"
+                                  className="rounded-full w-9 h-9 flex items-center justify-center font-semibold tabular-nums text-[12px] border"
+                                  style={{ backgroundColor: numBg, color: numCor, borderColor: completo ? "#15803d" : parcial ? "#6b7280" : "#d1d5db" }}
                                 >
-                                  <Pencil className="h-3.5 w-3.5" />
+                                  {parcial ? r : qtd}
                                 </button>
-                              )}
-                              <div className="text-[10px] tabular-nums text-muted-foreground">{r}/{tt.qtd}</div>
-                            </div>
+                                {parcial && (
+                                  <div className="text-[10px] tabular-nums text-muted-foreground">falta {falta}</div>
+                                )}
+                                {parcialEdit === k ? (
+                                  <div className="flex items-center gap-0.5">
+                                    <Input
+                                      type="number"
+                                      autoFocus
+                                      min={0}
+                                      max={qtd}
+                                      value={parcialVal}
+                                      onChange={(e) => setParcialVal(e.target.value)}
+                                      onKeyDown={(e) => { if (e.key === "Enter") salvarParcial(g.modelo, g.cor, tam, qtd); }}
+                                      className="h-6 w-14 text-center text-[11px] px-1"
+                                    />
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => salvarParcial(g.modelo, g.cor, tam, qtd)}>
+                                      <Check className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => abrirParcial(g.modelo, g.cor, tam)}
+                                    title="Recebimento parcial"
+                                    className="text-muted-foreground hover:text-foreground"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </button>
+                                )}
+                                <div className="text-[9px] tabular-nums text-muted-foreground">{r}/{qtd}</div>
+                              </div>
+                            </td>
                           );
                         })}
-                      </div>
-                    </td>
-                    <td className="p-2 text-right text-xs tabular-nums">
-                      <div className="text-green-700 font-semibold">{entregueLinha} entregues</div>
-                      <div className={pend > 0 ? "text-amber-700" : "text-muted-foreground"}>{pend} pendentes</div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {grupos.length === 0 && (
-                <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">Sem peças.</td></tr>
-              )}
-            </tbody>
-          </table>
+                        <td className="px-2 py-1 text-right text-[11px] tabular-nums">
+                          <div className="text-green-700 font-semibold">{entregueLinha} entregues</div>
+                          <div className={pend > 0 ? "text-amber-700" : "text-muted-foreground"}>{pend} pendentes</div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {grupos.length === 0 && (
+                    <tr><td colSpan={3 + cols.length} className="p-3 text-center text-muted-foreground">Sem peças.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            );
+          })()}
         </div>
+
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">Total do COP: <b className="tabular-nums">{total}</b></span>
           <span>
