@@ -509,7 +509,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             </Field>
 
             <div className="sm:col-span-2 lg:col-span-2">
-              <Field label="Layout (PDF até 30MB)">
+              <Field label="Layout (PDF até 30MB) *" invalid={missingVendor.has("layout_url")}>
                 <div className="flex items-center gap-2">
                   <Input type="file" accept="application/pdf" disabled={uploading}
                     onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
