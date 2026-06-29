@@ -209,7 +209,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               )}
               {/* Edição */}
               <fieldset disabled={readOnly} className="contents disabled:opacity-60">
-              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t">
+              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-flow-col lg:auto-cols-fr pt-3 border-t">
                 <FormField label="DTF Estampado?">
                   <Select value={form.dtf_estampado ?? ""} onValueChange={setEstampado}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
