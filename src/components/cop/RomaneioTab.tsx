@@ -527,7 +527,7 @@ export function RomaneioTab() {
 
                 <div className="flex flex-wrap items-center gap-2">
                   <Button style={btnStyle("atualizar")} onClick={handleAtualizar} disabled={salvar.isPending}>
-                    Atualizar
+                    Salvar
                   </Button>
                   <Button
                     style={btnStyle("enviar_oficina")}

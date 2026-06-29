@@ -450,7 +450,7 @@ export function CorteTab() {
               </Button>
               <div className="flex items-center gap-2">
                 <Button style={btnStyle("atualizar")} onClick={handleAtualizar} disabled={salvar.isPending}>
-                  Atualizar
+                  Salvar
                 </Button>
                 <Button
                   style={btnStyle("mandar_romaneio")}

@@ -292,7 +292,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   Marcar tudo como "Sim"
                 </Button>
                 <UpdateButton onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
-                  Atualizar Expedição
+                  Salvar Expedição
                 </UpdateButton>
                 <RefacaoViewerButton pedido={selected} />
                 <FinalizarButton

@@ -251,7 +251,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       <Download className="h-4 w-4 mr-1" /> Baixar layout
                     </Button>
                   )}
-                  {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Atualizar Silk</UpdateButton>}
+                  {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Salvar Silk</UpdateButton>}
                   <RefacaoViewerButton pedido={selected} />
                 </div>
               </div>
