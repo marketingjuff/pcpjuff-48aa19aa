@@ -466,7 +466,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <SelectContent>{formasPagamento.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Nota Fiscal Emitida?">
+            <Field label="Nota Fiscal Emitida? *" invalid={missingVendor.has("nf_emitida")}>
               <Select value={form.nf_emitida ?? ""} onValueChange={(v) => set("nf_emitida", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{nfOpcoes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
