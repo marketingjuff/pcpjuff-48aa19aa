@@ -16,7 +16,8 @@ import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos"
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopStatus,
-  COP_STATUS_LIST, formatCopNumero, totalPecasCop, subtrairPecas,
+  COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, subtrairPecas,
+  calcularStatusCorte,
 } from "@/lib/cop";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { DivisaoCorteDialog } from "./DivisaoCorteDialog";
