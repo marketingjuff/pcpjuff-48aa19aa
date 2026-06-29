@@ -149,7 +149,7 @@ export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, on
                                       value={parcialVal}
                                       onChange={(e) => setParcialVal(e.target.value)}
                                       onKeyDown={(e) => { if (e.key === "Enter") salvarParcial(g.modelo, g.cor, tam, qtd); }}
-                                      className="h-6 w-14 text-center text-[11px] px-1"
+                                      className="h-6 w-16 text-center text-[11px] px-1"
                                     />
                                     <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => salvarParcial(g.modelo, g.cor, tam, qtd)}>
                                       <Check className="h-3 w-3" />
