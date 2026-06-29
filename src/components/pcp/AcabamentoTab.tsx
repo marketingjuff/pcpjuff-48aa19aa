@@ -239,9 +239,12 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 )}
                 <RefacaoViewerButton pedido={selected} />
               </div>
-              {!readOnly && <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />}
             </div>
             </fieldset>
+            <div className="flex justify-end">
+              <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
+            </div>
+
           </CardContent>
         </Card>
         </>
