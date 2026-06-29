@@ -190,12 +190,15 @@ export function DisponivelTab() {
                 const lista = pedidosDoItem(pedidos, popup.modelo, popup.cor, popup.tamanho);
                 const prod = producao.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
                 const falt = faltantes.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
+                const baix = baixado.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
+                const saldo = prod - falt - baix;
                 return (
                   <>
                     <div className="text-xs flex gap-4">
                       <span>Produção: <b className="tabular-nums text-green-700">{prod}</b></span>
                       <span>Faltantes: <b className="tabular-nums text-amber-700">{falt}</b></span>
-                      <span>Saldo: <b className={`tabular-nums ${(prod - falt) < 0 ? "text-red-700" : "text-green-700"}`}>{prod - falt}</b></span>
+                      <span>Baixado: <b className="tabular-nums text-blue-700">{baix}</b></span>
+                      <span>Saldo: <b className={`tabular-nums ${saldo < 0 ? "text-red-700" : "text-green-700"}`}>{saldo}</b></span>
                     </div>
                     <div className="rounded-md border overflow-x-auto max-h-[55vh]">
                       <table className="w-full text-sm">
