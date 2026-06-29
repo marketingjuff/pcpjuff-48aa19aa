@@ -48,6 +48,10 @@ export function calcFaltantes(pedidos: Pedido[]): Map<string, number> {
 export function calcBaixado(pedidos: Pedido[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const p of pedidos) {
+    // Pular pedidos sem solicitação atual (testes ou solicitações limpas):
+    // se não há nada pedido, o log histórico não deve afetar o Disponível.
+    const solic = p.pecas_solicitadas ?? [];
+    if (solic.length === 0) continue;
     const log = (p as any).pecas_completadas_log as
       | Array<{ modelo: string; cor: string; tamanho: string; qtd: number }>
       | null
