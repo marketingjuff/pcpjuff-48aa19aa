@@ -94,6 +94,7 @@ export function RomaneioTab() {
   const [busca, setBusca] = useState("");
   const [showEntrega, setShowEntrega] = useState(false);
   const [showParticionar, setShowParticionar] = useState(false);
+  const [selectedHist, setSelectedHist] = useState<HistoricoRecebimento | null>(null);
 
   const selected = useMemo(() => cops.find((c) => c.id === selectedId) ?? null, [cops, selectedId]);
   const oficina = useMemo(
