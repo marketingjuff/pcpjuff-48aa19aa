@@ -161,7 +161,11 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }, [form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados]);
 
 
-  const VENDOR_REQUIRED: (keyof Pedido)[] = ["pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido", "frete", "tempo_frete", "data_entrega"];
+  const VENDOR_REQUIRED: (keyof Pedido)[] = [
+    "pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido",
+    "frete", "tempo_frete", "data_entrega",
+    "forma_pagamento", "nf_emitida", "uf_entrega", "layout_url",
+  ];
   const PROD_REQUIRED: (keyof Pedido)[] = ["status_pecas", "tipo_estampa"];
   const [missingVendor, setMissingVendor] = useState<Set<string>>(new Set());
   const [missingProd, setMissingProd] = useState<Set<string>>(new Set());
@@ -456,13 +460,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <SelectContent>{vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Forma de pagamento">
+            <Field label="Forma de pagamento *" invalid={missingVendor.has("forma_pagamento")}>
               <Select value={form.forma_pagamento ?? ""} onValueChange={(v) => set("forma_pagamento", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{formasPagamento.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
-            <Field label="Nota Fiscal Emitida?">
+            <Field label="Nota Fiscal Emitida? *" invalid={missingVendor.has("nf_emitida")}>
               <Select value={form.nf_emitida ?? ""} onValueChange={(v) => set("nf_emitida", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>{nfOpcoes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
@@ -475,7 +479,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               </Select>
             </Field>
             <Field label="Tempo de frete (dias úteis) *" invalid={missingVendor.has("tempo_frete")}><Input type="number" min="0" value={form.tempo_frete ?? ""} onChange={(e) => set("tempo_frete", e.target.value)} /></Field>
-            <Field label="UF de Entrega">
+            <Field label="UF de Entrega *" invalid={missingVendor.has("uf_entrega")}>
               <Select value={form.uf_entrega ?? ""} onValueChange={(v) => set("uf_entrega", v)}>
                 <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
                 <SelectContent>{UFS.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
@@ -505,7 +509,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             </Field>
 
             <div className="sm:col-span-2 lg:col-span-2">
-              <Field label="Layout (PDF até 30MB)">
+              <Field label="Layout (PDF até 30MB) *" invalid={missingVendor.has("layout_url")}>
                 <div className="flex items-center gap-2">
                   <Input type="file" accept="application/pdf" disabled={uploading}
                     onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
