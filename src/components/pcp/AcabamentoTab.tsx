@@ -119,7 +119,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   const [fPed, setFPed] = useState("");
   const [fDtf, setFDtf] = useState("todos");
   const [fSilk, setFSilk] = useState("todos");
-  const [fEtapa, setFEtapa] = useState("ativas");
+  const [fEtapa, setFEtapa] = useState("acabamento");
 
   const dashboardPedidos = useMemo(() => sortByDataSaidaJuffAsc(pedidos.filter((p) => {
     if (!matchEtapaFiltro(p, fEtapa)) return false;
