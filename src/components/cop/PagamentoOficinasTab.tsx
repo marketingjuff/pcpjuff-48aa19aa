@@ -244,6 +244,18 @@ export function PagamentoOficinasTab() {
               </table>
             </div>
 
+            <div>
+              <Label className="text-xs">Observações do pagamento</Label>
+              <Textarea
+                value={obsPag}
+                onChange={(e) => setObsPag(e.target.value)}
+                placeholder="EX.: PAGAMENTO PARCIAL DEVIDO A..."
+                rows={2}
+                className="uppercase"
+                disabled={selected.pagamento_status === "pago"}
+              />
+            </div>
+
             <div className="flex flex-wrap items-center gap-2 justify-end">
               {selected.pagamento_status !== "pago" && (
                 <Button variant="outline" onClick={() => salvarConferencia.mutate()} disabled={salvarConferencia.isPending}>
