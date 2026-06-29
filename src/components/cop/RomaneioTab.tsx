@@ -473,50 +473,61 @@ export function RomaneioTab() {
                   </div>
                 </div>
                 <div className="rounded-md border overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/40 text-xs">
-                      <tr>
-                        <th className="p-2 text-left">Modelo</th>
-                        <th className="p-2 text-left">Cor</th>
-                        <th className="p-2 text-left">Tamanhos · Qtd</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {agruparPorModeloCor(selected.pecas || []).map((g, i) => {
-                        const hex = corHex(g.cor); const fg = corTextoSobre(hex);
-                        return (
-                          <tr key={i} className="border-t">
-                            <td className="p-2">{g.modelo}</td>
-                            <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
-                            <td className="p-2">
-                              <div className="flex flex-wrap gap-2">
-                                {g.tamanhos.map((t) => {
-                                  const r = getRecebida(recebidas, g.modelo, g.cor, t.tamanho);
-                                  const completo = r >= t.qtd && t.qtd > 0;
-                                  const parcial = r > 0 && r < t.qtd;
+                  {(() => {
+                    const grupos = agruparPorModeloCor(selected.pecas || []);
+                    const cols = colunasTamanhos((selected.pecas || []).map((p) => p.tamanho));
+                    return (
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/40 text-xs">
+                          <tr>
+                            <th className="p-2 text-left">Modelo</th>
+                            <th className="p-2 text-left">Cor</th>
+                            {cols.map((c) => (
+                              <th key={c} className="p-2 text-center w-16">{c}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {grupos.map((g, i) => {
+                            const hex = corHex(g.cor); const fg = corTextoSobre(hex);
+                            const byTam = new Map(g.tamanhos.map((t) => [t.tamanho, t.qtd]));
+                            return (
+                              <tr key={i} className="border-t">
+                                <td className="p-2">{g.modelo}</td>
+                                <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
+                                {cols.map((tam) => {
+                                  const qtd = byTam.get(tam) ?? 0;
+                                  if (!qtd) {
+                                    return <td key={tam} className="p-2 text-center text-xs text-muted-foreground/40">—</td>;
+                                  }
+                                  const r = getRecebida(recebidas, g.modelo, g.cor, tam);
+                                  const completo = r >= qtd && qtd > 0;
+                                  const parcial = r > 0 && r < qtd;
                                   const bg = completo ? "#16a34a" : parcial ? "#9ca3af" : "#f3f4f6";
                                   const cor = (completo || parcial) ? "#ffffff" : "#111827";
                                   return (
-                                    <span key={t.tamanho} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
-                                      style={{ backgroundColor: bg, color: cor, border: "1px solid #d1d5db" }}>
-                                      <span className="font-semibold">{t.tamanho}</span>
-                                      <span className="tabular-nums">{t.qtd}</span>
-                                      {(completo || parcial) && <span className="opacity-90">· {r}</span>}
-                                    </span>
+                                    <td key={tam} className="p-2 text-center">
+                                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                                        style={{ backgroundColor: bg, color: cor, border: "1px solid #d1d5db" }}>
+                                        <span className="tabular-nums">{qtd}</span>
+                                        {(completo || parcial) && <span className="opacity-90">· {r}</span>}
+                                      </span>
+                                    </td>
                                   );
                                 })}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      {(!selected.pecas || selected.pecas.length === 0) && (
-                        <tr><td colSpan={3} className="p-3 text-center text-muted-foreground">Sem peças.</td></tr>
-                      )}
-                    </tbody>
-                  </table>
+                              </tr>
+                            );
+                          })}
+                          {grupos.length === 0 && (
+                            <tr><td colSpan={2 + cols.length} className="p-3 text-center text-muted-foreground">Sem peças.</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    );
+                  })()}
                 </div>
               </div>
+
 
               <div>
                 <Label>Observações</Label>
