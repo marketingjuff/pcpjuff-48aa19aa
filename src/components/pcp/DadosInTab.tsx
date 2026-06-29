@@ -220,9 +220,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     }
     if (!selected?.id) {
       const missV = findMissing(VENDOR_REQUIRED);
+      if (!validarOrcamento(form.orcamento)) missV.add("orcamento");
       setMissingVendor(missV);
       if (missV.size > 0) {
-        toast.error("Para criar o pedido, preencha também os obrigatórios do Input do Vendedor.");
+        toast.error("Para criar o pedido, preencha também os obrigatórios do Input do Vendedor. O orçamento precisa conter números e no mínimo 2 letras.");
         return;
       }
       if (await checkDuplicado(String(form.pedido_olist ?? ""))) {
