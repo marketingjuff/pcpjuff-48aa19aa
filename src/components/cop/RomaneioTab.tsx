@@ -648,7 +648,7 @@ export function RomaneioTab() {
                         className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : ""}`}
                         onClick={() => setSelectedId(c.id)}
                       >
-                        <td className="p-2 font-semibold tabular-nums">{rotuloCop(c.numero, c.letra)}</td>
+                        <td className="p-2 font-semibold tabular-nums">{rotuloRomaneio(c, cops)}</td>
                         <td className="p-2">
                           <span className="px-2 py-0.5 rounded text-xs border" style={etapaStyle(c.status)}>{c.status}</span>
                         </td>
