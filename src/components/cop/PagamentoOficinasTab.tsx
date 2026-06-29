@@ -9,7 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Check, X } from "lucide-react";
+import { RefreshCw, Check, X, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import type { Cop, CopPeca, CopConferenciaItem, Oficina } from "@/lib/cop";
 import {
@@ -139,6 +143,32 @@ export function PagamentoOficinasTab() {
     },
     onSuccess: () => { toast.success("Status de pagamento atualizado."); qc.invalidateQueries({ queryKey: ["cops"] }); },
     onError: (e: any) => toast.error(e.message ?? "Erro."),
+  });
+
+  const [confirmApagar, setConfirmApagar] = useState(false);
+  const apagarPagamento = useMutation({
+    mutationFn: async () => {
+      if (!selected) return;
+      const novoStatus = selected.status === "Finalizado" || selected.status === "Aguardando Pagamento"
+        ? "Romaneio Completo"
+        : selected.status;
+      const { error } = await supabase.from("cops" as any).update({
+        pagamento_status: "nao_pago",
+        pagamento_liberado_em: null,
+        pagamento_liberado_por: null,
+        pagamento_pago_em: null,
+        pagamento_pago_por: null,
+        pagamento_valor_calculado: null,
+        status: novoStatus,
+      } as any).eq("id", selected.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Pagamento apagado.");
+      setConfirmApagar(false);
+      qc.invalidateQueries({ queryKey: ["cops"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao apagar."),
   });
 
   return (
@@ -278,6 +308,16 @@ export function PagamentoOficinasTab() {
                   <X className="h-4 w-4 mr-1" /> Reverter para Liberado
                 </Button>
               )}
+              {isAdmin && selected.pagamento_status !== "nao_pago" && (
+                <Button
+                  variant="outline"
+                  className="border-red-400 text-red-700 hover:bg-red-50"
+                  onClick={() => setConfirmApagar(true)}
+                  title="Apagar pagamento e voltar status para Romaneio Completo"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" /> Apagar pagamento
+                </Button>
+              )}
             </div>
 
             {(selected.pagamento_liberado_em || selected.pagamento_pago_em) && (
@@ -338,6 +378,27 @@ export function PagamentoOficinasTab() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmApagar} onOpenChange={setConfirmApagar}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar pagamento deste COP?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove os registros de liberação/pagamento e devolve o COP ao status "Romaneio Completo". A conferência e o romaneio permanecem. Não é possível desfazer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={apagarPagamento.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              disabled={apagarPagamento.isPending}
+              onClick={(e) => { e.preventDefault(); apagarPagamento.mutate(); }}
+            >
+              {apagarPagamento.isPending ? "Apagando..." : "Apagar pagamento"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
