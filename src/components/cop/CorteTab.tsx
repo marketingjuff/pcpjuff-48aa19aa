@@ -160,17 +160,25 @@ export function CorteTab() {
     onError: (e: any) => toast.error(e.message ?? "Erro ao excluir COP"),
   });
 
+  const bloqueado = !!selected && !STATUS_CORTE.includes(selected.status);
+
   async function handleAtualizar() {
     if (!selected) return;
+    if (bloqueado) { toast.error("Este COP já saiu para o Romaneio. Use 'Voltar para Corte' na aba Romaneio."); return; }
     const pecas = desagrupar(grupos);
-    await salvar.mutateAsync({
-      id: selected.id,
+    const datas = {
       solicitacao_risco: draft.solicitacao_risco ?? null,
       execucao_risco: draft.execucao_risco ?? null,
       solicitacao_corte: draft.solicitacao_corte ?? null,
       execucao_corte: draft.execucao_corte ?? null,
+    };
+    const novoStatus = calcularStatusCorte(datas);
+    await salvar.mutateAsync({
+      id: selected.id,
+      ...datas,
       observacoes_corte: (draft.observacoes_corte ?? "")?.toString().toUpperCase() || null,
       pecas,
+      status: novoStatus,
     });
   }
 
@@ -186,7 +194,7 @@ export function CorteTab() {
       execucao_corte: draft.execucao_corte ?? null,
       observacoes_corte: (draft.observacoes_corte ?? "")?.toString().toUpperCase() || null,
       pecas,
-      status: "Aguardando Romaneio" as CopStatus,
+      status: "Aguardando Oficina" as CopStatus,
     });
   }
 
