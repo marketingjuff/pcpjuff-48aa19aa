@@ -681,7 +681,14 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   value={pecasSolicitadas}
                   onSave={salvarPecasSolicitadas}
                   readOnly={tudoEnviado}
-                  limite={Number(form.qtd ?? selected?.qtd ?? 0) || 0}
+                  limite={Math.max(
+                    0,
+                    (Number(form.qtd ?? selected?.qtd ?? 0) || 0) -
+                      ((selected?.pecas_completadas_log ?? []) as Array<{ qtd?: number }>).reduce(
+                        (a, l) => a + (Number(l?.qtd) || 0),
+                        0,
+                      ),
+                  )}
                   onLiberarCompleto={liberarParaCompleto}
                 />
               </div>
