@@ -152,6 +152,16 @@ export type CopPecaRecebida = {
   qtd_recebida: number;
 };
 
+/** Registro de uma chegada do romaneio (parcial ou completa). */
+export type HistoricoRecebimento = {
+  em: string;             // ISO datetime
+  tipo: "parcial" | "completo";
+  total: number;          // total de peças recebidas nesse evento
+  itens: CopPecaRecebida[];
+  letra?: string | null;  // letra do filho gerado, quando partição
+};
+
+
 export type Oficina = {
   id: string;
   nome: string;
