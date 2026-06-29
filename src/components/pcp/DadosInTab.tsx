@@ -479,7 +479,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               </Select>
             </Field>
             <Field label="Tempo de frete (dias úteis) *" invalid={missingVendor.has("tempo_frete")}><Input type="number" min="0" value={form.tempo_frete ?? ""} onChange={(e) => set("tempo_frete", e.target.value)} /></Field>
-            <Field label="UF de Entrega">
+            <Field label="UF de Entrega *" invalid={missingVendor.has("uf_entrega")}>
               <Select value={form.uf_entrega ?? ""} onValueChange={(v) => set("uf_entrega", v)}>
                 <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
                 <SelectContent>{UFS.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
