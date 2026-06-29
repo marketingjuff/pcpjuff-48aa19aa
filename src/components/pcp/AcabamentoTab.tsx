@@ -159,9 +159,10 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </div>
             )}
 
-            <div className="grid gap-2 grid-cols-1 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="grid gap-2 grid-cols-1 sm:grid-cols-3 lg:grid-cols-7">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
+              <ReadOnlyField label="Vendedor" value={selected.vendedor} />
               <ReadOnlyField label="Tipo de Estampa" value={selected.tipo_estampa} />
               <ReadOnlyField label="Status de Peças" value={selected.status_pecas} />
               <ReadOnlyField label="DTF Estampado?" value={temDTF ? (selected.dtf_estampado ?? "—") : "N/A"} />
