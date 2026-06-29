@@ -48,10 +48,15 @@ export function calcFaltantes(pedidos: Pedido[]): Map<string, number> {
 export function calcBaixado(pedidos: Pedido[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const p of pedidos) {
-    // Pular pedidos sem solicitação atual (testes ou solicitações limpas):
-    // se não há nada pedido, o log histórico não deve afetar o Disponível.
     const solic = p.pecas_solicitadas ?? [];
     if (solic.length === 0) continue;
+
+    // Pular logs órfãos/antigos: a baixa só conta se ainda existir
+    // solicitação atual do mesmo modelo + cor + tamanho no pedido.
+    const solicitadosAtuais = new Set(
+      solic.map((ps) => pkKey(ps.modelo, ps.cor, ps.tamanho)),
+    );
+
     const log = (p as any).pecas_completadas_log as
       | Array<{ modelo: string; cor: string; tamanho: string; qtd: number }>
       | null
@@ -61,6 +66,7 @@ export function calcBaixado(pedidos: Pedido[]): Map<string, number> {
       const q = Number(item?.qtd) || 0;
       if (q <= 0) continue;
       const k = pkKey(item.modelo, item.cor, item.tamanho);
+      if (!solicitadosAtuais.has(k)) continue;
       m.set(k, (m.get(k) ?? 0) + q);
     }
   }
