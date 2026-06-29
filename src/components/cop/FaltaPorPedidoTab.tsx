@@ -246,13 +246,16 @@ export function FaltaPorPedidoTab() {
               </div>
               {(l.pedido.pecas_completadas_log?.length ?? 0) > 0 && (
                 <details className="mt-2 text-xs">
-                  <summary className="cursor-pointer text-muted-foreground">Histórico de baixas pelo COP ({l.pedido.pecas_completadas_log!.length})</summary>
+                  <summary className="cursor-pointer text-muted-foreground">Histórico de baixas ({l.pedido.pecas_completadas_log!.length})</summary>
                   <ul className="mt-1 space-y-0.5">
                     {l.pedido.pecas_completadas_log!.map((log, i) => (
                       <li key={i}>
                         <span className="font-mono">{new Date(log.em).toLocaleString("pt-BR")}</span>
                         {" — "}{log.qtd}× {log.modelo} · {log.cor} · {log.tamanho}
-                        {" (COP "}<b>{rotuloCop(log.cop_numero, log.cop_letra)}</b>{")"}
+                        {log.cop_numero != null && (
+                          <> {" (COP "}<b>{rotuloCop(log.cop_numero, log.cop_letra ?? null)}</b>{")"}</>
+                        )}
+                        {log.observacao && <> {" — "}<i className="text-muted-foreground">{log.observacao}</i></>}
                       </li>
                     ))}
                   </ul>
@@ -270,12 +273,12 @@ export function FaltaPorPedidoTab() {
           modelo={baixa.grupo.modelo}
           cor={baixa.grupo.cor}
           itens={itensDialog}
-          cops={cops}
-          onConfirm={async (copId, baixas) => {
-            await baixar.mutateAsync({ pedido: baixa.pedido, copId, baixas });
+          onConfirm={async (observacao, baixas) => {
+            await baixar.mutateAsync({ pedido: baixa.pedido, observacao, baixas });
           }}
         />
       )}
+
     </div>
   );
 }
