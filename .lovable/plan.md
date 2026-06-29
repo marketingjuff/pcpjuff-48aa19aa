@@ -1,30 +1,25 @@
-## Ignorar logs de pedidos sem solicitação atual no cálculo de "Baixado"
+Você tem razão: a correção anterior ficou incompleta. Ela ignorou apenas pedidos sem nenhuma solicitação atual, mas ainda contou logs antigos quando o pedido tinha solicitação atual de outro item. Por isso o item “preto” continua aparecendo com baixado, mesmo com o popup dizendo “Nenhum pedido pede este item”.
 
-### Alteração
-Em `src/lib/cop-saldos.ts`, modificar `calcBaixado` para pular pedidos cujo `pecas_solicitadas` esteja vazio ou ausente:
+Plano de correção:
 
-```ts
-export function calcBaixado(pedidos: Pedido[]): Map<string, number> {
-  const m = new Map<string, number>();
-  for (const p of pedidos) {
-    // Pular pedidos sem solicitação atual (testes ou solicitações limpas):
-    // se não há nada pedido, o log histórico não deve afetar o Disponível.
-    const solic = p.pecas_solicitadas ?? [];
-    if (solic.length === 0) continue;
-    const log = (p as any).pecas_completadas_log as Array<...> | null | undefined;
-    if (!Array.isArray(log)) continue;
-    for (const item of log) { ... soma normal ... }
-  }
-  return m;
-}
-```
+1. Ajustar a regra do `Baixado` no COP
+   - Contar `pecas_completadas_log` somente quando existir uma peça atual em `pecas_solicitadas` com o mesmo:
+     - modelo
+     - cor
+     - tamanho
+   - Se o log antigo não tiver mais solicitação atual correspondente, ele será ignorado no saldo.
 
-### Efeito
-- Pedido "0000 teste" (e similares) cujas solicitações foram zeradas deixam de contribuir → a linha "preto" desaparece do Disponível.
-- Pedidos reais com solicitações ativas continuam contando o histórico normalmente.
+2. Manter a proteção contra o bug original
+   - Pedidos finalizados/completos que ainda mantêm a solicitação atual do item continuarão abatendo do Disponível.
+   - Apenas logs “órfãos”/antigos/teste, sem item atual correspondente, deixarão de aparecer.
 
-### Trade-off conhecido
-Se no futuro um pedido legítimo tiver suas peças totalmente baixadas e depois o vendedor usar "Liberar para Completo" (que limpa `pecas_solicitadas`), essas baixas também sumirão do Disponível. Aceito conforme sua escolha.
+3. Atualizar as telas que usam esse cálculo automaticamente
+   - Aba Disponível
+   - Dashboard COP / saldo negativo
+   - Popup de detalhe do item
 
-### Arquivos
-- `src/lib/cop-saldos.ts` — apenas `calcBaixado`. Nenhum outro arquivo, nenhuma migração.
+4. Validar com o caso da imagem
+   - Conferir que “preto” não aparece mais quando não há pedido atual pedindo esse item.
+   - Conferir que o popup não mostra mais `Baixado: 8` sem pedido correspondente.
+
+Observação: não vou apagar dados do banco; será só correção da lógica de leitura/cálculo para ignorar logs antigos sem solicitação atual correspondente.
