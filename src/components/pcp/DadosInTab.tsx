@@ -1,4 +1,4 @@
-import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc, episodioAberto } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc, episodioAberto, validarOrcamento } from "@/lib/pedidos";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
@@ -186,9 +186,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
   async function saveVendor() {
     const miss = findMissing(VENDOR_REQUIRED);
+    if (!validarOrcamento(form.orcamento)) miss.add("orcamento");
     setMissingVendor(miss);
     if (miss.size > 0) {
-      toast.error("Preencha os campos obrigatórios do Input do Vendedor.");
+      toast.error("Preencha os campos obrigatórios do Input do Vendedor. O orçamento precisa conter números e no mínimo 2 letras.");
       return;
     }
     if (await checkDuplicado(String(form.pedido_olist ?? ""), selected?.id)) {
@@ -219,9 +220,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     }
     if (!selected?.id) {
       const missV = findMissing(VENDOR_REQUIRED);
+      if (!validarOrcamento(form.orcamento)) missV.add("orcamento");
       setMissingVendor(missV);
       if (missV.size > 0) {
-        toast.error("Para criar o pedido, preencha também os obrigatórios do Input do Vendedor.");
+        toast.error("Para criar o pedido, preencha também os obrigatórios do Input do Vendedor. O orçamento precisa conter números e no mínimo 2 letras.");
         return;
       }
       if (await checkDuplicado(String(form.pedido_olist ?? ""))) {
