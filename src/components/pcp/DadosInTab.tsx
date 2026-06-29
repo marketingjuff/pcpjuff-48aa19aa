@@ -969,10 +969,11 @@ function Field({ label, invalid, children }: { label: string; invalid?: boolean;
 
 /** Bloco 4: campo Data de Entrega com fluxo de "Solicitar alteração" quando produção já tem input. */
 function DataEntregaField({
-  form, selected, onChangeDataEntrega, onPropostaSaved,
+  form, selected, invalid, onChangeDataEntrega, onPropostaSaved,
 }: {
   form: Partial<Pedido>;
   selected: Pedido | null;
+  invalid?: boolean;
   onChangeDataEntrega: (v: string | null) => void;
   onPropostaSaved: (v: string) => void;
 }) {
@@ -986,11 +987,12 @@ function DataEntregaField({
 
   if (!exigeSolicitacao) {
     return (
-      <Field label="Data de Entrega">
+      <Field label="Data de Entrega *" invalid={invalid}>
         <DateInputBR value={form.data_entrega} onChange={onChangeDataEntrega} />
       </Field>
     );
   }
+
 
   async function salvarSolicitacao() {
     if (!selected || !novaData) {
