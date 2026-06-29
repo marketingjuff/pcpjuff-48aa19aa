@@ -261,7 +261,7 @@ export function RomaneioTab() {
       .map((r) => ({ modelo: r.modelo, cor: r.cor, tamanho: r.tamanho, qtd: r.qtd_recebida }));
     const pecasRestantes = subtrairPecas(selected.pecas || [], pecasMovidas);
 
-    // Inserir filho
+    // Inserir filho (sem `numero` — usa o sequence; rótulo resolve via pai)
     const { data: filho, error: e1 } = await supabase.from("cops" as any).insert({
       status: "Romaneio Completo" as CopStatus,
       pecas: pecasMovidas as any,
@@ -273,8 +273,6 @@ export function RomaneioTab() {
       num_fretes: selected.num_fretes ?? 1,
       letra: novaLetra,
       cop_romaneio_pai_id: original_id,
-      // mantém o mesmo numero base na exibição via rotuloCop (mas é um id próprio)
-      numero: selected.numero,
     }).select().single();
     if (e1) { toast.error(e1.message); return; }
 
@@ -289,7 +287,8 @@ export function RomaneioTab() {
     if (e2) { toast.error(e2.message); return; }
 
     qc.invalidateQueries({ queryKey: ["cops"] });
-    toast.success(`Romaneio ${rotuloCop(selected.numero, novaLetra)} criado.`);
+    const numeroBase = numeroBaseCop(selected, cops);
+    toast.success(`Romaneio ${rotuloCop(numeroBase, novaLetra)} criado.`);
     // mantém seleção no pai (que segue parcial)
   }
 
