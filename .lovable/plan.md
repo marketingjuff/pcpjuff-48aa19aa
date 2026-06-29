@@ -1,21 +1,16 @@
-Plano para corrigir o cálculo do Disponível no COP:
+# Reabilitar "Solicitar Peças" após voltar para Incompleto
 
-1. Alterar somente `src/lib/cop-saldos.ts`
-   - Reescrever `calcBaixado` para somar todo o `pecas_completadas_log` de todos os pedidos.
-   - Remover a dependência de `pecas_solicitadas` / `solicitadosAtuais`.
-   - Manter a validação de quantidade positiva (`qtd > 0`).
+## Problema
 
-2. Não alterar o banco de dados
-   - Sem migration.
-   - Sem alteração de tabela, trigger, policy ou dados existentes.
-   - Sem `DROP`, `DELETE`, `TRUNCATE` ou qualquer operação destrutiva.
+Quando o COP dá baixa total das peças, `pecas_solicitadas` fica com `qtd_enviada == qtd` para todas as linhas. Mesmo trocando `status_pecas` para "incompleto" no Dados In e salvando, o botão continua aparecendo como **"Pedido Completo"** (readOnly), pois `tudoEnviado` ainda é `true` — impedindo uma nova solicitação ao COP.
 
-3. Não mexer no fluxo de gravação da baixa
-   - `FaltaPorPedidoTab.tsx` já grava `qtd_enviada` e `pecas_completadas_log`.
-   - `BaixaCopDialog.tsx` fica igual.
-   - `DisponivelTab.tsx` fica igual e refletirá o cálculo corrigido automaticamente.
+## Solução
 
-4. Resultado esperado
-   - Fórmula continua: `Disponível = Produção − Faltantes − Baixado`.
-   - Após baixa total, o `Faltantes` cai, mas o `Baixado` permanece descontando.
-   - A peça baixada não volta ao disponível; o disponível só aumenta com novo corte/romaneio.
+Em `src/components/pcp/DadosInTab.tsx`, no fluxo de salvar do Dados In:
+
+- Se o usuário definiu `status_pecas = "incompleto"` e a solicitação atual está toda enviada (`tudoEnviado`), limpar `pecas_solicitadas: []` ao salvar.
+- O histórico de baixas (`pecas_completadas_log`) permanece intocado, então o registro no COP/Disponível continua íntegro.
+- Resultado: ao reabrir o pedido, o botão volta a renderizar como **"Solicitar Peças"** (não readOnly) e o usuário pode montar uma nova solicitação.
+- Entretanto a soma da solicitacao de peças precisa respeitar a quantidade de peças do pedido para nao gerar inconsistencias. 
+
+Nenhuma outra aba ou tabela é tocada.
