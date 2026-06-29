@@ -1,25 +1,21 @@
-Você tem razão: a correção anterior ficou incompleta. Ela ignorou apenas pedidos sem nenhuma solicitação atual, mas ainda contou logs antigos quando o pedido tinha solicitação atual de outro item. Por isso o item “preto” continua aparecendo com baixado, mesmo com o popup dizendo “Nenhum pedido pede este item”.
+Plano para corrigir o cálculo do Disponível no COP:
 
-Plano de correção:
+1. Alterar somente `src/lib/cop-saldos.ts`
+   - Reescrever `calcBaixado` para somar todo o `pecas_completadas_log` de todos os pedidos.
+   - Remover a dependência de `pecas_solicitadas` / `solicitadosAtuais`.
+   - Manter a validação de quantidade positiva (`qtd > 0`).
 
-1. Ajustar a regra do `Baixado` no COP
-   - Contar `pecas_completadas_log` somente quando existir uma peça atual em `pecas_solicitadas` com o mesmo:
-     - modelo
-     - cor
-     - tamanho
-   - Se o log antigo não tiver mais solicitação atual correspondente, ele será ignorado no saldo.
+2. Não alterar o banco de dados
+   - Sem migration.
+   - Sem alteração de tabela, trigger, policy ou dados existentes.
+   - Sem `DROP`, `DELETE`, `TRUNCATE` ou qualquer operação destrutiva.
 
-2. Manter a proteção contra o bug original
-   - Pedidos finalizados/completos que ainda mantêm a solicitação atual do item continuarão abatendo do Disponível.
-   - Apenas logs “órfãos”/antigos/teste, sem item atual correspondente, deixarão de aparecer.
+3. Não mexer no fluxo de gravação da baixa
+   - `FaltaPorPedidoTab.tsx` já grava `qtd_enviada` e `pecas_completadas_log`.
+   - `BaixaCopDialog.tsx` fica igual.
+   - `DisponivelTab.tsx` fica igual e refletirá o cálculo corrigido automaticamente.
 
-3. Atualizar as telas que usam esse cálculo automaticamente
-   - Aba Disponível
-   - Dashboard COP / saldo negativo
-   - Popup de detalhe do item
-
-4. Validar com o caso da imagem
-   - Conferir que “preto” não aparece mais quando não há pedido atual pedindo esse item.
-   - Conferir que o popup não mostra mais `Baixado: 8` sem pedido correspondente.
-
-Observação: não vou apagar dados do banco; será só correção da lógica de leitura/cálculo para ignorar logs antigos sem solicitação atual correspondente.
+4. Resultado esperado
+   - Fórmula continua: `Disponível = Produção − Faltantes − Baixado`.
+   - Após baixa total, o `Faltantes` cai, mas o `Baixado` permanece descontando.
+   - A peça baixada não volta ao disponível; o disponível só aumenta com novo corte/romaneio.

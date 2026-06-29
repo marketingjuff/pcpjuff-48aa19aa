@@ -41,22 +41,19 @@ export function calcFaltantes(pedidos: Pedido[]): Map<string, number> {
 }
 
 /**
- * Map M·C·T → qtd já baixada (histórico imutável em `pecas_completadas_log`).
- * Percorre TODOS os pedidos, independente de `status_pecas`, garantindo que
- * peças consumidas nunca voltem ao Disponível.
+ * Map M·C·T → qtd já baixada (saiu fisicamente para o cliente).
+ *
+ * Percorre TODOS os pedidos e soma TODO o histórico imutável `pecas_completadas_log`,
+ * SEM nenhuma condição sobre o estado atual de `pecas_solicitadas`.
+ *
+ * Motivo: a baixa representa peça que saiu fisicamente do estoque e foi para o
+ * cliente. Isso é permanente. Uma vez baixada, a peça nunca volta ao Disponível,
+ * mesmo que a solicitação do pedido seja depois alterada, satisfeita ou removida.
+ * A única forma de aumentar o Disponível é um novo corte/romaneio.
  */
 export function calcBaixado(pedidos: Pedido[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const p of pedidos) {
-    const solic = p.pecas_solicitadas ?? [];
-    if (solic.length === 0) continue;
-
-    // Pular logs órfãos/antigos: a baixa só conta se ainda existir
-    // solicitação atual do mesmo modelo + cor + tamanho no pedido.
-    const solicitadosAtuais = new Set(
-      solic.map((ps) => pkKey(ps.modelo, ps.cor, ps.tamanho)),
-    );
-
     const log = (p as any).pecas_completadas_log as
       | Array<{ modelo: string; cor: string; tamanho: string; qtd: number }>
       | null
@@ -66,7 +63,6 @@ export function calcBaixado(pedidos: Pedido[]): Map<string, number> {
       const q = Number(item?.qtd) || 0;
       if (q <= 0) continue;
       const k = pkKey(item.modelo, item.cor, item.tamanho);
-      if (!solicitadosAtuais.has(k)) continue;
       m.set(k, (m.get(k) ?? 0) + q);
     }
   }
