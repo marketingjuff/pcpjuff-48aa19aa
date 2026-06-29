@@ -378,6 +378,27 @@ export function PagamentoOficinasTab() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmApagar} onOpenChange={setConfirmApagar}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar pagamento deste COP?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove os registros de liberação/pagamento e devolve o COP ao status "Romaneio Completo". A conferência e o romaneio permanecem. Não é possível desfazer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={apagarPagamento.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              disabled={apagarPagamento.isPending}
+              onClick={(e) => { e.preventDefault(); apagarPagamento.mutate(); }}
+            >
+              {apagarPagamento.isPending ? "Apagando..." : "Apagar pagamento"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
