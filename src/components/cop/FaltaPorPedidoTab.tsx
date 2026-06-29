@@ -119,10 +119,8 @@ export function FaltaPorPedidoTab() {
 
   const baixar = useMutation({
     mutationFn: async ({
-      pedido, copId, baixas,
-    }: { pedido: Pedido; copId: string; baixas: { idx: number; tamanho: string; qtd: number }[] }) => {
-      const cop = cops.find((c) => c.id === copId);
-      if (!cop) throw new Error("COP não encontrado.");
+      pedido, observacao, baixas,
+    }: { pedido: Pedido; observacao: string; baixas: { idx: number; tamanho: string; qtd: number }[] }) => {
       const arr = ((pedido.pecas_solicitadas as PecaSolicitada[] | null) ?? []).slice();
       const { data: ses } = await supabase.auth.getUser();
       const novoLog: any[] = [...((pedido.pecas_completadas_log ?? []) as any[])];
@@ -136,7 +134,7 @@ export function FaltaPorPedidoTab() {
           modelo: linha.modelo, cor: linha.cor, tamanho: linha.tamanho, qtd: b.qtd,
           em: new Date().toISOString(),
           por: ses.user?.id ?? null,
-          cop_id: cop.id, cop_numero: cop.numero, cop_letra: cop.letra ?? null,
+          observacao: observacao || null,
         });
       }
 
@@ -154,6 +152,7 @@ export function FaltaPorPedidoTab() {
     },
     onError: (e: any) => toast.error(e.message ?? "Erro na baixa."),
   });
+
 
   const itensDialog: ItemFalta[] = useMemo(() => {
     if (!baixa) return [];
