@@ -118,7 +118,10 @@ export function PagamentoOficinasTab() {
     mutationFn: async () => {
       if (!selected) return;
       // Salva conferência primeiro
-      const { error: e1 } = await supabase.from("cops" as any).update({ conferencia: conf as any }).eq("id", selected.id);
+      const { error: e1 } = await supabase.from("cops" as any).update({
+        conferencia: conf as any,
+        observacoes_pagamento: (obsPag || "").toUpperCase() || null,
+      }).eq("id", selected.id);
       if (e1) throw e1;
       const { error } = await (supabase as any).rpc("liberar_pagamento_cop", { _cop_id: selected.id, _valor: valor });
       if (error) throw error;
