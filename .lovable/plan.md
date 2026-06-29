@@ -1,35 +1,45 @@
-## Problema
+## Objetivo
 
-Hoje o botão **Refazer pedido** (componente `VoltarDropdown`) só aparece quando `!readOnly`. Quando a etapa já foi concluída (e fica bloqueada para edição), o botão somo. Nas abas DTF / Silk / Acabamento ele também está dentro do `<fieldset disabled={readOnly}>`, então mesmo que fosse renderizado ficaria desabilitado.
+Tornar a seleção de COP **opcional** no dialog de baixa de peças faltantes (aba "Falta por Pedido" do COP). Adicionar campo de observação livre para anotações manuais. Liberar a quantidade a abater até o total em falta, sem amarração ao estoque do COP.
 
-## Mudança
+## Alterações
 
-Tornar o **Refazer** sempre visível e clicável nas abas operacionais, independentemente do `readOnly` da etapa. Travar edição continua valendo só para os campos de execução — o Refazer é uma ação separada (gestores/operadores autorizados podem corrigir um pedido já finalizado naquela etapa).
+### 1. `src/lib/pedidos.ts` — tipo do log
 
-### Arquivos afetados
+Tornar campos de COP opcionais e adicionar `observacao`:
 
-1. **`src/components/pcp/DTFTab.tsx`**
-   - Mover `<VoltarDropdown ...>` para fora do `<fieldset disabled={readOnly}>`.
-   - Remover a condição `!readOnly &&` que envolve o `VoltarDropdown`.
+```ts
+pecas_completadas_log?: Array<{
+  modelo: string; cor: string; tamanho: string; qtd: number;
+  em: string; por: string | null;
+  cop_id?: string | null;
+  cop_numero?: number | null;
+  cop_letra?: string | null;
+  observacao?: string | null;
+}> | null;
+```
 
-2. **`src/components/pcp/SilkTab.tsx`**
-   - Idem: tirar do fieldset e remover o gate `!readOnly`.
+### 2. `src/components/cop/BaixaCopDialog.tsx`
 
-3. **`src/components/pcp/AcabamentoTab.tsx`**
-   - Idem: o `AcabamentoVoltar` (que renderiza `VoltarDropdown`) sai do fieldset e perde o gate `!readOnly`.
+- Remover `Select` de COP, `candidatos`, `copId`, `copSel`, `capFor`, lógica de pré-preenchimento baseado em COP.
+- Adicionar `Textarea` opcional "Observação (ex: COP 0001 e 0002, misturado)".
+- Coluna "No COP" da tabela removida. Cap do input passa a ser apenas `it.falta`.
+- Mudar assinatura de `onConfirm`: `(observacao: string, baixas) => void`.
+- Botão "Confirmar baixa" habilitado quando `totalAbater > 0` (sem exigir COP).
+- Manter `cops` removido das props (não é mais usado).
 
-4. **`src/components/pcp/ExpedicaoTab.tsx`**
-   - Já renderiza o `VoltarDropdown` sem gate por readOnly (Expedição não usa `isReadOnly`). Sem alteração.
+### 3. `src/components/cop/FaltaPorPedidoTab.tsx`
 
-5. **`src/components/pcp/ArteTab.tsx`**
-   - Hoje a aba Arte **não tem** botão Refazer. Confirmar antes se quer também adicionar lá (destinos só "dados") ou se a frase "nas abas" se refere apenas a DTF/Silk/Acabamento/Expedição.
+- Mutation `baixar`: aceitar `observacao?: string` no lugar de `copId`. Remover lookup de COP.
+- Ao gravar `novoLog`, omitir `cop_id`/`cop_numero`/`cop_letra` (ou `null`) e incluir `observacao` se preenchida.
+- Atualizar render do histórico (`details`) para mostrar a observação quando existir e ocultar `(COP ...)` quando não houver `cop_numero`.
+- Callback `onConfirm={(observacao, baixas) => baixar.mutateAsync({ pedido, observacao, baixas })}`.
 
-### Comportamento mantido
+### 4. `src/components/pcp/PecasCompletadasPanel.tsx`
 
-- A trava de edição dos campos da etapa continua igual (fieldset disabled cobre os inputs).
-- O `VoltarDropdown` já lida internamente com permissões via `useColorSettings` e o `RefacaoDialog`; quem dispara já é a pessoa autorizada da aba.
-- Nada muda no fluxo de refação em si (snapshots, wipe de campos, etc.).
+- Renderizar `(COP ...)` apenas quando `l.cop_numero != null`; exibir observação quando presente.
 
-## Pergunta aberta
+## Observações
 
-Quer que eu **também** adicione o botão Refazer na aba **Arte** (que hoje não tem nenhum)? Se sim, com qual destino — apenas "Dados In"?
+- Não é necessária migração de schema: `pecas_completadas_log` é `JSONB`, então tornar campos opcionais é puramente tipagem TS.
+- Registros antigos com `cop_id` continuam válidos e são exibidos normalmente.

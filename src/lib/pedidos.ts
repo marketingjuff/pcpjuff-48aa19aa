@@ -148,7 +148,10 @@ export type Pedido = PedidoBase & {
   pecas_completadas_log?: Array<{
     modelo: string; cor: string; tamanho: string; qtd: number;
     em: string; por: string | null;
-    cop_id: string; cop_numero: number; cop_letra: string | null;
+    cop_id?: string | null;
+    cop_numero?: number | null;
+    cop_letra?: string | null;
+    observacao?: string | null;
   }> | null;
 };
 
