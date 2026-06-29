@@ -623,17 +623,22 @@ export function RomaneioTab() {
                         </tr>
                       </thead>
                       <tbody>
-                        {(selected.pecas || []).map((p, i) => {
-                          const r = getRecebida(recebidas, p.modelo, p.cor, p.tamanho);
-                          const ok = r === p.qtd;
-                          return (
-                            <tr key={i} className="border-t">
-                              <td className="p-2">{p.modelo} · {p.cor} · {p.tamanho}</td>
-                              <td className="p-2 text-right tabular-nums">{p.qtd}</td>
-                              <td className={`p-2 text-right tabular-nums ${ok ? "text-green-700" : "text-amber-700"}`}>{r}</td>
-                            </tr>
-                          );
-                        })}
+                        {(selected.pecas || [])
+                          .filter((p) => getRecebida(recebidas, p.modelo, p.cor, p.tamanho) > 0)
+                          .map((p, i) => {
+                            const r = getRecebida(recebidas, p.modelo, p.cor, p.tamanho);
+                            const ok = r === p.qtd;
+                            return (
+                              <tr key={i} className="border-t">
+                                <td className="p-2">{p.modelo} · {p.cor} · {p.tamanho}</td>
+                                <td className="p-2 text-right tabular-nums">{p.qtd}</td>
+                                <td className={`p-2 text-right tabular-nums ${ok ? "text-green-700" : "text-amber-700"}`}>{r}</td>
+                              </tr>
+                            );
+                          })}
+                        {(selected.pecas || []).filter((p) => getRecebida(recebidas, p.modelo, p.cor, p.tamanho) > 0).length === 0 && (
+                          <tr><td colSpan={3} className="p-3 text-center text-muted-foreground">Nenhuma peça recebida ainda.</td></tr>
+                        )}
                       </tbody>
                       <tfoot>
                         <tr className="bg-muted/30">
