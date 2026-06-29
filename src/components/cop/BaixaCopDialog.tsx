@@ -19,11 +19,12 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   modelo: string;
   cor: string;
+  orcamento?: string | number | null;
   itens: ItemFalta[];
   onConfirm: (observacao: string, baixas: { idx: number; tamanho: string; qtd: number }[]) => void | Promise<void>;
 }
 
-export function BaixaCopDialog({ open, onOpenChange, modelo, cor, itens, onConfirm }: Props) {
+export function BaixaCopDialog({ open, onOpenChange, modelo, cor, orcamento, itens, onConfirm }: Props) {
   const [qtds, setQtds] = useState<Record<string, number>>({});
   const [observacao, setObservacao] = useState("");
   const [saving, setSaving] = useState(false);
@@ -54,7 +55,8 @@ export function BaixaCopDialog({ open, onOpenChange, modelo, cor, itens, onConfi
       <DialogContent className="max-w-[760px]">
         <DialogHeader>
           <DialogTitle>
-            Dar baixa — {modelo} ·{" "}
+            {orcamento != null && <>Orçamento <span className="font-mono">{orcamento}</span> — </>}
+            {modelo} ·{" "}
             <span className="inline-block px-2 py-0.5 rounded text-xs align-middle" style={{ backgroundColor: hex, color: fg }}>{cor}</span>
           </DialogTitle>
         </DialogHeader>
