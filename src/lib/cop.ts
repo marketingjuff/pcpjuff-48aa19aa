@@ -99,6 +99,7 @@ export type Cop = {
   pagamento_pago_por: string | null;
   pagamento_valor_calculado: number | null;
   observacoes_pagamento: string | null;
+  historico_recebimentos: HistoricoRecebimento[];
   perdas: unknown[];
   created_at: string;
   updated_at: string;
