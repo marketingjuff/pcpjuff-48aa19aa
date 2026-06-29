@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { COP_STATUS_LIST, totalPecasCop, rotuloCop, type Cop } from "@/lib/cop";
 import type { Pedido } from "@/lib/pedidos";
-import { calcEmProducao, calcFaltantes, calcDisponivel, pkKey, dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
+import { calcEmProducao, calcFaltantes, calcBaixado, calcDisponivel, pkKey, dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
 
 export function DashboardCopTab() {
   const qc = useQueryClient();
@@ -53,7 +53,8 @@ export function DashboardCopTab() {
 
   const producao = useMemo(() => calcEmProducao(cops), [cops]);
   const faltantes = useMemo(() => calcFaltantes(pedidos), [pedidos]);
-  const disponivel = useMemo(() => calcDisponivel(producao, faltantes), [producao, faltantes]);
+  const baixado = useMemo(() => calcBaixado(pedidos), [pedidos]);
+  const disponivel = useMemo(() => calcDisponivel(producao, faltantes, baixado), [producao, faltantes, baixado]);
 
   const saldoGeral = useMemo(() => {
     let s = 0;

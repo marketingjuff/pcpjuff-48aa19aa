@@ -1,36 +1,30 @@
-## Objetivo
+## Correção do saldo "Disponível" do COP
 
-Hoje o Exportar/Importar Backup (em Configurações → PCP) cobre apenas: `pedidos`, `feriados`, `profiles`, `user_roles`. Falta tudo do COP e as configurações globais. Vou ampliar para cobrir **toda a base** do sistema.
+### Bug
+`Disponível = Produção − Faltantes`. Quando uma baixa zera `pecas_solicitadas` de um pedido e o trigger marca `status_pecas = 'completo'`, o pedido some de `calcFaltantes` e o Disponível volta para o total da Produção — como se as peças baixadas nunca tivessem saído.
 
-## Tabelas incluídas no backup
+### Correção
+Usar o histórico imutável `pedidos.pecas_completadas_log` (varrendo todos os pedidos, sem filtrar status) como "Baixado":
+```
+Disponível = Produção − Faltante (pendente atual) − Baixado (histórico)
+```
 
-Passa a exportar/importar todas as tabelas de aplicação:
+### Arquivos alterados
 
-- `profiles`
-- `user_roles`
-- `app_color_settings`
-- `app_lists`
-- `feriados`
-- `oficinas`
-- `pedidos`
-- `cops`
-- `cop_perdas`
+**1. `src/lib/cop-saldos.ts`**
+- Nova função `calcBaixado(pedidos: Pedido[]): Map<string, number>` — soma `qtd` de cada entrada de `pecas_completadas_log` por `pkKey(modelo, cor, tamanho)`, percorrendo todos os pedidos.
+- Alterar assinatura: `calcDisponivel(producao, faltantes, baixado?)` — `baixado` opcional (default Map vazio) para manter chamadas que não precisarem dele compilando; subtrai faltantes + baixado da produção.
 
-(Schemas internos do Supabase — `auth`, `storage`, etc. — continuam fora, como deve ser.)
+**2. `src/components/cop/DisponivelTab.tsx`**
+- `const baixado = useMemo(() => calcBaixado(pedidos), [pedidos])`.
+- `calcDisponivel(producao, faltantes, baixado)`.
+- `title` da célula: incluir `· Baixado {baix}`.
+- Modal de detalhe: adicionar terceiro card "Baixado" (mesmo estilo neutro/azul) e ajustar Saldo = `prod − falt − baix`.
 
-## Ordem de inserção/remoção (respeita dependências)
+**3. `src/components/cop/DashboardCopTab.tsx`**
+- `const baixado = useMemo(() => calcBaixado(pedidos), [pedidos])`.
+- `calcDisponivel(producao, faltantes, baixado)` — propaga para "Saldo geral" e "Top urgências".
 
-- Inserção: `profiles` → `user_roles` → `app_color_settings` → `app_lists` → `feriados` → `oficinas` → `pedidos` → `cops` → `cop_perdas`
-- Remoção (modo "substituir"): ordem inversa.
-
-`cops` tem auto-referências (`cop_pai_id`, `cop_romaneio_pai_id`). O `upsert` por `id` em lote único resolve isso sem precisar de duas passadas.
-
-## Mudanças técnicas
-
-- `src/lib/backup.functions.ts`: ampliar a constante `TABLES` e as ordens `insertOrder`/`deleteOrder` com as novas tabelas; manter o fluxo atual (admin/gestor para exportar, admin para importar; `upsert` por `id`; modo replace apaga antes).
-- Sem mudanças de UI — os botões existentes em Configurações continuam funcionando, agora cobrindo toda a base.
-- Sem migração de banco.
-
-## Observação
-
-O arquivo de backup ficará maior (inclui COPs e perdas). O fluxo de download/upload JSON atual continua igual.
+### Não tocado
+- `calcFaltantes` e `calcEmProducao` permanecem como estão.
+- Nenhuma migração, nenhuma mudança de schema, nenhuma outra lógica de COP/PCP.

@@ -40,12 +40,39 @@ export function calcFaltantes(pedidos: Pedido[]): Map<string, number> {
   return m;
 }
 
-/** Disponível = produção − faltantes (pode ser negativo). */
-export function calcDisponivel(producao: Map<string, number>, faltantes: Map<string, number>): Map<string, number> {
+/**
+ * Map M·C·T → qtd já baixada (histórico imutável em `pecas_completadas_log`).
+ * Percorre TODOS os pedidos, independente de `status_pecas`, garantindo que
+ * peças consumidas nunca voltem ao Disponível.
+ */
+export function calcBaixado(pedidos: Pedido[]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const p of pedidos) {
+    const log = (p as any).pecas_completadas_log as
+      | Array<{ modelo: string; cor: string; tamanho: string; qtd: number }>
+      | null
+      | undefined;
+    if (!Array.isArray(log)) continue;
+    for (const item of log) {
+      const q = Number(item?.qtd) || 0;
+      if (q <= 0) continue;
+      const k = pkKey(item.modelo, item.cor, item.tamanho);
+      m.set(k, (m.get(k) ?? 0) + q);
+    }
+  }
+  return m;
+}
+
+/** Disponível = produção − faltantes − baixado (pode ser negativo). */
+export function calcDisponivel(
+  producao: Map<string, number>,
+  faltantes: Map<string, number>,
+  baixado: Map<string, number> = new Map(),
+): Map<string, number> {
   const out = new Map<string, number>();
-  const keys = new Set<string>([...producao.keys(), ...faltantes.keys()]);
+  const keys = new Set<string>([...producao.keys(), ...faltantes.keys(), ...baixado.keys()]);
   for (const k of keys) {
-    out.set(k, (producao.get(k) ?? 0) - (faltantes.get(k) ?? 0));
+    out.set(k, (producao.get(k) ?? 0) - (faltantes.get(k) ?? 0) - (baixado.get(k) ?? 0));
   }
   return out;
 }

@@ -16,7 +16,7 @@ import { REFACAO_MODELOS, REFACAO_TAMANHOS, type Pedido } from "@/lib/pedidos";
 import { calcularEtapaAtual } from "@/lib/pedidos";
 import type { Cop } from "@/lib/cop";
 import {
-  pkKey, calcEmProducao, calcFaltantes, calcDisponivel, pedidosDoItem,
+  pkKey, calcEmProducao, calcFaltantes, calcBaixado, calcDisponivel, pedidosDoItem,
 } from "@/lib/cop-saldos";
 
 export function DisponivelTab() {
@@ -51,7 +51,8 @@ export function DisponivelTab() {
 
   const producao = useMemo(() => calcEmProducao(cops), [cops]);
   const faltantes = useMemo(() => calcFaltantes(pedidos), [pedidos]);
-  const disponivel = useMemo(() => calcDisponivel(producao, faltantes), [producao, faltantes]);
+  const baixado = useMemo(() => calcBaixado(pedidos), [pedidos]);
+  const disponivel = useMemo(() => calcDisponivel(producao, faltantes, baixado), [producao, faltantes, baixado]);
 
   // Lista de cores presentes (alfabética), opcionalmente filtrada
   const coresDisponiveis = useMemo(() => {
@@ -148,7 +149,8 @@ export function DisponivelTab() {
                       const v = disponivel.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const prod = producao.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const falt = faltantes.get(pkKey(l.modelo, l.cor, t)) ?? 0;
-                      const presente = prod > 0 || falt > 0;
+                      const baix = baixado.get(pkKey(l.modelo, l.cor, t)) ?? 0;
+                      const presente = prod > 0 || falt > 0 || baix > 0;
                       const color = !presente ? "text-muted-foreground"
                                   : v < 0 ? "text-red-700 font-bold"
                                   : v === 0 ? "text-amber-700 font-semibold"
@@ -160,7 +162,7 @@ export function DisponivelTab() {
                             className={`w-full rounded px-2 py-1 tabular-nums hover:bg-accent/60 ${color}`}
                             onClick={() => presente && setPopup({ modelo: l.modelo, cor: l.cor, tamanho: t })}
                             disabled={!presente}
-                            title={presente ? `Produção ${prod} · Faltantes ${falt}` : "Sem registro"}
+                            title={presente ? `Produção ${prod} · Faltantes ${falt} · Baixado ${baix}` : "Sem registro"}
                           >
                             {presente ? v : "—"}
                           </button>
@@ -188,12 +190,15 @@ export function DisponivelTab() {
                 const lista = pedidosDoItem(pedidos, popup.modelo, popup.cor, popup.tamanho);
                 const prod = producao.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
                 const falt = faltantes.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
+                const baix = baixado.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
+                const saldo = prod - falt - baix;
                 return (
                   <>
                     <div className="text-xs flex gap-4">
                       <span>Produção: <b className="tabular-nums text-green-700">{prod}</b></span>
                       <span>Faltantes: <b className="tabular-nums text-amber-700">{falt}</b></span>
-                      <span>Saldo: <b className={`tabular-nums ${(prod - falt) < 0 ? "text-red-700" : "text-green-700"}`}>{prod - falt}</b></span>
+                      <span>Baixado: <b className="tabular-nums text-blue-700">{baix}</b></span>
+                      <span>Saldo: <b className={`tabular-nums ${saldo < 0 ? "text-red-700" : "text-green-700"}`}>{saldo}</b></span>
                     </div>
                     <div className="rounded-md border overflow-x-auto max-h-[55vh]">
                       <table className="w-full text-sm">
