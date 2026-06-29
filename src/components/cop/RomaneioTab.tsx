@@ -687,8 +687,8 @@ export function RomaneioTab() {
             letraAtual={selected.letra}
             letraNova={letraNova}
             recebidas={recebidas}
-            rotuloAtual={rotuloCop(selected.numero, selected.letra ?? (selected.id === original_id_atual ? "A" : null))}
-            rotuloNovo={rotuloCop(selected.numero, letraNova)}
+            rotuloAtual={rotuloRomaneio({ ...selected, letra: selected.letra ?? (selected.id === original_id_atual ? "A" : null) } as any, cops)}
+            rotuloNovo={rotuloCop(numeroBaseCop(selected, cops), letraNova)}
             onConfirm={handleParticionar}
           />
         </>
