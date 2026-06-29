@@ -10,6 +10,9 @@ import { DateInputBR } from "@/components/ui/date-input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useIsAdmin } from "@/hooks/use-role";
