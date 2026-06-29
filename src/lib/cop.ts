@@ -1,10 +1,13 @@
 // Tipos e helpers do módulo COP (Controle de Ordem de Produção).
 // Reaproveita as constantes de Modelo/Cor/Tamanho do PCP em src/lib/pedidos.ts.
 
+import { REFACAO_TAMANHOS } from "@/lib/pedidos";
+
 export type CopStatus =
   | "Aguardando Risco"
   | "Aguardando Corte"
   | "Aguardando Romaneio"
+  | "Aguardando Oficina"
   | "Na Oficina (Costura)"
   | "Romaneio Parcial"
   | "Romaneio Completo"
@@ -16,6 +19,7 @@ export const COP_STATUS_LIST: CopStatus[] = [
   "Aguardando Risco",
   "Aguardando Corte",
   "Aguardando Romaneio",
+  "Aguardando Oficina",
   "Na Oficina (Costura)",
   "Romaneio Parcial",
   "Romaneio Completo",
@@ -23,6 +27,36 @@ export const COP_STATUS_LIST: CopStatus[] = [
   "Aguardando Pagamento",
   "Finalizado",
 ];
+
+/** Status em que o COP ainda é manipulado na aba Corte. */
+export const STATUS_CORTE: CopStatus[] = [
+  "Aguardando Risco",
+  "Aguardando Corte",
+  "Aguardando Romaneio",
+];
+
+/** Status em que o COP já saiu para o Romaneio (Corte fica bloqueado). */
+export const STATUS_POS_CORTE: CopStatus[] = [
+  "Aguardando Oficina",
+  "Na Oficina (Costura)",
+  "Romaneio Parcial",
+  "Romaneio Completo",
+  "Em Oficina",
+  "Aguardando Pagamento",
+  "Finalizado",
+];
+
+/** Calcula o status do Corte com base nas 4 datas preenchidas. */
+export function calcularStatusCorte(d: {
+  solicitacao_risco?: string | null;
+  execucao_risco?: string | null;
+  solicitacao_corte?: string | null;
+  execucao_corte?: string | null;
+}): CopStatus {
+  if (d.execucao_corte) return "Aguardando Romaneio";
+  if (d.execucao_risco || d.solicitacao_corte) return "Aguardando Corte";
+  return "Aguardando Risco";
+}
 
 /** Peça de um COP: um registro por (modelo, cor, tamanho). */
 export type CopPeca = {
