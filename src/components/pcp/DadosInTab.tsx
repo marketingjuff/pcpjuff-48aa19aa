@@ -161,7 +161,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }, [form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados]);
 
 
-  const VENDOR_REQUIRED: (keyof Pedido)[] = ["pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido", "frete", "tempo_frete"];
+  const VENDOR_REQUIRED: (keyof Pedido)[] = ["pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido", "frete", "tempo_frete", "data_entrega"];
   const PROD_REQUIRED: (keyof Pedido)[] = ["status_pecas", "tipo_estampa"];
   const [missingVendor, setMissingVendor] = useState<Set<string>>(new Set());
   const [missingProd, setMissingProd] = useState<Set<string>>(new Set());
@@ -487,11 +487,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             <DataEntregaField
               form={form}
               selected={selected}
+              invalid={missingVendor.has("data_entrega")}
               onChangeDataEntrega={(v) => set("data_entrega", v)}
               onPropostaSaved={(v) => {
                 set("data_entrega_proposta", v);
               }}
             />
+
             <Field label="É necessário vetorização?">
               <Select
                 value={form.necessita_vetorizacao == null ? "" : (form.necessita_vetorizacao ? "Sim" : "Não")}
@@ -967,10 +969,11 @@ function Field({ label, invalid, children }: { label: string; invalid?: boolean;
 
 /** Bloco 4: campo Data de Entrega com fluxo de "Solicitar alteração" quando produção já tem input. */
 function DataEntregaField({
-  form, selected, onChangeDataEntrega, onPropostaSaved,
+  form, selected, invalid, onChangeDataEntrega, onPropostaSaved,
 }: {
   form: Partial<Pedido>;
   selected: Pedido | null;
+  invalid?: boolean;
   onChangeDataEntrega: (v: string | null) => void;
   onPropostaSaved: (v: string) => void;
 }) {
@@ -984,11 +987,12 @@ function DataEntregaField({
 
   if (!exigeSolicitacao) {
     return (
-      <Field label="Data de Entrega">
+      <Field label="Data de Entrega *" invalid={invalid}>
         <DateInputBR value={form.data_entrega} onChange={onChangeDataEntrega} />
       </Field>
     );
   }
+
 
   async function salvarSolicitacao() {
     if (!selected || !novaData) {
