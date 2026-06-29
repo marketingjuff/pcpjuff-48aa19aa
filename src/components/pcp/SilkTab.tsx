@@ -254,9 +254,12 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Atualizar Silk</UpdateButton>}
                   <RefacaoViewerButton pedido={selected} />
                 </div>
-                {!readOnly && <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />}
               </div>
               </fieldset>
+              <div className="flex justify-end">
+                <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />
+              </div>
+
             </CardContent>
           </Card>
         )}

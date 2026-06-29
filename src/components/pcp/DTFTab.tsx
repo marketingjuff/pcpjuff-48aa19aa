@@ -266,9 +266,12 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                   {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Atualizar DTF</UpdateButton>}
                   <RefacaoViewerButton pedido={selected} />
                 </div>
-                {!readOnly && <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />}
               </div>
               </fieldset>
+              <div className="flex justify-end">
+                <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />
+              </div>
+
             </CardContent>
           </Card>
         )}
