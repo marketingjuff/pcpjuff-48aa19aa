@@ -595,10 +595,12 @@ export function RomaneioTab() {
               <CardTitle className="text-base">Conferência</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              {selected.status === "Romaneio Completo" || selected.conferido_em ? (
+              {selected.status === "Romaneio Completo" || selected.status === "Romaneio Parcial" || selected.conferido_em ? (
                 <>
                   <div className="rounded-md border bg-muted/30 p-3">
-                    Conferência liberada. Verifique se as <b>quantidades recebidas</b> batem com o que foi solicitado neste romaneio.
+                    {selected.status === "Romaneio Parcial"
+                      ? <>Romaneio <b>parcial</b>. Confira o que já chegou e use <b>Particionar</b> para liberar a parte recebida para pagamento.</>
+                      : <>Conferência liberada. Verifique se as <b>quantidades recebidas</b> batem com o que foi solicitado neste romaneio.</>}
                   </div>
                   <div className="rounded-md border overflow-hidden">
                     <table className="w-full text-xs">
@@ -631,26 +633,53 @@ export function RomaneioTab() {
                       </tfoot>
                     </table>
                   </div>
-                  {selected.conferido_em ? (
-                    <div className="text-xs text-green-700">
-                      ✓ Conferido em {new Date(selected.conferido_em).toLocaleString("pt-BR")}.
+
+                  {/* Histórico de chegadas */}
+                  {(selected.historico_recebimentos?.length ?? 0) > 0 && (
+                    <div className="rounded-md border p-2">
+                      <div className="text-xs font-semibold mb-1">Histórico de chegadas</div>
+                      <ul className="space-y-1 text-xs">
+                        {selected.historico_recebimentos!.slice().reverse().map((h, i) => (
+                          <li key={i} className="flex justify-between gap-2">
+                            <span>
+                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] mr-1 ${h.tipo === "completo" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>
+                                {h.tipo}
+                              </span>
+                              {new Date(h.em).toLocaleString("pt-BR")}
+                              {h.letra && <> · letra <b>{h.letra}</b></>}
+                            </span>
+                            <span className="tabular-nums font-semibold">{h.total}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  ) : (
-                    <Button style={btnStyle("conferir")} onClick={handleConferir} disabled={salvar.isPending} className="w-full">
-                      <Check className="h-4 w-4 mr-1" /> Confirmar conferência
-                    </Button>
+                  )}
+
+                  {selected.status === "Romaneio Completo" && (
+                    selected.conferido_em ? (
+                      <div className="text-xs text-green-700">
+                        ✓ Conferido em {new Date(selected.conferido_em).toLocaleString("pt-BR")}.
+                      </div>
+                    ) : (
+                      <Button style={btnStyle("conferir")} onClick={handleConferir} disabled={salvar.isPending} className="w-full">
+                        <Check className="h-4 w-4 mr-1" /> Confirmar conferência
+                      </Button>
+                    )
                   )}
                 </>
               ) : (
                 <div className="rounded-md border bg-muted/20 p-3 text-muted-foreground">
-                  A conferência é liberada quando o romaneio estiver <b>Completo</b>. Romaneios parciais devem
-                  primeiro ser <b>particionados por letra</b> para que cada parte possa ser conferida e paga.
+                  A conferência é liberada quando o romaneio começar a receber peças.
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
       )}
+
+      {/* Busca de peças */}
+      <BuscaPecasBlock cops={cops} onSelect={setSelectedId} />
+
 
       {/* Lista */}
       <Card>
