@@ -480,9 +480,17 @@ function notEmpty(v: any) {
   return v !== null && v !== undefined && v !== "";
 }
 
+export function validarOrcamento(v: string | null | undefined): boolean {
+  const s = String(v ?? "").trim();
+  if (!s) return false;
+  const letters = (s.match(/[a-zA-Z]/g) || []).length;
+  const digits = (s.match(/\d/g) || []).length;
+  return letters >= 2 && digits >= 1;
+}
+
 export function dadosInCompletos(p: Pedido): boolean {
   return (
-    notEmpty(p.pedido_olist) && notEmpty(p.orcamento) && notEmpty(p.qtd) &&
+    notEmpty(p.pedido_olist) && validarOrcamento(p.orcamento) && notEmpty(p.qtd) &&
     notEmpty(p.vendedor) && notEmpty(p.frete) && notEmpty(p.tempo_frete) &&
     notEmpty(p.tipo_estampa) && notEmpty(p.entrada_pedido) && notEmpty(p.uf_entrega)
   );
