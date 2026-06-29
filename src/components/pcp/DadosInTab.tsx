@@ -161,7 +161,11 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }, [form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados]);
 
 
-  const VENDOR_REQUIRED: (keyof Pedido)[] = ["pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido", "frete", "tempo_frete", "data_entrega"];
+  const VENDOR_REQUIRED: (keyof Pedido)[] = [
+    "pedido_olist", "orcamento", "qtd", "vendedor", "entrada_pedido",
+    "frete", "tempo_frete", "data_entrega",
+    "forma_pagamento", "nf_emitida", "uf_entrega", "layout_url",
+  ];
   const PROD_REQUIRED: (keyof Pedido)[] = ["status_pecas", "tipo_estampa"];
   const [missingVendor, setMissingVendor] = useState<Set<string>>(new Set());
   const [missingProd, setMissingProd] = useState<Set<string>>(new Set());
