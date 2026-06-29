@@ -136,6 +136,7 @@ export type Database = {
           data_saida_oficina: string | null
           execucao_corte: string | null
           execucao_risco: string | null
+          historico_recebimentos: Json
           id: string
           letra: string | null
           num_fretes: number
@@ -173,6 +174,7 @@ export type Database = {
           data_saida_oficina?: string | null
           execucao_corte?: string | null
           execucao_risco?: string | null
+          historico_recebimentos?: Json
           id?: string
           letra?: string | null
           num_fretes?: number
@@ -210,6 +212,7 @@ export type Database = {
           data_saida_oficina?: string | null
           execucao_corte?: string | null
           execucao_risco?: string | null
+          historico_recebimentos?: Json
           id?: string
           letra?: string | null
           num_fretes?: number
