@@ -141,7 +141,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   const [fStatus, setFStatus] = useState("todos");
   const [fImpresso, setFImpresso] = useState("todos");
   const [fEstampado, setFEstampado] = useState("todos");
-  const [fEtapa, setFEtapa] = useState("ativas");
+  const [fEtapa, setFEtapa] = useState("dtf");
 
   const dashboardPedidos = useMemo(() => sortByDataSaidaJuffAsc(pedidos.filter((p) => {
     if (!matchEtapaFiltro(p, fEtapa)) return false;

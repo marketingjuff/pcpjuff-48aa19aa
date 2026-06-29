@@ -134,7 +134,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [fStatus, setFStatus] = useState("todos");
   const [fTela, setFTela] = useState("todos");
   const [fSilk, setFSilk] = useState("todos");
-  const [fEtapa, setFEtapa] = useState("ativas");
+  const [fEtapa, setFEtapa] = useState("silk");
 
   const dashboardPedidos = useMemo(() => sortByDataSaidaJuffAsc(pedidos.filter((p) => {
     if (!matchEtapaFiltro(p, fEtapa)) return false;

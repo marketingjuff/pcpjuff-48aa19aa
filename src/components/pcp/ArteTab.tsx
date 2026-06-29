@@ -139,7 +139,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
 
   // Filtros do dashboard
-  const [fEtapa, setFEtapa] = useState<string>("ativas");
+  const [fEtapa, setFEtapa] = useState<string>("arte");
   const [fSearch, setFSearch] = useState("");
   const [fTipo, setFTipo] = useState<string>("todos");
   const [fDtf, setFDtf] = useState<string>("todos");
