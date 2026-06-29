@@ -532,8 +532,8 @@ export function RomaneioTab() {
                   <Button
                     style={btnStyle("enviar_oficina")}
                     onClick={handleEnviarOficina}
-                    disabled={salvar.isPending || selected.status !== "Aguardando Romaneio"}
-                    title={selected.status !== "Aguardando Romaneio" ? "Romaneio já foi enviado" : "Enviar para a oficina"}
+                    disabled={salvar.isPending || (selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio")}
+                    title={(selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio") ? "Romaneio já foi enviado" : "Enviar para a oficina"}
                   >
                     <Send className="h-4 w-4 mr-1" /> Enviar para Oficina
                   </Button>
