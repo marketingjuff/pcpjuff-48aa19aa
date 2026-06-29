@@ -250,3 +250,34 @@ export function rotuloCop(n: number | null | undefined, letra: string | null | u
   const base = formatCopNumero(n);
   return letra ? `${base}${letra.toUpperCase()}` : base;
 }
+
+/**
+ * Retorna o `numero` do COP-origem (pai do romaneio) — quando o COP é um
+ * filho particionado, devolve o número do pai; caso contrário, o próprio.
+ */
+export function numeroBaseCop(cop: Pick<Cop, "id" | "numero" | "cop_romaneio_pai_id">, cops: Cop[]): number {
+  const pid = cop.cop_romaneio_pai_id ?? cop.id;
+  if (pid === cop.id) return cop.numero;
+  const pai = cops.find((c) => c.id === pid);
+  return pai?.numero ?? cop.numero;
+}
+
+/** Rótulo do romaneio (ex.: 0001A) resolvendo o número-base via pai. */
+export function rotuloRomaneio(cop: Pick<Cop, "id" | "numero" | "letra" | "cop_romaneio_pai_id">, cops: Cop[]): string {
+  return rotuloCop(numeroBaseCop(cop, cops), cop.letra);
+}
+
+/**
+ * Colunas de tamanhos: SEMPRE inclui as canônicas (REFACAO_TAMANHOS) em ordem
+ * fixa para alinhamento vertical, e adiciona extras detectados no fim em
+ * ordem alfabética estável.
+ */
+export function colunasTamanhos(presentes: Iterable<string>): string[] {
+  const set = new Set<string>();
+  for (const t of presentes) if (t) set.add(t);
+  const canon = [...REFACAO_TAMANHOS];
+  const extras = Array.from(set)
+    .filter((t) => !canon.includes(t as any))
+    .sort((a, b) => a.localeCompare(b));
+  return [...canon, ...extras];
+}
