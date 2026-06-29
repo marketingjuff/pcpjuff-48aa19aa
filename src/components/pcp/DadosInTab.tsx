@@ -487,11 +487,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             <DataEntregaField
               form={form}
               selected={selected}
+              invalid={missingVendor.has("data_entrega")}
               onChangeDataEntrega={(v) => set("data_entrega", v)}
               onPropostaSaved={(v) => {
                 set("data_entrega_proposta", v);
               }}
             />
+
             <Field label="É necessário vetorização?">
               <Select
                 value={form.necessita_vetorizacao == null ? "" : (form.necessita_vetorizacao ? "Sim" : "Não")}
