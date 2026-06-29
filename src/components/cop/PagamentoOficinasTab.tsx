@@ -145,6 +145,32 @@ export function PagamentoOficinasTab() {
     onError: (e: any) => toast.error(e.message ?? "Erro."),
   });
 
+  const [confirmApagar, setConfirmApagar] = useState(false);
+  const apagarPagamento = useMutation({
+    mutationFn: async () => {
+      if (!selected) return;
+      const novoStatus = selected.status === "Finalizado" || selected.status === "Aguardando Pagamento"
+        ? "Romaneio Completo"
+        : selected.status;
+      const { error } = await supabase.from("cops" as any).update({
+        pagamento_status: "nao_pago",
+        pagamento_liberado_em: null,
+        pagamento_liberado_por: null,
+        pagamento_pago_em: null,
+        pagamento_pago_por: null,
+        pagamento_valor_calculado: null,
+        status: novoStatus,
+      } as any).eq("id", selected.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Pagamento apagado.");
+      setConfirmApagar(false);
+      qc.invalidateQueries({ queryKey: ["cops"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao apagar."),
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2 justify-between">
