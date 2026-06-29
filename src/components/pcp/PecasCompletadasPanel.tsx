@@ -18,7 +18,10 @@ export function PecasCompletadasPanel({ pedido }: Props) {
           <li key={i} className="text-emerald-900">
             <span className="font-mono">{new Date(l.em).toLocaleString("pt-BR")}</span>
             {" — "}<b>{l.qtd}×</b> {l.modelo} · {l.cor} · {l.tamanho}
-            {" "}<span className="text-emerald-700">(COP {rotuloCop(l.cop_numero, l.cop_letra)})</span>
+            {l.cop_numero != null && (
+              <> {" "}<span className="text-emerald-700">(COP {rotuloCop(l.cop_numero, l.cop_letra ?? null)})</span></>
+            )}
+            {l.observacao && <> {" — "}<i className="text-emerald-700">{l.observacao}</i></>}
           </li>
         ))}
       </ul>
