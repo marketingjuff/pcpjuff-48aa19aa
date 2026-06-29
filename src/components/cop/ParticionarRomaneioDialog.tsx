@@ -46,7 +46,7 @@ export function ParticionarRomaneioDialog({
               pronto para seguir o fluxo de pagamento parcial.
             </div>
             <div>
-              O restante permanecerá em <b>{rotuloAtual}{letraAtual ? "" : "A"}</b> como <b>Romaneio Parcial</b>,
+              O restante permanecerá em <b>{rotuloRestante}</b> como <b>Romaneio Parcial</b>,
               podendo ser reparticionado novamente quando necessário.
             </div>
           </div>
