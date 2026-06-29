@@ -199,18 +199,18 @@ export function FaltaPorPedidoTab() {
         <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhum pedido com peças faltantes.</CardContent></Card>
       ) : (
         <div className="rounded-md border overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-xs">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/40 text-[10px]">
               <tr>
-                <th className="p-2 text-left">Início Estamparia</th>
-                <th className="p-2 text-left">Orçamento</th>
-                <th className="p-2 text-left">Modelo</th>
-                <th className="p-2 text-left">Cor</th>
+                <th className="px-2 py-1 text-left">Início Estamparia</th>
+                <th className="px-2 py-1 text-left">Orçamento</th>
+                <th className="px-2 py-1 text-left">Modelo</th>
+                <th className="px-2 py-1 text-left">Cor</th>
                 {tamanhosColunas.map((t) => (
-                  <th key={t} className="p-2 text-center">{t}</th>
+                  <th key={t} className="px-2 py-1 text-center">{t}</th>
                 ))}
-                <th className="p-2 text-right">Total Geral</th>
-                <th className="p-2"></th>
+                <th className="px-2 py-1 text-right">Total Geral</th>
+                <th className="px-2 py-1"></th>
               </tr>
             </thead>
             <tbody>
@@ -220,37 +220,37 @@ export function FaltaPorPedidoTab() {
                 return (
                   <tr
                     key={`${r.pedido.id}|${r.grupo.modelo}|${r.grupo.cor}`}
-                    className="border-t hover:bg-accent/40 cursor-pointer"
+                    className="border-t hover:bg-accent/40 cursor-pointer leading-tight"
                     onClick={() => setHistorico(r.pedido)}
                   >
                     {r.primeira ? (
                       <>
-                        <td className={`p-2 align-top ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
+                        <td className={`px-2 py-0.5 align-middle whitespace-nowrap ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
                           {fmtBR(r.inicioEstamparia)}
                         </td>
-                        <td className="p-2 align-top font-mono" rowSpan={r.rowSpan}>
+                        <td className="px-2 py-0.5 align-middle font-mono whitespace-nowrap" rowSpan={r.rowSpan}>
                           {r.pedido.orcamento ?? "—"}
                           {(r.pedido as any).pedido_olist && (
-                            <div className="text-[10px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
+                            <span className="text-[10px] text-muted-foreground ml-1">(Olist {(r.pedido as any).pedido_olist})</span>
                           )}
                         </td>
                       </>
                     ) : null}
-                    <td className="p-2">{r.grupo.modelo}</td>
-                    <td className="p-2">
-                      <span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{r.grupo.cor}</span>
+                    <td className="px-2 py-0.5 whitespace-nowrap">{r.grupo.modelo}</td>
+                    <td className="px-2 py-0.5">
+                      <span className="inline-block px-1.5 py-0 rounded text-[10px]" style={{ backgroundColor: hex, color: fg }}>{r.grupo.cor}</span>
                     </td>
                     {tamanhosColunas.map((t) => {
                       const info = r.grupo.porTamanho.get(t);
                       return (
-                        <td key={t} className="p-2 text-center tabular-nums">
+                        <td key={t} className="px-2 py-0.5 text-center tabular-nums">
                           {info ? <span className="text-amber-700 font-semibold">{info.falta}</span> : <span className="text-muted-foreground/40">—</span>}
                         </td>
                       );
                     })}
-                    <td className="p-2 text-right tabular-nums text-amber-700 font-semibold">{r.grupo.faltaTotal}</td>
-                    <td className="p-2 text-right" onClick={(e) => e.stopPropagation()}>
-                      <Button size="sm" style={btnStyle("dar_baixa")} onClick={() => setBaixa({ pedido: r.pedido, grupo: r.grupo })}>
+                    <td className="px-2 py-0.5 text-right tabular-nums text-amber-700 font-semibold">{r.grupo.faltaTotal}</td>
+                    <td className="px-2 py-0.5 text-right" onClick={(e) => e.stopPropagation()}>
+                      <Button size="sm" className="h-6 px-2 text-[11px]" style={btnStyle("dar_baixa")} onClick={() => setBaixa({ pedido: r.pedido, grupo: r.grupo })}>
                         Dar baixa
                       </Button>
                     </td>
@@ -258,6 +258,7 @@ export function FaltaPorPedidoTab() {
                 );
               })}
             </tbody>
+
           </table>
         </div>
       )}
