@@ -249,7 +249,7 @@ export function PagamentoOficinasTab() {
               <Label className="text-xs">Observações do pagamento</Label>
               <Textarea
                 value={obsPag}
-                onChange={(e) => setObsPag(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setObsPag(e.target.value)}
                 placeholder="EX.: PAGAMENTO PARCIAL DEVIDO A..."
                 rows={2}
                 className="uppercase"
