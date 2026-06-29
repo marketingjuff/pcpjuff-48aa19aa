@@ -91,10 +91,12 @@ export function PagamentoOficinasTab() {
 
   // editor da conferência (com fallback a partir dos recebidos)
   const [conf, setConf] = useState<CopConferenciaItem[]>([]);
+  const [obsPag, setObsPag] = useState<string>("");
   useEffect(() => {
-    if (!selected) { setConf([]); return; }
+    if (!selected) { setConf([]); setObsPag(""); return; }
     if ((selected.conferencia ?? []).length > 0) setConf(selected.conferencia);
     else setConf(inicializarConferencia(selected.pecas ?? [], selected.pecas_recebidas ?? []));
+    setObsPag(selected.observacoes_pagamento ?? "");
   }, [selectedId]); // eslint-disable-line
 
   const valor = useMemo(() => selected ? calcValor(selected, selectedOfi, conf) : 0, [selected, selectedOfi, conf]);
@@ -102,7 +104,10 @@ export function PagamentoOficinasTab() {
   const salvarConferencia = useMutation({
     mutationFn: async () => {
       if (!selected) return;
-      const { error } = await supabase.from("cops" as any).update({ conferencia: conf as any }).eq("id", selected.id);
+      const { error } = await supabase.from("cops" as any).update({
+        conferencia: conf as any,
+        observacoes_pagamento: (obsPag || "").toUpperCase() || null,
+      }).eq("id", selected.id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Conferência atualizada."); qc.invalidateQueries({ queryKey: ["cops"] }); },
