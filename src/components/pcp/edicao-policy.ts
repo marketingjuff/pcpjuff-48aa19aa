@@ -11,6 +11,18 @@ export function canEditArte(p: Pedido | null | undefined): boolean {
   if (!p) return true;
   if (p.finalizado_em) return false;
   if (p.tipo_estampa === "Lisa") return false;
+  // Enquanto a etapa ainda for de Arte (Aguardando Arte ou variantes
+  // DTF Liberado / Silk na Arte e Silk Liberado / DTF na Arte), a edição
+  // permanece liberada — mesmo que status_arte tenha sido marcado como
+  // "Arte Finalizada" pelo operador no meio do processo.
+  const etapa = etapaAtualSemAsterisco(p);
+  if (
+    etapa === "Aguardando Arte" ||
+    etapa === "DTF Liberado / Silk na Arte" ||
+    etapa === "Silk Liberado / DTF na Arte"
+  ) {
+    return true;
+  }
   return p.status_arte !== "Arte Finalizada";
 }
 
