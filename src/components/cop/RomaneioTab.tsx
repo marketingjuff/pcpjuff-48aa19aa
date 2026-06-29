@@ -21,7 +21,7 @@ import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
   COP_STATUS_LIST, formatCopNumero, totalPecasCop, totalRecebidas,
-  todasCompletas, proximaLetra, rotuloCop, subtrairPecas,
+  todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
   getRecebida,
 } from "@/lib/cop";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
@@ -30,6 +30,7 @@ import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
 import { ParticionarRomaneioDialog } from "./ParticionarRomaneioDialog";
 
 const STATUS_ROMANEIO: CopStatus[] = [
+  "Aguardando Oficina",
   "Aguardando Romaneio",
   "Na Oficina (Costura)",
   "Romaneio Parcial",
