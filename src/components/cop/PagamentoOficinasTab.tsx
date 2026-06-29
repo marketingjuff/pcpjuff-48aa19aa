@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -91,10 +92,12 @@ export function PagamentoOficinasTab() {
 
   // editor da conferência (com fallback a partir dos recebidos)
   const [conf, setConf] = useState<CopConferenciaItem[]>([]);
+  const [obsPag, setObsPag] = useState<string>("");
   useEffect(() => {
-    if (!selected) { setConf([]); return; }
+    if (!selected) { setConf([]); setObsPag(""); return; }
     if ((selected.conferencia ?? []).length > 0) setConf(selected.conferencia);
     else setConf(inicializarConferencia(selected.pecas ?? [], selected.pecas_recebidas ?? []));
+    setObsPag(selected.observacoes_pagamento ?? "");
   }, [selectedId]); // eslint-disable-line
 
   const valor = useMemo(() => selected ? calcValor(selected, selectedOfi, conf) : 0, [selected, selectedOfi, conf]);
@@ -102,7 +105,10 @@ export function PagamentoOficinasTab() {
   const salvarConferencia = useMutation({
     mutationFn: async () => {
       if (!selected) return;
-      const { error } = await supabase.from("cops" as any).update({ conferencia: conf as any }).eq("id", selected.id);
+      const { error } = await supabase.from("cops" as any).update({
+        conferencia: conf as any,
+        observacoes_pagamento: (obsPag || "").toUpperCase() || null,
+      }).eq("id", selected.id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Conferência atualizada."); qc.invalidateQueries({ queryKey: ["cops"] }); },
@@ -113,7 +119,10 @@ export function PagamentoOficinasTab() {
     mutationFn: async () => {
       if (!selected) return;
       // Salva conferência primeiro
-      const { error: e1 } = await supabase.from("cops" as any).update({ conferencia: conf as any }).eq("id", selected.id);
+      const { error: e1 } = await supabase.from("cops" as any).update({
+        conferencia: conf as any,
+        observacoes_pagamento: (obsPag || "").toUpperCase() || null,
+      }).eq("id", selected.id);
       if (e1) throw e1;
       const { error } = await (supabase as any).rpc("liberar_pagamento_cop", { _cop_id: selected.id, _valor: valor });
       if (error) throw error;
@@ -234,6 +243,18 @@ export function PagamentoOficinasTab() {
                   </tr>
                 </tfoot>
               </table>
+            </div>
+
+            <div>
+              <Label className="text-xs">Observações do pagamento</Label>
+              <Textarea
+                value={obsPag}
+                onChange={(e) => setObsPag((e.target as HTMLTextAreaElement).value)}
+                placeholder="EX.: PAGAMENTO PARCIAL DEVIDO A..."
+                rows={2}
+                className="uppercase"
+                disabled={selected.pagamento_status === "pago"}
+              />
             </div>
 
             <div className="flex flex-wrap items-center gap-2 justify-end">

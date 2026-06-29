@@ -21,7 +21,7 @@ import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
   COP_STATUS_LIST, formatCopNumero, totalPecasCop, totalRecebidas,
-  todasCompletas, proximaLetra, rotuloCop, subtrairPecas,
+  todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
   getRecebida,
 } from "@/lib/cop";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
@@ -30,6 +30,7 @@ import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
 import { ParticionarRomaneioDialog } from "./ParticionarRomaneioDialog";
 
 const STATUS_ROMANEIO: CopStatus[] = [
+  "Aguardando Oficina",
   "Aguardando Romaneio",
   "Na Oficina (Costura)",
   "Romaneio Parcial",
@@ -101,8 +102,8 @@ export function RomaneioTab() {
         if (!STATUS_ROMANEIO.includes(c.status)) return false;
       } else if (statusFiltro !== "todos" && c.status !== statusFiltro) return false;
       if (busca) {
-        const num = formatCopNumero(c.numero);
-        const rot = rotuloCop(c.numero, c.letra);
+        const num = formatCopNumero(numeroBaseCop(c, cops));
+        const rot = rotuloRomaneio(c, cops);
         if (!num.includes(busca.replace(/\D/g, "")) && !rot.toUpperCase().includes(busca.toUpperCase())) return false;
       }
       return true;
@@ -224,7 +225,7 @@ export function RomaneioTab() {
     // pop-up PDF
     const ofi = oficinas.find((o) => o.id === draft.oficina_id) ?? null;
     const next: Cop = { ...selected, ...(patchDraftToCop() as any), status: "Na Oficina (Costura)" } as Cop;
-    abrirRomaneioParaImpressao(next, ofi);
+    abrirRomaneioParaImpressao(next, ofi, cops);
   }
 
   async function handleEntregaConfirm(rec: CopPecaRecebida[]) {
@@ -260,7 +261,7 @@ export function RomaneioTab() {
       .map((r) => ({ modelo: r.modelo, cor: r.cor, tamanho: r.tamanho, qtd: r.qtd_recebida }));
     const pecasRestantes = subtrairPecas(selected.pecas || [], pecasMovidas);
 
-    // Inserir filho
+    // Inserir filho (sem `numero` — usa o sequence; rótulo resolve via pai)
     const { data: filho, error: e1 } = await supabase.from("cops" as any).insert({
       status: "Romaneio Completo" as CopStatus,
       pecas: pecasMovidas as any,
@@ -272,8 +273,6 @@ export function RomaneioTab() {
       num_fretes: selected.num_fretes ?? 1,
       letra: novaLetra,
       cop_romaneio_pai_id: original_id,
-      // mantém o mesmo numero base na exibição via rotuloCop (mas é um id próprio)
-      numero: selected.numero,
     }).select().single();
     if (e1) { toast.error(e1.message); return; }
 
@@ -288,7 +287,8 @@ export function RomaneioTab() {
     if (e2) { toast.error(e2.message); return; }
 
     qc.invalidateQueries({ queryKey: ["cops"] });
-    toast.success(`Romaneio ${rotuloCop(selected.numero, novaLetra)} criado.`);
+    const numeroBase = numeroBaseCop(selected, cops);
+    toast.success(`Romaneio ${rotuloCop(numeroBase, novaLetra)} criado.`);
     // mantém seleção no pai (que segue parcial)
   }
 
@@ -361,17 +361,17 @@ export function RomaneioTab() {
                 <div>
                   <div className="text-xs uppercase text-muted-foreground tracking-wider">ROMANEIO · COP</div>
                   <div className="text-3xl sm:text-5xl font-bold tabular-nums">
-                    {rotuloCop(selected.numero, selected.letra)}
+                    {rotuloRomaneio(selected, cops)}
                     {familia.length > 1 && (
                       <span className="ml-3 text-sm font-normal text-muted-foreground">
                         (
                         {familia.map((c, idx) => (
                           <span key={c.id}>
                             {c.id === selected.id ? (
-                              <span className="font-semibold">{rotuloCop(c.numero, c.letra)}</span>
+                              <span className="font-semibold">{rotuloRomaneio(c, cops)}</span>
                             ) : (
                               <button type="button" className="underline hover:text-primary" onClick={() => setSelectedId(c.id)}>
-                                {rotuloCop(c.numero, c.letra)}
+                                {rotuloRomaneio(c, cops)}
                               </button>
                             )}
                             {idx < familia.length - 1 ? " / " : ""}
@@ -498,7 +498,7 @@ export function RomaneioTab() {
                     <Button
                       variant="outline"
                       style={btnStyle("baixar_pdf")}
-                      onClick={() => abrirRomaneioParaImpressao(selected, oficina)}
+                      onClick={() => abrirRomaneioParaImpressao(selected, oficina, cops)}
                     >
                       <FileDown className="h-4 w-4 mr-1" />
                       romaneio-{formatCopNumero(selected.numero)}{selected.letra ?? ""}.pdf
@@ -532,8 +532,8 @@ export function RomaneioTab() {
                   <Button
                     style={btnStyle("enviar_oficina")}
                     onClick={handleEnviarOficina}
-                    disabled={salvar.isPending || selected.status !== "Aguardando Romaneio"}
-                    title={selected.status !== "Aguardando Romaneio" ? "Romaneio já foi enviado" : "Enviar para a oficina"}
+                    disabled={salvar.isPending || (selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio")}
+                    title={(selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio") ? "Romaneio já foi enviado" : "Enviar para a oficina"}
                   >
                     <Send className="h-4 w-4 mr-1" /> Enviar para Oficina
                   </Button>
@@ -648,7 +648,7 @@ export function RomaneioTab() {
                         className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : ""}`}
                         onClick={() => setSelectedId(c.id)}
                       >
-                        <td className="p-2 font-semibold tabular-nums">{rotuloCop(c.numero, c.letra)}</td>
+                        <td className="p-2 font-semibold tabular-nums">{rotuloRomaneio(c, cops)}</td>
                         <td className="p-2">
                           <span className="px-2 py-0.5 rounded text-xs border" style={etapaStyle(c.status)}>{c.status}</span>
                         </td>
@@ -687,8 +687,8 @@ export function RomaneioTab() {
             letraAtual={selected.letra}
             letraNova={letraNova}
             recebidas={recebidas}
-            rotuloAtual={rotuloCop(selected.numero, selected.letra ?? (selected.id === original_id_atual ? "A" : null))}
-            rotuloNovo={rotuloCop(selected.numero, letraNova)}
+            rotuloAtual={rotuloRomaneio({ ...selected, letra: selected.letra ?? (selected.id === original_id_atual ? "A" : null) } as any, cops)}
+            rotuloNovo={rotuloCop(numeroBaseCop(selected, cops), letraNova)}
             onConfirm={handleParticionar}
           />
         </>

@@ -1,10 +1,13 @@
 // Tipos e helpers do módulo COP (Controle de Ordem de Produção).
 // Reaproveita as constantes de Modelo/Cor/Tamanho do PCP em src/lib/pedidos.ts.
 
+import { REFACAO_TAMANHOS } from "@/lib/pedidos";
+
 export type CopStatus =
   | "Aguardando Risco"
   | "Aguardando Corte"
   | "Aguardando Romaneio"
+  | "Aguardando Oficina"
   | "Na Oficina (Costura)"
   | "Romaneio Parcial"
   | "Romaneio Completo"
@@ -16,6 +19,7 @@ export const COP_STATUS_LIST: CopStatus[] = [
   "Aguardando Risco",
   "Aguardando Corte",
   "Aguardando Romaneio",
+  "Aguardando Oficina",
   "Na Oficina (Costura)",
   "Romaneio Parcial",
   "Romaneio Completo",
@@ -23,6 +27,36 @@ export const COP_STATUS_LIST: CopStatus[] = [
   "Aguardando Pagamento",
   "Finalizado",
 ];
+
+/** Status em que o COP ainda é manipulado na aba Corte. */
+export const STATUS_CORTE: CopStatus[] = [
+  "Aguardando Risco",
+  "Aguardando Corte",
+  "Aguardando Romaneio",
+];
+
+/** Status em que o COP já saiu para o Romaneio (Corte fica bloqueado). */
+export const STATUS_POS_CORTE: CopStatus[] = [
+  "Aguardando Oficina",
+  "Na Oficina (Costura)",
+  "Romaneio Parcial",
+  "Romaneio Completo",
+  "Em Oficina",
+  "Aguardando Pagamento",
+  "Finalizado",
+];
+
+/** Calcula o status do Corte com base nas 4 datas preenchidas. */
+export function calcularStatusCorte(d: {
+  solicitacao_risco?: string | null;
+  execucao_risco?: string | null;
+  solicitacao_corte?: string | null;
+  execucao_corte?: string | null;
+}): CopStatus {
+  if (d.execucao_corte) return "Aguardando Romaneio";
+  if (d.execucao_risco || d.solicitacao_corte) return "Aguardando Corte";
+  return "Aguardando Risco";
+}
 
 /** Peça de um COP: um registro por (modelo, cor, tamanho). */
 export type CopPeca = {
@@ -64,6 +98,7 @@ export type Cop = {
   pagamento_pago_em: string | null;
   pagamento_pago_por: string | null;
   pagamento_valor_calculado: number | null;
+  observacoes_pagamento: string | null;
   perdas: unknown[];
   created_at: string;
   updated_at: string;
@@ -214,4 +249,35 @@ export function proximaLetra(usadas: (string | null | undefined)[]): string {
 export function rotuloCop(n: number | null | undefined, letra: string | null | undefined): string {
   const base = formatCopNumero(n);
   return letra ? `${base}${letra.toUpperCase()}` : base;
+}
+
+/**
+ * Retorna o `numero` do COP-origem (pai do romaneio) — quando o COP é um
+ * filho particionado, devolve o número do pai; caso contrário, o próprio.
+ */
+export function numeroBaseCop(cop: Pick<Cop, "id" | "numero" | "cop_romaneio_pai_id">, cops: Cop[]): number {
+  const pid = cop.cop_romaneio_pai_id ?? cop.id;
+  if (pid === cop.id) return cop.numero;
+  const pai = cops.find((c) => c.id === pid);
+  return pai?.numero ?? cop.numero;
+}
+
+/** Rótulo do romaneio (ex.: 0001A) resolvendo o número-base via pai. */
+export function rotuloRomaneio(cop: Pick<Cop, "id" | "numero" | "letra" | "cop_romaneio_pai_id">, cops: Cop[]): string {
+  return rotuloCop(numeroBaseCop(cop, cops), cop.letra);
+}
+
+/**
+ * Colunas de tamanhos: SEMPRE inclui as canônicas (REFACAO_TAMANHOS) em ordem
+ * fixa para alinhamento vertical, e adiciona extras detectados no fim em
+ * ordem alfabética estável.
+ */
+export function colunasTamanhos(presentes: Iterable<string>): string[] {
+  const set = new Set<string>();
+  for (const t of presentes) if (t) set.add(t);
+  const canon = [...REFACAO_TAMANHOS];
+  const extras = Array.from(set)
+    .filter((t) => !canon.includes(t as any))
+    .sort((a, b) => a.localeCompare(b));
+  return [...canon, ...extras];
 }
