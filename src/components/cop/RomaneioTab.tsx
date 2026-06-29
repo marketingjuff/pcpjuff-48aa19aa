@@ -786,3 +786,114 @@ export function RomaneioTab() {
 
   );
 }
+
+function BuscaPecasBlock({ cops, onSelect }: { cops: Cop[]; onSelect: (id: string) => void }) {
+  const [modelo, setModelo] = useState<string>("");
+  const [cor, setCor] = useState<string>("");
+  const [tamanho, setTamanho] = useState<string>("");
+
+  const aplicado = !!(modelo || cor || tamanho);
+
+  const resultados = useMemo(() => {
+    if (!aplicado) return [] as { cop: Cop; qtd: number; rotulo: string }[];
+    const out: { cop: Cop; qtd: number; rotulo: string }[] = [];
+    for (const c of cops) {
+      const qtd = (c.pecas || []).reduce((s, p) => {
+        if (modelo && p.modelo !== modelo) return s;
+        if (cor && p.cor !== cor) return s;
+        if (tamanho && p.tamanho !== tamanho) return s;
+        return s + (Number(p.qtd) || 0);
+      }, 0);
+      if (qtd > 0) out.push({ cop: c, qtd, rotulo: rotuloRomaneio(c, cops) });
+    }
+    return out.sort((a, b) => a.rotulo.localeCompare(b.rotulo));
+  }, [cops, modelo, cor, tamanho, aplicado]);
+
+  const totalGeral = resultados.reduce((s, r) => s + r.qtd, 0);
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Busca de peças nos Romaneios</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+          <div>
+            <Label className="text-xs">Modelo</Label>
+            <Select value={modelo || "__all__"} onValueChange={(v) => setModelo(v === "__all__" ? "" : v)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todos</SelectItem>
+                {REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Cor</Label>
+            <Select value={cor || "__all__"} onValueChange={(v) => setCor(v === "__all__" ? "" : v)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todas</SelectItem>
+                {REFACAO_CORES.map((c) => <SelectItem key={c.nome} value={c.nome}>{c.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Tamanho</Label>
+            <Select value={tamanho || "__all__"} onValueChange={(v) => setTamanho(v === "__all__" ? "" : v)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todos</SelectItem>
+                {REFACAO_TAMANHOS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-end">
+            <Button variant="outline" className="h-9 w-full" onClick={() => { setModelo(""); setCor(""); setTamanho(""); }}>
+              Limpar
+            </Button>
+          </div>
+        </div>
+
+        {!aplicado ? (
+          <div className="text-xs text-muted-foreground">Selecione ao menos um filtro para listar os romaneios em que a peça aparece.</div>
+        ) : resultados.length === 0 ? (
+          <div className="text-xs text-muted-foreground">Nenhum romaneio com essa combinação.</div>
+        ) : (
+          <div className="rounded-md border overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs">
+                <tr>
+                  <th className="p-2 text-left">Romaneio</th>
+                  <th className="p-2 text-left">Status</th>
+                  <th className="p-2 text-right">Qtd</th>
+                  <th className="p-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {resultados.map((r) => (
+                  <tr key={r.cop.id} className="border-t">
+                    <td className="p-2 font-semibold tabular-nums">{r.rotulo}</td>
+                    <td className="p-2">{r.cop.status}</td>
+                    <td className="p-2 text-right tabular-nums">{r.qtd}</td>
+                    <td className="p-2 text-right">
+                      <Button size="sm" variant="ghost" onClick={() => onSelect(r.cop.id)}>Abrir</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/30">
+                  <td className="p-2" colSpan={2}><b>Total</b></td>
+                  <td className="p-2 text-right tabular-nums"><b>{totalGeral}</b></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
