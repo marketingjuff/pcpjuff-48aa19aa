@@ -286,12 +286,20 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       }
     }
     const wipe = await wipeProducaoSeRefacaoDados();
+    // Se o usuário voltou para "incompleto" mas a solicitação anterior já
+    // estava 100% enviada pelo COP, limpa a lista para permitir nova
+    // solicitação (o histórico em pecas_completadas_log é preservado).
+    const resetPecas =
+      form.status_pecas === "incompleto" && tudoEnviado
+        ? { pecas_solicitadas: [] as any }
+        : {};
     onSave({
       ...form,
       saida_juff: saidaJuffCalc ?? form.saida_juff ?? null,
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
       inicio_acabamento: isLisa ? (form.inicio_acabamento ?? null) : (inicioAcabamentoCalc ?? form.inicio_acabamento ?? null),
       ...wipe,
+      ...resetPecas,
     });
   }
 
