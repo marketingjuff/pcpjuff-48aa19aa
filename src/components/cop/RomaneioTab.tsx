@@ -236,10 +236,31 @@ export function RomaneioTab() {
     const algum = rec.some((r) => r.qtd_recebida > 0);
     const novoStatus: CopStatus =
       completo ? "Romaneio Completo" : algum ? "Romaneio Parcial" : "Na Oficina (Costura)";
+
+    // Diff: o que mudou (recebido novo) desde o último estado salvo
+    const prev = selected.pecas_recebidas ?? [];
+    const novosItens: CopPecaRecebida[] = [];
+    for (const r of rec) {
+      const ant = prev.find((x) => x.modelo === r.modelo && x.cor === r.cor && x.tamanho === r.tamanho);
+      const delta = r.qtd_recebida - (ant?.qtd_recebida ?? 0);
+      if (delta > 0) novosItens.push({ ...r, qtd_recebida: delta });
+    }
+    const totalNovo = novosItens.reduce((s, r) => s + r.qtd_recebida, 0);
+    const hist = [...(selected.historico_recebimentos ?? [])];
+    if (totalNovo > 0) {
+      hist.push({
+        em: new Date().toISOString(),
+        tipo: completo ? "completo" : "parcial",
+        total: totalNovo,
+        itens: novosItens,
+      });
+    }
+
     await salvar.mutateAsync({
       id: selected.id,
       pecas_recebidas: rec as any,
       status: novoStatus,
+      historico_recebimentos: hist as any,
       data_recebimento: completo && !selected.data_recebimento ? new Date().toISOString().slice(0, 10) : selected.data_recebimento,
     } as any);
   }
@@ -263,6 +284,13 @@ export function RomaneioTab() {
       .map((r) => ({ modelo: r.modelo, cor: r.cor, tamanho: r.tamanho, qtd: r.qtd_recebida }));
     const pecasRestantes = subtrairPecas(selected.pecas || [], pecasMovidas);
 
+    const agora = new Date().toISOString();
+    const histFilho: HistoricoRecebimento[] = [{
+      em: agora, tipo: "completo", total: recCount,
+      itens: pecasMovidas.map((p) => ({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd_recebida: p.qtd })),
+      letra: novaLetra,
+    }];
+
     // Inserir filho (sem `numero` — usa o sequence; rótulo resolve via pai)
     const { data: filho, error: e1 } = await supabase.from("cops" as any).insert({
       status: "Romaneio Completo" as CopStatus,
@@ -270,19 +298,26 @@ export function RomaneioTab() {
       pecas_recebidas: pecasMovidas.map((p) => ({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd_recebida: p.qtd })) as any,
       oficina_id: selected.oficina_id,
       data_saida_oficina: selected.data_saida_oficina,
-      data_recebimento: new Date().toISOString().slice(0, 10),
+      data_recebimento: agora.slice(0, 10),
       observacoes_romaneio: selected.observacoes_romaneio,
       num_fretes: selected.num_fretes ?? 1,
       letra: novaLetra,
       cop_romaneio_pai_id: original_id,
+      historico_recebimentos: histFilho as any,
     }).select().single();
     if (e1) { toast.error(e1.message); return; }
 
     // Atualizar pai/origem: restantes, status Parcial, zera recebimentos, letra A se faltar
+    const histPai = [...(selected.historico_recebimentos ?? []), {
+      em: agora, tipo: "parcial" as const, total: recCount,
+      itens: pecasMovidas.map((p) => ({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd_recebida: p.qtd })),
+      letra: novaLetra,
+    }];
     const patchPai: any = {
       pecas: pecasRestantes as any,
       pecas_recebidas: [] as any,
       status: "Romaneio Parcial" as CopStatus,
+      historico_recebimentos: histPai as any,
     };
     if (selected.id === original_id && !selected.letra) patchPai.letra = "A";
     const { error: e2 } = await supabase.from("cops" as any).update(patchPai).eq("id", selected.id);
