@@ -335,23 +335,30 @@ export function CorteTab() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {bloqueado && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+                Este COP já saiu para o Romaneio (status <b>{selected.status}</b>). A edição do Corte está bloqueada.
+                Para reabrir, use o botão <b>"Voltar para Corte"</b> na aba Romaneio.
+              </div>
+            )}
+            <fieldset disabled={bloqueado} className="contents">
             {/* Datas */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <Label>Solicitação do Risco</Label>
-                <DateInputBR value={draft.solicitacao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_risco: v }))} />
+                <DateInputBR value={draft.solicitacao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_risco: v }))} disabled={bloqueado} />
               </div>
               <div>
                 <Label>Execução do Risco</Label>
-                <DateInputBR value={draft.execucao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, execucao_risco: v }))} />
+                <DateInputBR value={draft.execucao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, execucao_risco: v }))} disabled={bloqueado} />
               </div>
               <div>
                 <Label>Solicitação do Corte</Label>
-                <DateInputBR value={draft.solicitacao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_corte: v }))} />
+                <DateInputBR value={draft.solicitacao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_corte: v }))} disabled={bloqueado} />
               </div>
               <div>
                 <Label>Execução do Corte</Label>
-                <DateInputBR value={draft.execucao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, execucao_corte: v }))} />
+                <DateInputBR value={draft.execucao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, execucao_corte: v }))} disabled={bloqueado} />
               </div>
             </div>
 
@@ -384,7 +391,7 @@ export function CorteTab() {
                       return (
                         <tr key={i} className="border-t">
                           <td className="p-1.5">
-                            <Select value={g.modelo} onValueChange={(v) => setLinha(i, { modelo: v })}>
+                            <Select value={g.modelo} onValueChange={(v) => setLinha(i, { modelo: v })} disabled={bloqueado}>
                               <SelectTrigger className="h-8"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                               <SelectContent>
                                 {REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
@@ -392,7 +399,7 @@ export function CorteTab() {
                             </Select>
                           </td>
                           <td className="p-1.5">
-                            <Select value={g.cor} onValueChange={(v) => setLinha(i, { cor: v })}>
+                            <Select value={g.cor} onValueChange={(v) => setLinha(i, { cor: v })} disabled={bloqueado}>
                               <SelectTrigger className="h-8" style={g.cor ? { backgroundColor: hex, color: fg } : undefined}>
                                 <SelectValue placeholder="Selecione..." />
                               </SelectTrigger>
@@ -416,11 +423,12 @@ export function CorteTab() {
                                 className="h-8 text-center"
                                 value={g.qtd[t] ?? ""}
                                 onChange={(e) => setQtd(i, t, Number(e.target.value))}
+                                disabled={bloqueado}
                               />
                             </td>
                           ))}
                           <td className="p-1.5">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeLinha(i)} title="Remover linha">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeLinha(i)} title="Remover linha" disabled={bloqueado}>
                               <X className="h-4 w-4" />
                             </Button>
                           </td>
@@ -430,7 +438,7 @@ export function CorteTab() {
                   </tbody>
                 </table>
               </div>
-              <Button type="button" size="sm" variant="outline" onClick={addLinha}>
+              <Button type="button" size="sm" variant="outline" onClick={addLinha} disabled={bloqueado}>
                 <Plus className="h-4 w-4 mr-1" /> Adicionar linha
               </Button>
             </div>
@@ -443,8 +451,10 @@ export function CorteTab() {
                 onChange={(e) => setDraft((d) => ({ ...d, observacoes_corte: e.target.value }))}
                 rows={3}
                 className="uppercase"
+                disabled={bloqueado}
               />
             </div>
+            </fieldset>
 
             {/* Botões */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
@@ -452,19 +462,20 @@ export function CorteTab() {
                 variant="outline"
                 style={btnStyle("dividir_corte")}
                 onClick={() => setShowDivisao(true)}
-                disabled={!podeDividir}
+                disabled={!podeDividir || bloqueado}
                 title={!podeDividir ? (ehFilho ? "COP filho não pode ser dividido" : "Este COP já foi dividido") : "Dividir corte"}
               >
                 <Scissors className="h-4 w-4 mr-1" /> Divisão de Corte
               </Button>
               <div className="flex items-center gap-2">
-                <Button style={btnStyle("atualizar")} onClick={handleAtualizar} disabled={salvar.isPending}>
+                <Button style={btnStyle("atualizar")} onClick={handleAtualizar} disabled={salvar.isPending || bloqueado}>
                   Salvar
                 </Button>
                 <Button
                   style={btnStyle("mandar_romaneio")}
                   onClick={handleMandarRomaneio}
-                  disabled={salvar.isPending || selected.status !== "Aguardando Risco" && selected.status !== "Aguardando Corte"}
+                  disabled={salvar.isPending || selected.status !== "Aguardando Romaneio"}
+                  title={selected.status !== "Aguardando Romaneio" ? "Preencha as 4 datas (até Execução do Corte) e salve." : "Enviar para Romaneio"}
                 >
                   <Send className="h-4 w-4 mr-1" /> Mandar pro Romaneio
                 </Button>
