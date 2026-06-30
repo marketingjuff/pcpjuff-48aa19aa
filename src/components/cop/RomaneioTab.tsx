@@ -433,21 +433,11 @@ export function RomaneioTab() {
                       {oficinas.length === 0 && <SelectItem value="__none__" disabled>Nenhuma cadastrada</SelectItem>}
                       {oficinas.map((o) => (
                         <SelectItem key={o.id} value={o.id}>
-                          {o.nome} · frete R$ {Number(o.valor_frete ?? 0).toFixed(2)}
+                          {o.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div>
-                  <Label>Nº de fretes</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={draft.num_fretes ?? 1}
-                    onChange={(e) => setDraft((d) => ({ ...d, num_fretes: Math.max(1, Math.floor(Number(e.target.value) || 1)) }))}
-                    className="h-9"
-                  />
                 </div>
                 <div>
                   <Label>Data de saída para a oficina</Label>
