@@ -532,14 +532,25 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
                 <Button style={btnStyle("atualizar")} onClick={handleAtualizar} disabled={salvar.isPending || bloqueado}>
                   Salvar
                 </Button>
-                <Button
-                  style={btnStyle("mandar_romaneio")}
-                  onClick={handleMandarRomaneio}
-                  disabled={salvar.isPending || selected.status !== "Aguardando Romaneio"}
-                  title={selected.status !== "Aguardando Romaneio" ? "Preencha as 4 datas (até Execução do Corte) e salve." : "Enviar para Romaneio"}
-                >
-                  <Send className="h-4 w-4 mr-1" /> Mandar pro Romaneio
-                </Button>
+                {emCorrecao ? (
+                  <Button
+                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                    onClick={handleVoltarRomaneio}
+                    disabled={salvar.isPending}
+                    title="Aplicar ajustes e devolver o COP ao Romaneio"
+                  >
+                    <Undo2 className="h-4 w-4 mr-1" /> Voltar para o Romaneio
+                  </Button>
+                ) : (
+                  <Button
+                    style={btnStyle("mandar_romaneio")}
+                    onClick={handleMandarRomaneio}
+                    disabled={salvar.isPending || selected.status !== "Aguardando Romaneio"}
+                    title={selected.status !== "Aguardando Romaneio" ? "Preencha as 4 datas (até Execução do Corte) e salve." : "Enviar para Romaneio"}
+                  >
+                    <Send className="h-4 w-4 mr-1" /> Mandar pro Romaneio
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
