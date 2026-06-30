@@ -24,7 +24,7 @@ import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
   type HistoricoRecebimento,
-  COP_STATUS_LIST, formatCopNumero, totalPecasCop, totalRecebidas,
+  COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, totalRecebidas,
   todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
   getRecebida, colunasTamanhos,
 } from "@/lib/cop";
@@ -33,14 +33,6 @@ import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { abrirRomaneioParaImpressao } from "@/lib/romaneio-pdf";
 import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
 import { ParticionarRomaneioDialog } from "./ParticionarRomaneioDialog";
-
-const STATUS_ROMANEIO: CopStatus[] = [
-  "Aguardando Oficina",
-  "Aguardando Romaneio",
-  "Na Oficina (Costura)",
-  "Romaneio Parcial",
-  "Romaneio Completo",
-];
 
 function agruparPorModeloCor(pecas: CopPeca[]): { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] }[] {
   const map = new Map<string, { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] }>();
@@ -90,7 +82,7 @@ export function RomaneioTab() {
   }, [qc]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [statusFiltro, setStatusFiltro] = useState<string>("__romaneio__");
+  const [statusFiltro, setStatusFiltro] = useState<string>("__ativos__");
   const [busca, setBusca] = useState("");
   const [showEntrega, setShowEntrega] = useState(false);
   const [showParticionar, setShowParticionar] = useState(false);
@@ -104,8 +96,8 @@ export function RomaneioTab() {
 
   const lista = useMemo(() => {
     return cops.filter((c) => {
-      if (statusFiltro === "__romaneio__") {
-        if (!STATUS_ROMANEIO.includes(c.status)) return false;
+      if (statusFiltro === "__ativos__") {
+        if (c.status === "Finalizado" || c.pagamento_status === "pago") return false;
       } else if (statusFiltro !== "todos" && c.status !== statusFiltro) return false;
       if (busca) {
         const num = formatCopNumero(numeroBaseCop(c, cops));
@@ -125,7 +117,6 @@ export function RomaneioTab() {
       data_saida_oficina: selected.data_saida_oficina,
       data_recebimento: selected.data_recebimento,
       observacoes_romaneio: selected.observacoes_romaneio,
-      num_fretes: selected.num_fretes ?? 1,
     });
   }, [selectedId]); // eslint-disable-line
 
@@ -209,7 +200,6 @@ export function RomaneioTab() {
       data_saida_oficina: draft.data_saida_oficina ?? null,
       data_recebimento: draft.data_recebimento ?? null,
       observacoes_romaneio: (draft.observacoes_romaneio ?? "")?.toString().toUpperCase() || null,
-      num_fretes: Math.max(1, Math.floor(Number(draft.num_fretes) || 1)),
     };
   }
 
@@ -295,8 +285,10 @@ export function RomaneioTab() {
       letra: novaLetra,
     }];
 
-    // Inserir filho (sem `numero` — usa o sequence; rótulo resolve via pai)
+    // Inserir filho herdando o número-base do pai-origem (sem consumir sequence)
+    const numeroPai = numeroBaseCop(selected, cops);
     const { data: filho, error: e1 } = await supabase.from("cops" as any).insert({
+      numero: numeroPai,
       status: "Romaneio Completo" as CopStatus,
       pecas: pecasMovidas as any,
       pecas_recebidas: pecasMovidas.map((p) => ({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd_recebida: p.qtd })) as any,
@@ -363,6 +355,9 @@ export function RomaneioTab() {
   if (selected && !letrasFamilia.includes("A")) letrasFamilia.push("A");
   const letraNova = proximaLetra(letrasFamilia);
 
+  // Bloqueia edição do romaneio quando o COP ainda está em estágio de Corte
+  const bloqueadoRomaneio = !!selected && STATUS_CORTE.includes(selected.status);
+
   return (
     <div className="space-y-4">
       {/* Toolbar */}
@@ -376,7 +371,7 @@ export function RomaneioTab() {
             <Select value={statusFiltro} onValueChange={setStatusFiltro}>
               <SelectTrigger className="h-9 w-[260px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="__romaneio__">Em Romaneio (todos os estágios)</SelectItem>
+                <SelectItem value="__ativos__">Ativos (exceto Finalizados/Pagos)</SelectItem>
                 <SelectItem value="todos">Todos</SelectItem>
                 {COP_STATUS_LIST.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
@@ -429,6 +424,14 @@ export function RomaneioTab() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {bloqueadoRomaneio && (
+                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                  Este COP ainda está em <span className="font-semibold">{selected.status}</span>. Conclua o Corte e clique em
+                  <span className="font-semibold"> "Mandar pro Romaneio"</span> na aba <span className="font-semibold">Corte</span> para liberar a edição aqui.
+                </div>
+              )}
+              <fieldset disabled={bloqueadoRomaneio} className="space-y-4 disabled:opacity-60">
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <Label>Oficina (fornecedor)</Label>
@@ -441,21 +444,11 @@ export function RomaneioTab() {
                       {oficinas.length === 0 && <SelectItem value="__none__" disabled>Nenhuma cadastrada</SelectItem>}
                       {oficinas.map((o) => (
                         <SelectItem key={o.id} value={o.id}>
-                          {o.nome} · frete R$ {Number(o.valor_frete ?? 0).toFixed(2)}
+                          {o.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div>
-                  <Label>Nº de fretes</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={draft.num_fretes ?? 1}
-                    onChange={(e) => setDraft((d) => ({ ...d, num_fretes: Math.max(1, Math.floor(Number(e.target.value) || 1)) }))}
-                    className="h-9"
-                  />
                 </div>
                 <div>
                   <Label>Data de saída para a oficina</Label>
@@ -553,7 +546,7 @@ export function RomaneioTab() {
                       onClick={() => abrirRomaneioParaImpressao(selected, oficina, cops)}
                     >
                       <FileDown className="h-4 w-4 mr-1" />
-                      romaneio-{formatCopNumero(selected.numero)}{selected.letra ?? ""}.pdf
+                      romaneio-{formatCopNumero(numeroBaseCop(selected, cops))}{selected.letra ?? ""}.pdf
                     </Button>
                   )}
                   {podeParticionar && (
@@ -601,6 +594,7 @@ export function RomaneioTab() {
                   </Button>
                 </div>
               </div>
+              </fieldset>
             </CardContent>
           </Card>
 
