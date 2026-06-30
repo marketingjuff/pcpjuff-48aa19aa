@@ -355,6 +355,9 @@ export function RomaneioTab() {
   if (selected && !letrasFamilia.includes("A")) letrasFamilia.push("A");
   const letraNova = proximaLetra(letrasFamilia);
 
+  // Bloqueia edição do romaneio quando o COP ainda está em estágio de Corte
+  const bloqueadoRomaneio = !!selected && STATUS_CORTE.includes(selected.status);
+
   return (
     <div className="space-y-4">
       {/* Toolbar */}
