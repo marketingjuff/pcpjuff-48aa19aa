@@ -13,9 +13,9 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2 } from "lucide-react";
+import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { useIsAdmin, useCanAccessCop } from "@/hooks/use-role";
+import { useCanAccessCop } from "@/hooks/use-role";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -23,16 +23,17 @@ import {
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
-  type HistoricoRecebimento,
+  type HistoricoRecebimento, type CopPerdaLinha,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, totalRecebidas,
   todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
-  getRecebida, colunasTamanhos,
+  getRecebida, colunasTamanhos, mesclarPerdasEmObservacoes,
 } from "@/lib/cop";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { abrirRomaneioParaImpressao } from "@/lib/romaneio-pdf";
 import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
 import { ParticionarRomaneioDialog } from "./ParticionarRomaneioDialog";
+import { RegistrarPerdaDialog } from "./RegistrarPerdaDialog";
 
 function agruparPorModeloCor(pecas: CopPeca[]): { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] }[] {
   const map = new Map<string, { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] }>();
