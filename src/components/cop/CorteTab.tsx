@@ -416,11 +416,11 @@ export function CorteTab() {
                             </Select>
                           </td>
                           {REFACAO_TAMANHOS.map((t) => (
-                            <td key={t} className="p-1.5 text-center">
+                            <td key={t} className="p-1.5 text-center w-[72px] min-w-[72px]">
                               <Input
                                 type="number"
                                 min={0}
-                                className="h-8 text-center"
+                                className="h-8 text-center px-1 tabular-nums w-full"
                                 value={g.qtd[t] ?? ""}
                                 onChange={(e) => setQtd(i, t, Number(e.target.value))}
                                 disabled={bloqueado}
