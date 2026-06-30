@@ -91,7 +91,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
     });
   }, [cops, filtro]);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  
   const selected = useMemo(() => cops.find((c) => c.id === selectedId) ?? null, [cops, selectedId]);
   const selectedOfi = useMemo(() => oficinas.find((o) => o.id === selected?.oficina_id) ?? null, [oficinas, selected]);
 
