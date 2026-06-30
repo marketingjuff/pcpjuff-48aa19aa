@@ -156,9 +156,11 @@ export function DisponivelTab() {
                 <tr><td colSpan={REFACAO_TAMANHOS.length + 3} className="p-4 text-center text-muted-foreground">Sem dados.</td></tr>
               ) : linhas.map((l, i) => {
                 const hex = corHex(l.cor); const fg = corTextoSobre(hex);
+                const prev = i > 0 ? linhas[i - 1] : null;
+                const novaCor = !prev || prev.cor !== l.cor;
                 return (
-                  <tr key={i} className="border-t hover:bg-accent/30">
-                    <td className="px-2 py-1">
+                  <tr key={i} className={`${novaCor ? "border-t-4 border-muted-foreground/40" : "border-t"} hover:bg-accent/30`}>
+                    <td className="px-2 py-1">{novaCor ? (
                       <span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{l.cor}</span>
                     </td>
                     <td className="px-2 py-1 font-medium">{l.modelo}</td>
