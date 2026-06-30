@@ -46,7 +46,8 @@ function calcValor(cop: Cop, oficina: Oficina | null, conferencia: CopConferenci
 
 const STATUS_ELEGIVEIS = ["Romaneio Completo", "Aguardando Pagamento", "Finalizado"];
 
-export function PagamentoOficinasTab() {
+export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selectedId?: string | null; onSelect?: (id: string | null) => void } = {}) {
+  const setSelectedId = (id: string | null) => onSelect?.(id);
   const qc = useQueryClient();
   const { btnStyle } = useCopColorSettings();
   const isAdmin = useIsAdmin();
