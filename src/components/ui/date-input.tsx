@@ -67,6 +67,7 @@ export const DateInputBR = React.forwardRef<HTMLInputElement, DateInputBRProps>(
   ({ value, onChange, placeholder = "dia/mês/ano", onBlur, className, disabled, ...props }, ref) => {
     const [text, setText] = React.useState<string>(isoToBR(value));
     const [open, setOpen] = React.useState(false);
+    const fieldId = React.useId();
 
     React.useEffect(() => {
       setText(isoToBR(value));
@@ -90,13 +91,13 @@ export const DateInputBR = React.forwardRef<HTMLInputElement, DateInputBRProps>(
           maxLength={8}
           value={text}
           disabled={disabled}
-          autoComplete="off"
+          autoComplete="new-password"
           autoCorrect="off"
           spellCheck={false}
           data-form-type="other"
           data-lpignore="true"
           data-1p-ignore="true"
-          name={props.name ?? "date-br"}
+          name={props.name ?? `cop-data-${fieldId}`}
           className={cn("pr-10", isNaoUtil && "bg-muted-foreground/20")}
           title={
             isHoliday
