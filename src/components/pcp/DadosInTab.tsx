@@ -613,7 +613,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             {/* Linha 2: Dias Secagem | Arte Limite | Início Estamparia | Término Estamparia (não renderiza para Lisa) */}
             {!isLisa && (
               <>
-                <Field label="Dias de Secagem (dias corridos)">
+                <Field label={`Dias de Secagem (dias corridos)${incluiSilk ? " *" : ""}`} invalid={missingProd.has("dias_secagem")}>
                   {soDTF ? (
                     <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm text-muted-foreground">Não se aplica</div>
                   ) : (
