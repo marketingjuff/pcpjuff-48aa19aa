@@ -95,7 +95,7 @@ export function DashboardCopTab() {
           <div className="text-3xl font-bold tabular-nums text-green-700">{totalProducao}</div>
         </CardContent></Card>
         <Card><CardContent className="p-4">
-          <div className="text-xs uppercase text-muted-foreground">Saldo geral</div>
+          <div className="text-xs uppercase text-muted-foreground">Total Geral</div>
           <div className={`text-3xl font-bold tabular-nums ${saldoGeral < 0 ? "text-red-700" : "text-green-700"}`}>{saldoGeral}</div>
         </CardContent></Card>
         <Card><CardContent className="p-4">
