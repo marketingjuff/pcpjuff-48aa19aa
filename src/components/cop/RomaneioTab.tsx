@@ -45,7 +45,8 @@ function agruparPorModeloCor(pecas: CopPeca[]): { modelo: string; cor: string; t
   return Array.from(map.values());
 }
 
-export function RomaneioTab() {
+export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: string | null; onSelect?: (id: string | null) => void } = {}) {
+  const setSelectedId = (id: string | null) => onSelect?.(id);
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
   const isAdmin = useIsAdmin();
