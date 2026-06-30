@@ -280,7 +280,13 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </SelectContent>
             </Select>
           </div>
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => { setFOrc(""); setFPed(""); setFDtf("todos"); setFSilk("todos"); setFEtapa("acabamento"); }}>
+              <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
+            </Button>
+          </div>
           <div className="md:hidden rounded-md border divide-y">
+
             {dashboardPedidos.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido pronto para acabamento.</div>
             ) : dashboardPedidos.map((p) => (
