@@ -285,8 +285,10 @@ export function RomaneioTab() {
       letra: novaLetra,
     }];
 
-    // Inserir filho (sem `numero` — usa o sequence; rótulo resolve via pai)
+    // Inserir filho herdando o número-base do pai-origem (sem consumir sequence)
+    const numeroPai = numeroBaseCop(selected, cops);
     const { data: filho, error: e1 } = await supabase.from("cops" as any).insert({
+      numero: numeroPai,
       status: "Romaneio Completo" as CopStatus,
       pecas: pecasMovidas as any,
       pecas_recebidas: pecasMovidas.map((p) => ({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd_recebida: p.qtd })) as any,
