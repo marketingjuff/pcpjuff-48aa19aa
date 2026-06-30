@@ -303,7 +303,13 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
               </SelectContent>
             </Select>
           </div>
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => { setFOrc(""); setFPed(""); setFStatus("todos"); setFTela("todos"); setFSilk("todos"); setFEtapa("silk"); }}>
+              <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
+            </Button>
+          </div>
           <div className="md:hidden rounded-md border divide-y">
+
             {dashboardPedidos.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido Silk disponível.</div>
             ) : dashboardPedidos.map((p) => (
