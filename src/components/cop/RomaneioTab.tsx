@@ -500,14 +500,14 @@ export function RomaneioTab() {
                                   const r = getRecebida(recebidas, g.modelo, g.cor, tam);
                                   const completo = r >= qtd && qtd > 0;
                                   const parcial = r > 0 && r < qtd;
+                                  const falta = qtd - r;
                                   const bg = completo ? "#16a34a" : parcial ? "#9ca3af" : "#f3f4f6";
                                   const cor = (completo || parcial) ? "#ffffff" : "#111827";
                                   return (
                                     <td key={tam} className="p-2 text-center">
                                       <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
                                         style={{ backgroundColor: bg, color: cor, border: "1px solid #d1d5db" }}>
-                                        <span className="tabular-nums">{qtd}</span>
-                                        {(completo || parcial) && <span className="opacity-90">· {r}</span>}
+                                        <span className="tabular-nums">{r}/{qtd}</span>
                                       </span>
                                     </td>
                                   );
