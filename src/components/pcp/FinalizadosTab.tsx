@@ -14,7 +14,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { RotateCcw, Trash2, FileText } from "lucide-react";
+import { RotateCcw, Trash2, FileText, FilterX } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
 import { PedidoMobileCard, Chip, QtdTotal, useSort, cmpDate, cmpNum, SortableTh, Th, ReadOnlyField } from "./shared";
