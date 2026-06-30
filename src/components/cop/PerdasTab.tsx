@@ -122,6 +122,7 @@ export function PerdasTab() {
 
   return (
     <div className="space-y-4">
+      <h2 className="text-2xl font-bold tracking-tight">Perdas</h2>
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Registrar perda</CardTitle>
