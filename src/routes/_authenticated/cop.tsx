@@ -33,7 +33,6 @@ const TABS = [
 function CopHome() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const isAdmin = useIsAdmin();
   const canAccess = useCanAccessCop();
   const { isLoading } = useMyRoles();
   const [tab, setTab] = useState("corte");
