@@ -13,7 +13,8 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import type { CopPerdaRegistro, Oficina } from "@/lib/cop";
+import type { Cop, CopPerdaRegistro, CopPerdaLinha, Oficina } from "@/lib/cop";
+import { formatCopNumero } from "@/lib/cop";
 import { useIsAdmin } from "@/hooks/use-role";
 
 export function PerdasTab() {
