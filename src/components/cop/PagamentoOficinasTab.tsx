@@ -20,7 +20,7 @@ import {
   rotuloCop, formatCopNumero, totalPecasCop, getRecebida,
 } from "@/lib/cop";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
-import { useIsAdmin, useHasRole } from "@/hooks/use-role";
+import { useIsAdmin, useHasRole, useCanAccessCop } from "@/hooks/use-role";
 
 function fmtMoney(n: number) {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
