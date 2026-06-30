@@ -83,17 +83,17 @@ export function CorteTab() {
   }, [qc]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [statusFiltro, setStatusFiltro] = useState<string>("__corte__");
+  const [statusFiltro, setStatusFiltro] = useState<string>("__ativos__");
   const [busca, setBusca] = useState("");
   const [showDivisao, setShowDivisao] = useState(false);
 
   const selected = useMemo(() => cops.find((c) => c.id === selectedId) ?? null, [cops, selectedId]);
 
-  // Lista filtrada (somente COPs ainda em Risco/Corte por padrão)
+  // Lista filtrada (por padrão, todos os COPs ATIVOS — exceto Finalizado/Pago)
   const lista = useMemo(() => {
     return cops.filter((c) => {
-      if (statusFiltro === "__corte__") {
-        if (c.status !== "Aguardando Risco" && c.status !== "Aguardando Corte") return false;
+      if (statusFiltro === "__ativos__") {
+        if (c.status === "Finalizado" || c.pagamento_status === "pago") return false;
       } else if (statusFiltro !== "todos" && c.status !== statusFiltro) return false;
       if (busca && !formatCopNumero(c.numero).includes(busca.replace(/\D/g, ""))) return false;
       return true;
