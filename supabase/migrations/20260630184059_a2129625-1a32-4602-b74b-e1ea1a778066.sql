@@ -1,0 +1,1 @@
+ALTER SEQUENCE public.cops_numero_seq RESTART WITH 1;
