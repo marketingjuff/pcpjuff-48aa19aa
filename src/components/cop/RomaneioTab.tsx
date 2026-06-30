@@ -45,7 +45,8 @@ function agruparPorModeloCor(pecas: CopPeca[]): { modelo: string; cor: string; t
   return Array.from(map.values());
 }
 
-export function RomaneioTab() {
+export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: string | null; onSelect?: (id: string | null) => void } = {}) {
+  const setSelectedId = (id: string | null) => onSelect?.(id);
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
   const isAdmin = useIsAdmin();
@@ -81,7 +82,7 @@ export function RomaneioTab() {
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  
   const [statusFiltro, setStatusFiltro] = useState<string>("__ativos__");
   const [busca, setBusca] = useState("");
   const [showEntrega, setShowEntrega] = useState(false);

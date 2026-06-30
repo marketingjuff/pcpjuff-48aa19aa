@@ -36,6 +36,7 @@ function CopHome() {
   const isAdmin = useIsAdmin();
   const { isLoading } = useMyRoles();
   const [tab, setTab] = useState("corte");
+  const [copSelId, setCopSelId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAdmin) {
@@ -90,10 +91,10 @@ function CopHome() {
           </TabsList>
 
           <TabsContent value="corte" forceMount hidden={tab !== "corte"}>
-            <CorteTab />
+            <CorteTab selectedId={copSelId} onSelect={setCopSelId} />
           </TabsContent>
           <TabsContent value="romaneio" forceMount hidden={tab !== "romaneio"}>
-            <RomaneioTab />
+            <RomaneioTab selectedId={copSelId} onSelect={setCopSelId} />
           </TabsContent>
           <TabsContent value="dashboard" forceMount hidden={tab !== "dashboard"}>
             <DashboardCopTab />
@@ -105,7 +106,7 @@ function CopHome() {
             <FaltaPorPedidoTab />
           </TabsContent>
           <TabsContent value="pagamento" forceMount hidden={tab !== "pagamento"}>
-            <PagamentoOficinasTab />
+            <PagamentoOficinasTab selectedId={copSelId} onSelect={setCopSelId} />
           </TabsContent>
           <TabsContent value="perdas" forceMount hidden={tab !== "perdas"}>
             <PerdasTab />

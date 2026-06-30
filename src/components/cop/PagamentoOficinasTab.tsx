@@ -46,7 +46,8 @@ function calcValor(cop: Cop, oficina: Oficina | null, conferencia: CopConferenci
 
 const STATUS_ELEGIVEIS = ["Romaneio Completo", "Aguardando Pagamento", "Finalizado"];
 
-export function PagamentoOficinasTab() {
+export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selectedId?: string | null; onSelect?: (id: string | null) => void } = {}) {
+  const setSelectedId = (id: string | null) => onSelect?.(id);
   const qc = useQueryClient();
   const { btnStyle } = useCopColorSettings();
   const isAdmin = useIsAdmin();
@@ -90,7 +91,7 @@ export function PagamentoOficinasTab() {
     });
   }, [cops, filtro]);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  
   const selected = useMemo(() => cops.find((c) => c.id === selectedId) ?? null, [cops, selectedId]);
   const selectedOfi = useMemo(() => oficinas.find((o) => o.id === selected?.oficina_id) ?? null, [oficinas, selected]);
 

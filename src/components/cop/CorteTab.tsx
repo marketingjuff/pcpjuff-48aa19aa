@@ -57,7 +57,8 @@ function desagrupar(grupos: LinhaGrupo[]): CopPeca[] {
   return out;
 }
 
-export function CorteTab() {
+export function CorteTab({ selectedId = null, onSelect }: { selectedId?: string | null; onSelect?: (id: string | null) => void } = {}) {
+  const setSelectedId = (id: string | null) => onSelect?.(id);
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
   const isAdmin = useIsAdmin();
@@ -82,7 +83,7 @@ export function CorteTab() {
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  
   const [statusFiltro, setStatusFiltro] = useState<string>("__ativos__");
   const [busca, setBusca] = useState("");
   const [showDivisao, setShowDivisao] = useState(false);
