@@ -19,7 +19,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Save, X, FileText, Download, AlertTriangle, ArrowUpDown, CalendarClock, Copy } from "lucide-react";
+import { Plus, Trash2, Save, X, FileText, Download, AlertTriangle, ArrowUpDown, CalendarClock, Copy, FilterX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { addDiasUteis, diasUteisEntre, diasUteisAteHoje, addDiasCorridos, proximoDiaUtil, isDataUtilISO } from "@/lib/dias-uteis";
@@ -207,6 +207,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }
   async function saveProducao() {
     const missP = findMissing(PROD_REQUIRED);
+    // Quando o tipo inclui Silk, Dias de Secagem é obrigatório (0 é válido).
+    if (tipoIncluiSilk(form.tipo_estampa) && (form.dias_secagem === null || form.dias_secagem === undefined || (form.dias_secagem as any) === "")) {
+      missP.add("dias_secagem");
+    }
     setMissingProd(missP);
     if (missP.size > 0) {
       toast.error("Preencha os campos obrigatórios do Input de Produção.");
@@ -609,7 +613,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             {/* Linha 2: Dias Secagem | Arte Limite | Início Estamparia | Término Estamparia (não renderiza para Lisa) */}
             {!isLisa && (
               <>
-                <Field label="Dias de Secagem (dias corridos)">
+                <Field label={`Dias de Secagem (dias corridos)${incluiSilk ? " *" : ""}`} invalid={missingProd.has("dias_secagem")}>
                   {soDTF ? (
                     <div className="px-3 py-2 rounded-md bg-muted/50 border text-sm text-muted-foreground">Não se aplica</div>
                   ) : (
@@ -849,6 +853,12 @@ function DadosInDashboard({
             <DateInputBR value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
           </div>
         </div>
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={() => { setEtapaFiltro("ativas"); setSearch(""); setVendedor("todos"); setStatus("todos"); setTipo("todos"); setDataEntrega(""); }}>
+            <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
+          </Button>
+        </div>
+
 
         {/* Mobile cards */}
         <div className="md:hidden divide-y rounded-md border">

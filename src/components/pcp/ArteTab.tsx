@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Save, Download, AlertTriangle } from "lucide-react";
+import { Save, Download, AlertTriangle, FilterX } from "lucide-react";
 import { toast } from "sonner";
 import { useHasRole } from "@/hooks/use-role";
 
@@ -399,6 +399,13 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
               </Select>
             </div>
           </div>
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => { setFEtapa("arte"); setFSearch(""); setFTipo("todos"); setFDtf("todos"); setFFoto("todos"); setFStatusArte("todos"); setFWarning(false); }}>
+              <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
+            </Button>
+          </div>
+
+
 
           {/* Mobile */}
           <div className="md:hidden divide-y">

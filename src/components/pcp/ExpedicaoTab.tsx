@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag } from "lucide-react";
+import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag, FilterX } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES_EXPEDICAO, matchEtapaFiltro, UpdateButton, FinalizarButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
@@ -348,6 +348,13 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               </SelectContent>
             </Select>
           </div>
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => { setFPed(""); setFOrc(""); setFUF(""); setFForma("todos"); setFEtapa("expedicao"); }}>
+              <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
+            </Button>
+          </div>
+
+
 
           {/* Barra de ações em lote */}
           {onFinalizarMany && (

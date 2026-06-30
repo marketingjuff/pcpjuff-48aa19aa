@@ -13,8 +13,9 @@ import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  ListChecks, AlertCircle, Palette, Printer, Brush, Package, Truck, ArrowUpDown,
+  ListChecks, AlertCircle, Palette, Printer, Brush, Package, Truck, ArrowUpDown, FilterX,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
@@ -236,6 +237,15 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
               <DateInputBR className="h-8" value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
             </div>
           </div>
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => { setVendedor("todos"); setStatus("todos"); setTipo("todos"); setEtapa("ativas"); setDataEntrega(""); setSearch(""); }}>
+              <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
+            </Button>
+          </div>
+
+
+
+
 
           {/* Mobile: cards */}
           <div className="md:hidden rounded-md border divide-y">
