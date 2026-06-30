@@ -91,10 +91,10 @@ function CopHome() {
           </TabsList>
 
           <TabsContent value="corte" forceMount hidden={tab !== "corte"}>
-            <CorteTab />
+            <CorteTab selectedId={copSelId} onSelect={setCopSelId} />
           </TabsContent>
           <TabsContent value="romaneio" forceMount hidden={tab !== "romaneio"}>
-            <RomaneioTab />
+            <RomaneioTab selectedId={copSelId} onSelect={setCopSelId} />
           </TabsContent>
           <TabsContent value="dashboard" forceMount hidden={tab !== "dashboard"}>
             <DashboardCopTab />
