@@ -16,10 +16,6 @@ import {
 import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useCanAccessCop } from "@/hooks/use-role";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
