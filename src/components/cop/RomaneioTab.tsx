@@ -402,7 +402,11 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {bloqueadoRomaneio && (
+              {emCorrecao ? (
+                <div className="rounded-md border border-orange-300 bg-orange-50 p-3 text-sm text-orange-900 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" /> Em correção de corte. Edição do romaneio bloqueada até concluir na aba <span className="font-semibold">Corte</span> (botão "Voltar para o Romaneio").
+                </div>
+              ) : bloqueadoRomaneio && (
                 <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
                   Este COP ainda está em <span className="font-semibold">{selected.status}</span>. Conclua o Corte e clique em
                   <span className="font-semibold"> "Mandar pro Romaneio"</span> na aba <span className="font-semibold">Corte</span> para liberar a edição aqui.
