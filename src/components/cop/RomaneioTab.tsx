@@ -560,7 +560,7 @@ export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: stri
                       <Split className="h-4 w-4 mr-1" /> Particionar (nova letra {letraNova})
                     </Button>
                   )}
-                  {isAdmin && (
+                  {canManageCop && (
                     <Button
                       variant="outline"
                       className="border-orange-400 text-orange-700 hover:bg-orange-50"
