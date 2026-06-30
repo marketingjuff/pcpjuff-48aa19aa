@@ -82,7 +82,7 @@ export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: stri
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  
   const [statusFiltro, setStatusFiltro] = useState<string>("__ativos__");
   const [busca, setBusca] = useState("");
   const [showEntrega, setShowEntrega] = useState(false);
