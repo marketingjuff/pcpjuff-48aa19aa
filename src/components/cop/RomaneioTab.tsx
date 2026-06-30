@@ -424,6 +424,14 @@ export function RomaneioTab() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {bloqueadoRomaneio && (
+                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                  Este COP ainda está em <span className="font-semibold">{selected.status}</span>. Conclua o Corte e clique em
+                  <span className="font-semibold"> "Mandar pro Romaneio"</span> na aba <span className="font-semibold">Corte</span> para liberar a edição aqui.
+                </div>
+              )}
+              <fieldset disabled={bloqueadoRomaneio} className="space-y-4 disabled:opacity-60">
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <Label>Oficina (fornecedor)</Label>
