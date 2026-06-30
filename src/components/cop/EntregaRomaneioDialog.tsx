@@ -134,10 +134,10 @@ export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, on
                                   className="rounded-full w-9 h-9 flex items-center justify-center font-semibold tabular-nums text-[12px] border"
                                   style={{ backgroundColor: numBg, color: numCor, borderColor: completo ? "#15803d" : parcial ? "#6b7280" : "#d1d5db" }}
                                 >
-                                  {parcial ? r : qtd}
+                                  {falta}
                                 </button>
-                                {parcial && (
-                                  <div className="text-[10px] tabular-nums text-muted-foreground">falta {falta}</div>
+                                {(completo || parcial) && (
+                                  <div className="text-[10px] tabular-nums text-muted-foreground">recebido {r}</div>
                                 )}
                                 {parcialEdit === k ? (
                                   <div className="flex items-center gap-0.5">
