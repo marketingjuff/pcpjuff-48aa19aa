@@ -213,6 +213,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
 
   return (
     <div className="space-y-4">
+      <h2 className="text-2xl font-bold tracking-tight">Pagamentos</h2>
       <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="icon" onClick={() => qc.invalidateQueries({ queryKey: ["cops"] })} title="Recarregar"><RefreshCw className="h-4 w-4" /></Button>
