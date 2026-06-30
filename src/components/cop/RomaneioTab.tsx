@@ -46,13 +46,12 @@ function agruparPorModeloCor(pecas: CopPeca[]): { modelo: string; cor: string; t
   return Array.from(map.values());
 }
 
-export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: string | null; onSelect?: (id: string | null) => void } = {}) {
+export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { selectedId?: string | null; onSelect?: (id: string | null) => void; onChangeTab?: (t: string) => void } = {}) {
   const setSelectedId = (id: string | null) => onSelect?.(id);
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
-  const isAdmin = useIsAdmin();
   const canManageCop = useCanAccessCop();
-  const [confirmVoltar, setConfirmVoltar] = useState<Cop | null>(null);
+  const [showPerda, setShowPerda] = useState(false);
 
   const { data: cops = [], isLoading } = useQuery({
 
