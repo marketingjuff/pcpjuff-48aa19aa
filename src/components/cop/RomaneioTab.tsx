@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2 } from "lucide-react";
 import { toast } from "sonner";
-import { useIsAdmin } from "@/hooks/use-role";
+import { useIsAdmin, useCanAccessCop } from "@/hooks/use-role";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
