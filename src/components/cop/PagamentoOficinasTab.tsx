@@ -52,6 +52,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
   const { btnStyle } = useCopColorSettings();
   const isAdmin = useIsAdmin();
   const isGestor = useHasRole("gestor" as any);
+  const canManageCop = useCanAccessCop();
   const podeLiberar = isAdmin || isGestor;
 
   const { data: cops = [] } = useQuery({
