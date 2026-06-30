@@ -546,7 +546,7 @@ export function RomaneioTab() {
                       onClick={() => abrirRomaneioParaImpressao(selected, oficina, cops)}
                     >
                       <FileDown className="h-4 w-4 mr-1" />
-                      romaneio-{formatCopNumero(selected.numero)}{selected.letra ?? ""}.pdf
+                      romaneio-{formatCopNumero(numeroBaseCop(selected, cops))}{selected.letra ?? ""}.pdf
                     </Button>
                   )}
                   {podeParticionar && (
