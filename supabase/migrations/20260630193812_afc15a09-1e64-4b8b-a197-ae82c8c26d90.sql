@@ -1,0 +1,1 @@
+ALTER TABLE public.cops ADD COLUMN IF NOT EXISTS corte_em_correcao boolean NOT NULL DEFAULT false;
