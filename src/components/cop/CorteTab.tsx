@@ -467,18 +467,27 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
                               </SelectContent>
                             </Select>
                           </td>
-                          {REFACAO_TAMANHOS.map((t) => (
-                            <td key={t} className="p-1.5 text-center w-[72px] min-w-[72px]">
-                              <Input
-                                type="number"
-                                min={0}
-                                className="h-8 text-center px-1 tabular-nums w-full"
-                                value={g.qtd[t] ?? ""}
-                                onChange={(e) => setQtd(i, t, Number(e.target.value))}
-                                disabled={bloqueado}
-                              />
-                            </td>
-                          ))}
+                          {REFACAO_TAMANHOS.map((t) => {
+                            const rec = emCorrecao && g.modelo && g.cor ? qtdRecebidaDe(g.modelo, g.cor, t) : 0;
+                            const v = g.qtd[t] ?? 0;
+                            const erroLinha = emCorrecao && rec > 0 && v < rec;
+                            return (
+                              <td key={t} className="p-1.5 text-center w-[72px] min-w-[72px]">
+                                <Input
+                                  type="number"
+                                  min={emCorrecao ? rec : 0}
+                                  className={"h-8 text-center px-1 tabular-nums w-full " + (erroLinha ? "border-destructive text-destructive" : "")}
+                                  value={g.qtd[t] ?? ""}
+                                  onChange={(e) => setQtd(i, t, Number(e.target.value))}
+                                  disabled={bloqueado}
+                                  title={rec > 0 ? `Já recebido: ${rec}` : undefined}
+                                />
+                                {rec > 0 && (
+                                  <div className="text-[10px] text-muted-foreground mt-0.5">≥{rec}</div>
+                                )}
+                              </td>
+                            );
+                          })}
                           <td className="p-1.5">
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeLinha(i)} title="Remover linha" disabled={bloqueado}>
                               <X className="h-4 w-4" />
