@@ -6,7 +6,7 @@ import { LogOut, Settings } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
+import { useIsAdmin, useMyRoles, useCanAccessCop } from "@/hooks/use-role";
 import { CorteTab } from "@/components/cop/CorteTab";
 import { RomaneioTab } from "@/components/cop/RomaneioTab";
 import { DisponivelTab } from "@/components/cop/DisponivelTab";
@@ -33,17 +33,17 @@ const TABS = [
 function CopHome() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const isAdmin = useIsAdmin();
+  const canAccess = useCanAccessCop();
   const { isLoading } = useMyRoles();
   const [tab, setTab] = useState("corte");
   const [copSelId, setCopSelId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoading && !isAdmin) {
-      toast.error("COP é restrito a administradores.");
+    if (!isLoading && !canAccess) {
+      toast.error("COP é restrito a administradores e gestores autorizados.");
       navigate({ to: "/", replace: true });
     }
-  }, [isAdmin, isLoading, navigate]);
+  }, [canAccess, isLoading, navigate]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -51,7 +51,7 @@ function CopHome() {
     navigate({ to: "/auth", replace: true });
   }
 
-  if (isLoading || !isAdmin) {
+  if (isLoading || !canAccess) {
     return <div className="p-8 text-sm text-muted-foreground">Carregando…</div>;
   }
 

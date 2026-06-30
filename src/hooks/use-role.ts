@@ -54,3 +54,19 @@ export function useHasRole(role: AppRole) {
   const { data } = useMyRoles();
   return (data ?? []).some((r) => r.role === role);
 }
+
+export function useHasArea(area: string) {
+  const { data } = useMyRoles();
+  return (data ?? []).some(
+    (r) => r.role === "admin" || (r.areas_extras ?? []).includes(area),
+  );
+}
+
+export function useCanAccessCop() {
+  const { data } = useMyRoles();
+  return (data ?? []).some(
+    (r) =>
+      r.role === "admin" ||
+      (r.role === "gestor" && (r.areas_extras ?? []).includes("cop")),
+  );
+}
