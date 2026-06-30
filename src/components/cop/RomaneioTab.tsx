@@ -82,6 +82,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
 
   
   const [statusFiltro, setStatusFiltro] = useState<string>("__ativos__");
+  const [oficinaFiltro, setOficinaFiltro] = useState<string>("todas");
   const [busca, setBusca] = useState("");
   const [showEntrega, setShowEntrega] = useState(false);
   const [showParticionar, setShowParticionar] = useState(false);
