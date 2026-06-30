@@ -272,8 +272,23 @@ export function PagamentoOficinasTab() {
                 </tbody>
                 <tfoot className="bg-muted/30">
                   <tr>
-                    <td colSpan={6} className="p-2 text-right">Frete ({selected.num_fretes ?? 1}× {fmtMoney(Number(selectedOfi?.valor_frete ?? 0))})</td>
-                    <td colSpan={2} className="p-2 text-right tabular-nums">{fmtMoney(Number(selectedOfi?.valor_frete ?? 0) * (selected.num_fretes ?? 1))}</td>
+                    <td colSpan={6} className="p-2 text-right">
+                      <span className="inline-flex items-center gap-2 justify-end">
+                        <span>Frete</span>
+                        {selected.pagamento_status === "pago" ? (
+                          <span className="tabular-nums">{numFretes}</span>
+                        ) : (
+                          <Input
+                            type="number" min={1}
+                            className="h-7 w-16 text-right"
+                            value={numFretes}
+                            onChange={(e) => setNumFretes(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+                          />
+                        )}
+                        <span>× {fmtMoney(Number(selectedOfi?.valor_frete ?? 0))}</span>
+                      </span>
+                    </td>
+                    <td colSpan={2} className="p-2 text-right tabular-nums">{fmtMoney(Number(selectedOfi?.valor_frete ?? 0) * numFretes)}</td>
                   </tr>
                   <tr>
                     <td colSpan={7} className="p-2 text-right"><b>Total</b></td>
