@@ -200,7 +200,6 @@ export function RomaneioTab() {
       data_saida_oficina: draft.data_saida_oficina ?? null,
       data_recebimento: draft.data_recebimento ?? null,
       observacoes_romaneio: (draft.observacoes_romaneio ?? "")?.toString().toUpperCase() || null,
-      num_fretes: Math.max(1, Math.floor(Number(draft.num_fretes) || 1)),
     };
   }
 
