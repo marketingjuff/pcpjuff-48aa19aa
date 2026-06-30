@@ -6,7 +6,7 @@ import { LogOut, Settings } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useIsAdmin, useMyRoles, useCanAccessCop } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessCop } from "@/hooks/use-role";
 import { CorteTab } from "@/components/cop/CorteTab";
 import { RomaneioTab } from "@/components/cop/RomaneioTab";
 import { DisponivelTab } from "@/components/cop/DisponivelTab";
@@ -119,7 +119,7 @@ function CopHome() {
 
 export function MacroSwitch({ active }: { active: "pcp" | "cop" }) {
   const navigate = useNavigate();
-  const isAdmin = useIsAdmin();
+  const canAccessCop = useCanAccessCop();
   const baseBtn = "px-6 py-2 rounded font-bold text-base transition-colors";
   const pcpActive = active === "pcp"
     ? "bg-blue-600 text-white"
@@ -136,7 +136,7 @@ export function MacroSwitch({ active }: { active: "pcp" | "cop" }) {
       >
         PCP
       </button>
-      {isAdmin && (
+      {canAccessCop && (
         <button
           type="button"
           onClick={() => navigate({ to: "/cop" })}
