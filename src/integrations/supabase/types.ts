@@ -130,6 +130,7 @@ export type Database = {
           cop_pai_id: string | null
           cop_romaneio_pai_id: string | null
           corte_dividido: boolean
+          corte_em_correcao: boolean
           created_at: string
           created_by: string | null
           data_recebimento: string | null
@@ -168,6 +169,7 @@ export type Database = {
           cop_pai_id?: string | null
           cop_romaneio_pai_id?: string | null
           corte_dividido?: boolean
+          corte_em_correcao?: boolean
           created_at?: string
           created_by?: string | null
           data_recebimento?: string | null
@@ -206,6 +208,7 @@ export type Database = {
           cop_pai_id?: string | null
           cop_romaneio_pai_id?: string | null
           corte_dividido?: boolean
+          corte_em_correcao?: boolean
           created_at?: string
           created_by?: string | null
           data_recebimento?: string | null

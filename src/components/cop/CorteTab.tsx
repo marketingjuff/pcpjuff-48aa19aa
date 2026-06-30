@@ -10,14 +10,14 @@ import { DateInputBR } from "@/components/ui/date-input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Scissors, Send, RefreshCw, Trash2 } from "lucide-react";
+import { Plus, X, Scissors, Send, RefreshCw, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopStatus,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, subtrairPecas,
-  calcularStatusCorte,
+  calcularStatusCorte, getRecebida,
 } from "@/lib/cop";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { DivisaoCorteDialog } from "./DivisaoCorteDialog";
@@ -57,7 +57,7 @@ function desagrupar(grupos: LinhaGrupo[]): CopPeca[] {
   return out;
 }
 
-export function CorteTab({ selectedId = null, onSelect }: { selectedId?: string | null; onSelect?: (id: string | null) => void } = {}) {
+export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selectedId?: string | null; onSelect?: (id: string | null) => void; onChangeTab?: (t: string) => void } = {}) {
   const setSelectedId = (id: string | null) => onSelect?.(id);
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
@@ -161,12 +161,43 @@ export function CorteTab({ selectedId = null, onSelect }: { selectedId?: string 
     onError: (e: any) => toast.error(e.message ?? "Erro ao excluir COP"),
   });
 
-  const bloqueado = !!selected && !STATUS_CORTE.includes(selected.status);
+  const emCorrecao = !!selected?.corte_em_correcao;
+  const bloqueado = !!selected && !STATUS_CORTE.includes(selected.status) && !emCorrecao;
+
+  /** Quantidades já recebidas por linha (apenas no modo correção). */
+  function qtdRecebidaDe(modelo: string, cor: string, tamanho: string): number {
+    if (!selected) return 0;
+    return getRecebida(selected.pecas_recebidas ?? [], modelo, cor, tamanho);
+  }
+
+  /** Valida que nenhuma linha foi reduzida abaixo do já recebido. */
+  function validarPecasContraRecebidas(pecas: CopPeca[]): string | null {
+    if (!emCorrecao || !selected) return null;
+    for (const r of (selected.pecas_recebidas ?? [])) {
+      const linha = pecas.find((p) => p.modelo === r.modelo && p.cor === r.cor && p.tamanho === r.tamanho);
+      const novo = linha?.qtd ?? 0;
+      if (novo < r.qtd_recebida) {
+        return `Não é possível reduzir ${r.modelo}·${r.cor}·${r.tamanho} para ${novo} (já recebido: ${r.qtd_recebida}).`;
+      }
+    }
+    return null;
+  }
 
   async function handleAtualizar() {
     if (!selected) return;
-    if (bloqueado) { toast.error("Este COP já saiu para o Romaneio. Use 'Voltar para Corte' na aba Romaneio."); return; }
+    if (bloqueado) { toast.error("Este COP já saiu para o Romaneio. Use 'Corrigir corte' na aba Romaneio."); return; }
     const pecas = desagrupar(grupos);
+    const erro = validarPecasContraRecebidas(pecas);
+    if (erro) { toast.error(erro); return; }
+    if (emCorrecao) {
+      // Mantém status; só ajusta peças e observações.
+      await salvar.mutateAsync({
+        id: selected.id,
+        observacoes_corte: (draft.observacoes_corte ?? "")?.toString().toUpperCase() || null,
+        pecas,
+      });
+      return;
+    }
     const datas = {
       solicitacao_risco: draft.solicitacao_risco ?? null,
       execucao_risco: draft.execucao_risco ?? null,
@@ -181,6 +212,21 @@ export function CorteTab({ selectedId = null, onSelect }: { selectedId?: string 
       pecas,
       status: novoStatus,
     });
+  }
+
+  async function handleVoltarRomaneio() {
+    if (!selected || !emCorrecao) return;
+    const pecas = desagrupar(grupos);
+    const erro = validarPecasContraRecebidas(pecas);
+    if (erro) { toast.error(erro); return; }
+    await salvar.mutateAsync({
+      id: selected.id,
+      observacoes_corte: (draft.observacoes_corte ?? "")?.toString().toUpperCase() || null,
+      pecas,
+      corte_em_correcao: false as any,
+    });
+    toast.success("COP devolvido ao Romaneio.");
+    onChangeTab?.("romaneio");
   }
 
   async function handleMandarRomaneio() {
@@ -336,10 +382,15 @@ export function CorteTab({ selectedId = null, onSelect }: { selectedId?: string 
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {emCorrecao && (
+              <div className="rounded-md border border-orange-300 bg-orange-50 p-3 text-xs text-orange-900">
+                <b>Correção de corte ativa.</b> As datas e o status estão preservados. Você pode ajustar as peças (acrescentar ou diminuir), respeitando o que já foi recebido no romaneio. Ao terminar, clique em <b>"Voltar para o Romaneio"</b>.
+              </div>
+            )}
             {bloqueado && (
               <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
                 Este COP já saiu para o Romaneio (status <b>{selected.status}</b>). A edição do Corte está bloqueada.
-                Para reabrir, use o botão <b>"Voltar para Corte"</b> na aba Romaneio.
+                Para reabrir, use o botão <b>"Corrigir corte"</b> na aba Romaneio.
               </div>
             )}
             <fieldset disabled={bloqueado} className="contents">
@@ -347,19 +398,19 @@ export function CorteTab({ selectedId = null, onSelect }: { selectedId?: string 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <Label>Solicitação do Risco</Label>
-                <DateInputBR value={draft.solicitacao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_risco: v }))} disabled={bloqueado} />
+                <DateInputBR value={draft.solicitacao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_risco: v }))} disabled={bloqueado || emCorrecao} />
               </div>
               <div>
                 <Label>Execução do Risco</Label>
-                <DateInputBR value={draft.execucao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, execucao_risco: v }))} disabled={bloqueado} />
+                <DateInputBR value={draft.execucao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, execucao_risco: v }))} disabled={bloqueado || emCorrecao} />
               </div>
               <div>
                 <Label>Solicitação do Corte</Label>
-                <DateInputBR value={draft.solicitacao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_corte: v }))} disabled={bloqueado} />
+                <DateInputBR value={draft.solicitacao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_corte: v }))} disabled={bloqueado || emCorrecao} />
               </div>
               <div>
                 <Label>Execução do Corte</Label>
-                <DateInputBR value={draft.execucao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, execucao_corte: v }))} disabled={bloqueado} />
+                <DateInputBR value={draft.execucao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, execucao_corte: v }))} disabled={bloqueado || emCorrecao} />
               </div>
             </div>
 
@@ -416,18 +467,27 @@ export function CorteTab({ selectedId = null, onSelect }: { selectedId?: string 
                               </SelectContent>
                             </Select>
                           </td>
-                          {REFACAO_TAMANHOS.map((t) => (
-                            <td key={t} className="p-1.5 text-center w-[72px] min-w-[72px]">
-                              <Input
-                                type="number"
-                                min={0}
-                                className="h-8 text-center px-1 tabular-nums w-full"
-                                value={g.qtd[t] ?? ""}
-                                onChange={(e) => setQtd(i, t, Number(e.target.value))}
-                                disabled={bloqueado}
-                              />
-                            </td>
-                          ))}
+                          {REFACAO_TAMANHOS.map((t) => {
+                            const rec = emCorrecao && g.modelo && g.cor ? qtdRecebidaDe(g.modelo, g.cor, t) : 0;
+                            const v = g.qtd[t] ?? 0;
+                            const erroLinha = emCorrecao && rec > 0 && v < rec;
+                            return (
+                              <td key={t} className="p-1.5 text-center w-[72px] min-w-[72px]">
+                                <Input
+                                  type="number"
+                                  min={emCorrecao ? rec : 0}
+                                  className={"h-8 text-center px-1 tabular-nums w-full " + (erroLinha ? "border-destructive text-destructive" : "")}
+                                  value={g.qtd[t] ?? ""}
+                                  onChange={(e) => setQtd(i, t, Number(e.target.value))}
+                                  disabled={bloqueado}
+                                  title={rec > 0 ? `Já recebido: ${rec}` : undefined}
+                                />
+                                {rec > 0 && (
+                                  <div className="text-[10px] text-muted-foreground mt-0.5">≥{rec}</div>
+                                )}
+                              </td>
+                            );
+                          })}
                           <td className="p-1.5">
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeLinha(i)} title="Remover linha" disabled={bloqueado}>
                               <X className="h-4 w-4" />
@@ -472,14 +532,25 @@ export function CorteTab({ selectedId = null, onSelect }: { selectedId?: string 
                 <Button style={btnStyle("atualizar")} onClick={handleAtualizar} disabled={salvar.isPending || bloqueado}>
                   Salvar
                 </Button>
-                <Button
-                  style={btnStyle("mandar_romaneio")}
-                  onClick={handleMandarRomaneio}
-                  disabled={salvar.isPending || selected.status !== "Aguardando Romaneio"}
-                  title={selected.status !== "Aguardando Romaneio" ? "Preencha as 4 datas (até Execução do Corte) e salve." : "Enviar para Romaneio"}
-                >
-                  <Send className="h-4 w-4 mr-1" /> Mandar pro Romaneio
-                </Button>
+                {emCorrecao ? (
+                  <Button
+                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                    onClick={handleVoltarRomaneio}
+                    disabled={salvar.isPending}
+                    title="Aplicar ajustes e devolver o COP ao Romaneio"
+                  >
+                    <Undo2 className="h-4 w-4 mr-1" /> Voltar para o Romaneio
+                  </Button>
+                ) : (
+                  <Button
+                    style={btnStyle("mandar_romaneio")}
+                    onClick={handleMandarRomaneio}
+                    disabled={salvar.isPending || selected.status !== "Aguardando Romaneio"}
+                    title={selected.status !== "Aguardando Romaneio" ? "Preencha as 4 datas (até Execução do Corte) e salve." : "Enviar para Romaneio"}
+                  >
+                    <Send className="h-4 w-4 mr-1" /> Mandar pro Romaneio
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>

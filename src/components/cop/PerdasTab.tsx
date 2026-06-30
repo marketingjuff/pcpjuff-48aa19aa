@@ -13,7 +13,8 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import type { CopPerdaRegistro, Oficina } from "@/lib/cop";
+import type { Cop, CopPerdaRegistro, CopPerdaLinha, Oficina } from "@/lib/cop";
+import { formatCopNumero } from "@/lib/cop";
 import { useIsAdmin } from "@/hooks/use-role";
 
 export function PerdasTab() {
@@ -38,13 +39,35 @@ export function PerdasTab() {
     },
   });
 
+  const { data: cops = [] } = useQuery({
+    queryKey: ["cops"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("cops" as any).select("*");
+      if (error) throw error;
+      return (data ?? []) as unknown as Cop[];
+    },
+  });
+
   useEffect(() => {
     const ch = supabase
       .channel("cop-perdas")
       .on("postgres_changes", { event: "*", schema: "public", table: "cop_perdas" }, () => qc.invalidateQueries({ queryKey: ["cop_perdas"] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "cops" }, () => qc.invalidateQueries({ queryKey: ["cops"] }))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
+
+  /** Perdas vindas dos romaneios (cops.perdas). */
+  const perdasRomaneios = useMemo(() => {
+    const out: Array<{ key: string; cop: Cop; linha: CopPerdaLinha }> = [];
+    for (const c of cops) {
+      for (const l of ((c.perdas as CopPerdaLinha[]) ?? [])) {
+        if (!l || !l.qtd) continue;
+        out.push({ key: `${c.id}-${l.modelo}-${l.cor}-${l.tamanho}`, cop: c, linha: l });
+      }
+    }
+    return out;
+  }, [cops]);
 
   const [form, setForm] = useState({
     oficina_id: "",
@@ -156,7 +179,46 @@ export function PerdasTab() {
               <Button onClick={() => salvar.mutate()} disabled={salvar.isPending}><Plus className="h-4 w-4 mr-1" /> Registrar perda</Button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">Apenas registro: não altera saldo Disponível.</p>
+          <p className="text-xs text-muted-foreground mt-2">As perdas registradas aqui e nos romaneios reduzem o saldo Disponível.</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Perdas registradas em romaneios</CardTitle></CardHeader>
+        <CardContent>
+          <div className="rounded-md border overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs">
+                <tr>
+                  <th className="p-2 text-left">COP</th>
+                  <th className="p-2 text-left">Oficina</th>
+                  <th className="p-2 text-left">Modelo</th>
+                  <th className="p-2 text-left">Cor</th>
+                  <th className="p-2 text-center">Tam.</th>
+                  <th className="p-2 text-right">Qtd</th>
+                  <th className="p-2 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {perdasRomaneios.length === 0 ? (
+                  <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">Sem perdas em romaneios.</td></tr>
+                ) : perdasRomaneios.map(({ key, cop, linha }) => {
+                  const hex = corHex(linha.cor); const fg = corTextoSobre(hex);
+                  return (
+                    <tr key={key} className="border-t">
+                      <td className="p-2 font-mono">{formatCopNumero(cop.numero)}{cop.letra ? cop.letra : ""}</td>
+                      <td className="p-2">{cop.oficina_id ? (ofiNome.get(cop.oficina_id) ?? "—") : "—"}</td>
+                      <td className="p-2">{linha.modelo}</td>
+                      <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{linha.cor}</span></td>
+                      <td className="p-2 text-center">{linha.tamanho}</td>
+                      <td className="p-2 text-right tabular-nums">{linha.qtd}</td>
+                      <td className="p-2 text-xs">{cop.status}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
 

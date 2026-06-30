@@ -9,39 +9,62 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Check, X, Trash2 } from "lucide-react";
+import { RefreshCw, Check, X, Trash2, AlertTriangle } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import type { Cop, CopPeca, CopConferenciaItem, Oficina } from "@/lib/cop";
+import type { Cop, CopPeca, Oficina, CopPerdaLinha } from "@/lib/cop";
 import {
   rotuloCop, formatCopNumero, totalPecasCop, getRecebida,
 } from "@/lib/cop";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { useIsAdmin, useHasRole, useCanAccessCop } from "@/hooks/use-role";
+import { useFeriados } from "@/hooks/use-feriados";
+import { addDiasUteis } from "@/lib/dias-uteis";
+import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
 function fmtMoney(n: number) {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-/** Cria conferencia a partir das peças recebidas (cada linha vira qtd_conferida). */
-function inicializarConferencia(pecas: CopPeca[], recebidas: { modelo: string; cor: string; tamanho: string; qtd_recebida: number }[]): CopConferenciaItem[] {
-  return pecas.map((p) => ({
-    modelo: p.modelo, cor: p.cor, tamanho: p.tamanho,
-    qtd_conferida: Math.min(p.qtd, getRecebida(recebidas, p.modelo, p.cor, p.tamanho)),
-  }));
+/** Soma por (modelo, cor) das quantidades pagáveis = Σ_tamanho max(0, recebido − perda). */
+function calcQtdPagavelPorModeloCor(cop: Cop): Map<string, number> {
+  const out = new Map<string, number>();
+  const perdas = (cop.perdas as CopPerdaLinha[]) ?? [];
+  const recv = cop.pecas_recebidas ?? [];
+  const linhas = (cop.pecas ?? []) as CopPeca[];
+  for (const p of linhas) {
+    const r = getRecebida(recv, p.modelo, p.cor, p.tamanho);
+    const pl = perdas.find((x) => x.modelo === p.modelo && x.cor === p.cor && x.tamanho === p.tamanho);
+    const perd = Number(pl?.qtd ?? 0);
+    const q = Math.max(0, r - perd);
+    if (q <= 0) continue;
+    const k = `${p.modelo}|${p.cor}`;
+    out.set(k, (out.get(k) ?? 0) + q);
+  }
+  return out;
 }
 
-function calcValor(cop: Cop, oficina: Oficina | null, conferencia: CopConferenciaItem[]): number {
+function calcValor(cop: Cop, oficina: Oficina | null): number {
   if (!oficina) return 0;
-  const pecas = conferencia.reduce((s, c) => {
-    const v = Number((oficina.valores_por_modelo ?? {})[c.modelo] ?? 0);
-    return s + v * (Number(c.qtd_conferida) || 0);
-  }, 0);
+  const grupos = calcQtdPagavelPorModeloCor(cop);
+  let pecas = 0;
+  for (const [k, q] of grupos) {
+    const modelo = k.split("|")[0];
+    const v = Number((oficina.valores_por_modelo ?? {})[modelo] ?? 0);
+    pecas += v * q;
+  }
   const fretes = Number(oficina.valor_frete ?? 0) * Math.max(1, Number(cop.num_fretes) || 1);
   return Math.max(0, pecas + fretes);
+}
+
+function isPagamentoAtrasado(cop: Cop, feriados: Set<string>): boolean {
+  if (cop.pagamento_status !== "liberado" || !cop.pagamento_liberado_em) return false;
+  const limiteISO = addDiasUteis(new Date(cop.pagamento_liberado_em), 5, feriados);
+  const hojeISO = new Date().toISOString().slice(0, 10);
+  return hojeISO > limiteISO;
 }
 
 const STATUS_ELEGIVEIS = ["Romaneio Completo", "Aguardando Pagamento", "Finalizado"];
@@ -54,6 +77,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
   const isGestor = useHasRole("gestor" as any);
   const canManageCop = useCanAccessCop();
   const podeLiberar = isAdmin || isGestor;
+  const { feriados } = useFeriados();
 
   const { data: cops = [] } = useQuery({
     queryKey: ["cops"],
@@ -87,23 +111,18 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
       if (filtro === "nao_pago") return c.pagamento_status === "nao_pago";
       if (filtro === "liberado") return c.pagamento_status === "liberado";
       if (filtro === "pago") return c.pagamento_status === "pago";
-      // todos_pagaveis: tudo que está elegível
+      if (filtro === "atrasado") return isPagamentoAtrasado(c, feriados);
       return true;
     });
-  }, [cops, filtro]);
+  }, [cops, filtro, feriados]);
 
-  
   const selected = useMemo(() => cops.find((c) => c.id === selectedId) ?? null, [cops, selectedId]);
   const selectedOfi = useMemo(() => oficinas.find((o) => o.id === selected?.oficina_id) ?? null, [oficinas, selected]);
 
-  // editor da conferência (com fallback a partir dos recebidos)
-  const [conf, setConf] = useState<CopConferenciaItem[]>([]);
   const [obsPag, setObsPag] = useState<string>("");
   const [numFretes, setNumFretes] = useState<number>(1);
   useEffect(() => {
-    if (!selected) { setConf([]); setObsPag(""); setNumFretes(1); return; }
-    if ((selected.conferencia ?? []).length > 0) setConf(selected.conferencia);
-    else setConf(inicializarConferencia(selected.pecas ?? [], selected.pecas_recebidas ?? []));
+    if (!selected) { setObsPag(""); setNumFretes(1); return; }
     setObsPag(selected.observacoes_pagamento ?? "");
     setNumFretes(Math.max(1, Math.floor(Number(selected.num_fretes) || 1)));
   }, [selectedId]); // eslint-disable-line
@@ -112,28 +131,39 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
     () => selected ? ({ ...selected, num_fretes: numFretes } as Cop) : null,
     [selected, numFretes],
   );
-  const valor = useMemo(() => selectedComFretes ? calcValor(selectedComFretes, selectedOfi, conf) : 0, [selectedComFretes, selectedOfi, conf]);
+  const valor = useMemo(() => selectedComFretes ? calcValor(selectedComFretes, selectedOfi) : 0, [selectedComFretes, selectedOfi]);
+  const atrasado = selected ? isPagamentoAtrasado(selected, feriados) : false;
 
-  const salvarConferencia = useMutation({
+  const grupos = useMemo(() => {
+    if (!selected) return [] as Array<{ modelo: string; cor: string; qtd: number; valUn: number; subtotal: number }>;
+    const map = calcQtdPagavelPorModeloCor(selected);
+    const arr: Array<{ modelo: string; cor: string; qtd: number; valUn: number; subtotal: number }> = [];
+    for (const [k, q] of map) {
+      const [modelo, cor] = k.split("|");
+      const valUn = Number((selectedOfi?.valores_por_modelo ?? {})[modelo] ?? 0);
+      arr.push({ modelo, cor, qtd: q, valUn, subtotal: valUn * q });
+    }
+    arr.sort((a, b) => a.modelo.localeCompare(b.modelo) || a.cor.localeCompare(b.cor));
+    return arr;
+  }, [selected, selectedOfi]);
+
+  const salvarObs = useMutation({
     mutationFn: async () => {
       if (!selected) return;
       const { error } = await supabase.from("cops" as any).update({
-        conferencia: conf as any,
         observacoes_pagamento: (obsPag || "").toUpperCase() || null,
         num_fretes: Math.max(1, Math.floor(Number(numFretes) || 1)),
       }).eq("id", selected.id);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Conferência atualizada."); qc.invalidateQueries({ queryKey: ["cops"] }); },
+    onSuccess: () => { toast.success("Salvo."); qc.invalidateQueries({ queryKey: ["cops"] }); },
     onError: (e: any) => toast.error(e.message ?? "Erro ao salvar."),
   });
 
   const liberar = useMutation({
     mutationFn: async () => {
       if (!selected) return;
-      // Salva conferência primeiro
       const { error: e1 } = await supabase.from("cops" as any).update({
-        conferencia: conf as any,
         observacoes_pagamento: (obsPag || "").toUpperCase() || null,
         num_fretes: Math.max(1, Math.floor(Number(numFretes) || 1)),
       }).eq("id", selected.id);
@@ -193,6 +223,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
               <SelectItem value="todos_pagaveis">Todos elegíveis</SelectItem>
               <SelectItem value="nao_pago">Não pago</SelectItem>
               <SelectItem value="liberado">Liberado</SelectItem>
+              <SelectItem value="atrasado">Atrasado</SelectItem>
               <SelectItem value="pago">Pago</SelectItem>
             </SelectContent>
           </Select>
@@ -204,10 +235,15 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
         <Card className="border-primary/30">
           <CardHeader className="pb-2">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
-              <CardTitle className="text-base">
+              <CardTitle className="text-base flex flex-wrap items-center gap-2">
                 COP {rotuloCop(selected.numero, selected.letra)} ·{" "}
                 <span className="font-normal text-sm">{selectedOfi?.nome ?? "—"}</span>
                 {selected.letra && <span className="ml-2 text-xs text-amber-700">(Pagamento parcial — letra {selected.letra})</span>}
+                {atrasado && (
+                  <span className="inline-flex items-center gap-1 bg-red-600 text-white text-[11px] font-semibold px-2 py-0.5 rounded">
+                    <AlertTriangle className="h-3 w-3" /> Pagamento atrasado
+                  </span>
+                )}
               </CardTitle>
               <span className="text-xs">
                 Status: <b className={
@@ -225,56 +261,30 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
                   <tr>
                     <th className="p-2 text-left">Modelo</th>
                     <th className="p-2 text-left">Cor</th>
-                    <th className="p-2 text-center">Tamanho</th>
-                    <th className="p-2 text-right">Solic.</th>
-                    <th className="p-2 text-right">Recebido</th>
-                    <th className="p-2 text-right">Conferida</th>
+                    <th className="p-2 text-right">Qtd (rec. − perdas)</th>
                     <th className="p-2 text-right">Valor/un</th>
                     <th className="p-2 text-right">Subtotal</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {(selected.pecas ?? []).map((p, i) => {
-                    const recv = getRecebida(selected.pecas_recebidas ?? [], p.modelo, p.cor, p.tamanho);
-                    const cIdx = conf.findIndex((c) => c.modelo === p.modelo && c.cor === p.cor && c.tamanho === p.tamanho);
-                    const qConf = cIdx >= 0 ? conf[cIdx].qtd_conferida : 0;
-                    const valUn = Number((selectedOfi?.valores_por_modelo ?? {})[p.modelo] ?? 0);
+                  {grupos.length === 0 ? (
+                    <tr><td colSpan={5} className="p-3 text-center text-muted-foreground">Sem peças recebidas (descontadas perdas).</td></tr>
+                  ) : grupos.map((g, i) => {
+                    const hex = corHex(g.cor); const fg = corTextoSobre(hex);
                     return (
                       <tr key={i} className="border-t">
-                        <td className="p-2">{p.modelo}</td>
-                        <td className="p-2">{p.cor}</td>
-                        <td className="p-2 text-center">{p.tamanho}</td>
-                        <td className="p-2 text-right tabular-nums">{p.qtd}</td>
-                        <td className="p-2 text-right tabular-nums">{recv}</td>
-                        <td className="p-2 text-right">
-                          {selected.pagamento_status === "pago" ? (
-                            <span className="tabular-nums">{qConf}</span>
-                          ) : (
-                            <Input
-                              type="number" min={0} max={p.qtd}
-                              className="h-7 w-20 ml-auto text-right"
-                              value={qConf}
-                              onChange={(e) => {
-                                const v = Math.max(0, Math.min(p.qtd, Math.floor(Number(e.target.value) || 0)));
-                                setConf((cs) => {
-                                  const next = cs.slice();
-                                  if (cIdx >= 0) next[cIdx] = { ...next[cIdx], qtd_conferida: v };
-                                  else next.push({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd_conferida: v });
-                                  return next;
-                                });
-                              }}
-                            />
-                          )}
-                        </td>
-                        <td className="p-2 text-right tabular-nums">{fmtMoney(valUn)}</td>
-                        <td className="p-2 text-right tabular-nums">{fmtMoney(valUn * qConf)}</td>
+                        <td className="p-2">{g.modelo}</td>
+                        <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
+                        <td className="p-2 text-right tabular-nums">{g.qtd}</td>
+                        <td className="p-2 text-right tabular-nums">{fmtMoney(g.valUn)}</td>
+                        <td className="p-2 text-right tabular-nums">{fmtMoney(g.subtotal)}</td>
                       </tr>
                     );
                   })}
                 </tbody>
                 <tfoot className="bg-muted/30">
                   <tr>
-                    <td colSpan={6} className="p-2 text-right">
+                    <td colSpan={3} className="p-2 text-right">
                       <span className="inline-flex items-center gap-2 justify-end">
                         <span>Frete</span>
                         {selected.pagamento_status === "pago" ? (
@@ -293,7 +303,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
                     <td colSpan={2} className="p-2 text-right tabular-nums">{fmtMoney(Number(selectedOfi?.valor_frete ?? 0) * numFretes)}</td>
                   </tr>
                   <tr>
-                    <td colSpan={7} className="p-2 text-right"><b>Total</b></td>
+                    <td colSpan={4} className="p-2 text-right"><b>Total</b></td>
                     <td className="p-2 text-right tabular-nums"><b>{fmtMoney(valor)}</b></td>
                   </tr>
                 </tfoot>
@@ -314,8 +324,8 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
 
             <div className="flex flex-wrap items-center gap-2 justify-end">
               {selected.pagamento_status !== "pago" && (
-                <Button variant="outline" onClick={() => salvarConferencia.mutate()} disabled={salvarConferencia.isPending}>
-                  Salvar conferência
+                <Button variant="outline" onClick={() => salvarObs.mutate()} disabled={salvarObs.isPending}>
+                  Salvar
                 </Button>
               )}
               {selected.pagamento_status === "nao_pago" && podeLiberar && (
@@ -376,10 +386,8 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
                   <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">Nenhum COP no filtro atual.</td></tr>
                 ) : lista.map((c) => {
                   const ofi = oficinas.find((o) => o.id === c.oficina_id) ?? null;
-                  const conferencia = (c.conferencia ?? []).length > 0
-                    ? c.conferencia
-                    : inicializarConferencia(c.pecas ?? [], c.pecas_recebidas ?? []);
-                  const v = calcValor(c, ofi, conferencia);
+                  const v = calcValor(c, ofi);
+                  const atras = isPagamentoAtrasado(c, feriados);
                   return (
                     <tr key={c.id} className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : ""}`} onClick={() => setSelectedId(c.id)}>
                       <td className="p-2 font-semibold tabular-nums">{rotuloCop(c.numero, c.letra)}</td>
@@ -388,7 +396,16 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
                       <td className="p-2 text-xs">{c.status}</td>
                       <td className="p-2 text-xs">
                         {c.pagamento_status === "pago" ? <span className="text-green-700">Pago</span>
-                          : c.pagamento_status === "liberado" ? <span className="text-blue-700">Liberado</span>
+                          : c.pagamento_status === "liberado" ? (
+                            <span className="inline-flex items-center gap-1">
+                              <span className="text-blue-700">Liberado</span>
+                              {atras && (
+                                <span className="inline-flex items-center gap-1 bg-red-600 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
+                                  <AlertTriangle className="h-3 w-3" /> Atrasado
+                                </span>
+                              )}
+                            </span>
+                          )
                           : <span className="text-muted-foreground">Não pago</span>}
                       </td>
                       <td className="p-2 text-right tabular-nums">{fmtMoney(c.pagamento_valor_calculado != null ? Number(c.pagamento_valor_calculado) : v)}</td>

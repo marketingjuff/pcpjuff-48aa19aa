@@ -13,26 +13,23 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2 } from "lucide-react";
+import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { useIsAdmin, useCanAccessCop } from "@/hooks/use-role";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { useCanAccessCop } from "@/hooks/use-role";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
-  type HistoricoRecebimento,
+  type HistoricoRecebimento, type CopPerdaLinha,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, totalRecebidas,
   todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
-  getRecebida, colunasTamanhos,
+  getRecebida, colunasTamanhos, mesclarPerdasEmObservacoes,
 } from "@/lib/cop";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { abrirRomaneioParaImpressao } from "@/lib/romaneio-pdf";
 import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
 import { ParticionarRomaneioDialog } from "./ParticionarRomaneioDialog";
+import { RegistrarPerdaDialog } from "./RegistrarPerdaDialog";
 
 function agruparPorModeloCor(pecas: CopPeca[]): { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] }[] {
   const map = new Map<string, { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] }>();
@@ -45,13 +42,12 @@ function agruparPorModeloCor(pecas: CopPeca[]): { modelo: string; cor: string; t
   return Array.from(map.values());
 }
 
-export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: string | null; onSelect?: (id: string | null) => void } = {}) {
+export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { selectedId?: string | null; onSelect?: (id: string | null) => void; onChangeTab?: (t: string) => void } = {}) {
   const setSelectedId = (id: string | null) => onSelect?.(id);
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
-  const isAdmin = useIsAdmin();
   const canManageCop = useCanAccessCop();
-  const [confirmVoltar, setConfirmVoltar] = useState<Cop | null>(null);
+  const [showPerda, setShowPerda] = useState(false);
 
   const { data: cops = [], isLoading } = useQuery({
 
@@ -135,64 +131,39 @@ export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: stri
     onError: (e: any) => toast.error(e.message ?? "Erro ao salvar"),
   });
 
-  const voltarParaCorte = useMutation({
+  const corrigirCorte = useMutation({
     mutationFn: async (cop: Cop) => {
-      const pid = cop.cop_romaneio_pai_id ?? cop.id;
-      const familia = cops.filter((c) => c.id === pid || c.cop_romaneio_pai_id === pid);
-      const filhos = familia.filter((c) => c.id !== pid);
-      // Se há filhos particionados, apaga-os e devolve as peças ao pai
-      if (filhos.length > 0) {
-        const { error: eDel } = await supabase.from("cops" as any).delete().in("id", filhos.map((c) => c.id));
-        if (eDel) throw eDel;
-      }
-      // Pai (ou cop sem família) volta pro Corte com tudo de romaneio limpo
-      const pai = cops.find((c) => c.id === pid) ?? cop;
-      const pecasOriginais: CopPeca[] = filhos.length > 0
-        ? (() => {
-            // soma pai + filhos para reconstruir peças originais
-            const acc = new Map<string, CopPeca>();
-            for (const c of familia) {
-              for (const p of (c.pecas || [])) {
-                const k = `${p.modelo}|${p.cor}|${p.tamanho}`;
-                const cur = acc.get(k);
-                if (cur) cur.qtd += p.qtd; else acc.set(k, { ...p });
-              }
-            }
-            return Array.from(acc.values());
-          })()
-        : (pai.pecas || []);
-      const { error } = await supabase.from("cops" as any).update({
-        status: "Aguardando Corte" as CopStatus,
-        pecas: pecasOriginais as any,
-        oficina_id: null,
-        data_saida_oficina: null,
-        data_recebimento: null,
-        observacoes_romaneio: null,
-        num_fretes: 1,
-        pecas_recebidas: [] as any,
-        romaneio_enviado_em: null,
-        letra: null,
-        cop_romaneio_pai_id: null,
-        conferido_em: null,
-        conferido_por: null,
-        conferencia: [] as any,
-        pagamento_status: "nao_pago",
-        pagamento_liberado_em: null,
-        pagamento_liberado_por: null,
-        pagamento_pago_em: null,
-        pagamento_pago_por: null,
-        pagamento_valor_calculado: null,
-      } as any).eq("id", pid);
+      const { error } = await supabase
+        .from("cops" as any)
+        .update({ corte_em_correcao: true } as any)
+        .eq("id", cop.id);
       if (error) throw error;
-      return pid;
+      return cop.id;
     },
-    onSuccess: (pid) => {
+    onSuccess: (id) => {
       qc.invalidateQueries({ queryKey: ["cops"] });
-      setConfirmVoltar(null);
-      setSelectedId(pid);
-      toast.success("COP devolvido para o Corte.");
+      setSelectedId(id);
+      toast.success("COP enviado para correção no Corte.");
+      onChangeTab?.("corte");
     },
-    onError: (e: any) => toast.error(e.message ?? "Erro ao voltar para o Corte"),
+    onError: (e: any) => toast.error(e.message ?? "Erro ao iniciar correção"),
+  });
+
+  const salvarPerdas = useMutation({
+    mutationFn: async ({ cop, perdas }: { cop: Cop; perdas: CopPerdaLinha[] }) => {
+      const obs = mesclarPerdasEmObservacoes(cop.observacoes_romaneio, perdas);
+      const { error } = await supabase.from("cops" as any).update({
+        perdas: perdas as any,
+        observacoes_romaneio: obs,
+      } as any).eq("id", cop.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cops"] });
+      toast.success("Perdas registradas.");
+      setShowPerda(false);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao registrar perdas"),
   });
 
 
@@ -357,8 +328,9 @@ export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: stri
   if (selected && !letrasFamilia.includes("A")) letrasFamilia.push("A");
   const letraNova = proximaLetra(letrasFamilia);
 
-  // Bloqueia edição do romaneio quando o COP ainda está em estágio de Corte
-  const bloqueadoRomaneio = !!selected && STATUS_CORTE.includes(selected.status);
+  // Bloqueia edição do romaneio quando o COP ainda está em estágio de Corte ou em correção
+  const emCorrecao = !!selected?.corte_em_correcao;
+  const bloqueadoRomaneio = !!selected && (STATUS_CORTE.includes(selected.status) || emCorrecao);
 
   return (
     <div className="space-y-4">
@@ -426,7 +398,11 @@ export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: stri
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {bloqueadoRomaneio && (
+              {emCorrecao ? (
+                <div className="rounded-md border border-orange-300 bg-orange-50 p-3 text-sm text-orange-900 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" /> Em correção de corte. Edição do romaneio bloqueada até concluir na aba <span className="font-semibold">Corte</span> (botão "Voltar para o Romaneio").
+                </div>
+              ) : bloqueadoRomaneio && (
                 <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
                   Este COP ainda está em <span className="font-semibold">{selected.status}</span>. Conclua o Corte e clique em
                   <span className="font-semibold"> "Mandar pro Romaneio"</span> na aba <span className="font-semibold">Corte</span> para liberar a edição aqui.
@@ -564,10 +540,21 @@ export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: stri
                     <Button
                       variant="outline"
                       className="border-orange-400 text-orange-700 hover:bg-orange-50"
-                      onClick={() => setConfirmVoltar(selected)}
-                      title="Voltar este COP para a aba Corte (apaga romaneio, pagamentos e filhos particionados)"
+                      onClick={() => corrigirCorte.mutate(selected)}
+                      disabled={corrigirCorte.isPending || emCorrecao}
+                      title="Liberar este COP para edição não-destrutiva no Corte (mantém oficina, datas, recebidas e pagamento)"
                     >
-                      <Undo2 className="h-4 w-4 mr-1" /> Voltar para Corte
+                      <Undo2 className="h-4 w-4 mr-1" /> Corrigir corte
+                    </Button>
+                  )}
+                  {canManageCop && (
+                    <Button
+                      className="bg-yellow-400 hover:bg-yellow-500 text-black"
+                      onClick={() => setShowPerda(true)}
+                      disabled={!selected.pecas?.length}
+                      title="Registrar peças perdidas neste romaneio"
+                    >
+                      <AlertTriangle className="h-4 w-4 mr-1" /> Registrar perda
                     </Button>
                   )}
                 </div>
@@ -831,31 +818,17 @@ export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: stri
             rotuloNovo={rotuloCop(numeroBaseCop(selected, cops), letraNova)}
             onConfirm={handleParticionar}
           />
+          <RegistrarPerdaDialog
+            open={showPerda}
+            onOpenChange={setShowPerda}
+            pecas={selected.pecas || []}
+            perdas={(selected.perdas as CopPerdaLinha[]) ?? []}
+            onConfirm={(perdas) => salvarPerdas.mutate({ cop: selected, perdas })}
+            disabled={salvarPerdas.isPending}
+          />
         </>
       )}
 
-      <AlertDialog open={!!confirmVoltar} onOpenChange={(o) => !o && setConfirmVoltar(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Voltar COP {confirmVoltar ? formatCopNumero(confirmVoltar.numero) : ""} para o Corte?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação apaga todos os dados de romaneio (oficina, datas, recebimentos, conferência e pagamento) e devolve o COP para a aba Corte com status "Aguardando Corte". Se houver romaneios particionados (letras), eles serão apagados e as peças retornam ao COP original. Não é possível desfazer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={voltarParaCorte.isPending}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-orange-600 hover:bg-orange-700"
-              disabled={voltarParaCorte.isPending}
-              onClick={(e) => { e.preventDefault(); if (confirmVoltar) voltarParaCorte.mutate(confirmVoltar); }}
-            >
-              {voltarParaCorte.isPending ? "Voltando..." : "Voltar para Corte"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
 
   );

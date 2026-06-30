@@ -69,16 +69,31 @@ export function calcBaixado(pedidos: Pedido[]): Map<string, number> {
   return m;
 }
 
-/** Disponível = produção − faltantes − baixado (pode ser negativo). */
+/** Map M·C·T → qtd perdida (Σ cops[].perdas em todos COPs). */
+export function calcPerdas(cops: Cop[]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const c of cops) {
+    for (const p of (c.perdas as any[] ?? [])) {
+      const q = Number(p?.qtd) || 0;
+      if (q <= 0) continue;
+      const k = pkKey(p.modelo, p.cor, p.tamanho);
+      m.set(k, (m.get(k) ?? 0) + q);
+    }
+  }
+  return m;
+}
+
+/** Disponível = produção − faltantes − baixado − perdas (pode ser negativo). */
 export function calcDisponivel(
   producao: Map<string, number>,
   faltantes: Map<string, number>,
   baixado: Map<string, number> = new Map(),
+  perdas: Map<string, number> = new Map(),
 ): Map<string, number> {
   const out = new Map<string, number>();
-  const keys = new Set<string>([...producao.keys(), ...faltantes.keys(), ...baixado.keys()]);
+  const keys = new Set<string>([...producao.keys(), ...faltantes.keys(), ...baixado.keys(), ...perdas.keys()]);
   for (const k of keys) {
-    out.set(k, (producao.get(k) ?? 0) - (faltantes.get(k) ?? 0) - (baixado.get(k) ?? 0));
+    out.set(k, (producao.get(k) ?? 0) - (faltantes.get(k) ?? 0) - (baixado.get(k) ?? 0) - (perdas.get(k) ?? 0));
   }
   return out;
 }
