@@ -141,24 +141,25 @@ export function DisponivelTab() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs">
               <tr>
-                <th className="p-2 text-left min-w-[160px]">Modelo</th>
-                <th className="p-2 text-left min-w-[140px]">Cor</th>
+                <th className="p-2 text-left min-w-[56px]">Cor</th>
+                <th className="p-2 text-left min-w-[64px]">Modelo</th>
                 {REFACAO_TAMANHOS.map((t) => (
-                  <th key={t} className="p-2 text-center w-[70px]">{t}</th>
+                  <th key={t} className="p-2 text-center w-[96px]">{t}</th>
                 ))}
+                <th className="p-2 text-center w-[96px]" />
               </tr>
             </thead>
             <tbody>
               {linhas.length === 0 ? (
-                <tr><td colSpan={REFACAO_TAMANHOS.length + 2} className="p-4 text-center text-muted-foreground">Sem dados.</td></tr>
+                <tr><td colSpan={REFACAO_TAMANHOS.length + 3} className="p-4 text-center text-muted-foreground">Sem dados.</td></tr>
               ) : linhas.map((l, i) => {
                 const hex = corHex(l.cor); const fg = corTextoSobre(hex);
                 return (
                   <tr key={i} className="border-t hover:bg-accent/30">
-                    <td className="p-2 font-medium">{l.modelo}</td>
-                    <td className="p-2">
+                    <td className="px-2 py-1">
                       <span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{l.cor}</span>
                     </td>
+                    <td className="px-2 py-1 font-medium">{l.modelo}</td>
                     {REFACAO_TAMANHOS.map((t) => {
                       const v = disponivel.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const prod = producao.get(pkKey(l.modelo, l.cor, t)) ?? 0;
@@ -173,7 +174,7 @@ export function DisponivelTab() {
                         <td key={t} className="p-1 text-center">
                           <button
                             type="button"
-                            className={`w-full rounded px-2 py-1 tabular-nums hover:bg-accent/60 ${color}`}
+                            className={`w-full rounded px-2 py-0.5 tabular-nums hover:bg-accent/60 ${color}`}
                             onClick={() => presente && setPopup({ modelo: l.modelo, cor: l.cor, tamanho: t })}
                             disabled={!presente}
                             title={presente ? `Produção ${prod} · Faltantes ${falt} · Baixado ${baix}` : "Sem registro"}
@@ -183,10 +184,26 @@ export function DisponivelTab() {
                         </td>
                       );
                     })}
+                    <td className="p-1" />
                   </tr>
                 );
               })}
             </tbody>
+            {linhas.length > 0 && (
+              <tfoot className="border-t-2 font-semibold bg-muted/30">
+                <tr>
+                  <td colSpan={2} className="px-2 py-1 text-left font-bold">Total Geral</td>
+                  {REFACAO_TAMANHOS.map((t) => {
+                    const v = totaisTam.get(t) ?? 0;
+                    const color = v < 0 ? "text-red-700" : v > 0 ? "text-green-700" : "text-muted-foreground";
+                    return (
+                      <td key={t} className={`p-1 text-center tabular-nums ${color}`}>{v}</td>
+                    );
+                  })}
+                  <td className={`p-1 text-center tabular-nums font-bold ${totalGeral < 0 ? "text-red-700" : totalGeral > 0 ? "text-green-700" : "text-muted-foreground"}`}>{totalGeral}</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </CardContent>
       </Card>
