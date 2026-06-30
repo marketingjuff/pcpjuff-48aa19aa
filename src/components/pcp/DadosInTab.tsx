@@ -853,6 +853,12 @@ function DadosInDashboard({
             <DateInputBR value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
           </div>
         </div>
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={() => { setEtapaFiltro("ativas"); setSearch(""); setVendedor("todos"); setStatus("todos"); setTipo("todos"); setDataEntrega(""); }}>
+            <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
+          </Button>
+        </div>
+
 
         {/* Mobile cards */}
         <div className="md:hidden divide-y rounded-md border">
