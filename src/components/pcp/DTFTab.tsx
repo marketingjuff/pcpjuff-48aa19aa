@@ -316,6 +316,13 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               </SelectContent>
             </Select>
           </div>
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => { setFOrc(""); setFPed(""); setFStatus("todos"); setFImpresso("todos"); setFEstampado("todos"); setFEtapa("dtf"); }}>
+              <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
+            </Button>
+          </div>
+
+
 
           {/* Mobile cards */}
           <div className="md:hidden rounded-md border divide-y">
