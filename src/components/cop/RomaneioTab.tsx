@@ -593,6 +593,7 @@ export function RomaneioTab() {
                     <PackageOpen className="h-4 w-4 mr-1" /> Entrega de Romaneio
                   </Button>
                 </div>
+              </div>
               </fieldset>
             </CardContent>
           </Card>
