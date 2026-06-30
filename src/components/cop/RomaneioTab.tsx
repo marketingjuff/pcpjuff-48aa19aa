@@ -943,6 +943,8 @@ function BuscaPecasBlock({ cops, oficinas, onSelect }: { cops: Cop[]; oficinas: 
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-xs">
                 <tr>
+                  <th className="p-2 text-left">Oficina</th>
+                  <th className="p-2 text-right">Carga oficina</th>
                   <th className="p-2 text-left">Romaneio</th>
                   <th className="p-2 text-left">Status</th>
                   <th className="p-2 text-right">Qtd</th>
@@ -950,20 +952,26 @@ function BuscaPecasBlock({ cops, oficinas, onSelect }: { cops: Cop[]; oficinas: 
                 </tr>
               </thead>
               <tbody>
-                {resultados.map((r) => (
-                  <tr key={r.cop.id} className="border-t">
-                    <td className="p-2 font-semibold tabular-nums">{r.rotulo}</td>
-                    <td className="p-2">{r.cop.status}</td>
-                    <td className="p-2 text-right tabular-nums">{r.qtd}</td>
-                    <td className="p-2 text-right">
-                      <Button size="sm" variant="ghost" onClick={() => onSelect(r.cop.id)}>Abrir</Button>
-                    </td>
-                  </tr>
-                ))}
+                {resultados.map((r, i) => {
+                  const prev = i > 0 ? resultados[i - 1] : null;
+                  const novoGrupo = !prev || prev.oficinaKey !== r.oficinaKey;
+                  return (
+                    <tr key={r.cop.id} className={novoGrupo ? "border-t-2 border-muted-foreground/40" : "border-t"}>
+                      <td className="p-2">{novoGrupo ? r.oficinaNome : ""}</td>
+                      <td className="p-2 text-right tabular-nums">{novoGrupo ? r.cargaOficina : ""}</td>
+                      <td className="p-2 font-semibold tabular-nums">{r.rotulo}</td>
+                      <td className="p-2">{r.cop.status}</td>
+                      <td className="p-2 text-right tabular-nums">{r.qtd}</td>
+                      <td className="p-2 text-right">
+                        <Button size="sm" variant="ghost" onClick={() => onSelect(r.cop.id)}>Abrir</Button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr className="bg-muted/30">
-                  <td className="p-2" colSpan={2}><b>Total</b></td>
+                  <td className="p-2" colSpan={4}><b>Total</b></td>
                   <td className="p-2 text-right tabular-nums"><b>{totalGeral}</b></td>
                   <td></td>
                 </tr>
