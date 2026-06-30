@@ -348,6 +348,13 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               </SelectContent>
             </Select>
           </div>
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => { setFPed(""); setFOrc(""); setFUF(""); setFForma("todos"); setFEtapa("expedicao"); }}>
+              <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
+            </Button>
+          </div>
+
+
 
           {/* Barra de ações em lote */}
           {onFinalizarMany && (
