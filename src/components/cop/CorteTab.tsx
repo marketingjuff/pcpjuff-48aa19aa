@@ -83,7 +83,7 @@ export function CorteTab({ selectedId = null, onSelect }: { selectedId?: string 
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  
   const [statusFiltro, setStatusFiltro] = useState<string>("__ativos__");
   const [busca, setBusca] = useState("");
   const [showDivisao, setShowDivisao] = useState(false);
