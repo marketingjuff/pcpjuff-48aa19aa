@@ -323,12 +323,12 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
                   <Check className="h-4 w-4 mr-1" /> Liberar pagamento (Gestor)
                 </Button>
               )}
-              {selected.pagamento_status === "liberado" && isAdmin && (
+              {selected.pagamento_status === "liberado" && canManageCop && (
                 <Button style={btnStyle("marcar_pago")} onClick={() => marcar.mutate({ pago: true })} disabled={marcar.isPending}>
-                  <Check className="h-4 w-4 mr-1" /> Marcar como Pago (Admin)
+                  <Check className="h-4 w-4 mr-1" /> Marcar como Pago
                 </Button>
               )}
-              {selected.pagamento_status === "pago" && isAdmin && (
+              {selected.pagamento_status === "pago" && canManageCop && (
                 <Button variant="outline" onClick={() => marcar.mutate({ pago: false })} disabled={marcar.isPending}>
                   <X className="h-4 w-4 mr-1" /> Reverter para Liberado
                 </Button>
