@@ -13,8 +13,9 @@ import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  ListChecks, AlertCircle, Palette, Printer, Brush, Package, Truck, ArrowUpDown,
+  ListChecks, AlertCircle, Palette, Printer, Brush, Package, Truck, ArrowUpDown, FilterX,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
