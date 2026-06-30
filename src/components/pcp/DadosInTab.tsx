@@ -207,6 +207,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }
   async function saveProducao() {
     const missP = findMissing(PROD_REQUIRED);
+    // Quando o tipo inclui Silk, Dias de Secagem é obrigatório (0 é válido).
+    if (tipoIncluiSilk(form.tipo_estampa) && (form.dias_secagem === null || form.dias_secagem === undefined || (form.dias_secagem as any) === "")) {
+      missP.add("dias_secagem");
+    }
     setMissingProd(missP);
     if (missP.size > 0) {
       toast.error("Preencha os campos obrigatórios do Input de Produção.");
