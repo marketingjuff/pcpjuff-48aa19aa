@@ -161,12 +161,43 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     onError: (e: any) => toast.error(e.message ?? "Erro ao excluir COP"),
   });
 
-  const bloqueado = !!selected && !STATUS_CORTE.includes(selected.status);
+  const emCorrecao = !!selected?.corte_em_correcao;
+  const bloqueado = !!selected && !STATUS_CORTE.includes(selected.status) && !emCorrecao;
+
+  /** Quantidades já recebidas por linha (apenas no modo correção). */
+  function qtdRecebidaDe(modelo: string, cor: string, tamanho: string): number {
+    if (!selected) return 0;
+    return getRecebida(selected.pecas_recebidas ?? [], modelo, cor, tamanho);
+  }
+
+  /** Valida que nenhuma linha foi reduzida abaixo do já recebido. */
+  function validarPecasContraRecebidas(pecas: CopPeca[]): string | null {
+    if (!emCorrecao || !selected) return null;
+    for (const r of (selected.pecas_recebidas ?? [])) {
+      const linha = pecas.find((p) => p.modelo === r.modelo && p.cor === r.cor && p.tamanho === r.tamanho);
+      const novo = linha?.qtd ?? 0;
+      if (novo < r.qtd_recebida) {
+        return `Não é possível reduzir ${r.modelo}·${r.cor}·${r.tamanho} para ${novo} (já recebido: ${r.qtd_recebida}).`;
+      }
+    }
+    return null;
+  }
 
   async function handleAtualizar() {
     if (!selected) return;
-    if (bloqueado) { toast.error("Este COP já saiu para o Romaneio. Use 'Voltar para Corte' na aba Romaneio."); return; }
+    if (bloqueado) { toast.error("Este COP já saiu para o Romaneio. Use 'Corrigir corte' na aba Romaneio."); return; }
     const pecas = desagrupar(grupos);
+    const erro = validarPecasContraRecebidas(pecas);
+    if (erro) { toast.error(erro); return; }
+    if (emCorrecao) {
+      // Mantém status; só ajusta peças e observações.
+      await salvar.mutateAsync({
+        id: selected.id,
+        observacoes_corte: (draft.observacoes_corte ?? "")?.toString().toUpperCase() || null,
+        pecas,
+      });
+      return;
+    }
     const datas = {
       solicitacao_risco: draft.solicitacao_risco ?? null,
       execucao_risco: draft.execucao_risco ?? null,
@@ -181,6 +212,21 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
       pecas,
       status: novoStatus,
     });
+  }
+
+  async function handleVoltarRomaneio() {
+    if (!selected || !emCorrecao) return;
+    const pecas = desagrupar(grupos);
+    const erro = validarPecasContraRecebidas(pecas);
+    if (erro) { toast.error(erro); return; }
+    await salvar.mutateAsync({
+      id: selected.id,
+      observacoes_corte: (draft.observacoes_corte ?? "")?.toString().toUpperCase() || null,
+      pecas,
+      corte_em_correcao: false as any,
+    });
+    toast.success("COP devolvido ao Romaneio.");
+    onChangeTab?.("romaneio");
   }
 
   async function handleMandarRomaneio() {
