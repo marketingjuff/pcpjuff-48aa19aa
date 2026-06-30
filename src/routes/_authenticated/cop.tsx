@@ -36,6 +36,7 @@ function CopHome() {
   const isAdmin = useIsAdmin();
   const { isLoading } = useMyRoles();
   const [tab, setTab] = useState("corte");
+  const [copSelId, setCopSelId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAdmin) {
