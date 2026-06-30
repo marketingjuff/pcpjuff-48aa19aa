@@ -64,7 +64,7 @@ function dateToIso(d: Date): string {
 }
 
 export const DateInputBR = React.forwardRef<HTMLInputElement, DateInputBRProps>(
-  ({ value, onChange, placeholder = "DD/MM/AA", onBlur, className, disabled, ...props }, ref) => {
+  ({ value, onChange, placeholder = "dia/mês/ano", onBlur, className, disabled, ...props }, ref) => {
     const [text, setText] = React.useState<string>(isoToBR(value));
     const [open, setOpen] = React.useState(false);
 
