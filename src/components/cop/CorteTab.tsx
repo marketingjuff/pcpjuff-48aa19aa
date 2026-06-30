@@ -261,7 +261,7 @@ export function CorteTab() {
             <Select value={statusFiltro} onValueChange={setStatusFiltro}>
               <SelectTrigger className="h-9 w-[220px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="__corte__">Em Corte (Risco + Corte)</SelectItem>
+                <SelectItem value="__ativos__">Ativos (exceto Finalizados/Pagos)</SelectItem>
                 <SelectItem value="todos">Todos</SelectItem>
                 {COP_STATUS_LIST.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
