@@ -90,6 +90,13 @@ export const DateInputBR = React.forwardRef<HTMLInputElement, DateInputBRProps>(
           maxLength={8}
           value={text}
           disabled={disabled}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          data-form-type="other"
+          data-lpignore="true"
+          data-1p-ignore="true"
+          name={props.name ?? "date-br"}
           className={cn("pr-10", isNaoUtil && "bg-muted-foreground/20")}
           title={
             isHoliday
