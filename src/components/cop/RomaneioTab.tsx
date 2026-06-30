@@ -30,6 +30,7 @@ import { abrirRomaneioParaImpressao } from "@/lib/romaneio-pdf";
 import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
 import { ParticionarRomaneioDialog } from "./ParticionarRomaneioDialog";
 import { RegistrarPerdaDialog } from "./RegistrarPerdaDialog";
+import { cargaPorOficina } from "@/lib/cop-oficinas";
 
 function agruparPorModeloCor(pecas: CopPeca[]): { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] }[] {
   const map = new Map<string, { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] }>();
@@ -81,6 +82,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
 
   
   const [statusFiltro, setStatusFiltro] = useState<string>("__ativos__");
+  const [oficinaFiltro, setOficinaFiltro] = useState<string>("todas");
   const [busca, setBusca] = useState("");
   const [showEntrega, setShowEntrega] = useState(false);
   const [showParticionar, setShowParticionar] = useState(false);
@@ -97,6 +99,11 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
       if (statusFiltro === "__ativos__") {
         if (c.status === "Finalizado" || c.pagamento_status === "pago") return false;
       } else if (statusFiltro !== "todos" && c.status !== statusFiltro) return false;
+      if (oficinaFiltro !== "todas") {
+        if (oficinaFiltro === "__sem__") {
+          if (c.oficina_id) return false;
+        } else if (c.oficina_id !== oficinaFiltro) return false;
+      }
       if (busca) {
         const num = formatCopNumero(numeroBaseCop(c, cops));
         const rot = rotuloRomaneio(c, cops);
@@ -104,7 +111,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
       }
       return true;
     });
-  }, [cops, statusFiltro, busca]);
+  }, [cops, statusFiltro, oficinaFiltro, busca]);
 
   // ---- Draft ----
   const [draft, setDraft] = useState<Partial<Cop>>({});
@@ -334,6 +341,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
 
   return (
     <div className="space-y-4">
+      <h2 className="text-2xl font-bold tracking-tight">Romaneio</h2>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex flex-wrap items-center gap-2">
@@ -348,6 +356,17 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                 <SelectItem value="__ativos__">Ativos (exceto Finalizados/Pagos)</SelectItem>
                 <SelectItem value="todos">Todos</SelectItem>
                 {COP_STATUS_LIST.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs">Oficina:</Label>
+            <Select value={oficinaFiltro} onValueChange={setOficinaFiltro}>
+              <SelectTrigger className="h-9 w-[200px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas</SelectItem>
+                <SelectItem value="__sem__">Sem oficina</SelectItem>
+                {oficinas.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -587,10 +606,10 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             </CardContent>
           </Card>
 
-          {/* Lado Direito — Conferência */}
+          {/* Lado Direito — Histórico */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Conferência</CardTitle>
+              <CardTitle className="text-base">Histórico</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {selected.status === "Romaneio Completo" || selected.status === "Romaneio Parcial" || selected.conferido_em ? (
@@ -738,7 +757,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
       )}
 
       {/* Busca de peças */}
-      <BuscaPecasBlock cops={cops} onSelect={setSelectedId} />
+      <BuscaPecasBlock cops={cops} oficinas={oficinas} onSelect={setSelectedId} />
 
 
       {/* Lista */}
@@ -834,16 +853,24 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   );
 }
 
-function BuscaPecasBlock({ cops, onSelect }: { cops: Cop[]; onSelect: (id: string) => void }) {
+function BuscaPecasBlock({ cops, oficinas, onSelect }: { cops: Cop[]; oficinas: Oficina[]; onSelect: (id: string) => void }) {
   const [modelo, setModelo] = useState<string>("");
   const [cor, setCor] = useState<string>("");
   const [tamanho, setTamanho] = useState<string>("");
 
   const aplicado = !!(modelo || cor || tamanho);
+  const carga = useMemo(() => cargaPorOficina(cops), [cops]);
+  const oficinaPorId = useMemo(() => {
+    const m = new Map<string, Oficina>();
+    for (const o of oficinas) m.set(o.id, o);
+    return m;
+  }, [oficinas]);
 
-  const resultados = useMemo(() => {
-    if (!aplicado) return [] as { cop: Cop; qtd: number; rotulo: string }[];
-    const out: { cop: Cop; qtd: number; rotulo: string }[] = [];
+  type Resultado = { cop: Cop; qtd: number; rotulo: string; oficinaNome: string; cargaOficina: number; oficinaKey: string };
+
+  const resultados = useMemo<Resultado[]>(() => {
+    if (!aplicado) return [];
+    const out: Resultado[] = [];
     for (const c of cops) {
       const qtd = (c.pecas || []).reduce((s, p) => {
         if (modelo && p.modelo !== modelo) return s;
@@ -851,10 +878,15 @@ function BuscaPecasBlock({ cops, onSelect }: { cops: Cop[]; onSelect: (id: strin
         if (tamanho && p.tamanho !== tamanho) return s;
         return s + (Number(p.qtd) || 0);
       }, 0);
-      if (qtd > 0) out.push({ cop: c, qtd, rotulo: rotuloRomaneio(c, cops) });
+      if (qtd > 0) {
+        const ofiNome = c.oficina_id ? (oficinaPorId.get(c.oficina_id)?.nome ?? "—") : "—";
+        const cargaOfi = c.oficina_id ? (carga.get(c.oficina_id) ?? 0) : 0;
+        const oficinaKey = c.oficina_id ?? "__sem__";
+        out.push({ cop: c, qtd, rotulo: rotuloRomaneio(c, cops), oficinaNome: ofiNome, cargaOficina: cargaOfi, oficinaKey });
+      }
     }
-    return out.sort((a, b) => a.rotulo.localeCompare(b.rotulo));
-  }, [cops, modelo, cor, tamanho, aplicado]);
+    return out.sort((a, b) => a.oficinaNome.localeCompare(b.oficinaNome) || a.rotulo.localeCompare(b.rotulo));
+  }, [cops, modelo, cor, tamanho, aplicado, oficinaPorId, carga]);
 
   const totalGeral = resultados.reduce((s, r) => s + r.qtd, 0);
 
@@ -911,6 +943,8 @@ function BuscaPecasBlock({ cops, onSelect }: { cops: Cop[]; onSelect: (id: strin
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-xs">
                 <tr>
+                  <th className="p-2 text-left">Oficina</th>
+                  <th className="p-2 text-right">Carga oficina</th>
                   <th className="p-2 text-left">Romaneio</th>
                   <th className="p-2 text-left">Status</th>
                   <th className="p-2 text-right">Qtd</th>
@@ -918,20 +952,26 @@ function BuscaPecasBlock({ cops, onSelect }: { cops: Cop[]; onSelect: (id: strin
                 </tr>
               </thead>
               <tbody>
-                {resultados.map((r) => (
-                  <tr key={r.cop.id} className="border-t">
-                    <td className="p-2 font-semibold tabular-nums">{r.rotulo}</td>
-                    <td className="p-2">{r.cop.status}</td>
-                    <td className="p-2 text-right tabular-nums">{r.qtd}</td>
-                    <td className="p-2 text-right">
-                      <Button size="sm" variant="ghost" onClick={() => onSelect(r.cop.id)}>Abrir</Button>
-                    </td>
-                  </tr>
-                ))}
+                {resultados.map((r, i) => {
+                  const prev = i > 0 ? resultados[i - 1] : null;
+                  const novoGrupo = !prev || prev.oficinaKey !== r.oficinaKey;
+                  return (
+                    <tr key={r.cop.id} className={novoGrupo ? "border-t-2 border-muted-foreground/40" : "border-t"}>
+                      <td className="p-2">{novoGrupo ? r.oficinaNome : ""}</td>
+                      <td className="p-2 text-right tabular-nums">{novoGrupo ? r.cargaOficina : ""}</td>
+                      <td className="p-2 font-semibold tabular-nums">{r.rotulo}</td>
+                      <td className="p-2">{r.cop.status}</td>
+                      <td className="p-2 text-right tabular-nums">{r.qtd}</td>
+                      <td className="p-2 text-right">
+                        <Button size="sm" variant="ghost" onClick={() => onSelect(r.cop.id)}>Abrir</Button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr className="bg-muted/30">
-                  <td className="p-2" colSpan={2}><b>Total</b></td>
+                  <td className="p-2" colSpan={4}><b>Total</b></td>
                   <td className="p-2 text-right tabular-nums"><b>{totalGeral}</b></td>
                   <td></td>
                 </tr>

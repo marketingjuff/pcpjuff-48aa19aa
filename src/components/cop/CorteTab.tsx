@@ -294,6 +294,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
 
   return (
     <div className="space-y-4">
+      <h2 className="text-2xl font-bold tracking-tight">Corte</h2>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex flex-wrap items-center gap-2">

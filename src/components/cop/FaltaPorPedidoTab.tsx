@@ -179,6 +179,7 @@ export function FaltaPorPedidoTab() {
 
   return (
     <div className="space-y-4">
+      <h2 className="text-2xl font-bold tracking-tight">Falta por Pedido</h2>
       <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="icon" onClick={() => {
@@ -217,10 +218,14 @@ export function FaltaPorPedidoTab() {
               {rows.map((r, i) => {
                 const hex = corHex(r.grupo.cor); const fg = corTextoSobre(hex);
                 const atrasado = !!(r.limite && r.limite < hoje);
+                const prev = i > 0 ? rows[i - 1] : null;
+                const novaData = r.primeira && (!prev || prev.ancora !== r.ancora);
+                const trBorder = novaData ? "border-t-4 border-muted-foreground/40" : "border-t";
+                const trPad = novaData ? "pt-1" : "";
                 return (
                   <tr
                     key={`${r.pedido.id}|${r.grupo.modelo}|${r.grupo.cor}`}
-                    className="border-t hover:bg-accent/40 cursor-pointer leading-tight"
+                    className={`${trBorder} ${trPad} hover:bg-accent/40 cursor-pointer leading-tight`}
                     onClick={() => setHistorico(r.pedido)}
                   >
                     {r.primeira ? (
@@ -244,11 +249,11 @@ export function FaltaPorPedidoTab() {
                       const info = r.grupo.porTamanho.get(t);
                       return (
                         <td key={t} className="px-2 py-0.5 text-center tabular-nums">
-                          {info ? <span className="text-amber-700 font-semibold">{info.falta}</span> : <span className="text-muted-foreground/40">—</span>}
+                          {info ? <span className="text-amber-700 font-semibold">-{info.falta}</span> : <span className="text-muted-foreground/40">—</span>}
                         </td>
                       );
                     })}
-                    <td className="px-2 py-0.5 text-right tabular-nums text-amber-700 font-semibold">{r.grupo.faltaTotal}</td>
+                    <td className="px-2 py-0.5 text-right tabular-nums text-amber-700 font-semibold">-{r.grupo.faltaTotal}</td>
                     <td className="px-2 py-0.5 text-right" onClick={(e) => e.stopPropagation()}>
                       <Button size="sm" className="h-6 px-2 text-[11px]" style={btnStyle("dar_baixa")} onClick={() => setBaixa({ pedido: r.pedido, grupo: r.grupo })}>
                         Dar baixa
