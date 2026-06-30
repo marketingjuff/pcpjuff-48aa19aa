@@ -100,12 +100,46 @@ export type Cop = {
   pagamento_valor_calculado: number | null;
   observacoes_pagamento: string | null;
   historico_recebimentos: HistoricoRecebimento[];
-  perdas: unknown[];
+  perdas: CopPerdaLinha[];
+  corte_em_correcao: boolean;
   created_at: string;
   updated_at: string;
   created_by: string | null;
   updated_by: string | null;
 };
+
+/** Perda registrada por linha (modelo|cor|tamanho), salva em cops.perdas. */
+export type CopPerdaLinha = {
+  modelo: string;
+  cor: string;
+  tamanho: string;
+  qtd: number;
+};
+
+/** Resume perdas em uma string maiúscula. Ex: "PERDAS: 2 CAMISETA PRETA M, 1 REGATA AZUL G". */
+export function formatPerdasResumo(perdas: CopPerdaLinha[] | null | undefined): string {
+  const itens = (perdas ?? []).filter((p) => Number(p.qtd) > 0);
+  if (itens.length === 0) return "";
+  const parts = itens
+    .map((p) => `${p.qtd} ${p.modelo} ${p.cor} ${p.tamanho}`.toUpperCase())
+    .join(", ");
+  return `PERDAS: ${parts}`;
+}
+
+/** Substitui/insere a linha "PERDAS: ..." dentro do texto de observações. */
+export function mesclarPerdasEmObservacoes(obs: string | null | undefined, perdas: CopPerdaLinha[]): string | null {
+  const resumo = formatPerdasResumo(perdas);
+  const base = (obs ?? "").toString();
+  const semBloco = base
+    .split(/\r?\n/)
+    .filter((l) => !/^\s*PERDAS\s*:/i.test(l))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (!resumo) return semBloco ? semBloco : null;
+  const out = semBloco ? `${semBloco}\n${resumo}` : resumo;
+  return out;
+}
 
 /** Quantidade conferida por linha (após Conferência no Romaneio). */
 export type CopConferenciaItem = {
