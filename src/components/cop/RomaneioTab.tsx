@@ -50,6 +50,7 @@ export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: stri
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
   const isAdmin = useIsAdmin();
+  const canManageCop = useCanAccessCop();
   const [confirmVoltar, setConfirmVoltar] = useState<Cop | null>(null);
 
   const { data: cops = [], isLoading } = useQuery({
