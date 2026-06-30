@@ -14,6 +14,7 @@ import { FaltaPorPedidoTab } from "@/components/cop/FaltaPorPedidoTab";
 import { PagamentoOficinasTab } from "@/components/cop/PagamentoOficinasTab";
 import { PerdasTab } from "@/components/cop/PerdasTab";
 import { DashboardCopTab } from "@/components/cop/DashboardCopTab";
+import { OficinasHojeTab } from "@/components/cop/OficinasHojeTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cop")({
@@ -23,10 +24,11 @@ export const Route = createFileRoute("/_authenticated/cop")({
 const TABS = [
   { value: "dashboard", label: "Dashboard COP" },
   { value: "disponivel", label: "Disponível" },
+  { value: "falta", label: "Falta por Pedido" },
+  { value: "oficinas-hoje", label: "Oficinas Hoje" },
   { value: "corte", label: "Corte" },
   { value: "romaneio", label: "Romaneio" },
-  { value: "pagamento", label: "Pagamento Oficinas" },
-  { value: "falta", label: "Falta por Pedido" },
+  { value: "pagamento", label: "Pagamentos" },
   { value: "perdas", label: "Perdas" },
 ];
 
