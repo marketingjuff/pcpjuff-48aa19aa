@@ -85,6 +85,7 @@ export function DashboardCopTab() {
 
   return (
     <div className="space-y-4">
+      <h2 className="text-2xl font-bold tracking-tight">Dashboard COP</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card><CardContent className="p-4">
           <div className="text-xs uppercase text-muted-foreground">COPs ativos</div>
