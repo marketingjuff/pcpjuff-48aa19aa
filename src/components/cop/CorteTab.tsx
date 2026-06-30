@@ -398,19 +398,19 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <Label>Solicitação do Risco</Label>
-                <DateInputBR value={draft.solicitacao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_risco: v }))} disabled={bloqueado} />
+                <DateInputBR value={draft.solicitacao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_risco: v }))} disabled={bloqueado || emCorrecao} />
               </div>
               <div>
                 <Label>Execução do Risco</Label>
-                <DateInputBR value={draft.execucao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, execucao_risco: v }))} disabled={bloqueado} />
+                <DateInputBR value={draft.execucao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, execucao_risco: v }))} disabled={bloqueado || emCorrecao} />
               </div>
               <div>
                 <Label>Solicitação do Corte</Label>
-                <DateInputBR value={draft.solicitacao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_corte: v }))} disabled={bloqueado} />
+                <DateInputBR value={draft.solicitacao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_corte: v }))} disabled={bloqueado || emCorrecao} />
               </div>
               <div>
                 <Label>Execução do Corte</Label>
-                <DateInputBR value={draft.execucao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, execucao_corte: v }))} disabled={bloqueado} />
+                <DateInputBR value={draft.execucao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, execucao_corte: v }))} disabled={bloqueado || emCorrecao} />
               </div>
             </div>
 
