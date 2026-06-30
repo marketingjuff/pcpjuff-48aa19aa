@@ -382,10 +382,15 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {emCorrecao && (
+              <div className="rounded-md border border-orange-300 bg-orange-50 p-3 text-xs text-orange-900">
+                <b>Correção de corte ativa.</b> As datas e o status estão preservados. Você pode ajustar as peças (acrescentar ou diminuir), respeitando o que já foi recebido no romaneio. Ao terminar, clique em <b>"Voltar para o Romaneio"</b>.
+              </div>
+            )}
             {bloqueado && (
               <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
                 Este COP já saiu para o Romaneio (status <b>{selected.status}</b>). A edição do Corte está bloqueada.
-                Para reabrir, use o botão <b>"Voltar para Corte"</b> na aba Romaneio.
+                Para reabrir, use o botão <b>"Corrigir corte"</b> na aba Romaneio.
               </div>
             )}
             <fieldset disabled={bloqueado} className="contents">
