@@ -822,31 +822,17 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             rotuloNovo={rotuloCop(numeroBaseCop(selected, cops), letraNova)}
             onConfirm={handleParticionar}
           />
+          <RegistrarPerdaDialog
+            open={showPerda}
+            onOpenChange={setShowPerda}
+            pecas={selected.pecas || []}
+            perdas={(selected.perdas as CopPerdaLinha[]) ?? []}
+            onConfirm={(perdas) => salvarPerdas.mutate({ cop: selected, perdas })}
+            disabled={salvarPerdas.isPending}
+          />
         </>
       )}
 
-      <AlertDialog open={!!confirmVoltar} onOpenChange={(o) => !o && setConfirmVoltar(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Voltar COP {confirmVoltar ? formatCopNumero(confirmVoltar.numero) : ""} para o Corte?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação apaga todos os dados de romaneio (oficina, datas, recebimentos, conferência e pagamento) e devolve o COP para a aba Corte com status "Aguardando Corte". Se houver romaneios particionados (letras), eles serão apagados e as peças retornam ao COP original. Não é possível desfazer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={voltarParaCorte.isPending}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-orange-600 hover:bg-orange-700"
-              disabled={voltarParaCorte.isPending}
-              onClick={(e) => { e.preventDefault(); if (confirmVoltar) voltarParaCorte.mutate(confirmVoltar); }}
-            >
-              {voltarParaCorte.isPending ? "Voltando..." : "Voltar para Corte"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
 
   );
