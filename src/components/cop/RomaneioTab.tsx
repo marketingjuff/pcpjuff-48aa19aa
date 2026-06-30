@@ -544,10 +544,21 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                     <Button
                       variant="outline"
                       className="border-orange-400 text-orange-700 hover:bg-orange-50"
-                      onClick={() => setConfirmVoltar(selected)}
-                      title="Voltar este COP para a aba Corte (apaga romaneio, pagamentos e filhos particionados)"
+                      onClick={() => corrigirCorte.mutate(selected)}
+                      disabled={corrigirCorte.isPending || emCorrecao}
+                      title="Liberar este COP para edição não-destrutiva no Corte (mantém oficina, datas, recebidas e pagamento)"
                     >
-                      <Undo2 className="h-4 w-4 mr-1" /> Voltar para Corte
+                      <Undo2 className="h-4 w-4 mr-1" /> Corrigir corte
+                    </Button>
+                  )}
+                  {canManageCop && (
+                    <Button
+                      className="bg-yellow-400 hover:bg-yellow-500 text-black"
+                      onClick={() => setShowPerda(true)}
+                      disabled={!selected.pecas?.length}
+                      title="Registrar peças perdidas neste romaneio"
+                    >
+                      <AlertTriangle className="h-4 w-4 mr-1" /> Registrar perda
                     </Button>
                   )}
                 </div>
