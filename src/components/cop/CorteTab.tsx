@@ -374,10 +374,10 @@ export function CorteTab() {
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40 text-xs">
                     <tr>
-                      <th className="p-2 text-left min-w-[180px]">Modelo</th>
-                      <th className="p-2 text-left min-w-[140px]">Cor</th>
+                      <th className="p-2 text-left w-[90px] min-w-[90px]">Modelo</th>
+                      <th className="p-2 text-left w-[70px] min-w-[70px]">Cor</th>
                       {REFACAO_TAMANHOS.map((t) => (
-                        <th key={t} className="p-2 text-center w-[70px]">{t}</th>
+                        <th key={t} className="p-2 text-center w-[72px] min-w-[72px]">{t}</th>
                       ))}
                       <th className="p-2 w-10"></th>
                     </tr>
