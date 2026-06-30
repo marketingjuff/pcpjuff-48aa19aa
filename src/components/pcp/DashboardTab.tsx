@@ -235,12 +235,15 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
             <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Data Entrega</label>
               <DateInputBR className="h-8" value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
+            </div>
           </div>
           <div className="flex justify-end">
             <Button variant="outline" size="sm" onClick={() => { setVendedor("todos"); setStatus("todos"); setTipo("todos"); setEtapa("ativas"); setDataEntrega(""); setSearch(""); }}>
               <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
             </Button>
           </div>
+
+
 
 
 
