@@ -82,7 +82,7 @@ export function RomaneioTab() {
   }, [qc]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [statusFiltro, setStatusFiltro] = useState<string>("__romaneio__");
+  const [statusFiltro, setStatusFiltro] = useState<string>("__ativos__");
   const [busca, setBusca] = useState("");
   const [showEntrega, setShowEntrega] = useState(false);
   const [showParticionar, setShowParticionar] = useState(false);
@@ -96,8 +96,8 @@ export function RomaneioTab() {
 
   const lista = useMemo(() => {
     return cops.filter((c) => {
-      if (statusFiltro === "__romaneio__") {
-        if (!STATUS_ROMANEIO.includes(c.status)) return false;
+      if (statusFiltro === "__ativos__") {
+        if (c.status === "Finalizado" || c.pagamento_status === "pago") return false;
       } else if (statusFiltro !== "todos" && c.status !== statusFiltro) return false;
       if (busca) {
         const num = formatCopNumero(numeroBaseCop(c, cops));
