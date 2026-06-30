@@ -117,7 +117,6 @@ export function RomaneioTab() {
       data_saida_oficina: selected.data_saida_oficina,
       data_recebimento: selected.data_recebimento,
       observacoes_romaneio: selected.observacoes_romaneio,
-      num_fretes: selected.num_fretes ?? 1,
     });
   }, [selectedId]); // eslint-disable-line
 
