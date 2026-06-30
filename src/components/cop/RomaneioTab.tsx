@@ -24,7 +24,7 @@ import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
   type HistoricoRecebimento,
-  COP_STATUS_LIST, formatCopNumero, totalPecasCop, totalRecebidas,
+  COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, totalRecebidas,
   todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
   getRecebida, colunasTamanhos,
 } from "@/lib/cop";
@@ -33,14 +33,6 @@ import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { abrirRomaneioParaImpressao } from "@/lib/romaneio-pdf";
 import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
 import { ParticionarRomaneioDialog } from "./ParticionarRomaneioDialog";
-
-const STATUS_ROMANEIO: CopStatus[] = [
-  "Aguardando Oficina",
-  "Aguardando Romaneio",
-  "Na Oficina (Costura)",
-  "Romaneio Parcial",
-  "Romaneio Completo",
-];
 
 function agruparPorModeloCor(pecas: CopPeca[]): { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] }[] {
   const map = new Map<string, { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] }>();
