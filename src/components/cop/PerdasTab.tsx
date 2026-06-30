@@ -39,13 +39,35 @@ export function PerdasTab() {
     },
   });
 
+  const { data: cops = [] } = useQuery({
+    queryKey: ["cops"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("cops" as any).select("*");
+      if (error) throw error;
+      return (data ?? []) as unknown as Cop[];
+    },
+  });
+
   useEffect(() => {
     const ch = supabase
       .channel("cop-perdas")
       .on("postgres_changes", { event: "*", schema: "public", table: "cop_perdas" }, () => qc.invalidateQueries({ queryKey: ["cop_perdas"] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "cops" }, () => qc.invalidateQueries({ queryKey: ["cops"] }))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
+
+  /** Perdas vindas dos romaneios (cops.perdas). */
+  const perdasRomaneios = useMemo(() => {
+    const out: Array<{ key: string; cop: Cop; linha: CopPerdaLinha }> = [];
+    for (const c of cops) {
+      for (const l of ((c.perdas as CopPerdaLinha[]) ?? [])) {
+        if (!l || !l.qtd) continue;
+        out.push({ key: `${c.id}-${l.modelo}-${l.cor}-${l.tamanho}`, cop: c, linha: l });
+      }
+    }
+    return out;
+  }, [cops]);
 
   const [form, setForm] = useState({
     oficina_id: "",
