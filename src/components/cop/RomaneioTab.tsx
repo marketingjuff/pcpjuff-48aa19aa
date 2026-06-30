@@ -757,7 +757,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
       )}
 
       {/* Busca de peças */}
-      <BuscaPecasBlock cops={cops} onSelect={setSelectedId} />
+      <BuscaPecasBlock cops={cops} oficinas={oficinas} onSelect={setSelectedId} />
 
 
       {/* Lista */}
