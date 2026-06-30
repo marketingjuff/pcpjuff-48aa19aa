@@ -106,7 +106,7 @@ function CopHome() {
             <FaltaPorPedidoTab />
           </TabsContent>
           <TabsContent value="pagamento" forceMount hidden={tab !== "pagamento"}>
-            <PagamentoOficinasTab />
+            <PagamentoOficinasTab selectedId={copSelId} onSelect={setCopSelId} />
           </TabsContent>
           <TabsContent value="perdas" forceMount hidden={tab !== "perdas"}>
             <PerdasTab />
