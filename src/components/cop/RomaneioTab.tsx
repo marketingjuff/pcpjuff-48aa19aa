@@ -606,10 +606,10 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             </CardContent>
           </Card>
 
-          {/* Lado Direito — Conferência */}
+          {/* Lado Direito — Histórico */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Conferência</CardTitle>
+              <CardTitle className="text-base">Histórico</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {selected.status === "Romaneio Completo" || selected.status === "Romaneio Parcial" || selected.conferido_em ? (
