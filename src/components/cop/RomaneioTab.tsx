@@ -853,16 +853,24 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   );
 }
 
-function BuscaPecasBlock({ cops, onSelect }: { cops: Cop[]; onSelect: (id: string) => void }) {
+function BuscaPecasBlock({ cops, oficinas, onSelect }: { cops: Cop[]; oficinas: Oficina[]; onSelect: (id: string) => void }) {
   const [modelo, setModelo] = useState<string>("");
   const [cor, setCor] = useState<string>("");
   const [tamanho, setTamanho] = useState<string>("");
 
   const aplicado = !!(modelo || cor || tamanho);
+  const carga = useMemo(() => cargaPorOficina(cops), [cops]);
+  const oficinaPorId = useMemo(() => {
+    const m = new Map<string, Oficina>();
+    for (const o of oficinas) m.set(o.id, o);
+    return m;
+  }, [oficinas]);
 
-  const resultados = useMemo(() => {
-    if (!aplicado) return [] as { cop: Cop; qtd: number; rotulo: string }[];
-    const out: { cop: Cop; qtd: number; rotulo: string }[] = [];
+  type Resultado = { cop: Cop; qtd: number; rotulo: string; oficinaNome: string; cargaOficina: number; oficinaKey: string };
+
+  const resultados = useMemo<Resultado[]>(() => {
+    if (!aplicado) return [];
+    const out: Resultado[] = [];
     for (const c of cops) {
       const qtd = (c.pecas || []).reduce((s, p) => {
         if (modelo && p.modelo !== modelo) return s;
@@ -870,10 +878,15 @@ function BuscaPecasBlock({ cops, onSelect }: { cops: Cop[]; onSelect: (id: strin
         if (tamanho && p.tamanho !== tamanho) return s;
         return s + (Number(p.qtd) || 0);
       }, 0);
-      if (qtd > 0) out.push({ cop: c, qtd, rotulo: rotuloRomaneio(c, cops) });
+      if (qtd > 0) {
+        const ofiNome = c.oficina_id ? (oficinaPorId.get(c.oficina_id)?.nome ?? "—") : "—";
+        const cargaOfi = c.oficina_id ? (carga.get(c.oficina_id) ?? 0) : 0;
+        const oficinaKey = c.oficina_id ?? "__sem__";
+        out.push({ cop: c, qtd, rotulo: rotuloRomaneio(c, cops), oficinaNome: ofiNome, cargaOficina: cargaOfi, oficinaKey });
+      }
     }
-    return out.sort((a, b) => a.rotulo.localeCompare(b.rotulo));
-  }, [cops, modelo, cor, tamanho, aplicado]);
+    return out.sort((a, b) => a.oficinaNome.localeCompare(b.oficinaNome) || a.rotulo.localeCompare(b.rotulo));
+  }, [cops, modelo, cor, tamanho, aplicado, oficinaPorId, carga]);
 
   const totalGeral = resultados.reduce((s, r) => s + r.qtd, 0);
 
