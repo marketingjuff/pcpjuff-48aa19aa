@@ -6,7 +6,7 @@ import { LogOut, Settings } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useIsAdmin, useMyRoles, useCanAccessCop } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessCop } from "@/hooks/use-role";
 import { CorteTab } from "@/components/cop/CorteTab";
 import { RomaneioTab } from "@/components/cop/RomaneioTab";
 import { DisponivelTab } from "@/components/cop/DisponivelTab";
