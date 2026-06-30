@@ -67,25 +67,39 @@ export function DisponivelTab() {
   const [corFiltro, setCorFiltro] = useState<string>("todas");
   const [apenasFaltando, setApenasFaltando] = useState<boolean>(false);
 
-  // Linhas (modelo, cor) a renderizar
+  // Linhas (cor, modelo) a renderizar — agrupadas por COR (alfabético) e depois MODELO
   const linhas = useMemo(() => {
-    const out: { modelo: string; cor: string }[] = [];
-    for (const modelo of REFACAO_MODELOS) {
-      const coresDoModelo = coresDisponiveis.filter((cor) => {
-        if (corFiltro !== "todas" && cor !== corFiltro) return false;
-        // se "apenas faltando" → manter só se alguma célula < 0
+    const out: { cor: string; modelo: string }[] = [];
+    for (const cor of coresDisponiveis) {
+      if (corFiltro !== "todas" && cor !== corFiltro) continue;
+      for (const modelo of REFACAO_MODELOS) {
         if (apenasFaltando) {
           const algumNeg = REFACAO_TAMANHOS.some((t) => (disponivel.get(pkKey(modelo, cor, t)) ?? 0) < 0);
-          if (!algumNeg) return false;
+          if (!algumNeg) continue;
         }
-        // só mostrar combinações que aparecem em produção ou em faltantes
         const algumPresente = REFACAO_TAMANHOS.some((t) => disponivel.has(pkKey(modelo, cor, t)));
-        return algumPresente;
-      });
-      for (const cor of coresDoModelo) out.push({ modelo, cor });
+        if (!algumPresente) continue;
+        out.push({ cor, modelo });
+      }
     }
     return out;
   }, [coresDisponiveis, corFiltro, apenasFaltando, disponivel]);
+
+  // Totais por tamanho e total geral (somando apenas linhas visíveis)
+  const totaisTam = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const t of REFACAO_TAMANHOS) {
+      let s = 0;
+      for (const l of linhas) s += (disponivel.get(pkKey(l.modelo, l.cor, t)) ?? 0);
+      m.set(t, s);
+    }
+    return m;
+  }, [linhas, disponivel]);
+  const totalGeral = useMemo(() => {
+    let s = 0;
+    for (const t of REFACAO_TAMANHOS) s += (totaisTam.get(t) ?? 0);
+    return s;
+  }, [totaisTam]);
 
   // Popup
   const [popup, setPopup] = useState<{ modelo: string; cor: string; tamanho: string } | null>(null);
