@@ -341,6 +341,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
 
   return (
     <div className="space-y-4">
+      <h2 className="text-2xl font-bold tracking-tight">Romaneio</h2>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex flex-wrap items-center gap-2">
@@ -355,6 +356,17 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                 <SelectItem value="__ativos__">Ativos (exceto Finalizados/Pagos)</SelectItem>
                 <SelectItem value="todos">Todos</SelectItem>
                 {COP_STATUS_LIST.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs">Oficina:</Label>
+            <Select value={oficinaFiltro} onValueChange={setOficinaFiltro}>
+              <SelectTrigger className="h-9 w-[200px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas</SelectItem>
+                <SelectItem value="__sem__">Sem oficina</SelectItem>
+                {oficinas.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
