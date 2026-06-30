@@ -99,6 +99,11 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
       if (statusFiltro === "__ativos__") {
         if (c.status === "Finalizado" || c.pagamento_status === "pago") return false;
       } else if (statusFiltro !== "todos" && c.status !== statusFiltro) return false;
+      if (oficinaFiltro !== "todas") {
+        if (oficinaFiltro === "__sem__") {
+          if (c.oficina_id) return false;
+        } else if (c.oficina_id !== oficinaFiltro) return false;
+      }
       if (busca) {
         const num = formatCopNumero(numeroBaseCop(c, cops));
         const rot = rotuloRomaneio(c, cops);
@@ -106,7 +111,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
       }
       return true;
     });
-  }, [cops, statusFiltro, busca]);
+  }, [cops, statusFiltro, oficinaFiltro, busca]);
 
   // ---- Draft ----
   const [draft, setDraft] = useState<Partial<Cop>>({});
