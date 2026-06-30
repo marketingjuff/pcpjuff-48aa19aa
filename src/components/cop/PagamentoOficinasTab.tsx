@@ -97,14 +97,20 @@ export function PagamentoOficinasTab() {
   // editor da conferência (com fallback a partir dos recebidos)
   const [conf, setConf] = useState<CopConferenciaItem[]>([]);
   const [obsPag, setObsPag] = useState<string>("");
+  const [numFretes, setNumFretes] = useState<number>(1);
   useEffect(() => {
-    if (!selected) { setConf([]); setObsPag(""); return; }
+    if (!selected) { setConf([]); setObsPag(""); setNumFretes(1); return; }
     if ((selected.conferencia ?? []).length > 0) setConf(selected.conferencia);
     else setConf(inicializarConferencia(selected.pecas ?? [], selected.pecas_recebidas ?? []));
     setObsPag(selected.observacoes_pagamento ?? "");
+    setNumFretes(Math.max(1, Math.floor(Number(selected.num_fretes) || 1)));
   }, [selectedId]); // eslint-disable-line
 
-  const valor = useMemo(() => selected ? calcValor(selected, selectedOfi, conf) : 0, [selected, selectedOfi, conf]);
+  const selectedComFretes = useMemo(
+    () => selected ? ({ ...selected, num_fretes: numFretes } as Cop) : null,
+    [selected, numFretes],
+  );
+  const valor = useMemo(() => selectedComFretes ? calcValor(selectedComFretes, selectedOfi, conf) : 0, [selectedComFretes, selectedOfi, conf]);
 
   const salvarConferencia = useMutation({
     mutationFn: async () => {
@@ -112,6 +118,7 @@ export function PagamentoOficinasTab() {
       const { error } = await supabase.from("cops" as any).update({
         conferencia: conf as any,
         observacoes_pagamento: (obsPag || "").toUpperCase() || null,
+        num_fretes: Math.max(1, Math.floor(Number(numFretes) || 1)),
       }).eq("id", selected.id);
       if (error) throw error;
     },
