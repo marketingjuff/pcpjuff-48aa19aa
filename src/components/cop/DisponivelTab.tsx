@@ -107,6 +107,7 @@ export function DisponivelTab() {
 
   return (
     <div className="space-y-4">
+      <h2 className="text-2xl font-bold tracking-tight">Disponível</h2>
       <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="icon" onClick={() => {
