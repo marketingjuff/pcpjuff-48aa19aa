@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2 } from "lucide-react";
 import { toast } from "sonner";
-import { useIsAdmin } from "@/hooks/use-role";
+import { useIsAdmin, useCanAccessCop } from "@/hooks/use-role";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -50,6 +50,7 @@ export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: stri
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
   const isAdmin = useIsAdmin();
+  const canManageCop = useCanAccessCop();
   const [confirmVoltar, setConfirmVoltar] = useState<Cop | null>(null);
 
   const { data: cops = [], isLoading } = useQuery({
@@ -559,7 +560,7 @@ export function RomaneioTab({ selectedId = null, onSelect }: { selectedId?: stri
                       <Split className="h-4 w-4 mr-1" /> Particionar (nova letra {letraNova})
                     </Button>
                   )}
-                  {isAdmin && (
+                  {canManageCop && (
                     <Button
                       variant="outline"
                       className="border-orange-400 text-orange-700 hover:bg-orange-50"
