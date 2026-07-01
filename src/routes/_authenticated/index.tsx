@@ -25,6 +25,10 @@ import { fecharEpisodiosResolvidos } from "@/lib/pedidos";
 import { MacroSwitch } from "@/routes/_authenticated/cop";
 
 export const Route = createFileRoute("/_authenticated/")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    tab: typeof s.tab === "string" ? s.tab : undefined,
+    pedidoId: typeof s.pedidoId === "string" ? s.pedidoId : undefined,
+  }),
   component: AppHome,
 });
 
@@ -39,9 +43,16 @@ function AppHome() {
 function AppHomeInner() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [tab, setTab] = useState("dashboard");
+  const search = Route.useSearch();
+  const [tab, setTab] = useState(search.tab ?? "dashboard");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(search.pedidoId ?? null);
+
+  useEffect(() => {
+    if (search.tab) setTab(search.tab);
+    if (search.pedidoId) setSelectedId(search.pedidoId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.tab, search.pedidoId]);
   const isAdmin = useIsAdmin();
   const { data: myRoles = [] } = useMyRoles();
   const isGestor = myRoles.some((r) => r.role === "gestor");
