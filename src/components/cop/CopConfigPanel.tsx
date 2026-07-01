@@ -268,8 +268,7 @@ function AcessoCard() {
     <Card>
       <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Controle de acesso ao COP</CardTitle></CardHeader>
       <CardContent className="text-sm text-muted-foreground space-y-2">
-        <p>Atualmente <span className="font-medium text-foreground">apenas administradores</span> têm acesso ao COP.</p>
-        <p>Em breve: Gestores com a permissão de COP marcada também poderão acessar.</p>
+        <p>As configurações do COP estão liberadas para <span className="font-medium text-foreground">administradores</span> e <span className="font-medium text-foreground">gestores com acesso ao COP</span>.</p>
       </CardContent>
     </Card>
   );
