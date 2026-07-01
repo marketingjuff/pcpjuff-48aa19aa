@@ -61,7 +61,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
   const setSelectedId = (id: string | null) => onSelect?.(id);
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
-  const isAdmin = useIsAdmin();
+  const isAdmin = useCanAccessCop();
   const [confirmDelete, setConfirmDelete] = useState<Cop | null>(null);
 
   const { data: cops = [], isLoading } = useQuery({
