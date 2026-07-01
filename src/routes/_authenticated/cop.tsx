@@ -42,8 +42,15 @@ function CopHome() {
   const qc = useQueryClient();
   const canAccess = useCanAccessCop();
   const { isLoading } = useMyRoles();
-  const [tab, setTab] = useState("corte");
-  const [copSelId, setCopSelId] = useState<string | null>(null);
+  const search = Route.useSearch();
+  const [tab, setTab] = useState(search.tab ?? "corte");
+  const [copSelId, setCopSelId] = useState<string | null>(search.copId ?? null);
+
+  useEffect(() => {
+    if (search.tab) setTab(search.tab);
+    if (search.copId) setCopSelId(search.copId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.tab, search.copId]);
 
   useEffect(() => {
     if (!isLoading && !canAccess) {
