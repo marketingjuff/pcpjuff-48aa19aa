@@ -41,16 +41,27 @@ export function calcFaltantes(pedidos: Pedido[]): Map<string, number> {
 }
 
 /**
- * Map M·C·T → qtd já baixada (saiu fisicamente para o cliente).
+ * Map M·C·T → qtd recebida da oficina (Σ cops[].pecas_recebidas[].qtd_recebida).
  *
- * Percorre TODOS os pedidos e soma TODO o histórico imutável `pecas_completadas_log`,
- * SEM nenhuma condição sobre o estado atual de `pecas_solicitadas`.
- *
- * Motivo: a baixa representa peça que saiu fisicamente do estoque e foi para o
- * cliente. Isso é permanente. Uma vez baixada, a peça nunca volta ao Disponível,
- * mesmo que a solicitação do pedido seja depois alterada, satisfeita ou removida.
- * A única forma de aumentar o Disponível é um novo corte/romaneio.
+ * Representa peças que voltaram fisicamente da oficina ao estoque. Cresce
+ * monotonicamente por COP conforme o Romaneio recebe (parcial ou completo).
+ * Substitui `baixado` no cálculo do Disponível: a baixa em pedido só ocorre
+ * após o recebimento, então contar os dois causaria desconto duplicado.
  */
+export function calcRecebido(cops: Cop[]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const c of cops) {
+    for (const r of c.pecas_recebidas ?? []) {
+      const q = Number(r?.qtd_recebida) || 0;
+      if (q <= 0) continue;
+      const k = pkKey(r.modelo, r.cor, r.tamanho);
+      m.set(k, (m.get(k) ?? 0) + q);
+    }
+  }
+  return m;
+}
+
+/** @deprecated use calcRecebido(cops). Mantido temporariamente para compat. */
 export function calcBaixado(pedidos: Pedido[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const p of pedidos) {
@@ -83,17 +94,17 @@ export function calcPerdas(cops: Cop[]): Map<string, number> {
   return m;
 }
 
-/** Disponível = produção − faltantes − baixado − perdas (pode ser negativo). */
+/** Disponível = produção − faltantes − recebido − perdas (pode ser negativo). */
 export function calcDisponivel(
   producao: Map<string, number>,
   faltantes: Map<string, number>,
-  baixado: Map<string, number> = new Map(),
+  recebido: Map<string, number> = new Map(),
   perdas: Map<string, number> = new Map(),
 ): Map<string, number> {
   const out = new Map<string, number>();
-  const keys = new Set<string>([...producao.keys(), ...faltantes.keys(), ...baixado.keys(), ...perdas.keys()]);
+  const keys = new Set<string>([...producao.keys(), ...faltantes.keys(), ...recebido.keys(), ...perdas.keys()]);
   for (const k of keys) {
-    out.set(k, (producao.get(k) ?? 0) - (faltantes.get(k) ?? 0) - (baixado.get(k) ?? 0) - (perdas.get(k) ?? 0));
+    out.set(k, (producao.get(k) ?? 0) - (faltantes.get(k) ?? 0) - (recebido.get(k) ?? 0) - (perdas.get(k) ?? 0));
   }
   return out;
 }
