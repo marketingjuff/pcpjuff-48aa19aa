@@ -234,7 +234,7 @@ export function DisponivelTab() {
                   <>
                     <div className="text-xs flex gap-4">
                       <span>Produção: <b className="tabular-nums text-green-700">{prod}</b></span>
-                      <span>Faltantes: <b className="tabular-nums text-amber-700">{falt}</b></span>
+                      <span>Faltantes: <b className={`tabular-nums ${falt > 0 ? "text-red-700 font-bold" : ""}`}>{falt > 0 ? `-${falt}` : 0}</b></span>
                       <span>Baixado: <b className="tabular-nums text-blue-700">{baix}</b></span>
                       <span>Saldo: <b className={`tabular-nums ${saldo < 0 ? "text-red-700" : "text-green-700"}`}>{saldo}</b></span>
                     </div>
