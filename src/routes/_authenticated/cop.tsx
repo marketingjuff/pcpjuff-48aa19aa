@@ -18,6 +18,11 @@ import { OficinasHojeTab } from "@/components/cop/OficinasHojeTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cop")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    tab: typeof s.tab === "string" ? s.tab : undefined,
+    copId: typeof s.copId === "string" ? s.copId : undefined,
+    area: typeof s.area === "string" ? s.area : undefined,
+  }),
   component: CopHome,
 });
 
