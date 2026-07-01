@@ -7,16 +7,22 @@ export function pkKey(modelo: string, cor: string, tamanho: string) {
   return `${modelo}|${cor}|${tamanho}`;
 }
 
-/** Em produção = peças de COPs já cortados (status fora de Risco/Corte). */
+/** @deprecated Mantido para compat. Use a regra em `calcEmProducao` diretamente. */
 export function isCopEmProducao(c: Cop): boolean {
-  return c.status !== "Aguardando Risco" && c.status !== "Aguardando Corte";
+  return c.status !== "Finalizado" && (c as any).pagamento_status !== "pago";
 }
 
-/** Map M·C·T → qtd em produção (Σ pecas dos COPs cortados). */
+/**
+ * Map M·C·T → qtd em produção.
+ * Soma peças de TODOS os COPs assim que salvos, em qualquer etapa
+ * (inclusive "Aguardando Risco" e "Aguardando Corte"). Ignora apenas
+ * COPs já finalizados ou pagos para não poluir o quadro com encerrados.
+ */
 export function calcEmProducao(cops: Cop[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const c of cops) {
-    if (!isCopEmProducao(c)) continue;
+    if (c.status === "Finalizado") continue;
+    if ((c as any).pagamento_status === "pago") continue;
     for (const p of c.pecas ?? []) {
       const k = pkKey(p.modelo, p.cor, p.tamanho);
       m.set(k, (m.get(k) ?? 0) + (Number(p.qtd) || 0));
