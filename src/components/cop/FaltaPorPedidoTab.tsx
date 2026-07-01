@@ -345,6 +345,19 @@ export function FaltaPorPedidoTab() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      {popupPeca && (
+        <FaltaPecaPopup
+          open={!!popupPeca}
+          onOpenChange={(o) => !o && setPopupPeca(null)}
+          modelo={popupPeca.modelo}
+          cor={popupPeca.cor}
+          tamanho={popupPeca.tamanho}
+          pedidos={pedidos}
+          cops={cops}
+          oficinas={oficinas}
+        />
+      )}
     </div>
   );
 }
