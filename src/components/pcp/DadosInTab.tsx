@@ -270,21 +270,23 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         setMissingProd(new Set([...missP, key]));
         toast.error(msg);
       };
+      // Comparações apenas por data (YYYY-MM-DD), permitindo datas iguais.
+      const d = (v: any) => (v ? String(v).slice(0, 10) : "");
       if (!isLisa) {
-        if (form.arte_data && form.inicio_estamparia && form.arte_data > form.inicio_estamparia) {
+        if (d(form.arte_data) && d(form.inicio_estamparia) && d(form.arte_data) > d(form.inicio_estamparia)) {
           fail("inicio_estamparia", "Início de Estamparia não pode ser anterior à Arte (limite)."); return;
         }
-        if (form.inicio_estamparia && form.termino_estamparia && form.inicio_estamparia > form.termino_estamparia) {
+        if (d(form.inicio_estamparia) && d(form.termino_estamparia) && d(form.inicio_estamparia) > d(form.termino_estamparia)) {
           fail("termino_estamparia", "Término de Estamparia não pode ser anterior ao Início de Estamparia."); return;
         }
-        if (form.termino_estamparia && inicioAcabEfetivo && form.termino_estamparia > inicioAcabEfetivo) {
+        if (d(form.termino_estamparia) && d(inicioAcabEfetivo) && d(form.termino_estamparia) > d(inicioAcabEfetivo)) {
           fail("inicio_acabamento", "Início de Acabamento não pode ser anterior ao Término de Estamparia."); return;
         }
-        if (inicioAcabEfetivo && form.termino_acabamento && inicioAcabEfetivo > form.termino_acabamento) {
+        if (d(inicioAcabEfetivo) && d(form.termino_acabamento) && d(inicioAcabEfetivo) > d(form.termino_acabamento)) {
           fail("termino_acabamento", "Término de Acabamento não pode ser anterior ao Início de Acabamento."); return;
         }
       } else {
-        if (form.inicio_acabamento && form.termino_acabamento && form.inicio_acabamento > form.termino_acabamento) {
+        if (d(form.inicio_acabamento) && d(form.termino_acabamento) && d(form.inicio_acabamento) > d(form.termino_acabamento)) {
           fail("termino_acabamento", "Término de Acabamento não pode ser anterior ao Início de Acabamento."); return;
         }
       }
