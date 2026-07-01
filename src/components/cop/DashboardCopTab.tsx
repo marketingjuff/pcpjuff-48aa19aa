@@ -53,8 +53,9 @@ export function DashboardCopTab() {
 
   const producao = useMemo(() => calcEmProducao(cops), [cops]);
   const faltantes = useMemo(() => calcFaltantes(pedidos), [pedidos]);
-  const baixado = useMemo(() => calcBaixado(pedidos), [pedidos]);
-  const disponivel = useMemo(() => calcDisponivel(producao, faltantes, baixado), [producao, faltantes, baixado]);
+  const recebido = useMemo(() => calcRecebido(cops), [cops]);
+  const perdas = useMemo(() => calcPerdas(cops), [cops]);
+  const disponivel = useMemo(() => calcDisponivel(producao, faltantes, recebido, perdas), [producao, faltantes, recebido, perdas]);
 
   const saldoGeral = useMemo(() => {
     let s = 0;
