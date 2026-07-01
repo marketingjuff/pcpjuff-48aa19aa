@@ -1,68 +1,49 @@
 ## Objetivo
-Substituir o layout em cards da aba **Oficinas Hoje** por uma única **tabela pivot hierárquica** (Oficina → COP → Modelo → Cor) com expandir/recolher por linha, colunas fixas (esquerda e direita) e cabeçalho sticky. Somente frontend, sem migrações.
+Três ajustes só de frontend no COP. Sem migrações, sem tocar em `cop-saldos.ts`.
 
-## Arquivos
+## Item 1 — Popup ao clicar em número negativo (Falta por Pedido)
 
-### 1. `src/lib/cop-oficinas.ts` (aditivo)
-Adicionar (sem alterar o existente):
+**Arquivo novo:** `src/components/cop/FaltaPecaPopup.tsx`
+- Props: `open`, `onOpenChange`, `modelo`, `cor`, `tamanho`, `pedidos: Pedido[]` (todos os pedidos da aba), `cops: Cop[]`, `oficinas: Oficina[]`.
+- Layout 2 colunas (`grid-cols-1 md:grid-cols-2 gap-4`) dentro de um `Dialog` (`max-w-[900px]`).
+- **Esquerda — Romaneios:** filtra `cops` cujo `pecas[]` contém a combinação `modelo+cor+tamanho` E que estejam em oficina (usar `copAtivoEmOficina` de `cop-oficinas.ts`). Card por COP: `rotuloRomaneio`, oficina (lookup por `oficina_id`), `data_saida` ou similar, `status`, e a `qtd` da peça naquele COP menos o que já foi recebido (`pecas_recebidas` por modelo+cor+tamanho). Card com `<a href="/cop?tab=romaneio&copId={id}" target="_blank">`.
+- **Direita — Pedidos:** filtra a lista de `pedidos` passada onde `pecas_solicitadas` contém a peça com `qtd - qtd_enviada > 0`. Card: `orcamento`, `pedido_olist`, responsável (se houver), `dataUrgencia`, status/etapa (`calcularEtapaAtual`), quantidade faltante. `<a href="/?tab=dados&pedidoId={id}" target="_blank">`.
+- Se lista vazia num dos lados, mostrar "Nenhum" — sem erro.
 
-- Tipos:
-  ```ts
-  type NoCor    = { cor: string; porTamanho: Record<string, number>; total: number };
-  type NoModelo = { modelo: string; cores: NoCor[]; total: number };
-  type NoCop    = { cop: Cop; rotulo: string; modelos: NoModelo[]; total: number };
-  type NoOficina= { oficina: Oficina; cops: NoCop[]; total: number };
-  ```
-- `arvoreOficinasHoje(cops, oficinas)` — usa `copsPorOficina` e `rotuloRomaneio`, agrega `pecas` por modelo → cor → tamanho somando `qtd`. Ordenação:
-  - Oficinas: total desc (igual hoje)
-  - COPs: por `rotuloRomaneio`
-  - Modelos: índice em `REFACAO_MODELOS` (fallback alfabético)
-  - Cores: índice em `REFACAO_CORES` (fallback alfabético)
+**`src/components/cop/FaltaPorPedidoTab.tsx`:**
+- Buscar `oficinas` (nova `useQuery ["oficinas"]`) e passar ao popup.
+- Adicionar `useState<{ modelo, cor, tamanho } | null>` para popup.
+- No `<td>` de cada tamanho negativo (linha 251-254) e no total do grupo (linha 256) — apenas o de tamanho recebe click; o do total permanece como está. O `-{info.falta}` vira `<button>` que chama `setPopup(...)` e `e.stopPropagation()` (para não abrir o histórico).
+- Renderizar `<FaltaPecaPopup ... />` no fim.
 
-### 2. `src/components/cop/OficinasHojeTab.tsx` (reescrita da renderização)
-Manter queries `["cops"]`/`["oficinas"]`, canal realtime `cops-oficinas-hoje`, `h2`, contadores de resumo e botão recarregar.
+## Item 2.1 — Baixa inicia em branco
 
-**Substituir** o grid de cards por uma única tabela.
+**`src/components/cop/BaixaCopDialog.tsx`:**
+- No `useEffect` que popula `qtds` ao abrir (linhas 33-38): trocar `next[it.tamanho] = it.falta` por `next[it.tamanho] = 0`. Nenhuma outra mudança de gravação.
 
-**Colunas (nesta ordem):**
-`Oficina | COP | Modelo | Cor | PP | P | M | G | GG | EXG | EXXG | Total Geral`
+## Item 3 — Falta negativa no Disponível
 
-- Tamanhos mapeados de `REFACAO_TAMANHOS` (sem hardcode).
-- Cabeçalho `sticky top-0 bg-muted/40 z-20`.
-- Colunas Oficina/COP/Modelo/Cor: `sticky left-*` com background sólido, `z-10`.
-- Total Geral: `sticky right-0`, background sólido.
-- Colunas de tamanho: `w-12 text-right tabular-nums`; zero renderizado como `–`.
-- Container: `overflow-auto rounded-md border` com `max-h` para permitir sticky vertical.
+**`src/components/cop/DisponivelTab.tsx`:**
+- Cada célula de tamanho (linhas 167-190): quando `presente && v > 0 && falt > 0`, exibir `-{falt}` em `text-red-700` no lugar do valor `v`, com o mesmo botão/popup atuais. Se `falt === 0`, manter comportamento atual (mostrar `v`).
+- **Só apresentação.** `calcDisponivel` intocado. `totaisTam`/`totalGeral` continuam somando `disponivel` original (não mudam).
+- Popup interno já mostra falta separadamente — sem mudança.
 
-**Renderização das linhas (modo tabular/outline):**
-Cada linha ocupa **apenas a célula do seu próprio nível** com `ícone chevron + rótulo`; as outras 3 colunas de rótulo ficam vazias.
+## Suporte a "abrir em nova guia"
 
-| Nível   | Célula preenchida | Tamanhos | Total Geral        |
-|---------|-------------------|----------|--------------------|
-| Oficina | Oficina           | vazias   | subtotal oficina   |
-| COP     | COP (`rotuloRomaneio`) | vazias | subtotal COP    |
-| Modelo  | Modelo            | vazias   | subtotal modelo    |
-| Cor     | Cor               | valores  | soma dos 7         |
+**`src/routes/_authenticated/cop.tsx`:**
+- Adicionar `validateSearch: (s) => ({ tab: typeof s.tab === "string" ? s.tab : undefined, copId: typeof s.copId === "string" ? s.copId : undefined })`.
+- No componente, `const { tab: tabParam, copId } = Route.useSearch()`. `useEffect` inicial: se `tabParam` seta `setTab(tabParam)` e se `copId` seta `setCopSelId(copId)`.
 
-Linhas-pai (Oficina/COP/Modelo) com `bg-muted/20`. Cor é folha (sem chevron).
-
-**Estado de expansão:**
-- `useState<Set<string>>` com chaves estáveis: `of:{oficinaId}`, `cop:{oficinaId}/{copId}`, `mod:{oficinaId}/{copId}/{modelo}`.
-- Ao montar: sementes com todas as chaves `of:*` (oficinas abertas, demais recolhidos).
-- Botões globais no topo: **Expandir tudo** / **Recolher tudo**.
-- Toggle por linha via chevron (`ChevronRight` recolhido / `ChevronDown` expandido).
-- Sem navegação automática entre abas.
-
-**Fluxo de render:** iterar árvore e, para cada nível, empurrar a linha do pai; se expandido, iterar filhos recursivamente. Uma única `<tbody>`.
+**`src/routes/_authenticated/index.tsx`:**
+- Adicionar `validateSearch: (s) => ({ tab: typeof s.tab === "string" ? s.tab : undefined, pedidoId: typeof s.pedidoId === "string" ? s.pedidoId : undefined })`.
+- `useEffect` inicial: se `tab`/`pedidoId` presentes, aplicar via `setTab` e `setSelectedId` (respeitando permissões — se não puder ver a aba, ignora).
 
 ## Fora de escopo
-- Não alterar `copAtivoEmOficina`, queries, realtime, `cop-saldos`, Disponível, Falta, Pagamentos.
-- Não adicionar coluna Status.
-- Sem migração de banco. Sem paleta nova.
+- Sem alterações em `cop-saldos.ts`, schema, RLS, ou outras abas.
+- Sem novos endpoints. Sem novas dependências.
 
 ## Aceite
-1. Ao abrir: oficinas expandidas, COP/Modelo/Cor recolhidos.
-2. Expandir COP mostra Modelos; expandir Modelo mostra Cores com os 7 tamanhos + Total Geral.
-3. Expandir/Recolher tudo funcionam.
-4. Cabeçalho, colunas de rótulo e Total Geral permanecem visíveis nas rolagens.
-5. Soma horizontal da Cor e subtotais dos pais batem com o total atual da oficina.
+1. Falta por Pedido: campo de baixa inicia vazio (usuário digita).
+2. Falta por Pedido: clicar em `-N` de um tamanho abre popup 2 colunas com romaneios (esquerda) e pedidos (direita) daquela peça específica.
+3. Cards do popup abrem `/cop?tab=romaneio&copId=…` e `/?tab=dados&pedidoId=…` em nova guia com pré-seleção correta.
+4. Disponível: célula com faltante mostra `-{falta}` em vermelho quando há falta > 0, sem mexer nos totais/cálculos.

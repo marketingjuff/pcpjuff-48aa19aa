@@ -11,10 +11,11 @@ import {
 } from "@/components/ui/dialog";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import type { Pedido, PecaSolicitada } from "@/lib/pedidos";
-import type { Cop } from "@/lib/cop";
+import type { Cop, Oficina } from "@/lib/cop";
 import { rotuloCop, colunasTamanhos } from "@/lib/cop";
 import { dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
 import { BaixaCopDialog, type ItemFalta } from "./BaixaCopDialog";
+import { FaltaPecaPopup } from "./FaltaPecaPopup";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 
 type GrupoFalta = {
@@ -52,6 +53,15 @@ export function FaltaPorPedidoTab() {
     },
   });
 
+  const { data: oficinas = [] } = useQuery({
+    queryKey: ["oficinas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("oficinas" as any).select("*").order("nome");
+      if (error) throw error;
+      return (data ?? []) as unknown as Oficina[];
+    },
+  });
+
   const { data: pedidos = [] } = useQuery({
     queryKey: ["pedidos-falta"],
     queryFn: async () => {
@@ -74,6 +84,7 @@ export function FaltaPorPedidoTab() {
 
   const [busca, setBusca] = useState("");
   const [historico, setHistorico] = useState<Pedido | null>(null);
+  const [popupPeca, setPopupPeca] = useState<{ modelo: string; cor: string; tamanho: string } | null>(null);
 
   const linhas: LinhaFalta[] = useMemo(() => {
     const arr: LinhaFalta[] = [];
@@ -249,7 +260,18 @@ export function FaltaPorPedidoTab() {
                       const info = r.grupo.porTamanho.get(t);
                       return (
                         <td key={t} className="px-2 py-0.5 text-center tabular-nums">
-                          {info ? <span className="text-amber-700 font-semibold">-{info.falta}</span> : <span className="text-muted-foreground/40">—</span>}
+                          {info ? (
+                            <button
+                              type="button"
+                              className="text-amber-700 font-semibold hover:underline"
+                              onClick={(e) => { e.stopPropagation(); setPopupPeca({ modelo: r.grupo.modelo, cor: r.grupo.cor, tamanho: t }); }}
+                              title="Ver romaneios e pedidos com esta peça"
+                            >
+                              -{info.falta}
+                            </button>
+                          ) : (
+                            <span className="text-muted-foreground/40">—</span>
+                          )}
                         </td>
                       );
                     })}
@@ -323,6 +345,19 @@ export function FaltaPorPedidoTab() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      {popupPeca && (
+        <FaltaPecaPopup
+          open={!!popupPeca}
+          onOpenChange={(o) => !o && setPopupPeca(null)}
+          modelo={popupPeca.modelo}
+          cor={popupPeca.cor}
+          tamanho={popupPeca.tamanho}
+          pedidos={pedidos}
+          cops={cops}
+          oficinas={oficinas}
+        />
+      )}
     </div>
   );
 }

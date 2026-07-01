@@ -32,7 +32,7 @@ export function BaixaCopDialog({ open, onOpenChange, modelo, cor, orcamento, ite
   useEffect(() => {
     if (!open) return;
     const next: Record<string, number> = {};
-    for (const it of itens) next[it.tamanho] = it.falta;
+    for (const it of itens) next[it.tamanho] = 0;
     setQtds(next);
     setObservacao("");
   }, [open, itens]);

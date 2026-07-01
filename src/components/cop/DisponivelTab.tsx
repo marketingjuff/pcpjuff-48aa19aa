@@ -170,10 +170,13 @@ export function DisponivelTab() {
                       const falt = faltantes.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const baix = recebido.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const presente = prod > 0 || falt > 0 || baix > 0;
+                      const temFalta = presente && falt > 0;
                       const color = !presente ? "text-muted-foreground"
+                                  : temFalta ? "text-red-700 font-bold"
                                   : v < 0 ? "text-red-700 font-bold"
                                   : v === 0 ? "text-amber-700 font-semibold"
                                   : "text-green-700 font-semibold";
+                      const display = !presente ? "—" : temFalta ? `-${falt}` : v;
                       return (
                         <td key={t} className="p-1 text-center">
                           <button
@@ -183,7 +186,7 @@ export function DisponivelTab() {
                             disabled={!presente}
                             title={presente ? `Produção ${prod} · Faltantes ${falt} · Baixado ${baix}` : "Sem registro"}
                           >
-                            {presente ? v : "—"}
+                            {display}
                           </button>
                         </td>
                       );
