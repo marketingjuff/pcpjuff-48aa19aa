@@ -136,11 +136,10 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
 
   /** Cor de fundo da linha — baseada em saida_juff e dias úteis. */
   function rowBgClass(p: Pedido): string {
-    if (p.embalado === "Sim") return "";
     if (!p.saida_juff) return "";
     const dias = diasUteisAteHoje(p.saida_juff, feriados);
     if (dias === null) return "";
-    if (dias <= 0) return "bg-red-50 hover:bg-red-100/80";
+    if (dias <= 0) return "bg-red-100 hover:bg-red-200/80";
     if (dias === 1) return "bg-yellow-50 hover:bg-yellow-100/80";
     return "";
   }
