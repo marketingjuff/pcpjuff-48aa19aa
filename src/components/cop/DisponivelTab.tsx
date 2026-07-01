@@ -16,7 +16,7 @@ import { REFACAO_MODELOS, REFACAO_TAMANHOS, type Pedido } from "@/lib/pedidos";
 import { calcularEtapaAtual } from "@/lib/pedidos";
 import type { Cop } from "@/lib/cop";
 import {
-  pkKey, calcEmProducao, calcFaltantes, calcBaixado, calcPerdas, calcDisponivel, pedidosDoItem,
+  pkKey, calcEmProducao, calcFaltantes, calcRecebido, calcPerdas, calcDisponivel, pedidosDoItem,
 } from "@/lib/cop-saldos";
 
 export function DisponivelTab() {
