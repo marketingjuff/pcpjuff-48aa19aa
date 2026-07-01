@@ -61,7 +61,7 @@ function OficinasCard() {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
-              <TableHead>CNPJ/CPF</TableHead>
+              <TableHead>CNPJ / CPF</TableHead>
               <TableHead>CEP</TableHead>
               <TableHead className="text-right">Frete</TableHead>
               <TableHead></TableHead>
