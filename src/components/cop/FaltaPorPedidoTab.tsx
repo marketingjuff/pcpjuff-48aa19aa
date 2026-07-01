@@ -53,6 +53,15 @@ export function FaltaPorPedidoTab() {
     },
   });
 
+  const { data: oficinas = [] } = useQuery({
+    queryKey: ["oficinas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("oficinas" as any).select("*").order("nome");
+      if (error) throw error;
+      return (data ?? []) as unknown as Oficina[];
+    },
+  });
+
   const { data: pedidos = [] } = useQuery({
     queryKey: ["pedidos-falta"],
     queryFn: async () => {
