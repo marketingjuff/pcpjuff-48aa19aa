@@ -75,7 +75,7 @@ function OficinasCard() {
             ) : oficinas.map((o) => (
               <TableRow key={o.id}>
                 <TableCell className="font-medium">{o.nome}</TableCell>
-                <TableCell>{o.cnpj_cpf ?? "—"}</TableCell>
+                <TableCell>{o.cnpj || o.cpf || o.cnpj_cpf || "—"}</TableCell>
                 <TableCell>{o.cep ?? "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">
                   {Number(o.valor_frete || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
