@@ -11,10 +11,11 @@ import {
 } from "@/components/ui/dialog";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import type { Pedido, PecaSolicitada } from "@/lib/pedidos";
-import type { Cop } from "@/lib/cop";
+import type { Cop, Oficina } from "@/lib/cop";
 import { rotuloCop, colunasTamanhos } from "@/lib/cop";
 import { dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
 import { BaixaCopDialog, type ItemFalta } from "./BaixaCopDialog";
+import { FaltaPecaPopup } from "./FaltaPecaPopup";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 
 type GrupoFalta = {
