@@ -168,7 +168,7 @@ export function DisponivelTab() {
                       const v = disponivel.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const prod = producao.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const falt = faltantes.get(pkKey(l.modelo, l.cor, t)) ?? 0;
-                      const baix = baixado.get(pkKey(l.modelo, l.cor, t)) ?? 0;
+                      const baix = recebido.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const presente = prod > 0 || falt > 0 || baix > 0;
                       const color = !presente ? "text-muted-foreground"
                                   : v < 0 ? "text-red-700 font-bold"
@@ -225,7 +225,7 @@ export function DisponivelTab() {
                 const lista = pedidosDoItem(pedidos, popup.modelo, popup.cor, popup.tamanho);
                 const prod = producao.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
                 const falt = faltantes.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
-                const baix = baixado.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
+                const baix = recebido.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
                 const saldo = prod - falt - baix;
                 return (
                   <>
