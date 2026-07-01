@@ -1,24 +1,13 @@
-## Fix — Disponível conta peças desde "Aguardando Risco"
+## Ajuste: Permitir datas iguais entre Início de Acabamento, Término de Acabamento e Saída Juff
 
 ### Problema
+O usuário relatou erro ao salvar um pedido quando `inicio_acabamento`, `termino_acabamento` e `saida_juff` possuem a mesma data. A validação atual em `DadosInTab.tsx` parece usar `>` (permitindo igualdade) na maioria das comparações, mas o erro persiste — indicando que pode haver outro ponto de validação (outro componente, helper ou verificação de dia útil) bloqueando.
 
-Hoje `calcEmProducao` em `src/lib/cop-saldos.ts` só soma COPs cujo status é diferente de "Aguardando Risco" e "Aguardando Corte". Resultado: um COP recém-criado, com peças salvas mas ainda sem datas de risco/corte, não aparece no Disponível.
+### Passos
+1. **Reproduzir e identificar**: Usar o preview para simular o salvamento com datas iguais e capturar a mensagem de erro exata (toast ou console).
+2. **Corrigir a validação**: Após identificar o ponto exato do bloqueio, ajustar a comparação de datas para permitir igualdade (`>=` ou `<=` no lugar de `>` ou `<` onde aplicável).
+3. **Verificar consistência**: Garantir que nenhuma outra aba (`AcabamentoTab`, `ExpedicaoTab`, etc.) contenha validação cruzada que impeça a igualdade.
+4. **Testar**: Confirmar no preview que o pedido salva corretamente com as três datas iguais.
 
-### Comportamento desejado
-
-Assim que o COP tem peças salvas, elas contam no Disponível — em qualquer etapa, incluindo "Aguardando Risco" e "Aguardando Corte".
-
-### Alteração
-
-`src/lib/cop-saldos.ts`
-
-- Remover o filtro por status em `calcEmProducao`: passa a somar `pecas` de **todos** os COPs, exceto os já `Finalizado` ou com `pagamento_status = "pago"` (pra não poluir o quadro com COPs encerrados).
-- `isCopEmProducao` fica marcado como `@deprecated` mas mantido (nenhum outro arquivo o usa segundo grep prévio; se aparecer uso, ajusto no mesmo passo).
-
-Nenhuma outra parte do cálculo muda: `Disponível = produção − faltantes − recebido − perdas` continua valendo.
-
-### Fora do escopo
-
-- UI da aba Corte, botões de status, migração de dados.  
-  
-nao altere o banco de dados.
+### Nota técnica
+A comparação de datas já normaliza para `YYYY-MM-DD` (slice) e usa `>`, o que teoricamente permite igualdade. O erro pode estar em uma validação de dia útil (`isDataUtilISO`) aplicada a `saida_juff` ou em algum helper não revisado.
