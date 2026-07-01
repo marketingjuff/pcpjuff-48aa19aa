@@ -61,6 +61,7 @@ function ConfiguracoesPage() {
   const { data: roles = [], isLoading } = useMyRoles();
   const isAdmin = roles.some((r) => r.role === "admin");
   const isGestor = roles.some((r) => r.role === "gestor");
+  const canAccessCop = useCanAccessCop();
   const canAccess = isAdmin || isGestor;
   const { area } = Route.useSearch();
 
