@@ -16,7 +16,7 @@ import { ArrowLeft, Trash2, Plus, Download, Upload, KeyRound, ArrowUp, ArrowDown
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 import { toast } from "sonner";
-import { useMyRoles } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessCop } from "@/hooks/use-role";
 import {
   createUserAccount,
   listUsers,
@@ -61,6 +61,7 @@ function ConfiguracoesPage() {
   const { data: roles = [], isLoading } = useMyRoles();
   const isAdmin = roles.some((r) => r.role === "admin");
   const isGestor = roles.some((r) => r.role === "gestor");
+  const canAccessCop = useCanAccessCop();
   const canAccess = isAdmin || isGestor;
   const { area } = Route.useSearch();
 
@@ -89,7 +90,7 @@ function ConfiguracoesPage() {
             </Link>
             <h1 className="text-base sm:text-lg font-semibold truncate">Configurações</h1>
           </div>
-          {isAdmin && (
+          {canAccessCop && (
             <div className="inline-flex rounded-md border bg-card p-0.5 text-xs">
               <button type="button" onClick={() => setArea("pcp")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "pcp" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}>PCP</button>
               <button type="button" onClick={() => setArea("cop")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "cop" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}>COP</button>
@@ -98,7 +99,7 @@ function ConfiguracoesPage() {
         </div>
       </header>
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        {area === "cop" && isAdmin ? (
+        {area === "cop" && canAccessCop ? (
           <CopConfigPanel />
         ) : (
           <Tabs defaultValue={isAdmin ? "feriados" : "listas"}>
