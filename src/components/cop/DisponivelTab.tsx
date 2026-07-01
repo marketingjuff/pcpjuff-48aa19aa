@@ -234,7 +234,7 @@ export function DisponivelTab() {
                   <>
                     <div className="text-xs flex gap-4">
                       <span>Produção: <b className="tabular-nums text-green-700">{prod}</b></span>
-                      <span>Faltantes: <b className="tabular-nums text-amber-700">{falt}</b></span>
+                      <span>Faltantes: <b className={`tabular-nums ${falt > 0 ? "text-red-700 font-bold" : ""}`}>{falt > 0 ? `-${falt}` : 0}</b></span>
                       <span>Baixado: <b className="tabular-nums text-blue-700">{baix}</b></span>
                       <span>Saldo: <b className={`tabular-nums ${saldo < 0 ? "text-red-700" : "text-green-700"}`}>{saldo}</b></span>
                     </div>
@@ -262,7 +262,7 @@ export function DisponivelTab() {
                                 <td className="p-2 font-mono">{(pedido as any).pedido_olist ?? "—"}</td>
                                 <td className="p-2 text-right tabular-nums">{pecaSolic.qtd}</td>
                                 <td className="p-2 text-right tabular-nums">{pecaSolic.qtd_enviada}</td>
-                                <td className={`p-2 text-right tabular-nums ${falta > 0 ? "text-amber-700 font-semibold" : "text-green-700"}`}>{falta}</td>
+                                <td className={`p-2 text-right tabular-nums ${falta > 0 ? "text-red-700 font-bold" : ""}`}>{falta > 0 ? `-${falta}` : 0}</td>
                                 <td className="p-2 text-xs">{etapa.etapa}</td>
                               </tr>
                             );
