@@ -106,9 +106,12 @@ function OficinasCard() {
 function OficinaDialog({ oficina, onClose, onSaved }: { oficina: Oficina | null; onClose: () => void; onSaved: () => void }) {
   const isNew = !oficina;
   const [nome, setNome] = useState(oficina?.nome ?? "");
-  const [cnpj, setCnpj] = useState(oficina?.cnpj_cpf ?? "");
+  const [cnpj, setCnpj] = useState(oficina?.cnpj ?? "");
+  const [cpf, setCpf] = useState(oficina?.cpf ?? "");
   const [endereco, setEndereco] = useState(oficina?.endereco ?? "");
   const [cep, setCep] = useState(oficina?.cep ?? "");
+  const [telefone, setTelefone] = useState(oficina?.telefone ?? "");
+  const [observacoes, setObservacoes] = useState(oficina?.observacoes ?? "");
   const [frete, setFrete] = useState<string>(String(oficina?.valor_frete ?? 0));
   const [valores, setValores] = useState<Record<string, string>>(() => {
     const v: Record<string, string> = {};
@@ -125,11 +128,17 @@ function OficinaDialog({ oficina, onClose, onSaved }: { oficina: Oficina | null;
       const n = Number(valores[m]);
       if (Number.isFinite(n) && n > 0) vpm[m] = n;
     }
+    const cnpjT = cnpj.trim();
+    const cpfT = cpf.trim();
     const payload: any = {
       nome: nome.trim(),
-      cnpj_cpf: cnpj.trim() || null,
+      cnpj: cnpjT || null,
+      cpf: cpfT || null,
+      cnpj_cpf: cnpjT || cpfT || null,
       endereco: endereco.trim() || null,
       cep: cep.trim() || null,
+      telefone: telefone.trim() || null,
+      observacoes: observacoes.trim() || null,
       valor_frete: Number(frete) || 0,
       valores_por_modelo: vpm,
     };
@@ -149,11 +158,17 @@ function OficinaDialog({ oficina, onClose, onSaved }: { oficina: Oficina | null;
         <DialogHeader><DialogTitle>{isNew ? "Nova oficina" : `Editar — ${oficina!.nome}`}</DialogTitle></DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="md:col-span-2"><Label>Nome</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} /></div>
-          <div><Label>CNPJ / CPF</Label><Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} /></div>
+          <div><Label>CNPJ</Label><Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} /></div>
+          <div><Label>CPF</Label><Input value={cpf} onChange={(e) => setCpf(e.target.value)} /></div>
           <div><Label>CEP</Label><Input value={cep} onChange={(e) => setCep(e.target.value)} /></div>
-          <div className="md:col-span-2"><Label>Endereço completo</Label><Input value={endereco} onChange={(e) => setEndereco(e.target.value)} /></div>
           <div><Label>Valor do frete (R$)</Label>
             <Input type="number" step="0.01" min="0" value={frete} onChange={(e) => setFrete(e.target.value)} />
+          </div>
+          <div className="md:col-span-2"><Label>Endereço completo</Label><Input value={endereco} onChange={(e) => setEndereco(e.target.value)} /></div>
+          <div className="md:col-span-2"><Label>Telefone</Label><Input value={telefone} onChange={(e) => setTelefone(e.target.value)} /></div>
+          <div className="md:col-span-2">
+            <Label>Observações (dados bancários, PIX, etc.)</Label>
+            <Textarea rows={4} value={observacoes} onChange={(e) => setObservacoes(e.target.value)} placeholder="Banco, agência, conta, chave PIX, etc." />
           </div>
         </div>
         <div className="mt-2">
