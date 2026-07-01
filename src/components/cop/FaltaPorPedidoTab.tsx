@@ -260,7 +260,18 @@ export function FaltaPorPedidoTab() {
                       const info = r.grupo.porTamanho.get(t);
                       return (
                         <td key={t} className="px-2 py-0.5 text-center tabular-nums">
-                          {info ? <span className="text-amber-700 font-semibold">-{info.falta}</span> : <span className="text-muted-foreground/40">—</span>}
+                          {info ? (
+                            <button
+                              type="button"
+                              className="text-amber-700 font-semibold hover:underline"
+                              onClick={(e) => { e.stopPropagation(); setPopupPeca({ modelo: r.grupo.modelo, cor: r.grupo.cor, tamanho: t }); }}
+                              title="Ver romaneios e pedidos com esta peça"
+                            >
+                              -{info.falta}
+                            </button>
+                          ) : (
+                            <span className="text-muted-foreground/40">—</span>
+                          )}
                         </td>
                       );
                     })}
