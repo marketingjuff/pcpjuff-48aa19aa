@@ -1,5 +1,6 @@
 // Helpers para visão de carga por oficina no COP.
-import { type Cop, totalPecasCop, STATUS_POS_CORTE } from "@/lib/cop";
+import { type Cop, type Oficina, totalPecasCop, STATUS_POS_CORTE, rotuloRomaneio } from "@/lib/cop";
+import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 
 /** COP é "ativo na oficina" quando tem oficina_id, está pós-corte e ainda não foi pago/finalizado. */
 export function copAtivoEmOficina(c: Cop): boolean {
