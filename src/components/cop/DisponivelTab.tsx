@@ -51,9 +51,9 @@ export function DisponivelTab() {
 
   const producao = useMemo(() => calcEmProducao(cops), [cops]);
   const faltantes = useMemo(() => calcFaltantes(pedidos), [pedidos]);
-  const baixado = useMemo(() => calcBaixado(pedidos), [pedidos]);
+  const recebido = useMemo(() => calcRecebido(cops), [cops]);
   const perdas = useMemo(() => calcPerdas(cops), [cops]);
-  const disponivel = useMemo(() => calcDisponivel(producao, faltantes, baixado, perdas), [producao, faltantes, baixado, perdas]);
+  const disponivel = useMemo(() => calcDisponivel(producao, faltantes, recebido, perdas), [producao, faltantes, recebido, perdas]);
 
   // Lista de cores presentes (alfabética), opcionalmente filtrada
   const coresDisponiveis = useMemo(() => {
