@@ -21,7 +21,7 @@ import {
 } from "@/lib/cop";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { DivisaoCorteDialog } from "./DivisaoCorteDialog";
-import { useIsAdmin } from "@/hooks/use-role";
+import { useCanAccessCop } from "@/hooks/use-role";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -61,7 +61,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
   const setSelectedId = (id: string | null) => onSelect?.(id);
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
-  const isAdmin = useIsAdmin();
+  const isAdmin = useCanAccessCop();
   const [confirmDelete, setConfirmDelete] = useState<Cop | null>(null);
 
   const { data: cops = [], isLoading } = useQuery({
