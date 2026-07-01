@@ -16,7 +16,7 @@ import { ArrowLeft, Trash2, Plus, Download, Upload, KeyRound, ArrowUp, ArrowDown
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 import { toast } from "sonner";
-import { useMyRoles } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessCop } from "@/hooks/use-role";
 import {
   createUserAccount,
   listUsers,
