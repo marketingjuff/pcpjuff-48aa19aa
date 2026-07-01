@@ -200,8 +200,12 @@ export type Oficina = {
   id: string;
   nome: string;
   cnpj_cpf: string | null;
+  cnpj: string | null;
+  cpf: string | null;
   endereco: string | null;
   cep: string | null;
+  telefone: string | null;
+  observacoes: string | null;
   valor_frete: number;
   valores_por_modelo: Record<string, number>;
   created_at: string;

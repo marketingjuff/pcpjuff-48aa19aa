@@ -288,33 +288,45 @@ export type Database = {
       oficinas: {
         Row: {
           cep: string | null
+          cnpj: string | null
           cnpj_cpf: string | null
+          cpf: string | null
           created_at: string
           endereco: string | null
           id: string
           nome: string
+          observacoes: string | null
+          telefone: string | null
           updated_at: string
           valor_frete: number
           valores_por_modelo: Json
         }
         Insert: {
           cep?: string | null
+          cnpj?: string | null
           cnpj_cpf?: string | null
+          cpf?: string | null
           created_at?: string
           endereco?: string | null
           id?: string
           nome: string
+          observacoes?: string | null
+          telefone?: string | null
           updated_at?: string
           valor_frete?: number
           valores_por_modelo?: Json
         }
         Update: {
           cep?: string | null
+          cnpj?: string | null
           cnpj_cpf?: string | null
+          cpf?: string | null
           created_at?: string
           endereco?: string | null
           id?: string
           nome?: string
+          observacoes?: string | null
+          telefone?: string | null
           updated_at?: string
           valor_frete?: number
           valores_por_modelo?: Json
