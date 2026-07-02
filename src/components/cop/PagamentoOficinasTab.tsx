@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Check, X, Trash2, AlertTriangle } from "lucide-react";
+import { RefreshCw, Check, X, Trash2, AlertTriangle, Undo2, ArrowLeft } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -69,7 +69,7 @@ function isPagamentoAtrasado(cop: Cop, feriados: Set<string>): boolean {
 
 const STATUS_ELEGIVEIS = ["Romaneio Completo", "Aguardando Pagamento", "Finalizado"];
 
-export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selectedId?: string | null; onSelect?: (id: string | null) => void } = {}) {
+export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab }: { selectedId?: string | null; onSelect?: (id: string | null) => void; onChangeTab?: (tab: string) => void } = {}) {
   const setSelectedId = (id: string | null) => onSelect?.(id);
   const qc = useQueryClient();
   const { btnStyle } = useCopColorSettings();
