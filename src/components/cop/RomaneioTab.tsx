@@ -534,11 +534,12 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                                     return <td key={tam} className="p-2 text-center text-xs text-muted-foreground/40">—</td>;
                                   }
                                   const r = getRecebida(recebidas, g.modelo, g.cor, tam);
+                                  const perdaLinha = getPerda(selected.perdas ?? [], g.modelo, g.cor, tam);
                                   const completo = r >= qtd && qtd > 0;
-                                  const parcial = r > 0 && r < qtd;
-                                  const falta = qtd - r;
-                                  const bg = completo ? "#16a34a" : parcial ? "#9ca3af" : "#f3f4f6";
-                                  const cor = (completo || parcial) ? "#ffffff" : "#111827";
+                                  const fechadoComPerda = !completo && qtd > 0 && perdaLinha > 0 && (r + perdaLinha) >= qtd;
+                                  const parcial = !completo && !fechadoComPerda && r > 0 && r < qtd;
+                                  const bg = completo ? "#16a34a" : fechadoComPerda ? "#9333ea" : parcial ? "#9ca3af" : "#f3f4f6";
+                                  const cor = (completo || parcial || fechadoComPerda) ? "#ffffff" : "#111827";
                                   return (
                                     <td key={tam} className="p-2 text-center">
                                       <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
