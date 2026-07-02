@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   ETAPA_DESTINO_LABEL,
+  episodioAberto,
   tipoIncluiDTF,
   totalProducao,
   type Pedido,
@@ -12,8 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { ChevronDown, ChevronRight, Trash2, Save, Pencil, X } from "lucide-react";
 import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, CartesianGrid,
+} from "recharts";
 
 interface Props {
   pedidos: Pedido[];
