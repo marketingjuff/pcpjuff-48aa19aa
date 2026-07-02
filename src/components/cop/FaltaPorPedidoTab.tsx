@@ -17,6 +17,7 @@ import { dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
 import { BaixaCopDialog, type ItemFalta } from "./BaixaCopDialog";
 import { FaltaPecaPopup } from "./FaltaPecaPopup";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
+import { ResizableTh, useColumnWidths } from "./ResizableTh";
 
 type GrupoFalta = {
   modelo: string;
@@ -85,6 +86,10 @@ export function FaltaPorPedidoTab() {
   const [busca, setBusca] = useState("");
   const [historico, setHistorico] = useState<Pedido | null>(null);
   const [popupPeca, setPopupPeca] = useState<{ modelo: string; cor: string; tamanho: string } | null>(null);
+
+  const { widths: colW, setWidth: setColW, reset: resetColW } = useColumnWidths("falta-por-pedido", {
+    inicio: 80, orcamento: 150, modelo: 130, cor: 90, tam: 34, tot: 50, acao: 64,
+  });
 
   const linhas: LinhaFalta[] = useMemo(() => {
     const arr: LinhaFalta[] = [];
@@ -211,18 +216,23 @@ export function FaltaPorPedidoTab() {
         <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhum pedido com peças faltantes.</CardContent></Card>
       ) : (
         <div className="rounded-md border overflow-x-auto">
-          <table className="w-auto text-xs" style={{ tableLayout: "auto" }}>
+          <div className="flex justify-end px-2 py-1 border-b bg-muted/20">
+            <button type="button" onClick={resetColW} className="text-[10px] text-muted-foreground hover:text-foreground underline">
+              Resetar larguras
+            </button>
+          </div>
+          <table className="text-xs" style={{ tableLayout: "fixed", borderCollapse: "collapse" }}>
             <thead className="bg-muted/40 text-[10px]">
               <tr>
-                <th className="px-1 py-1 text-left whitespace-nowrap">Início Est.</th>
-                <th className="px-1 py-1 text-left w-[150px]">Orçamento</th>
-                <th className="px-1 py-1 text-left whitespace-nowrap">Modelo</th>
-                <th className="px-1 py-1 text-left whitespace-nowrap">Cor</th>
+                <ResizableTh colKey="inicio" width={colW.inicio} onResize={setColW} className="px-1 py-1 text-left">Início Est.</ResizableTh>
+                <ResizableTh colKey="orcamento" width={colW.orcamento} onResize={setColW} className="px-1 py-1 text-left">Orçamento</ResizableTh>
+                <ResizableTh colKey="modelo" width={colW.modelo} onResize={setColW} className="px-1 py-1 text-left">Modelo</ResizableTh>
+                <ResizableTh colKey="cor" width={colW.cor} onResize={setColW} className="px-1 py-1 text-left">Cor</ResizableTh>
                 {tamanhosColunas.map((t) => (
-                  <th key={t} className="px-0.5 py-1 text-center w-8">{t}</th>
+                  <ResizableTh key={t} colKey={`tam:${t}`} width={colW[`tam:${t}`] ?? colW.tam} onResize={setColW} className="px-0.5 py-1 text-center">{t}</ResizableTh>
                 ))}
-                <th className="px-1 py-1 text-right w-12">Tot.</th>
-                <th className="px-1 py-1 w-20"></th>
+                <ResizableTh colKey="tot" width={colW.tot} onResize={setColW} className="px-1 py-1 text-right">Tot.</ResizableTh>
+                <ResizableTh colKey="acao" width={colW.acao} onResize={setColW} className="px-1 py-1"> </ResizableTh>
               </tr>
             </thead>
             <tbody>
@@ -240,10 +250,10 @@ export function FaltaPorPedidoTab() {
                   >
                     {r.primeira ? (
                       <>
-                        <td className={`px-1 py-0 align-middle whitespace-nowrap text-[10px] ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
+                        <td className={`px-1 py-0 align-middle whitespace-nowrap text-[10px] overflow-hidden ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan} style={{ width: colW.inicio, maxWidth: colW.inicio }}>
                           {fmtBR(r.inicioEstamparia)}
                         </td>
-                        <td className="px-1 py-0 align-middle font-mono w-32 max-w-[150px] break-words text-[10px]" rowSpan={r.rowSpan}>
+                        <td className="px-1 py-0 align-middle font-mono break-words text-[10px] overflow-hidden" rowSpan={r.rowSpan} style={{ width: colW.orcamento, maxWidth: colW.orcamento }}>
                           <div>{r.pedido.orcamento ?? "—"}</div>
                           {(r.pedido as any).pedido_olist && (
                             <div className="text-[9px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
@@ -251,14 +261,15 @@ export function FaltaPorPedidoTab() {
                         </td>
                       </>
                     ) : null}
-                    <td className="px-1 py-0 whitespace-nowrap">{r.grupo.modelo}</td>
-                    <td className="px-1 py-0">
+                    <td className="px-1 py-0 whitespace-nowrap overflow-hidden truncate" style={{ width: colW.modelo, maxWidth: colW.modelo }}>{r.grupo.modelo}</td>
+                    <td className="px-1 py-0 overflow-hidden" style={{ width: colW.cor, maxWidth: colW.cor }}>
                       <span className="inline-block px-1 py-0 rounded text-[9px]" style={{ backgroundColor: hex, color: fg }}>{r.grupo.cor}</span>
                     </td>
                     {tamanhosColunas.map((t) => {
                       const info = r.grupo.porTamanho.get(t);
+                      const w = colW[`tam:${t}`] ?? colW.tam;
                       return (
-                        <td key={t} className="px-0.5 py-0 text-center tabular-nums w-8">
+                        <td key={t} className="px-0.5 py-0 text-center tabular-nums overflow-hidden" style={{ width: w, maxWidth: w }}>
                           {info ? (
                             <button
                               type="button"
@@ -274,8 +285,8 @@ export function FaltaPorPedidoTab() {
                         </td>
                       );
                     })}
-                    <td className="px-1 py-0 text-right tabular-nums text-amber-700 font-semibold text-[10px] w-12">-{r.grupo.faltaTotal}</td>
-                    <td className="px-1 py-0 text-right w-20" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-1 py-0 text-right tabular-nums text-amber-700 font-semibold text-[10px] overflow-hidden" style={{ width: colW.tot, maxWidth: colW.tot }}>-{r.grupo.faltaTotal}</td>
+                    <td className="px-1 py-0 text-right overflow-hidden" style={{ width: colW.acao, maxWidth: colW.acao }} onClick={(e) => e.stopPropagation()}>
                       <Button size="sm" className="h-5 px-1.5 text-[10px]" style={btnStyle("dar_baixa")} onClick={() => setBaixa({ pedido: r.pedido, grupo: r.grupo })}>
                         Baixa
                       </Button>
