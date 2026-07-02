@@ -566,7 +566,7 @@ function EpisodioEditor({
         </Field>
       </div>
       <div>
-        <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Motivo</div>
+        <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Observações</div>
         <div className="text-sm whitespace-pre-wrap rounded-md border bg-background px-3 py-2">{local.motivo || "—"}</div>
       </div>
 
