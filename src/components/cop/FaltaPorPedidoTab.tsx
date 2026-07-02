@@ -285,7 +285,7 @@ export function FaltaPorPedidoTab() {
                 const isExp = expanded.has(grp.key);
                 const atrasadoGrp = !!(grp.ancora && addDiasUteis(grp.ancora, -2) < hoje);
                 return (
-                  <>
+                  <FragmentWithKey key={grp.key}>
                     {isExp && grp.rows.map((r) => {
                       const hex = corHex(r.grupo.cor); const fg = corTextoSobre(hex);
                       const atrasado = !!(r.limite && r.limite < hoje);
