@@ -85,6 +85,13 @@ export type RefacaoEpisodio = {
    *  após o início da refação. Só com isso o auto-fechamento pode encerrar. */
   visitou_destino?: boolean;
   retrato?: RefacaoRetrato;
+  /** ISO — preenchido no auto-fechamento (`fecharEpisodiosResolvidos`). */
+  fechado_em?: string | null;
+  // --- Identificação do problema (opcionais, aditivos) ---
+  area_identificou?: string;
+  erro_producao?: boolean;
+  area_erro?: string;
+  problema?: string;
 };
 
 export const ETAPA_DESTINO_LABEL: Record<RefacaoEpisodio["etapa_destino"], string> = {
