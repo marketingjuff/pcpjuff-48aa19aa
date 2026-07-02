@@ -310,10 +310,10 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
                           <span className="tabular-nums">{numFretes}</span>
                         ) : (
                           <Input
-                            type="number" min={1}
+                            type="number" min={0}
                             className="h-7 w-16 text-right"
                             value={numFretes}
-                            onChange={(e) => setNumFretes(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+                            onChange={(e) => setNumFretes(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
                           />
                         )}
                         <span>× {fmtMoney(Number(selectedOfi?.valor_frete ?? 0))}</span>
