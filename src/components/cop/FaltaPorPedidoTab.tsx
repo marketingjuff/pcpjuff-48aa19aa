@@ -214,15 +214,15 @@ export function FaltaPorPedidoTab() {
           <table className="w-full text-xs">
             <thead className="bg-muted/40 text-[10px]">
               <tr>
-                <th className="px-2 py-1 text-left">Início Estamparia</th>
-                <th className="px-2 py-1 text-left w-36 max-w-[170px]">Orçamento</th>
-                <th className="px-2 py-1 text-left">Modelo</th>
-                <th className="px-2 py-1 text-left w-14">Cor</th>
+                <th className="px-1 py-1 text-left whitespace-nowrap">Início Est.</th>
+                <th className="px-1 py-1 text-left w-32 max-w-[150px]">Orçamento</th>
+                <th className="px-1 py-1 text-left">Modelo</th>
+                <th className="px-1 py-1 text-left w-12">Cor</th>
                 {tamanhosColunas.map((t) => (
-                  <th key={t} className="px-2 py-1 text-center">{t}</th>
+                  <th key={t} className="px-0.5 py-1 text-center w-8">{t}</th>
                 ))}
-                <th className="px-2 py-1 text-right">Total Geral</th>
-                <th className="px-2 py-1"></th>
+                <th className="px-1 py-1 text-right w-12">Tot.</th>
+                <th className="px-1 py-1 w-20"></th>
               </tr>
             </thead>
             <tbody>
@@ -240,29 +240,29 @@ export function FaltaPorPedidoTab() {
                   >
                     {r.primeira ? (
                       <>
-                        <td className={`px-2 py-0 align-middle whitespace-nowrap ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
+                        <td className={`px-1 py-0 align-middle whitespace-nowrap text-[10px] ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
                           {fmtBR(r.inicioEstamparia)}
                         </td>
-                        <td className="px-2 py-0 align-middle font-mono w-36 max-w-[170px] break-words" rowSpan={r.rowSpan}>
+                        <td className="px-1 py-0 align-middle font-mono w-32 max-w-[150px] break-words text-[10px]" rowSpan={r.rowSpan}>
                           <div>{r.pedido.orcamento ?? "—"}</div>
                           {(r.pedido as any).pedido_olist && (
-                            <div className="text-[10px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
+                            <div className="text-[9px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
                           )}
                         </td>
                       </>
                     ) : null}
-                    <td className="px-2 py-0 whitespace-nowrap">{r.grupo.modelo}</td>
-                    <td className="px-2 py-0">
-                      <span className="inline-block px-1.5 py-0 rounded text-[10px]" style={{ backgroundColor: hex, color: fg }}>{r.grupo.cor}</span>
+                    <td className="px-1 py-0 whitespace-nowrap">{r.grupo.modelo}</td>
+                    <td className="px-1 py-0">
+                      <span className="inline-block px-1 py-0 rounded text-[9px]" style={{ backgroundColor: hex, color: fg }}>{r.grupo.cor}</span>
                     </td>
                     {tamanhosColunas.map((t) => {
                       const info = r.grupo.porTamanho.get(t);
                       return (
-                        <td key={t} className="px-2 py-0 text-center tabular-nums">
+                        <td key={t} className="px-0.5 py-0 text-center tabular-nums w-8">
                           {info ? (
                             <button
                               type="button"
-                              className="text-amber-700 font-semibold hover:underline"
+                              className="text-amber-700 font-semibold hover:underline text-[10px]"
                               onClick={(e) => { e.stopPropagation(); setPopupPeca({ modelo: r.grupo.modelo, cor: r.grupo.cor, tamanho: t }); }}
                               title="Ver romaneios e pedidos com esta peça"
                             >
@@ -274,10 +274,10 @@ export function FaltaPorPedidoTab() {
                         </td>
                       );
                     })}
-                    <td className="px-2 py-0 text-right tabular-nums text-amber-700 font-semibold">-{r.grupo.faltaTotal}</td>
-                    <td className="px-2 py-0 text-right" onClick={(e) => e.stopPropagation()}>
-                      <Button size="sm" className="h-6 px-2 text-[11px]" style={btnStyle("dar_baixa")} onClick={() => setBaixa({ pedido: r.pedido, grupo: r.grupo })}>
-                        Dar baixa
+                    <td className="px-1 py-0 text-right tabular-nums text-amber-700 font-semibold text-[10px] w-12">-{r.grupo.faltaTotal}</td>
+                    <td className="px-1 py-0 text-right w-20" onClick={(e) => e.stopPropagation()}>
+                      <Button size="sm" className="h-5 px-1.5 text-[10px]" style={btnStyle("dar_baixa")} onClick={() => setBaixa({ pedido: r.pedido, grupo: r.grupo })}>
+                        Baixa
                       </Button>
                     </td>
                   </tr>
