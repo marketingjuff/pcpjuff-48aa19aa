@@ -165,7 +165,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
       if (!selected) return;
       const { error: e1 } = await supabase.from("cops" as any).update({
         observacoes_pagamento: (obsPag || "").toUpperCase() || null,
-        num_fretes: Math.max(1, Math.floor(Number(numFretes) || 1)),
+        num_fretes: Math.max(0, Math.floor(Number(numFretes) || 0)),
       }).eq("id", selected.id);
       if (e1) throw e1;
       const { error } = await (supabase as any).rpc("liberar_pagamento_cop", { _cop_id: selected.id, _valor: valor });
