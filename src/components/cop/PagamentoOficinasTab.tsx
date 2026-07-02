@@ -402,6 +402,8 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
         </Card>
       )}
 
+      <PagamentoConsolidadoCard />
+
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">COPs elegíveis para pagamento</CardTitle></CardHeader>
         <CardContent>
