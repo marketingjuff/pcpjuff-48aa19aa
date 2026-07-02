@@ -159,10 +159,49 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   const salvarPerdas = useMutation({
     mutationFn: async ({ cop, perdas }: { cop: Cop; perdas: CopPerdaLinha[] }) => {
       const obs = mesclarPerdasEmObservacoes(cop.observacoes_romaneio, perdas);
-      const { error } = await supabase.from("cops" as any).update({
+
+      // Delta: só o que aumentou vira registro de histórico.
+      const prev = cop.perdas ?? [];
+      const delta: CopPerdaLinha[] = [];
+      for (const p of perdas) {
+        const ant = prev.find((x) => x.modelo === p.modelo && x.cor === p.cor && x.tamanho === p.tamanho);
+        const d = (Number(p.qtd) || 0) - (Number(ant?.qtd) || 0);
+        if (d > 0) delta.push({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: d });
+      }
+      const totalDelta = delta.reduce((s, x) => s + x.qtd, 0);
+
+      const historico_perdas = [...(cop.historico_perdas ?? [])];
+      if (totalDelta > 0) {
+        historico_perdas.push({
+          em: new Date().toISOString(),
+          tipo: "perda",
+          total: totalDelta,
+          itens: delta,
+        });
+      }
+
+      // Recalcular status considerando perdas como "entregue" para completude.
+      const rec = cop.pecas_recebidas ?? [];
+      const completo = todasCompletas(cop.pecas || [], rec, perdas);
+      const algumRecOuPerda =
+        (rec.some((r) => r.qtd_recebida > 0)) ||
+        (perdas.some((p) => p.qtd > 0));
+
+      let novoStatus: CopStatus = cop.status;
+      if (completo && (cop.status === "Na Oficina (Costura)" || cop.status === "Romaneio Parcial")) {
+        novoStatus = "Romaneio Completo";
+      } else if (!completo && cop.status === "Na Oficina (Costura)" && algumRecOuPerda) {
+        novoStatus = "Romaneio Parcial";
+      }
+
+      const patch: any = {
         perdas: perdas as any,
         observacoes_romaneio: obs,
-      } as any).eq("id", cop.id);
+        historico_perdas: historico_perdas as any,
+      };
+      if (novoStatus !== cop.status) patch.status = novoStatus;
+
+      const { error } = await supabase.from("cops" as any).update(patch).eq("id", cop.id);
       if (error) throw error;
     },
     onSuccess: () => {
