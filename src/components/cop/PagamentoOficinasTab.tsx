@@ -124,7 +124,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
   useEffect(() => {
     if (!selected) { setObsPag(""); setNumFretes(1); return; }
     setObsPag(selected.observacoes_pagamento ?? "");
-    setNumFretes(Math.max(1, Math.floor(Number(selected.num_fretes) || 1)));
+    setNumFretes(Math.max(0, Math.floor(Number(selected.num_fretes ?? 1))));
   }, [selectedId]); // eslint-disable-line
 
   const selectedComFretes = useMemo(
