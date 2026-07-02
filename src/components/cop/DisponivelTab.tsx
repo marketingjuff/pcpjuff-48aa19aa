@@ -163,12 +163,17 @@ export function DisponivelTab() {
                 const hex = corHex(l.cor); const fg = corTextoSobre(hex);
                 const prev = i > 0 ? linhas[i - 1] : null;
                 const novaCor = !prev || prev.cor !== l.cor;
+                const rowBg = `color-mix(in oklab, ${hex} 12%, transparent)`;
                 return (
-                  <tr key={i} className={`${novaCor ? "border-t-4 border-muted-foreground/40" : "border-t"} hover:bg-accent/30`}>
-                    <td className="px-2 py-1">{novaCor ? (
+                  <tr
+                    key={i}
+                    className={`${novaCor ? "border-t-2 border-muted-foreground/40" : ""} hover:brightness-95`}
+                    style={{ backgroundColor: rowBg }}
+                  >
+                    <td className="px-2 py-0 leading-tight">{novaCor ? (
                       <span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{l.cor}</span>
                     ) : null}</td>
-                    <td className="px-2 py-1 font-medium">{l.modelo}</td>
+                    <td className="px-2 py-0 leading-tight font-medium">{l.modelo}</td>
                     {REFACAO_TAMANHOS.map((t) => {
                       const v = disponivel.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const prod = producao.get(pkKey(l.modelo, l.cor, t)) ?? 0;
@@ -184,10 +189,10 @@ export function DisponivelTab() {
                                   : "text-green-700 font-semibold";
                       const display = !presente ? "—" : v;
                       return (
-                        <td key={t} className="p-1 text-center">
+                        <td key={t} className="p-0 text-center leading-tight">
                           <button
                             type="button"
-                            className={`w-full rounded px-2 py-0.5 tabular-nums hover:bg-accent/60 ${color}`}
+                            className={`w-full rounded px-2 py-0 tabular-nums hover:bg-accent/60 ${color}`}
                             onClick={() => presente && setPopup({ modelo: l.modelo, cor: l.cor, tamanho: t })}
                             disabled={!presente}
                             title={presente ? `Produção ${prod} · Faltantes ${falt} · Recebido ${baix} · Perdas ${perd}` : "Sem registro"}
@@ -198,7 +203,7 @@ export function DisponivelTab() {
                       );
 
                     })}
-                    <td className="p-1" />
+                    <td className="p-0" />
                   </tr>
                 );
               })}
