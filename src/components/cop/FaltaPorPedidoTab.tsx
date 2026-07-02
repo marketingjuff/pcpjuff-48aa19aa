@@ -244,10 +244,10 @@ export function FaltaPorPedidoTab() {
                         <td className={`px-2 py-0.5 align-middle whitespace-nowrap ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
                           {fmtBR(r.inicioEstamparia)}
                         </td>
-                        <td className="px-2 py-0.5 align-middle font-mono whitespace-nowrap" rowSpan={r.rowSpan}>
-                          {r.pedido.orcamento ?? "—"}
+                        <td className="px-2 py-0.5 align-middle font-mono w-24 max-w-[90px] break-words" rowSpan={r.rowSpan}>
+                          <div>{r.pedido.orcamento ?? "—"}</div>
                           {(r.pedido as any).pedido_olist && (
-                            <span className="text-[10px] text-muted-foreground ml-1">(Olist {(r.pedido as any).pedido_olist})</span>
+                            <div className="text-[10px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
                           )}
                         </td>
                       </>
