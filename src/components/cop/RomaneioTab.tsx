@@ -19,10 +19,10 @@ import { useCanAccessCop } from "@/hooks/use-role";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
-  type HistoricoRecebimento, type CopPerdaLinha,
+  type HistoricoRecebimento, type HistoricoPerda, type CopPerdaLinha,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, totalRecebidas,
   todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
-  getRecebida, colunasTamanhos, mesclarPerdasEmObservacoes,
+  getRecebida, getPerda, colunasTamanhos, mesclarPerdasEmObservacoes,
 } from "@/lib/cop";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
@@ -86,7 +86,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   const [busca, setBusca] = useState("");
   const [showEntrega, setShowEntrega] = useState(false);
   const [showParticionar, setShowParticionar] = useState(false);
-  const [selectedHist, setSelectedHist] = useState<HistoricoRecebimento | null>(null);
+  const [selectedHist, setSelectedHist] = useState<HistoricoRecebimento | HistoricoPerda | null>(null);
 
   const selected = useMemo(() => cops.find((c) => c.id === selectedId) ?? null, [cops, selectedId]);
   const oficina = useMemo(
@@ -159,10 +159,49 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   const salvarPerdas = useMutation({
     mutationFn: async ({ cop, perdas }: { cop: Cop; perdas: CopPerdaLinha[] }) => {
       const obs = mesclarPerdasEmObservacoes(cop.observacoes_romaneio, perdas);
-      const { error } = await supabase.from("cops" as any).update({
+
+      // Delta: só o que aumentou vira registro de histórico.
+      const prev = cop.perdas ?? [];
+      const delta: CopPerdaLinha[] = [];
+      for (const p of perdas) {
+        const ant = prev.find((x) => x.modelo === p.modelo && x.cor === p.cor && x.tamanho === p.tamanho);
+        const d = (Number(p.qtd) || 0) - (Number(ant?.qtd) || 0);
+        if (d > 0) delta.push({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: d });
+      }
+      const totalDelta = delta.reduce((s, x) => s + x.qtd, 0);
+
+      const historico_perdas = [...(cop.historico_perdas ?? [])];
+      if (totalDelta > 0) {
+        historico_perdas.push({
+          em: new Date().toISOString(),
+          tipo: "perda",
+          total: totalDelta,
+          itens: delta,
+        });
+      }
+
+      // Recalcular status considerando perdas como "entregue" para completude.
+      const rec = cop.pecas_recebidas ?? [];
+      const completo = todasCompletas(cop.pecas || [], rec, perdas);
+      const algumRecOuPerda =
+        (rec.some((r) => r.qtd_recebida > 0)) ||
+        (perdas.some((p) => p.qtd > 0));
+
+      let novoStatus: CopStatus = cop.status;
+      if (completo && (cop.status === "Na Oficina (Costura)" || cop.status === "Romaneio Parcial")) {
+        novoStatus = "Romaneio Completo";
+      } else if (!completo && cop.status === "Na Oficina (Costura)" && algumRecOuPerda) {
+        novoStatus = "Romaneio Parcial";
+      }
+
+      const patch: any = {
         perdas: perdas as any,
         observacoes_romaneio: obs,
-      } as any).eq("id", cop.id);
+        historico_perdas: historico_perdas as any,
+      };
+      if (novoStatus !== cop.status) patch.status = novoStatus;
+
+      const { error } = await supabase.from("cops" as any).update(patch).eq("id", cop.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -206,7 +245,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
 
   async function handleEntregaConfirm(rec: CopPecaRecebida[]) {
     if (!selected) return;
-    const completo = todasCompletas(selected.pecas || [], rec);
+    const completo = todasCompletas(selected.pecas || [], rec, selected.perdas ?? []);
     const algum = rec.some((r) => r.qtd_recebida > 0);
     const novoStatus: CopStatus =
       completo ? "Romaneio Completo" : algum ? "Romaneio Parcial" : "Na Oficina (Costura)";
@@ -495,11 +534,12 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                                     return <td key={tam} className="p-2 text-center text-xs text-muted-foreground/40">—</td>;
                                   }
                                   const r = getRecebida(recebidas, g.modelo, g.cor, tam);
+                                  const perdaLinha = getPerda(selected.perdas ?? [], g.modelo, g.cor, tam);
                                   const completo = r >= qtd && qtd > 0;
-                                  const parcial = r > 0 && r < qtd;
-                                  const falta = qtd - r;
-                                  const bg = completo ? "#16a34a" : parcial ? "#9ca3af" : "#f3f4f6";
-                                  const cor = (completo || parcial) ? "#ffffff" : "#111827";
+                                  const fechadoComPerda = !completo && qtd > 0 && perdaLinha > 0 && (r + perdaLinha) >= qtd;
+                                  const parcial = !completo && !fechadoComPerda && r > 0 && r < qtd;
+                                  const bg = completo ? "#16a34a" : fechadoComPerda ? "#9333ea" : parcial ? "#9ca3af" : "#f3f4f6";
+                                  const cor = (completo || parcial || fechadoComPerda) ? "#ffffff" : "#111827";
                                   return (
                                     <td key={tam} className="p-2 text-center">
                                       <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
@@ -657,43 +697,56 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                   </div>
 
                   {/* Histórico de chegadas */}
-                  {(selected.historico_recebimentos?.length ?? 0) > 0 && (
-                    <div className="rounded-md border p-2">
-                      <div className="text-xs font-semibold mb-1">Histórico de chegadas</div>
-                      <ul className="space-y-1 text-xs">
-                        {selected.historico_recebimentos!.slice().reverse().map((h, i) => (
-                          <li
-                            key={i}
-                            className="flex justify-between gap-2 cursor-pointer hover:bg-accent/40 rounded px-1 py-0.5 transition-colors"
-                            onClick={() => setSelectedHist(h)}
-                            title="Clique para ver as peças entregues"
-                          >
-                            <span>
-                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] mr-1 ${h.tipo === "completo" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>
-                                {h.tipo}
+                  {(() => {
+                    const chegadas = (selected.historico_recebimentos ?? []).map((h) => ({ ...h, _kind: "recebimento" as const }));
+                    const perdas = (selected.historico_perdas ?? []).map((h) => ({ ...h, _kind: "perda" as const }));
+                    const unificado = [...chegadas, ...perdas].sort((a, b) => (a.em < b.em ? 1 : -1));
+                    if (unificado.length === 0) return null;
+                    const badge = (h: HistoricoRecebimento | HistoricoPerda) => {
+                      if (h.tipo === "completo") return "bg-green-100 text-green-800";
+                      if (h.tipo === "parcial") return "bg-amber-100 text-amber-800";
+                      return "bg-purple-100 text-purple-800";
+                    };
+                    return (
+                      <div className="rounded-md border p-2">
+                        <div className="text-xs font-semibold mb-1">Histórico</div>
+                        <ul className="space-y-1 text-xs">
+                          {unificado.map((h, i) => (
+                            <li
+                              key={i}
+                              className="flex justify-between gap-2 cursor-pointer hover:bg-accent/40 rounded px-1 py-0.5 transition-colors"
+                              onClick={() => setSelectedHist(h)}
+                              title="Clique para ver o detalhe"
+                            >
+                              <span>
+                                <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] mr-1 ${badge(h)}`}>
+                                  {h.tipo}
+                                </span>
+                                {new Date(h.em).toLocaleString("pt-BR")}
+                                {h._kind === "recebimento" && h.letra && <> · letra <b>{h.letra}</b></>}
                               </span>
-                              {new Date(h.em).toLocaleString("pt-BR")}
-                              {h.letra && <> · letra <b>{h.letra}</b></>}
-                            </span>
-                            <span className="tabular-nums font-semibold">{h.total}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                              <span className={`tabular-nums font-semibold ${h._kind === "perda" ? "text-purple-700" : ""}`}>
+                                {h._kind === "perda" ? "−" : ""}{h.total}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })()}
 
                   <Dialog open={!!selectedHist} onOpenChange={(o) => !o && setSelectedHist(null)}>
                     <DialogContent className="max-w-lg">
                       <DialogHeader>
-                        <DialogTitle>Peças entregues</DialogTitle>
+                        <DialogTitle>{selectedHist?.tipo === "perda" ? "Perdas registradas" : "Peças entregues"}</DialogTitle>
                         <DialogDescription>
                           {selectedHist && (
                             <span>
                               {new Date(selectedHist.em).toLocaleString("pt-BR")} — {" "}
-                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] ${selectedHist.tipo === "completo" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>
+                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] ${selectedHist.tipo === "completo" ? "bg-green-100 text-green-800" : selectedHist.tipo === "parcial" ? "bg-amber-100 text-amber-800" : "bg-purple-100 text-purple-800"}`}>
                                 {selectedHist.tipo}
                               </span>
-                              {selectedHist.letra && <> · letra <b>{selectedHist.letra}</b></>}
+                              {selectedHist.tipo !== "perda" && (selectedHist as HistoricoRecebimento).letra && <> · letra <b>{(selectedHist as HistoricoRecebimento).letra}</b></>}
                             </span>
                           )}
                         </DialogDescription>
@@ -710,12 +763,14 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                               </tr>
                             </thead>
                             <tbody>
-                              {selectedHist.itens.map((item, idx) => (
+                              {selectedHist.itens.map((item: any, idx: number) => (
                                 <tr key={idx} className="border-t">
                                   <td className="p-2">{item.modelo}</td>
                                   <td className="p-2">{item.cor}</td>
                                   <td className="p-2">{item.tamanho}</td>
-                                  <td className="p-2 text-right tabular-nums font-semibold">{item.qtd_recebida}</td>
+                                  <td className={`p-2 text-right tabular-nums font-semibold ${selectedHist.tipo === "perda" ? "text-purple-700" : ""}`}>
+                                    {selectedHist.tipo === "perda" ? item.qtd : item.qtd_recebida}
+                                  </td>
                                 </tr>
                               ))}
                               {selectedHist.itens.length === 0 && (
@@ -725,7 +780,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                             <tfoot>
                               <tr className="bg-muted/30">
                                 <td className="p-2 text-right" colSpan={3}><b>Total</b></td>
-                                <td className="p-2 text-right tabular-nums"><b>{selectedHist.total}</b></td>
+                                <td className={`p-2 text-right tabular-nums ${selectedHist.tipo === "perda" ? "text-purple-700" : ""}`}><b>{selectedHist.tipo === "perda" ? "−" : ""}{selectedHist.total}</b></td>
                               </tr>
                             </tfoot>
                           </table>
@@ -733,6 +788,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                       )}
                     </DialogContent>
                   </Dialog>
+
 
                   {selected.status === "Romaneio Completo" && (
                     selected.conferido_em ? (

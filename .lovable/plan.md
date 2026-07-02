@@ -1,57 +1,45 @@
-# Reformular a aba "Oficinas Hoje" (COP)
+# Perdas contam como "entregue" para fechar o Romaneio
 
-Objetivo: transformar a tabela hierárquica atual em uma tabela achatada compacta, uma linha por cor, com chip colorido, colunas de tamanho dinâmicas, grupo "Em corte" no topo, subtotais por grupo e Total geral fixo no rodapé.
+Sem tocar em PCP, `cop-saldos.ts`, `cops.pecas` (corte) e sem alterar a lógica de pagamento.
 
-Mudança 100% front-end. Sem migração. `cop-saldos.ts` intocado. Nada do PCP alterado.
+## 1. Migração SQL (aditiva)
 
-## Arquivos alterados
-
-- `src/lib/cop-oficinas.ts` — aditivo (novas funções)
-- `src/components/cop/OficinasHojeTab.tsx` — reescrito
-
-## `src/lib/cop-oficinas.ts` (aditivo)
-
-Extrair a rotina interna de agrupamento `COP → Modelo → Cor` de `arvoreOficinasHoje` para uma helper privada `_agruparCopsEmNos(cops: Cop[]): NoCop[]`, mantendo `arvoreOficinasHoje` com output idêntico. Adicionar:
-
-- `nosEmCorte(cops): NoOficina | null` — filtra COPs com `status ∈ STATUS_CORTE` (sem `oficina_id`), usa a oficina sintética `{ id: "__corte__", nome: "Em corte" }`. Retorna `null` se vazio.
-- `arvoreProducaoHoje(cops, oficinas): NoOficina[]` — `[grupoEmCorte?, ...arvoreOficinasHoje(cops, oficinas)]`.
-- `subtotaisPorTamanho(no, tamanhos): Record<string, number>` — soma por tamanho no grupo (percorre cops → modelos → cores → porTamanho).
-- `totaisGeraisPorTamanho(nos, tamanhos): Record<string, number>` — soma dos subtotais.
-- `tamanhosVisiveis(nos): string[]` — coleta tamanhos com qtd > 0 em toda a árvore; ordena por índice em `REFACAO_TAMANHOS`, extras alfabéticos ao fim; fallback: `REFACAO_TAMANHOS` inteiro.
-
-## `src/components/cop/OficinasHojeTab.tsx` (reescrito)
-
-Layout achatado: uma linha por cor. Colunas: `Oficina | COP | Modelo | Cor | <tamanhos dinâmicos> | Total`.
-
-- Supressão visual: comparar com a linha anterior; se `oficinaId/copId/modelo` iguais, deixar a célula em branco (sem `rowspan`).
-- Coluna Cor: chip com `corHex`/`corTextoSobre` (importados de `@/components/pcp/PecasPerdidasEditor`).
-- Grupo "Em corte" sempre primeiro, com badge pequeno "não enviado" em amarelo (tokens já usados no projeto). Rótulo do grupo: "Em corte".
-- Chevron apenas no nível de grupo (oficina/Em corte). Remover chevrons de COP e Modelo. Recolhido → mostra só a linha `Total <Nome>`. Expandido → linhas de cor + `Total <Nome>`.
-- Subtotal por grupo: linha `Total <Nome>` com fundo `bg-muted/60`, com valores por tamanho (via `subtotaisPorTamanho`) e total.
-- Total geral: linha final `sticky bottom-0`, fundo verde suave (`#9FE1CB`), célula do total em `#5DCAA5`, texto `#04342C`, borda superior `1.5px solid #1D9E75`. Somatórios via `totaisGeraisPorTamanho`.
-- Cabeçalho segue `sticky top-0`.
-- Densidade compacta: `text-[12.5px]`, `leading-[1.2]`, padding vertical ~4px, números `text-right tabular-nums`, células vazias com `–` em `text-muted-foreground`.
-- Manter botões Recarregar / Expandir tudo / Recolher tudo (agora agindo só nos grupos), o `useQuery` de `cops` e `oficinas`, e o canal realtime.
-- Contagem no topo: `N oficinas · N romaneios · N peças` (incluir grupo Em corte na contagem de romaneios/peças).
-
-## Layout esquemático
-
-```text
-Oficina  COP    Modelo   Cor         PP  P  M  G  GG  Total
-──────────────────────────────────────────────────────────────
-Em corte 0012A  Camiseta  Preto       –   4  6  2  –     12
-                          Branco      –   –  3  1  –      4
-                 Regata   Preto       –   2  –  –  –      2
-Total Em corte                        –   6  9  3  –     18
-──────────────────────────────────────────────────────────────
-Fabiana  0011   Camiseta  Preto       –   5 10  4  1     20
-         0013A  Camiseta  Verde       –   2  4  –  –      6
-Total Fabiana                         –   7 14  4  1     26
-──────────────────────────────────────────────────────────────
-[sticky] Total geral                  –  13 23  7  1     44
+```sql
+ALTER TABLE cops ADD COLUMN IF NOT EXISTS historico_perdas jsonb NOT NULL DEFAULT '[]'::jsonb;
 ```
 
-## Verificação
+## 2. `src/lib/cop.ts`
 
-- `bun run build` (typecheck estrito).
-- Preview: expandir/recolher grupos, conferir chip colorido, sumiço de PP quando zerado, Total geral fixo ao rolar.
+- Novo tipo `HistoricoPerda = { em, tipo: "perda", total, itens: CopPerdaLinha[] }`.
+- Adicionar `historico_perdas: HistoricoPerda[]` no `type Cop`.
+- Novo helper `getPerda(perdas, m, c, t)`.
+- Estender `todasCompletas(pecas, rec, perdas = [])` — retrocompatível — considerando `recebido + perdido ≥ qtd` por linha.
+
+## 3. `src/components/cop/RomaneioTab.tsx`
+
+**a) `salvarPerdas`**
+- Diff entre `perdas` novas e `cop.perdas` (só o que aumentou vira registro `HistoricoPerda`).
+- Append em `historico_perdas`.
+- Recalcular status com `todasCompletas(cop.pecas, cop.pecas_recebidas, perdasNovas)`:
+  - Se completo E status ∈ {`Na Oficina (Costura)`, `Romaneio Parcial`} → `Romaneio Completo`.
+  - Senão, se houver ao menos recebido/perda em alguma linha e status ∈ {`Na Oficina (Costura)`} → `Romaneio Parcial`.
+  - Nunca regredir estágios pós-completo (`Romaneio Completo`, `Aguardando Pagamento`, `Finalizado`, etc.).
+- Persistir `perdas`, `observacoes_romaneio`, `historico_perdas`, `status` num único update.
+
+**b) `handleEntregaConfirm`**
+- Passar `selected.perdas` como 3º arg em `todasCompletas(...)` (tanto no caminho completo quanto no parcial e no de partição), para o caso de já haver perda registrada.
+
+**c) Tabela "Peças do Romaneio"**
+- Novo estado visual roxo (`#9333ea` fundo, texto branco) quando `r < qtd` mas `r + perdaLinha ≥ qtd` e `perdaLinha > 0`. Texto `{r}/{qtd}` inalterado. Não mexer nos outros estados.
+
+**d) Painel "Histórico"**
+- Unificar `historico_recebimentos` + `historico_perdas` em lista única ordenada por `em` desc.
+- Nova tag `perda` (vermelho/rosa) para itens de `historico_perdas`.
+- `selectedHist` passa a aceitar união dos dois tipos; modal muda o título para "Peças perdidas" quando tipo = `perda`, mantendo a mesma tabela.
+- Renomear a seção para "Histórico".
+
+## Critério de aceite
+1. Perda que zera todas as diferenças → status vira `Romaneio Completo` automaticamente, liberando "Confirmar conferência".
+2. Cada registro de perda aparece no Histórico com tag própria, intercalado por data.
+3. Linhas fechadas por perda aparecem em roxo mantendo `recebido/total`.
+4. `cops.pecas` intacto; cálculo de pagamento inalterado.
