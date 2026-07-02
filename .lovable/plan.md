@@ -1,30 +1,22 @@
-# Ajustes: Pagamento, Perdas, Falta por Pedido e Expedição
+# Correções: Saldo Disponível (COP) + Baixas preservadas (PCP Dados In)
 
-Frontend-only. Sem migração de banco.
+Frontend-only. Sem migração, sem alterar `src/lib/cop-saldos.ts`.
 
-## 1. `src/components/cop/PagamentoOficinasTab.tsx` — Datas de Liberação e Vencimento
-- Adicionar helper local `calcVencimento(liberadoEm, feriados)` reutilizando `addDiasUteis(new Date(liberadoEm), 5, feriados)`.
-- Na tabela "COPs elegíveis": adicionar duas colunas após "Pagamento":
-  - **Liberação**: `pagamento_liberado_em` em pt-BR ou "—".
-  - **Vencimento**: data calculada em pt-BR ou "—"; se `isPagamentoAtrasado`, texto vermelho.
-  - Para status "pago", mostrar as datas (histórico) sem destaque de atraso.
-- No card de detalhe do COP selecionado (próximo à "Liberado em {data/hora}"), acrescentar "Vencimento: dd/mm/aaaa" (vermelho se atrasado).
-- Não tocar em lógica de liberação/pagamento/valores.
+## 1. `src/components/cop/DisponivelTab.tsx` — célula sempre mostra o SALDO
+- Trocar `const display = !presente ? "—" : temFalta ? \`-${falt}\` : v;` por `const display = !presente ? "—" : v;`.
+- Manter cores: vermelho quando `temFalta || v < 0`; âmbar quando `v === 0`; verde quando positivo sem falta.
+- Atualizar `title` da célula para `Produção X · Faltantes Y · Recebido Z · Perdas W`, com `perd = perdas.get(pkKey(l.modelo, l.cor, t)) ?? 0`.
 
-## 2. `src/components/cop/PerdasTab.tsx` — remover coluna Status
-- Remover `<th>Status</th>` e `<td>{cop.status}</td>` da tabela "Perdas registradas em romaneios".
-- Ajustar `colSpan` do estado vazio de 8 → 7.
+## 2. `src/components/cop/DisponivelTab.tsx` — popup do item
+- Trocar rótulo `Baixado:` por `Recebido:`.
+- Adicionar linha `Perdas: <valor>` entre Recebido e Saldo (usar `perdas.get(pkKey(popup...))`).
+- Substituir `const saldo = prod - falt - baix;` por `const saldo = disponivel.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;`.
 
-## 3. `src/components/cop/FaltaPorPedidoTab.tsx` — coluna Orçamento compacta
-- `<th>` e `<td>` do Orçamento: `w-24 max-w-[90px]`, remover `whitespace-nowrap`, usar `break-words`.
-- Número do orçamento em uma `<div>`; "Olist XXXX" (quando existir) em segunda `<div>` com `text-[10px] text-muted-foreground`.
-- Sem mudanças em rowSpan, ordenação, popups ou "Dar baixa".
-
-## 4. `src/components/pcp/ExpedicaoTab.tsx` — NF editável
-- Adicionar `const { names: nfOpcoes } = useAppList("nf")`.
-- Substituir o `ReadOnlyField` de "Nota Fiscal Emitida?" por um `Select` no mesmo slot do grid, ligado a `form.nf_emitida`.
-- Incluir `nf_emitida: form.nf_emitida ?? null` nos payloads de `handleSave` e `handleFinalizar`.
-- Manter regras de edição por perfil já existentes.
+## 3. `src/components/pcp/DadosInTab.tsx` — saves não revertem baixas
+- Em `saveVendor` e `saveProducao`: montar payload e `delete payload.pecas_solicitadas; delete payload.pecas_completadas_log;` antes de `onSave`.
+- Exceção `saveProducao`: quando `form.status_pecas === "incompleto" && tudoEnviado`, aplicar reset `pecas_solicitadas: []` **depois** do delete.
+- Em `salvarPecasSolicitadas`: mesclar `qtd_enviada` de `selected.pecas_solicitadas` (mais recente) via `Math.min(qtd, Math.max(qtd_enviada_local, qtd_enviada_selected))`.
+- Não alterar `liberarParaCompleto` nem outras abas.
 
 ## Escopo
-Somente esses 4 arquivos. Zero migração.
+Apenas `DisponivelTab.tsx` e `DadosInTab.tsx`.
