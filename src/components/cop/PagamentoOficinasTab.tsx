@@ -427,17 +427,21 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
                   <th className="p-2 text-center">Peças</th>
                   <th className="p-2 text-left">Status COP</th>
                   <th className="p-2 text-left">Pagamento</th>
+                  <th className="p-2 text-left">Liberação</th>
+                  <th className="p-2 text-left">Vencimento</th>
                   <th className="p-2 text-right">Valor</th>
                   <th className="p-2"></th>
                 </tr>
               </thead>
               <tbody>
                 {lista.length === 0 ? (
-                  <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">Nenhum COP no filtro atual.</td></tr>
+                  <tr><td colSpan={9} className="p-3 text-center text-muted-foreground">Nenhum COP no filtro atual.</td></tr>
                 ) : lista.map((c) => {
                   const ofi = oficinas.find((o) => o.id === c.oficina_id) ?? null;
                   const v = calcValor(c, ofi);
                   const atras = isPagamentoAtrasado(c, feriados);
+                  const libISO = c.pagamento_liberado_em ?? null;
+                  const vencISO = libISO ? addDiasUteis(new Date(libISO), 5, feriados) : null;
                   return (
                     <tr key={c.id} className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : ""}`} onClick={() => setSelectedId(c.id)}>
                       <td className="p-2 font-semibold tabular-nums">{rotuloCop(c.numero, c.letra)}</td>
@@ -457,6 +461,12 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
                             </span>
                           )
                           : <span className="text-muted-foreground">Não pago</span>}
+                      </td>
+                      <td className="p-2 text-xs tabular-nums">
+                        {libISO ? new Date(libISO).toLocaleDateString("pt-BR") : "—"}
+                      </td>
+                      <td className={`p-2 text-xs tabular-nums ${atras ? "text-red-600 font-semibold" : ""}`}>
+                        {vencISO ? new Date(vencISO + "T00:00:00").toLocaleDateString("pt-BR") : "—"}
                       </td>
                       <td className="p-2 text-right tabular-nums">{fmtMoney(c.pagamento_valor_calculado != null ? Number(c.pagamento_valor_calculado) : v)}</td>
                       <td className="p-2 text-right">
