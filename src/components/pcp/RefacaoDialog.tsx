@@ -34,17 +34,13 @@ interface Props {
   onConfirm: (payload: RefacaoFormPayload) => void;
 }
 
-const AREAS = ["Defeito de fabricação", "Arte", "DTF", "Silk", "Acabamento"] as const;
-type Area = typeof AREAS[number];
-
 function kindForArea(area: string): AppListKind | null {
   switch (area) {
-    case "Defeito de fabricação": return "motivo_perda";
     case "Arte": return "refacao_problema_arte";
     case "DTF": return "refacao_problema_dtf";
     case "Silk": return "refacao_problema_silk";
     case "Acabamento": return "refacao_problema_acabamento";
-    default: return null;
+    default: return "motivo_perda";
   }
 }
 
@@ -81,6 +77,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
   const kindProblema = kindForArea(areaErro);
   const { names: problemas } = useAppList((kindProblema ?? "motivo_perda") as AppListKind);
   const problemaOptions = useMemo(() => (kindProblema ? problemas : []), [kindProblema, problemas]);
+  const { names: areasIdentifica } = useAppList("refacao_area_identifica");
+  const { names: areasErro } = useAppList("refacao_area_erro");
 
   function confirmar() {
     // Novas perguntas obrigatórias (antes das existentes)
@@ -167,7 +165,9 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
               <Select value={areaIdentificou} onValueChange={setAreaIdentificou}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>
-                  {AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                  {areasIdentifica.length === 0 ? (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">Sem opções cadastradas.</div>
+                  ) : areasIdentifica.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -187,7 +187,9 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
                   <Select value={areaErro} onValueChange={(v) => { setAreaErro(v); setProblema(""); }}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
-                      {AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                      {areasErro.length === 0 ? (
+                        <div className="px-2 py-1.5 text-xs text-muted-foreground">Sem opções cadastradas.</div>
+                      ) : areasErro.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

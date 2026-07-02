@@ -862,6 +862,13 @@ function ListasTab() {
     { kind: "status_arte", title: "Status da Arte", placeholder: "Nova opção de Status da Arte" },
     { kind: "corte_dtf", title: "Quem cortou o DTF", placeholder: "Novo responsável pelo corte" },
     { kind: "revelacao_silk", title: "Quem revelou a tela (Silk)", placeholder: "Nova pessoa" },
+    { kind: "motivo_perda", title: "Motivos de perda", placeholder: "Novo motivo de perda" },
+    { kind: "refacao_area_identifica", title: "Refação — Área que identificou o problema", placeholder: "Nova área" },
+    { kind: "refacao_area_erro", title: "Refação — Área que errou a produção", placeholder: "Nova área" },
+    { kind: "refacao_problema_arte", title: "Refação — Problemas da Arte", placeholder: "Novo problema" },
+    { kind: "refacao_problema_dtf", title: "Refação — Problemas do DTF", placeholder: "Novo problema" },
+    { kind: "refacao_problema_silk", title: "Refação — Problemas do Silk", placeholder: "Novo problema" },
+    { kind: "refacao_problema_acabamento", title: "Refação — Problemas do Acabamento", placeholder: "Novo problema" },
   ];
   return (
     <div className="grid gap-6 md:grid-cols-2">
