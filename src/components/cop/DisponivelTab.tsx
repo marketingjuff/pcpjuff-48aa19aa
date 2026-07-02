@@ -78,8 +78,14 @@ export function DisponivelTab() {
           const algumNeg = REFACAO_TAMANHOS.some((t) => (disponivel.get(pkKey(modelo, cor, t)) ?? 0) < 0);
           if (!algumNeg) continue;
         }
-        const algumPresente = REFACAO_TAMANHOS.some((t) => disponivel.has(pkKey(modelo, cor, t)));
-        if (!algumPresente) continue;
+        const algumAtivo = REFACAO_TAMANHOS.some((t) => {
+          const k = pkKey(modelo, cor, t);
+          const prod = producao.get(k) ?? 0;
+          const falt = faltantes.get(k) ?? 0;
+          const baix = recebido.get(k) ?? 0;
+          return prod > 0 || falt > 0 || baix > 0;
+        });
+        if (!algumAtivo) continue;
         out.push({ cor, modelo });
       }
     }
