@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -6,8 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { tipoIncluiDTF, type PecaPerdida } from "@/lib/pedidos";
 import { PecasPerdidasEditor, pecaLinhaCompleta, somaPecas } from "./PecasPerdidasEditor";
+import { useAppList, type AppListKind } from "@/lib/app-lists";
 
 export type RefacaoFormPayload = {
   pecas_refazer: number;
@@ -15,6 +19,10 @@ export type RefacaoFormPayload = {
   perda_adesivos: number;
   motivo: string;
   pecas_perdidas: PecaPerdida[];
+  area_identificou?: string;
+  erro_producao?: boolean;
+  area_erro?: string;
+  problema?: string;
 };
 
 interface Props {
@@ -26,6 +34,20 @@ interface Props {
   onConfirm: (payload: RefacaoFormPayload) => void;
 }
 
+const AREAS = ["Defeito de fabricação", "Arte", "DTF", "Silk", "Acabamento"] as const;
+type Area = typeof AREAS[number];
+
+function kindForArea(area: string): AppListKind | null {
+  switch (area) {
+    case "Defeito de fabricação": return "motivo_perda";
+    case "Arte": return "refacao_problema_arte";
+    case "DTF": return "refacao_problema_dtf";
+    case "Silk": return "refacao_problema_silk";
+    case "Acabamento": return "refacao_problema_acabamento";
+    default: return null;
+  }
+}
+
 export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, onConfirm }: Props) {
   const mostraAdesivos = tipoIncluiDTF(tipoEstampa);
   const [pecasRefazer, setPecasRefazer] = useState<string>("");
@@ -34,6 +56,10 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
   const [houvePerdaAdesivos, setHouvePerdaAdesivos] = useState<"sim" | "nao" | "">("");
   const [perdaAdesivos, setPerdaAdesivos] = useState<string>("");
   const [motivo, setMotivo] = useState<string>("");
+  const [areaIdentificou, setAreaIdentificou] = useState<string>("");
+  const [erroProd, setErroProd] = useState<"sim" | "nao" | "">("");
+  const [areaErro, setAreaErro] = useState<string>("");
+  const [problema, setProblema] = useState<string>("");
   const [err, setErr] = useState<string>("");
 
   useEffect(() => {
@@ -44,11 +70,33 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
       setHouvePerdaAdesivos("");
       setPerdaAdesivos("");
       setMotivo("");
+      setAreaIdentificou("");
+      setErroProd("");
+      setAreaErro("");
+      setProblema("");
       setErr("");
     }
   }, [open]);
 
+  const kindProblema = kindForArea(areaErro);
+  const { names: problemas } = useAppList((kindProblema ?? "motivo_perda") as AppListKind);
+  const problemaOptions = useMemo(() => (kindProblema ? problemas : []), [kindProblema, problemas]);
+
   function confirmar() {
+    // Novas perguntas obrigatórias (antes das existentes)
+    if (!areaIdentificou) {
+      setErr("Informe qual área identificou o problema.");
+      return;
+    }
+    if (erroProd === "") {
+      setErr("Informe se houve erro da produção.");
+      return;
+    }
+    if (erroProd === "sim") {
+      if (!areaErro) { setErr("Informe qual área errou."); return; }
+      if (!problema) { setErr("Informe qual foi o problema."); return; }
+    }
+
     const nPecas = Number(pecasRefazer);
     if (!Number.isFinite(nPecas) || nPecas < 1) {
       setErr("Informe quantas peças serão refeitas (mínimo 1).");
@@ -86,22 +134,22 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
         }
       }
     }
-    if (!motivo.trim()) {
-      setErr("O motivo é obrigatório.");
-      return;
-    }
     onConfirm({
       pecas_refazer: nPecas,
       perda_pecas: nPerdaPecas,
       perda_adesivos: nPerdaAdesivos,
       motivo: motivo.trim(),
       pecas_perdidas: pecasPerdidasFinal,
+      area_identificou: areaIdentificou,
+      erro_producao: erroProd === "sim",
+      area_erro: erroProd === "sim" ? areaErro : undefined,
+      problema: erroProd === "sim" ? problema : undefined,
     });
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Refazer pedido</DialogTitle>
           <DialogDescription>
@@ -110,6 +158,54 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
         </DialogHeader>
 
         <div className="space-y-3">
+          {/* --- Identificação do problema (obrigatório) --- */}
+          <div className="rounded-md border bg-muted/20 p-3 space-y-3">
+            <div className="text-[11px] text-muted-foreground font-medium uppercase">Identificação do problema</div>
+
+            <div className="space-y-1">
+              <Label>Qual área identificou o problema? *</Label>
+              <Select value={areaIdentificou} onValueChange={setAreaIdentificou}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  {AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Houve erro da produção? *</Label>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" variant={erroProd === "sim" ? "default" : "outline"} onClick={() => setErroProd("sim")}>Sim</Button>
+                <Button type="button" size="sm" variant={erroProd === "nao" ? "default" : "outline"} onClick={() => { setErroProd("nao"); setAreaErro(""); setProblema(""); }}>Não</Button>
+              </div>
+            </div>
+
+            {erroProd === "sim" && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label>Qual área errou? *</Label>
+                  <Select value={areaErro} onValueChange={(v) => { setAreaErro(v); setProblema(""); }}>
+                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                      {AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Qual foi o problema? *</Label>
+                  <Select value={problema} onValueChange={setProblema} disabled={!areaErro}>
+                    <SelectTrigger><SelectValue placeholder={areaErro ? "Selecione..." : "Escolha a área primeiro"} /></SelectTrigger>
+                    <SelectContent>
+                      {problemaOptions.length === 0 ? (
+                        <div className="px-2 py-1.5 text-xs text-muted-foreground">Sem opções cadastradas.</div>
+                      ) : problemaOptions.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-1">
             <Label>Quantas peças serão refeitas? *</Label>
             <Input
@@ -162,12 +258,12 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
           )}
 
           <div className="space-y-1">
-            <Label>Motivo *</Label>
+            <Label>Observações da refação</Label>
             <Textarea
               rows={3}
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
-              placeholder="Descreva o motivo da refação"
+              placeholder="Descreva observações complementares (opcional)"
             />
           </div>
 
