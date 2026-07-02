@@ -301,16 +301,18 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
+function StatCard({ label, value, hint, onClick }: { label: string; value: string | number; hint?: string; onClick?: () => void }) {
   return (
-    <Card>
+    <Card className={onClick ? "cursor-pointer hover:bg-accent/40 transition-colors" : undefined} onClick={onClick}>
       <CardContent className="p-3">
         <div className="text-xs text-muted-foreground">{label}</div>
-        <div className="text-2xl font-semibold tabular-nums">{value}</div>
+        <div className="text-2xl font-semibold tabular-nums truncate" title={String(value)}>{value}</div>
+        {hint && <div className="text-[11px] text-muted-foreground mt-0.5">{hint}</div>}
       </CardContent>
     </Card>
   );
 }
+
 
 // ----------- Card do episódio (read-only + Editar) ----------
 
