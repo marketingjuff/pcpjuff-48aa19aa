@@ -1,10 +1,10 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ChevronRight, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -128,15 +128,59 @@ export function FaltaPorPedidoTab() {
     return colunasTamanhos(set);
   }, [linhas]);
 
-  type Row = LinhaFalta & { grupo: GrupoFalta; primeira: boolean; rowSpan: number };
-  const rows: Row[] = useMemo(() => {
-    const out: Row[] = [];
+  type PedidoRow = LinhaFalta & { grupo: GrupoFalta; primeira: boolean; rowSpan: number };
+  type DateGroup = {
+    key: string;
+    ancora: string | null;
+    linhas: LinhaFalta[];
+    rows: PedidoRow[];
+    subtotais: Record<string, number>;
+    total: number;
+  };
+
+  const dateGroups: DateGroup[] = useMemo(() => {
+    const map = new Map<string, LinhaFalta[]>();
     for (const l of linhas) {
-      const total = l.grupos.length;
-      l.grupos.forEach((g, i) => out.push({ ...l, grupo: g, primeira: i === 0, rowSpan: total }));
+      const k = l.ancora ?? "sem-data";
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(l);
+    }
+    const out: DateGroup[] = [];
+    for (const [k, ls] of map) {
+      const rs: PedidoRow[] = [];
+      for (const l of ls) {
+        const total = l.grupos.length;
+        l.grupos.forEach((g, i) => rs.push({ ...l, grupo: g, primeira: i === 0, rowSpan: total }));
+      }
+      const subtotais: Record<string, number> = {};
+      let total = 0;
+      for (const l of ls) {
+        for (const g of l.grupos) {
+          for (const [t, info] of g.porTamanho) {
+            subtotais[t] = (subtotais[t] ?? 0) + info.falta;
+            total += info.falta;
+          }
+        }
+      }
+      out.push({ key: k, ancora: ls[0]?.ancora ?? null, linhas: ls, rows: rs, subtotais, total });
     }
     return out;
   }, [linhas]);
+
+  const allGroupKeys = useMemo(() => dateGroups.map((g) => g.key), [dateGroups]);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      for (const k of allGroupKeys) if (!prev.has(k)) next.add(k);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allGroupKeys.join("|")]);
+  const toggle = (k: string) => setExpanded((p) => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const expandirTudo = () => setExpanded(new Set(allGroupKeys));
+  const recolherTudo = () => setExpanded(new Set());
+
 
   const [baixa, setBaixa] = useState<{ pedido: Pedido; grupo: GrupoFalta } | null>(null);
 
@@ -195,6 +239,8 @@ export function FaltaPorPedidoTab() {
             qc.invalidateQueries({ queryKey: ["pedidos-falta"] });
             qc.invalidateQueries({ queryKey: ["cops"] });
           }} title="Recarregar"><RefreshCw className="h-4 w-4" /></Button>
+          <Button variant="outline" size="sm" onClick={expandirTudo}>Expandir tudo</Button>
+          <Button variant="outline" size="sm" onClick={recolherTudo}>Recolher tudo</Button>
           <Input
             placeholder="Buscar orçamento/pedido Olist..."
             value={busca}
@@ -235,67 +281,93 @@ export function FaltaPorPedidoTab() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r, i) => {
-                const hex = corHex(r.grupo.cor); const fg = corTextoSobre(hex);
-                const atrasado = !!(r.limite && r.limite < hoje);
-                const prev = i > 0 ? rows[i - 1] : null;
-                const novaData = r.primeira && (!prev || prev.ancora !== r.ancora);
-                const trBorder = novaData ? "border-t border-muted-foreground/30" : "border-t";
+              {dateGroups.map((grp) => {
+                const isExp = expanded.has(grp.key);
+                const atrasadoGrp = !!(grp.ancora && addDiasUteis(grp.ancora, -2) < hoje);
                 return (
-                  <tr
-                    key={`${r.pedido.id}|${r.grupo.modelo}|${r.grupo.cor}`}
-                    className={`${trBorder} hover:bg-accent/40 cursor-pointer leading-none`}
-                    onClick={() => setHistorico(r.pedido)}
-                  >
-                    {r.primeira ? (
-                      <>
-                        <td className={`px-1 py-0 align-middle whitespace-nowrap text-[10px] ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
-                          {fmtBR(r.inicioEstamparia)}
-                        </td>
-                        <td className="px-1 py-0 align-middle font-mono break-words text-[10px]" rowSpan={r.rowSpan}>
-                          <div>{r.pedido.orcamento ?? "—"}</div>
-                          {(r.pedido as any).pedido_olist && (
-                            <div className="text-[9px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
-                          )}
-                        </td>
-                      </>
-                    ) : null}
-                    <td className="px-1 py-0 whitespace-nowrap">{r.grupo.modelo}</td>
-                    <td className="px-1 py-0">
-                      <span className="inline-block px-1 py-0 rounded text-[9px]" style={{ backgroundColor: hex, color: fg }}>{r.grupo.cor}</span>
-                    </td>
-                    {tamanhosColunas.map((t) => {
-                      const info = r.grupo.porTamanho.get(t);
+                  <Fragment key={grp.key}>
+                    {isExp && grp.rows.map((r) => {
+                      const hex = corHex(r.grupo.cor); const fg = corTextoSobre(hex);
+                      const atrasado = !!(r.limite && r.limite < hoje);
                       return (
-                        <td key={t} className="px-0.5 py-0 text-center tabular-nums">
-                          {info ? (
-                            <button
-                              type="button"
-                              className="text-amber-700 font-semibold hover:underline text-[10px]"
-                              onClick={(e) => { e.stopPropagation(); setPopupPeca({ modelo: r.grupo.modelo, cor: r.grupo.cor, tamanho: t }); }}
-                              title="Ver romaneios e pedidos com esta peça"
-                            >
-                              -{info.falta}
-                            </button>
-                          ) : (
-                            <span className="text-muted-foreground/40">—</span>
-                          )}
-                        </td>
+                        <tr
+                          key={`${r.pedido.id}|${r.grupo.modelo}|${r.grupo.cor}`}
+                          className="border-t hover:bg-accent/40 cursor-pointer leading-none"
+                          onClick={() => setHistorico(r.pedido)}
+                        >
+                          {r.primeira ? (
+                            <>
+                              <td className={`px-1 py-0 align-middle whitespace-nowrap text-[10px] ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
+                                {fmtBR(r.inicioEstamparia)}
+                              </td>
+                              <td className="px-1 py-0 align-middle font-mono break-words text-[10px]" rowSpan={r.rowSpan}>
+                                <div>{r.pedido.orcamento ?? "—"}</div>
+                                {(r.pedido as any).pedido_olist && (
+                                  <div className="text-[9px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
+                                )}
+                              </td>
+                            </>
+                          ) : null}
+                          <td className="px-1 py-0 whitespace-nowrap">{r.grupo.modelo}</td>
+                          <td className="px-1 py-0">
+                            <span className="inline-block px-1 py-0 rounded text-[9px]" style={{ backgroundColor: hex, color: fg }}>{r.grupo.cor}</span>
+                          </td>
+                          {tamanhosColunas.map((t) => {
+                            const info = r.grupo.porTamanho.get(t);
+                            return (
+                              <td key={t} className="px-0.5 py-0 text-center tabular-nums">
+                                {info ? (
+                                  <button
+                                    type="button"
+                                    className="text-amber-700 font-semibold hover:underline text-[10px]"
+                                    onClick={(e) => { e.stopPropagation(); setPopupPeca({ modelo: r.grupo.modelo, cor: r.grupo.cor, tamanho: t }); }}
+                                    title="Ver romaneios e pedidos com esta peça"
+                                  >
+                                    -{info.falta}
+                                  </button>
+                                ) : (
+                                  <span className="text-muted-foreground/40">—</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                          <td className="px-1 py-0 text-right tabular-nums text-amber-700 font-semibold text-[10px]">-{r.grupo.faltaTotal}</td>
+                          <td className="px-1 py-0 text-right" onClick={(e) => e.stopPropagation()}>
+                            <Button size="sm" className="h-5 px-1.5 text-[10px]" style={btnStyle("dar_baixa")} onClick={() => setBaixa({ pedido: r.pedido, grupo: r.grupo })}>
+                              Baixa
+                            </Button>
+                          </td>
+                        </tr>
                       );
                     })}
-                    <td className="px-1 py-0 text-right tabular-nums text-amber-700 font-semibold text-[10px]">-{r.grupo.faltaTotal}</td>
-                    <td className="px-1 py-0 text-right" onClick={(e) => e.stopPropagation()}>
-                      <Button size="sm" className="h-5 px-1.5 text-[10px]" style={btnStyle("dar_baixa")} onClick={() => setBaixa({ pedido: r.pedido, grupo: r.grupo })}>
-                        Baixa
-                      </Button>
-                    </td>
-                  </tr>
+                    <tr key={`sub:${grp.key}`} className="border-t bg-muted/60 font-semibold leading-none">
+                      <td className="px-1 py-0.5 text-left" colSpan={4}>
+                        <button
+                          onClick={() => toggle(grp.key)}
+                          className="inline-flex items-center gap-1 text-foreground hover:text-primary text-[10px]"
+                        >
+                          {isExp ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                          <span className={atrasadoGrp ? "text-red-700" : ""}>
+                            Total {fmtBR(grp.ancora)} · {grp.linhas.length} pedidos
+                          </span>
+                        </button>
+                      </td>
+                      {tamanhosColunas.map((t) => (
+                        <td key={t} className="px-0.5 py-0.5 text-center tabular-nums text-amber-700 text-[10px]">
+                          {grp.subtotais[t] ? `-${grp.subtotais[t]}` : "–"}
+                        </td>
+                      ))}
+                      <td className="px-1 py-0.5 text-right tabular-nums text-amber-700 text-[10px]">-{grp.total}</td>
+                      <td className="px-1 py-0.5"> </td>
+                    </tr>
+                  </Fragment>
                 );
               })}
             </tbody>
           </table>
         </div>
       )}
+
 
       {baixa && (
         <BaixaCopDialog
