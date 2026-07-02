@@ -80,10 +80,9 @@ export function DisponivelTab() {
         }
         const algumAtivo = REFACAO_TAMANHOS.some((t) => {
           const k = pkKey(modelo, cor, t);
-          const prod = producao.get(k) ?? 0;
           const falt = faltantes.get(k) ?? 0;
-          const baix = recebido.get(k) ?? 0;
-          return prod > 0 || falt > 0 || baix > 0;
+          const v = disponivel.get(k) ?? 0;
+          return falt > 0 || v > 0;
         });
         if (!algumAtivo) continue;
         out.push({ cor, modelo });
