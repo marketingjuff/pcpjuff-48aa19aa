@@ -57,6 +57,8 @@ export function calcFaltantes(pedidos: Pedido[]): Map<string, number> {
 export function calcRecebido(cops: Cop[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const c of cops) {
+    if (c.status === "Finalizado") continue;
+    if ((c as any).pagamento_status === "pago") continue;
     for (const r of c.pecas_recebidas ?? []) {
       const q = Number(r?.qtd_recebida) || 0;
       if (q <= 0) continue;
@@ -66,6 +68,7 @@ export function calcRecebido(cops: Cop[]): Map<string, number> {
   }
   return m;
 }
+
 
 /** @deprecated use calcRecebido(cops). Mantido temporariamente para compat. */
 export function calcBaixado(pedidos: Pedido[]): Map<string, number> {
@@ -90,6 +93,8 @@ export function calcBaixado(pedidos: Pedido[]): Map<string, number> {
 export function calcPerdas(cops: Cop[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const c of cops) {
+    if (c.status === "Finalizado") continue;
+    if ((c as any).pagamento_status === "pago") continue;
     for (const p of (c.perdas as any[] ?? [])) {
       const q = Number(p?.qtd) || 0;
       if (q <= 0) continue;
@@ -99,6 +104,7 @@ export function calcPerdas(cops: Cop[]): Map<string, number> {
   }
   return m;
 }
+
 
 /** Disponível = produção − faltantes − recebido − perdas (pode ser negativo). */
 export function calcDisponivel(
