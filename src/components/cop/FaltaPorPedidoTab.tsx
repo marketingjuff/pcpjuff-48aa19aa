@@ -87,6 +87,10 @@ export function FaltaPorPedidoTab() {
   const [historico, setHistorico] = useState<Pedido | null>(null);
   const [popupPeca, setPopupPeca] = useState<{ modelo: string; cor: string; tamanho: string } | null>(null);
 
+  const { widths: colW, setWidth: setColW, reset: resetColW } = useColumnWidths("falta-por-pedido", {
+    inicio: 80, orcamento: 150, modelo: 130, cor: 90, tam: 34, tot: 50, acao: 64,
+  });
+
   const linhas: LinhaFalta[] = useMemo(() => {
     const arr: LinhaFalta[] = [];
     for (const p of pedidos) {
