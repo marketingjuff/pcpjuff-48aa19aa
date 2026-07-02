@@ -191,13 +191,54 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
         <StatCard label="Peças refeitas" value={stats.totalRefeitas} />
         <StatCard label="Peças perdidas" value={stats.totalPerdaPecas} />
         <StatCard label="Adesivos perdidos" value={stats.totalPerdaAdesivos} />
         <StatCard label="% Retrabalho" value={`${stats.pct.toFixed(1)}%`} />
-        <StatCard label="Etapa que mais gera perda" value={stats.etapaTop} />
+        <StatCard
+          label="Problemas mais comuns"
+          value={stats.problemasRank[0]?.[0] ?? "—"}
+          onClick={stats.problemasRank.length ? () => setRankDialog({ titulo: "Ranking de problemas", entries: stats.problemasRank }) : undefined}
+        />
+        <StatCard
+          label="Área que mais identifica"
+          value={stats.areasIdRank[0]?.[0] ?? "—"}
+          onClick={stats.areasIdRank.length ? () => setRankDialog({ titulo: "Áreas que identificam refação", entries: stats.areasIdRank }) : undefined}
+        />
+        <StatCard label="Refações em aberto" value={stats.abertas} />
+        <StatCard label="Reincidência (pedidos ≥2)" value={stats.reincidencia} />
+        <StatCard label="Tempo médio de resolução" value={stats.tempoMedio == null ? "—" : `${stats.tempoMedio.toFixed(1)} d`} />
+        <StatCard
+          label="Peças perdidas no mês"
+          value={stats.perdaMes}
+          hint={`${stats.deltaPerdaMes >= 0 ? "+" : ""}${stats.deltaPerdaMes} vs mês anterior`}
+        />
+        <StatCard label="Problema recorrente (30d)" value={stats.problemaRecorrenteMes} />
       </div>
+
+      <Dialog open={!!rankDialog} onOpenChange={(o) => !o && setRankDialog(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{rankDialog?.titulo}</DialogTitle>
+            <DialogDescription>Distribuição por ocorrências</DialogDescription>
+          </DialogHeader>
+          {rankDialog && (
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={rankDialog.entries.map(([name, value]) => ({ name, value }))} layout="vertical" margin={{ left: 24, right: 24 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" allowDecimals={false} />
+                  <YAxis type="category" dataKey="name" width={140} />
+                  <RTooltip />
+                  <Bar dataKey="value" fill="hsl(var(--primary))" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
 
       <Card>
         <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
