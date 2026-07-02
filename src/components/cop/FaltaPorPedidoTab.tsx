@@ -17,6 +17,7 @@ import { dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
 import { BaixaCopDialog, type ItemFalta } from "./BaixaCopDialog";
 import { FaltaPecaPopup } from "./FaltaPecaPopup";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
+import { ResizableTh, useColumnWidths } from "./ResizableTh";
 
 type GrupoFalta = {
   modelo: string;
