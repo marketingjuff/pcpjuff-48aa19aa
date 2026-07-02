@@ -303,15 +303,19 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       form.status_pecas === "incompleto" && tudoEnviado
         ? { pecas_solicitadas: [] as any }
         : {};
-    onSave({
+    const payload: any = {
       ...form,
       saida_juff: saidaJuffCalc ?? form.saida_juff ?? null,
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
       inicio_acabamento: isLisa ? (form.inicio_acabamento ?? null) : (inicioAcabamentoCalc ?? form.inicio_acabamento ?? null),
       ...wipe,
-      ...resetPecas,
-    });
+    };
+    delete payload.pecas_solicitadas;
+    delete payload.pecas_completadas_log;
+    Object.assign(payload, resetPecas);
+    onSave(payload);
   }
+
 
   /**
    * Quando há episódio de refação aberto com destino "dados", salvar o Input
