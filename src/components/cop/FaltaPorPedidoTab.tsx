@@ -231,20 +231,19 @@ export function FaltaPorPedidoTab() {
                 const atrasado = !!(r.limite && r.limite < hoje);
                 const prev = i > 0 ? rows[i - 1] : null;
                 const novaData = r.primeira && (!prev || prev.ancora !== r.ancora);
-                const trBorder = novaData ? "border-t-4 border-muted-foreground/40" : "border-t";
-                const trPad = novaData ? "pt-1" : "";
+                const trBorder = novaData ? "border-t border-muted-foreground/30" : "border-t";
                 return (
                   <tr
                     key={`${r.pedido.id}|${r.grupo.modelo}|${r.grupo.cor}`}
-                    className={`${trBorder} ${trPad} hover:bg-accent/40 cursor-pointer leading-tight`}
+                    className={`${trBorder} hover:bg-accent/40 cursor-pointer leading-none`}
                     onClick={() => setHistorico(r.pedido)}
                   >
                     {r.primeira ? (
                       <>
-                        <td className={`px-2 py-0.5 align-middle whitespace-nowrap ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
+                        <td className={`px-2 py-0 align-middle whitespace-nowrap ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
                           {fmtBR(r.inicioEstamparia)}
                         </td>
-                        <td className="px-2 py-0.5 align-middle font-mono w-36 max-w-[170px] break-words" rowSpan={r.rowSpan}>
+                        <td className="px-2 py-0 align-middle font-mono w-36 max-w-[170px] break-words" rowSpan={r.rowSpan}>
                           <div>{r.pedido.orcamento ?? "—"}</div>
                           {(r.pedido as any).pedido_olist && (
                             <div className="text-[10px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
@@ -252,14 +251,14 @@ export function FaltaPorPedidoTab() {
                         </td>
                       </>
                     ) : null}
-                    <td className="px-2 py-0.5 whitespace-nowrap">{r.grupo.modelo}</td>
-                    <td className="px-2 py-0.5">
+                    <td className="px-2 py-0 whitespace-nowrap">{r.grupo.modelo}</td>
+                    <td className="px-2 py-0">
                       <span className="inline-block px-1.5 py-0 rounded text-[10px]" style={{ backgroundColor: hex, color: fg }}>{r.grupo.cor}</span>
                     </td>
                     {tamanhosColunas.map((t) => {
                       const info = r.grupo.porTamanho.get(t);
                       return (
-                        <td key={t} className="px-2 py-0.5 text-center tabular-nums">
+                        <td key={t} className="px-2 py-0 text-center tabular-nums">
                           {info ? (
                             <button
                               type="button"
@@ -275,8 +274,8 @@ export function FaltaPorPedidoTab() {
                         </td>
                       );
                     })}
-                    <td className="px-2 py-0.5 text-right tabular-nums text-amber-700 font-semibold">-{r.grupo.faltaTotal}</td>
-                    <td className="px-2 py-0.5 text-right" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-2 py-0 text-right tabular-nums text-amber-700 font-semibold">-{r.grupo.faltaTotal}</td>
+                    <td className="px-2 py-0 text-right" onClick={(e) => e.stopPropagation()}>
                       <Button size="sm" className="h-6 px-2 text-[11px]" style={btnStyle("dar_baixa")} onClick={() => setBaixa({ pedido: r.pedido, grupo: r.grupo })}>
                         Dar baixa
                       </Button>
