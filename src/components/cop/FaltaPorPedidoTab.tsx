@@ -231,12 +231,11 @@ export function FaltaPorPedidoTab() {
                 const atrasado = !!(r.limite && r.limite < hoje);
                 const prev = i > 0 ? rows[i - 1] : null;
                 const novaData = r.primeira && (!prev || prev.ancora !== r.ancora);
-                const trBorder = novaData ? "border-t-4 border-muted-foreground/40" : "border-t";
-                const trPad = novaData ? "pt-1" : "";
+                const trBorder = novaData ? "border-t border-muted-foreground/30" : "border-t";
                 return (
                   <tr
                     key={`${r.pedido.id}|${r.grupo.modelo}|${r.grupo.cor}`}
-                    className={`${trBorder} ${trPad} hover:bg-accent/40 cursor-pointer leading-tight`}
+                    className={`${trBorder} hover:bg-accent/40 cursor-pointer leading-none`}
                     onClick={() => setHistorico(r.pedido)}
                   >
                     {r.primeira ? (
