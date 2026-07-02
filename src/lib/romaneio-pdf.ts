@@ -43,7 +43,7 @@ function viaHtml(cop: Cop, oficina: Oficina | null, rotuloStr: string): string {
   const { linhas, colunas } = agruparModeloCor(cop.pecas ?? []);
   const ths = colunas.map((t) => `<th class="num">${esc(t)}</th>`).join("");
   const corpo = linhas.length === 0
-    ? `<tr><td colspan="${colunas.length + 3}" style="text-align:center;color:#888">Sem peças</td></tr>`
+    ? `<tr><td colspan="${colunas.length + 3}" style="text-align:center;color:#000">Sem peças</td></tr>`
     : linhas.map((l) => `<tr>
         <td>${esc(l.modelo)}</td>
         <td>${esc(l.cor)}</td>
@@ -90,30 +90,30 @@ export function abrirRomaneioParaImpressao(cop: Cop, oficina: Oficina | null, co
 <title>${esc(titulo)}</title>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; color: #111; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; color: #000; }
   @page { size: A4 portrait; margin: 8mm; }
   .page { width: 194mm; height: 281mm; display: flex; flex-direction: column; gap: 6mm; }
-  .via { border: 1px dashed #999; padding: 5mm; height: 137mm; display: flex; flex-direction: column; gap: 2.5mm; }
-  .via header { display: flex; align-items: center; gap: 6mm; border-bottom: 1px solid #ddd; padding-bottom: 2mm; }
+  .via { border: 1px dashed #000; padding: 5mm; height: 137mm; display: flex; flex-direction: column; gap: 2.5mm; }
+  .via header { display: flex; align-items: center; gap: 6mm; border-bottom: 1px solid #000; padding-bottom: 2mm; }
   .via header img { width: 16mm; height: 16mm; object-fit: cover; border-radius: 2mm; }
   .via .t1 { font-size: 13pt; font-weight: 700; }
-  .via .t2 { font-size: 13pt; color: #444; display: flex; flex-wrap: wrap; gap: 4mm; margin-top: 1mm; }
+  .via .t2 { font-size: 13pt; color: #000; display: flex; flex-wrap: wrap; gap: 4mm; margin-top: 1mm; }
   table.grid { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
-  table.grid th, table.grid td { border: 1px solid #ccc; padding: 0.8mm 1.5mm; }
-  table.grid th { background: #f3f4f6; text-align: left; font-weight: 600; }
+  table.grid th, table.grid td { border: 1px solid #000; padding: 0.8mm 1.5mm; }
+  table.grid th { text-align: left; font-weight: 600; }
   table.grid td.num, table.grid th.num { text-align: center; }
   .obs { font-size: 8.5pt; }
-  .obs .lbl { color: #555; margin-bottom: 1mm; }
+  .obs .lbl { color: #000; margin-bottom: 1mm; }
   .obs .box { white-space: pre-wrap; }
-  .ass { margin-top: auto; text-align: center; font-size: 8.5pt; color: #555; }
-  .ass .linha { border-top: 1px solid #333; margin: 0 auto; width: 70%; margin-bottom: 1mm; }
+  .ass { margin-top: auto; text-align: center; font-size: 8.5pt; color: #000; }
+  .ass .linha { border-top: 1px solid #000; margin: 0 auto; width: 70%; margin-bottom: 1mm; }
   @media print { .noprint { display: none !important; } }
 </style>
 </head><body>
-<div class="noprint" style="padding:8px 12px;background:#f6f6f6;border-bottom:1px solid #ddd;display:flex;gap:8px;align-items:center;">
+<div class="noprint" style="padding:8px 12px;background:#fff;border-bottom:1px solid #000;display:flex;gap:8px;align-items:center;">
   <strong>${esc(titulo)}.pdf</strong>
   <button onclick="window.print()" style="padding:4px 10px">Imprimir / Salvar como PDF</button>
-  <span style="color:#666;font-size:12px">Use "Salvar como PDF" no diálogo de impressão.</span>
+  <span style="color:#000;font-size:12px">Use "Salvar como PDF" no diálogo de impressão.</span>
 </div>
 <div class="page">
   ${viaHtml(cop, oficina, rotuloStr)}
