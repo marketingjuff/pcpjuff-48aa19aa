@@ -123,7 +123,7 @@ export function HistoricoPagamentosConsolidados() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
