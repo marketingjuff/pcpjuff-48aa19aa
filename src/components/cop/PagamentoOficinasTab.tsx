@@ -394,7 +394,18 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
 
             {(selected.pagamento_liberado_em || selected.pagamento_pago_em) && (
               <div className="text-xs text-muted-foreground">
-                {selected.pagamento_liberado_em && <div>Liberado em {new Date(selected.pagamento_liberado_em).toLocaleString("pt-BR")} · valor snapshot {fmtMoney(Number(selected.pagamento_valor_calculado ?? 0))}</div>}
+                {selected.pagamento_liberado_em && (() => {
+                  const venc = addDiasUteis(new Date(selected.pagamento_liberado_em), 5, feriados);
+                  return (
+                    <div>
+                      Liberado em {new Date(selected.pagamento_liberado_em).toLocaleString("pt-BR")} · valor snapshot {fmtMoney(Number(selected.pagamento_valor_calculado ?? 0))}
+                      {" · "}
+                      <span className={atrasado ? "text-red-600 font-semibold" : ""}>
+                        Vencimento: {new Date(venc + "T00:00:00").toLocaleDateString("pt-BR")}
+                      </span>
+                    </div>
+                  );
+                })()}
                 {selected.pagamento_pago_em && <div>Pago em {new Date(selected.pagamento_pago_em).toLocaleString("pt-BR")}</div>}
               </div>
             )}
