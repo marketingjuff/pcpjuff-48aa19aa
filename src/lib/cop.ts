@@ -195,6 +195,14 @@ export type HistoricoRecebimento = {
   letra?: string | null;  // letra do filho gerado, quando partição
 };
 
+/** Registro de uma perda registrada no romaneio (delta). */
+export type HistoricoPerda = {
+  em: string;              // ISO datetime
+  tipo: "perda";
+  total: number;           // total perdido nesse evento (delta)
+  itens: CopPerdaLinha[];
+};
+
 
 export type Oficina = {
   id: string;
