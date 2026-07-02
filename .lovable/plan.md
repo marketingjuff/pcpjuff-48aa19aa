@@ -1,45 +1,62 @@
-## Mudanças COP — Pagamento, Motivo de Perda e Navegação
 
-### 1. Pagamento: admin-only + botão "Editar"
-Em `src/components/cop/PagamentoOficinasTab.tsx`:
-- **"Marcar como Pago"** passa a aparecer só para **admin** (hoje aparece para qualquer gestor COP).
-- Enquanto o COP estiver em `pagamento_status = "liberado"`, exibir novo botão laranja **"Editar (voltar para Romaneio Completo)"** disponível para gestor COP ou admin. Ao clicar:
-  - Zera `pagamento_status → "nao_pago"`, `pagamento_liberado_em → null`, `pagamento_liberado_por → null`, `observacoes_pagamento → null`.
-  - Não muda o status do COP (continua "Aguardando Pagamento"/"Romaneio Completo" conforme o fluxo atual do romaneio).
-- Novo botão **"← Voltar ao Romaneio"** que troca de aba mantendo o mesmo COP selecionado (via prop `onChangeTab` já usada em outras abas).
-- Importar `Undo2` e `ArrowLeft` de `lucide-react`.
+# Pagamento Consolidado por Oficina (COP)
 
-Nota: mantemos os três status atuais (`nao_pago`, `liberado`, `pago`). O documento cita "aguardando_pagamento" mas a própria nota final confirma que se mantém `liberado`.
+Implementação aditiva no módulo COP, aba Pagamentos. Não altera fluxo individual existente, não toca em PCP nem em `src/lib/cop-saldos.ts`.
 
-### 2. Motivo da perda
-- Expandir tipo `CopPerdaLinha` em `src/lib/cop.ts` com `motivo?: string | null`.
-- Em `src/components/cop/RegistrarPerdaDialog.tsx`:
-  - Estado `vals` passa a guardar `{ qtd, motivo }` por linha.
-  - Nova coluna **Motivo** na tabela com `Select` mostrando os motivos configurados (fallback: "Defeito do tecido", "Tecido desfiado", "Erro de costura").
-  - `confirmar()` inclui `motivo` no payload.
-- `formatPerdasResumo` e histórico continuam funcionando (motivo é opcional).
-- Em `src/components/cop/PerdasTab.tsx`, adicionar coluna Motivo na listagem de perdas do romaneio.
+## 1. Migração SQL (aditiva)
 
-### 3. Configurações COP — lista de Motivos de Perda
-- Migration: expandir `CHECK` de `app_lists.kind` para incluir `'motivo_perda'` e semear os 3 motivos padrão.
-- `src/lib/cop.ts`: helpers `MOTIVOS_PERDA_PADRAO()` e `getMotivosPerdaFromList()`.
-- Em `src/components/cop/CopConfigPanel.tsx` (já existe, hoje cuida de oficinas): adicionar seção **"Motivos de Perda"** com input + botão adicionar e lista com remover. Gestor COP e admin podem editar (mesmo perfil que já edita oficinas).
-- `RegistrarPerdaDialog` carrega os motivos via `useAppList("motivo_perda")`.
+- `CREATE TABLE IF NOT EXISTS public.pagamentos_consolidados` (id, oficina_id FK, detalhes jsonb, valor_total numeric, observacao, pago_por, pago_em, created_at).
+- `GRANT SELECT, INSERT, UPDATE, DELETE ... TO authenticated` + `GRANT ALL TO service_role` na nova tabela (regra de grants em `public`).
+- `ENABLE ROW LEVEL SECURITY` + policy `SELECT` para admin ou gestor com área COP. Sem policy de INSERT/UPDATE/DELETE (escrita só via RPC SECURITY DEFINER).
+- `ALTER TABLE public.cops ADD COLUMN IF NOT EXISTS pagamento_consolidado_id uuid`.
+- `CREATE OR REPLACE FUNCTION public.pagar_consolidado_oficina(_oficina_id uuid, _cop_ids uuid[], _observacao text) RETURNS uuid` (SECURITY DEFINER):
+  - Rejeita se caller não é admin.
+  - Valida que todos os COP ids pertencem à oficina e estão `pagamento_status = 'liberado'`.
+  - Monta snapshot `detalhes` com `pagamento_valor_calculado` e soma.
+  - Insere linha em `pagamentos_consolidados`.
+  - `UPDATE cops SET pagamento_status='pago', pagamento_pago_em=now(), pagamento_pago_por=auth.uid(), pagamento_consolidado_id=_novo_id, status='Finalizado'`.
+  - `REVOKE ... FROM public; GRANT EXECUTE TO authenticated`.
+- Nenhum DROP / TRUNCATE / DELETE. Não altera `liberar_pagamento_cop` nem `marcar_pagamento_cop`.
 
-### 4. Voltar ao Romaneio
-Já coberto no item 1 (botão + prop `onChangeTab`). O container `/cop` já propaga `selectedId` entre abas via search params, então basta trocar `tab` mantendo o `copId`.
+## 2. Tipos (`src/lib/cop.ts`, aditivo)
 
-### Detalhes técnicos
-- Nenhuma alteração em `src/lib/cop-saldos.ts`.
-- Nenhuma alteração de RLS além do CHECK constraint de `app_lists`.
-- Realtime já está ativo em `app_lists` no CopConfigPanel existente; reaproveitar.
+- Adicionar `pagamento_consolidado_id: string | null` ao tipo `Cop`.
+- Adicionar tipo `PagamentoConsolidado` refletindo a nova tabela.
 
-### Arquivos alterados
-- `src/lib/cop.ts` (tipo + helpers)
-- `src/components/cop/RegistrarPerdaDialog.tsx`
-- `src/components/cop/PagamentoOficinasTab.tsx`
-- `src/components/cop/PerdasTab.tsx` (coluna motivo)
-- `src/components/cop/CopConfigPanel.tsx` (seção motivos)
-- Migration SQL: constraint + seed em `app_lists`
+## 3. Novos componentes
 
-Confirma para eu implementar?
+### `src/components/cop/PagamentoConsolidadoCard.tsx` (somente admin)
+- Query dos COPs `pagamento_status = 'liberado'` agrupados por oficina.
+- Select de oficinas com contagem e soma: `OFICINA X (3 liberados · R$ 1.250,00)`.
+- Lista de COPs liberados dessa oficina: checkbox (pré-marcados), `rotuloCop`, data de liberação (pt-BR), badge "Atrasado" reusando `isPagamentoAtrasado` (extraída de `PagamentoOficinasTab.tsx` para um util compartilhado, sem alterar comportamento), valor = `pagamento_valor_calculado`.
+- Total dinâmico em `fmtMoney`.
+- Textarea observação (uppercase).
+- Botão "Pagar selecionados (Admin)" → AlertDialog de confirmação listando COPs e total → chama RPC `pagar_consolidado_oficina`.
+- Toast + `invalidateQueries(["cops"])` e histórico consolidado.
+
+### `src/components/cop/HistoricoPagamentosConsolidados.tsx` (admin + gestor COP)
+- Query últimos 50 `pagamentos_consolidados` ordem `pago_em desc`, com botão "Carregar mais".
+- Tabela: Data · Oficina · Qtd COPs · Valor total · Observação · Pago por (nome via `useProfilesMap`).
+- Linhas expansíveis mostrando `detalhes` (rótulo + valor por COP).
+
+## 4. Alteração mínima em `PagamentoOficinasTab.tsx`
+
+- Importar e renderizar `PagamentoConsolidadoCard` (topo) e `HistoricoPagamentosConsolidados` (rodapé).
+- Se necessário, exportar `isPagamentoAtrasado` do arquivo para reuso — sem mudar sua lógica.
+- Nenhuma outra alteração no fluxo individual.
+
+## Detalhes técnicos
+
+- Guarda de admin: `useIsAdmin()` de `src/hooks/use-role.ts`.
+- Cliente Supabase: `@/integrations/supabase/client`.
+- Chamada RPC: `supabase.rpc('pagar_consolidado_oficina', { _oficina_id, _cop_ids, _observacao })`.
+- Nomes de usuários: reutilizar `useProfilesMap` (já usado no projeto).
+- Sem mudanças em `cop-saldos.ts`, RLS existentes, ou fluxo Liberar/Marcar/Editar/Apagar.
+
+## Critérios de aceite
+
+- Admin seleciona oficina com N liberados, desmarca alguns, confirma → selecionados viram Pago/Finalizado, desmarcados permanecem Liberados.
+- Registro criado em `pagamentos_consolidados` aparece no histórico expansível.
+- Gestor COP vê histórico, não vê card de pagamento.
+- Fluxo individual intacto.
+- Migração 100% aditiva.

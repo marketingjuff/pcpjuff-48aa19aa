@@ -24,6 +24,8 @@ import { useIsAdmin, useHasRole, useCanAccessCop } from "@/hooks/use-role";
 import { useFeriados } from "@/hooks/use-feriados";
 import { addDiasUteis } from "@/lib/dias-uteis";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+import { PagamentoConsolidadoCard } from "@/components/cop/PagamentoConsolidadoCard";
+import { HistoricoPagamentosConsolidados } from "@/components/cop/HistoricoPagamentosConsolidados";
 
 function fmtMoney(n: number) {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -60,7 +62,7 @@ function calcValor(cop: Cop, oficina: Oficina | null): number {
   return Math.max(0, pecas + fretes);
 }
 
-function isPagamentoAtrasado(cop: Cop, feriados: Set<string>): boolean {
+export function isPagamentoAtrasado(cop: Cop, feriados: Set<string>): boolean {
   if (cop.pagamento_status !== "liberado" || !cop.pagamento_liberado_em) return false;
   const limiteISO = addDiasUteis(new Date(cop.pagamento_liberado_em), 5, feriados);
   const hojeISO = new Date().toISOString().slice(0, 10);
@@ -400,6 +402,8 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
         </Card>
       )}
 
+      <PagamentoConsolidadoCard />
+
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">COPs elegíveis para pagamento</CardTitle></CardHeader>
         <CardContent>
@@ -476,6 +480,8 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <HistoricoPagamentosConsolidados />
     </div>
   );
 }
