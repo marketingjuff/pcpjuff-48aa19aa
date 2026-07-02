@@ -209,7 +209,18 @@ export function FaltaPorPedidoTab() {
         <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhum pedido com peças faltantes.</CardContent></Card>
       ) : (
         <div className="rounded-md border overflow-x-auto">
-          <table className="text-xs w-full" style={{ borderCollapse: "collapse" }}>
+          <table className="text-xs" style={{ borderCollapse: "collapse", tableLayout: "fixed", minWidth: "100%" }}>
+            <colgroup>
+              <col style={{ width: 72 }} />
+              <col style={{ width: 210 }} />
+              <col style={{ width: 100 }} />
+              <col style={{ width: 70 }} />
+              {tamanhosColunas.map((t) => (
+                <col key={t} style={{ width: 48 }} />
+              ))}
+              <col style={{ width: 44 }} />
+              <col style={{ width: 52 }} />
+            </colgroup>
             <thead className="bg-muted/40 text-[10px]">
               <tr>
                 <th className="px-1 py-1 text-left whitespace-nowrap">Início Est.</th>
