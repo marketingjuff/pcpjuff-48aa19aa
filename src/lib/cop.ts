@@ -99,6 +99,7 @@ export type Cop = {
   pagamento_pago_por: string | null;
   pagamento_valor_calculado: number | null;
   observacoes_pagamento: string | null;
+  pagamento_consolidado_id: string | null;
   historico_recebimentos: HistoricoRecebimento[];
   historico_perdas: HistoricoPerda[];
   perdas: CopPerdaLinha[];
@@ -107,6 +108,26 @@ export type Cop = {
   updated_at: string;
   created_by: string | null;
   updated_by: string | null;
+};
+
+/** Item de detalhe salvo no jsonb `pagamentos_consolidados.detalhes`. */
+export type PagamentoConsolidadoDetalhe = {
+  cop_id: string;
+  numero: number;
+  letra: string | null;
+  valor: number;
+};
+
+/** Registro da tabela `pagamentos_consolidados`. */
+export type PagamentoConsolidado = {
+  id: string;
+  oficina_id: string;
+  detalhes: PagamentoConsolidadoDetalhe[];
+  valor_total: number;
+  observacao: string | null;
+  pago_por: string;
+  pago_em: string;
+  created_at: string;
 };
 
 /** Perda registrada por linha (modelo|cor|tamanho), salva em cops.perdas. */
