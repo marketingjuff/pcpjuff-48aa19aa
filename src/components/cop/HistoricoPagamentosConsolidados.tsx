@@ -86,8 +86,8 @@ export function HistoricoPagamentosConsolidados() {
                 const aberto = expandidos.has(r.id);
                 const detalhes = Array.isArray(r.detalhes) ? r.detalhes : [];
                 return (
-                  <>
-                    <tr key={r.id} className="border-t cursor-pointer hover:bg-accent/40" onClick={() => toggle(r.id)}>
+                  <Fragment key={r.id}>
+                    <tr className="border-t cursor-pointer hover:bg-accent/40" onClick={() => toggle(r.id)}>
                       <td className="p-2 text-center">
                         {aberto ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                       </td>
