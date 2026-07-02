@@ -697,43 +697,56 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                   </div>
 
                   {/* Histórico de chegadas */}
-                  {(selected.historico_recebimentos?.length ?? 0) > 0 && (
-                    <div className="rounded-md border p-2">
-                      <div className="text-xs font-semibold mb-1">Histórico de chegadas</div>
-                      <ul className="space-y-1 text-xs">
-                        {selected.historico_recebimentos!.slice().reverse().map((h, i) => (
-                          <li
-                            key={i}
-                            className="flex justify-between gap-2 cursor-pointer hover:bg-accent/40 rounded px-1 py-0.5 transition-colors"
-                            onClick={() => setSelectedHist(h)}
-                            title="Clique para ver as peças entregues"
-                          >
-                            <span>
-                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] mr-1 ${h.tipo === "completo" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>
-                                {h.tipo}
+                  {(() => {
+                    const chegadas = (selected.historico_recebimentos ?? []).map((h) => ({ ...h, _kind: "recebimento" as const }));
+                    const perdas = (selected.historico_perdas ?? []).map((h) => ({ ...h, _kind: "perda" as const }));
+                    const unificado = [...chegadas, ...perdas].sort((a, b) => (a.em < b.em ? 1 : -1));
+                    if (unificado.length === 0) return null;
+                    const badge = (h: HistoricoRecebimento | HistoricoPerda) => {
+                      if (h.tipo === "completo") return "bg-green-100 text-green-800";
+                      if (h.tipo === "parcial") return "bg-amber-100 text-amber-800";
+                      return "bg-purple-100 text-purple-800";
+                    };
+                    return (
+                      <div className="rounded-md border p-2">
+                        <div className="text-xs font-semibold mb-1">Histórico</div>
+                        <ul className="space-y-1 text-xs">
+                          {unificado.map((h, i) => (
+                            <li
+                              key={i}
+                              className="flex justify-between gap-2 cursor-pointer hover:bg-accent/40 rounded px-1 py-0.5 transition-colors"
+                              onClick={() => setSelectedHist(h)}
+                              title="Clique para ver o detalhe"
+                            >
+                              <span>
+                                <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] mr-1 ${badge(h)}`}>
+                                  {h.tipo}
+                                </span>
+                                {new Date(h.em).toLocaleString("pt-BR")}
+                                {h._kind === "recebimento" && h.letra && <> · letra <b>{h.letra}</b></>}
                               </span>
-                              {new Date(h.em).toLocaleString("pt-BR")}
-                              {h.letra && <> · letra <b>{h.letra}</b></>}
-                            </span>
-                            <span className="tabular-nums font-semibold">{h.total}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                              <span className={`tabular-nums font-semibold ${h._kind === "perda" ? "text-purple-700" : ""}`}>
+                                {h._kind === "perda" ? "−" : ""}{h.total}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })()}
 
                   <Dialog open={!!selectedHist} onOpenChange={(o) => !o && setSelectedHist(null)}>
                     <DialogContent className="max-w-lg">
                       <DialogHeader>
-                        <DialogTitle>Peças entregues</DialogTitle>
+                        <DialogTitle>{selectedHist?.tipo === "perda" ? "Perdas registradas" : "Peças entregues"}</DialogTitle>
                         <DialogDescription>
                           {selectedHist && (
                             <span>
                               {new Date(selectedHist.em).toLocaleString("pt-BR")} — {" "}
-                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] ${selectedHist.tipo === "completo" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>
+                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] ${selectedHist.tipo === "completo" ? "bg-green-100 text-green-800" : selectedHist.tipo === "parcial" ? "bg-amber-100 text-amber-800" : "bg-purple-100 text-purple-800"}`}>
                                 {selectedHist.tipo}
                               </span>
-                              {selectedHist.letra && <> · letra <b>{selectedHist.letra}</b></>}
+                              {selectedHist.tipo !== "perda" && (selectedHist as HistoricoRecebimento).letra && <> · letra <b>{(selectedHist as HistoricoRecebimento).letra}</b></>}
                             </span>
                           )}
                         </DialogDescription>
@@ -750,12 +763,14 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                               </tr>
                             </thead>
                             <tbody>
-                              {selectedHist.itens.map((item, idx) => (
+                              {selectedHist.itens.map((item: any, idx: number) => (
                                 <tr key={idx} className="border-t">
                                   <td className="p-2">{item.modelo}</td>
                                   <td className="p-2">{item.cor}</td>
                                   <td className="p-2">{item.tamanho}</td>
-                                  <td className="p-2 text-right tabular-nums font-semibold">{item.qtd_recebida}</td>
+                                  <td className={`p-2 text-right tabular-nums font-semibold ${selectedHist.tipo === "perda" ? "text-purple-700" : ""}`}>
+                                    {selectedHist.tipo === "perda" ? item.qtd : item.qtd_recebida}
+                                  </td>
                                 </tr>
                               ))}
                               {selectedHist.itens.length === 0 && (
@@ -765,7 +780,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                             <tfoot>
                               <tr className="bg-muted/30">
                                 <td className="p-2 text-right" colSpan={3}><b>Total</b></td>
-                                <td className="p-2 text-right tabular-nums"><b>{selectedHist.total}</b></td>
+                                <td className={`p-2 text-right tabular-nums ${selectedHist.tipo === "perda" ? "text-purple-700" : ""}`}><b>{selectedHist.tipo === "perda" ? "−" : ""}{selectedHist.total}</b></td>
                               </tr>
                             </tfoot>
                           </table>
@@ -773,6 +788,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                       )}
                     </DialogContent>
                   </Dialog>
+
 
                   {selected.status === "Romaneio Completo" && (
                     selected.conferido_em ? (
