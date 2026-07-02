@@ -302,8 +302,19 @@ function EpisodioCard({
         </div>
       </div>
 
+      <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-sm pt-2 border-t">
+        <ReadField label="Identificado por" value={episodio.area_identificou ?? "—"} />
+        <ReadField label="Erro da produção" value={typeof episodio.erro_producao === "boolean" ? (episodio.erro_producao ? "Sim" : "Não") : "—"} />
+        {episodio.erro_producao && (
+          <>
+            <ReadField label="Área que errou" value={episodio.area_erro ?? "—"} />
+            <ReadField label="Problema" value={episodio.problema ?? "—"} />
+          </>
+        )}
+      </div>
+
       <div>
-        <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Motivo</div>
+        <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Observações</div>
         <div className="text-sm whitespace-pre-wrap">{episodio.motivo || "—"}</div>
       </div>
 
