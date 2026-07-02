@@ -1,0 +1,1 @@
+ALTER TABLE public.cops ADD COLUMN IF NOT EXISTS historico_perdas jsonb NOT NULL DEFAULT '[]'::jsonb;
