@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   ETAPA_DESTINO_LABEL,
+  episodioAberto,
   tipoIncluiDTF,
   totalProducao,
   type Pedido,
@@ -12,8 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { ChevronDown, ChevronRight, Trash2, Save, Pencil, X } from "lucide-react";
 import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, CartesianGrid,
+} from "recharts";
 
 interface Props {
   pedidos: Pedido[];
@@ -101,25 +108,66 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
     let totalPerdaPecas = 0;
     let totalPerdaAdesivos = 0;
     let totalProduzidas = 0;
-    const porEtapa: Record<string, number> = {};
+    const problemaCount: Record<string, number> = {};
+    const areaIdCount: Record<string, number> = {};
+    let abertas = 0;
+    const episodiosPorPedido: Record<string, number> = {};
+    const duracoesDias: number[] = [];
+    const now = new Date();
+    const mesAtual = now.getMonth();
+    const anoAtual = now.getFullYear();
+    const mesPassado = new Date(anoAtual, mesAtual - 1, 1);
+    let perdaMes = 0;
+    let perdaMesAnt = 0;
+    const problemaUlt30: Record<string, number> = {};
+    const cutoff30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
     pedidos.forEach((p) => {
       totalProduzidas += totalProducao(p).total;
-      (p.refacoes ?? []).forEach((e) => {
+      const refs = p.refacoes ?? [];
+      if (refs.length > 0) episodiosPorPedido[p.id] = refs.length;
+      refs.forEach((e) => {
         totalRefeitas += Number(e.pecas_refazer ?? 0);
         totalPerdaPecas += Number(e.perda_pecas ?? 0);
         totalPerdaAdesivos += Number(e.perda_adesivos ?? 0);
-        const k = fmtEtapa(e.etapa_origem);
-        porEtapa[k] = (porEtapa[k] ?? 0) + Number(e.perda_pecas ?? 0) + Number(e.perda_adesivos ?? 0);
+        if (e.problema) problemaCount[e.problema] = (problemaCount[e.problema] ?? 0) + 1;
+        if (e.area_identificou) areaIdCount[e.area_identificou] = (areaIdCount[e.area_identificou] ?? 0) + 1;
+        if (e.aberto) abertas += 1;
+        if (!e.aberto && e.data && (e as any).fechado_em) {
+          const t0 = new Date(e.data).getTime();
+          const t1 = new Date((e as any).fechado_em as string).getTime();
+          if (Number.isFinite(t0) && Number.isFinite(t1) && t1 >= t0) {
+            duracoesDias.push((t1 - t0) / (1000 * 60 * 60 * 24));
+          }
+        }
+        const dtAb = e.data ? new Date(e.data) : null;
+        if (dtAb && !Number.isNaN(dtAb.getTime())) {
+          if (dtAb.getMonth() === mesAtual && dtAb.getFullYear() === anoAtual) {
+            perdaMes += Number(e.perda_pecas ?? 0);
+          } else if (dtAb.getMonth() === mesPassado.getMonth() && dtAb.getFullYear() === mesPassado.getFullYear()) {
+            perdaMesAnt += Number(e.perda_pecas ?? 0);
+          }
+          if (dtAb >= cutoff30 && e.problema) {
+            problemaUlt30[e.problema] = (problemaUlt30[e.problema] ?? 0) + 1;
+          }
+        }
       });
     });
     const pct = totalProduzidas > 0 ? (totalRefeitas / totalProduzidas) * 100 : 0;
-    let etapaTop = "—";
-    let maxV = 0;
-    Object.entries(porEtapa).forEach(([k, v]) => {
-      if (v > maxV) { maxV = v; etapaTop = k; }
-    });
-    return { totalRefeitas, totalPerdaPecas, totalPerdaAdesivos, pct, etapaTop };
+    const problemasRank = Object.entries(problemaCount).sort((a, b) => b[1] - a[1]);
+    const areasIdRank = Object.entries(areaIdCount).sort((a, b) => b[1] - a[1]);
+    const reincidencia = Object.values(episodiosPorPedido).filter((n) => n >= 2).length;
+    const tempoMedio = duracoesDias.length > 0 ? duracoesDias.reduce((a, b) => a + b, 0) / duracoesDias.length : null;
+    const deltaPerdaMes = perdaMes - perdaMesAnt;
+    const problemaRecorrenteMes = Object.entries(problemaUlt30).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
+    return {
+      totalRefeitas, totalPerdaPecas, totalPerdaAdesivos, pct,
+      problemasRank, areasIdRank, abertas, reincidencia, tempoMedio,
+      perdaMes, deltaPerdaMes, problemaRecorrenteMes,
+    };
   }, [pedidos]);
+
+  const [rankDialog, setRankDialog] = useState<null | { titulo: string; entries: [string, number][] }>(null);
 
   function toggleExpand(id: string) {
     setExpanded((prev) => {
@@ -143,13 +191,54 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
         <StatCard label="Peças refeitas" value={stats.totalRefeitas} />
         <StatCard label="Peças perdidas" value={stats.totalPerdaPecas} />
         <StatCard label="Adesivos perdidos" value={stats.totalPerdaAdesivos} />
         <StatCard label="% Retrabalho" value={`${stats.pct.toFixed(1)}%`} />
-        <StatCard label="Etapa que mais gera perda" value={stats.etapaTop} />
+        <StatCard
+          label="Problemas mais comuns"
+          value={stats.problemasRank[0]?.[0] ?? "—"}
+          onClick={stats.problemasRank.length ? () => setRankDialog({ titulo: "Ranking de problemas", entries: stats.problemasRank }) : undefined}
+        />
+        <StatCard
+          label="Área que mais identifica"
+          value={stats.areasIdRank[0]?.[0] ?? "—"}
+          onClick={stats.areasIdRank.length ? () => setRankDialog({ titulo: "Áreas que identificam refação", entries: stats.areasIdRank }) : undefined}
+        />
+        <StatCard label="Refações em aberto" value={stats.abertas} />
+        <StatCard label="Reincidência (pedidos ≥2)" value={stats.reincidencia} />
+        <StatCard label="Tempo médio de resolução" value={stats.tempoMedio == null ? "—" : `${stats.tempoMedio.toFixed(1)} d`} />
+        <StatCard
+          label="Peças perdidas no mês"
+          value={stats.perdaMes}
+          hint={`${stats.deltaPerdaMes >= 0 ? "+" : ""}${stats.deltaPerdaMes} vs mês anterior`}
+        />
+        <StatCard label="Problema recorrente (30d)" value={stats.problemaRecorrenteMes} />
       </div>
+
+      <Dialog open={!!rankDialog} onOpenChange={(o) => !o && setRankDialog(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{rankDialog?.titulo}</DialogTitle>
+            <DialogDescription>Distribuição por ocorrências</DialogDescription>
+          </DialogHeader>
+          {rankDialog && (
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={rankDialog.entries.map(([name, value]) => ({ name, value }))} layout="vertical" margin={{ left: 24, right: 24 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" allowDecimals={false} />
+                  <YAxis type="category" dataKey="name" width={140} />
+                  <RTooltip />
+                  <Bar dataKey="value" fill="hsl(var(--primary))" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
 
       <Card>
         <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
@@ -212,16 +301,18 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
+function StatCard({ label, value, hint, onClick }: { label: string; value: string | number; hint?: string; onClick?: () => void }) {
   return (
-    <Card>
+    <Card className={onClick ? "cursor-pointer hover:bg-accent/40 transition-colors" : undefined} onClick={onClick}>
       <CardContent className="p-3">
         <div className="text-xs text-muted-foreground">{label}</div>
-        <div className="text-2xl font-semibold tabular-nums">{value}</div>
+        <div className="text-2xl font-semibold tabular-nums truncate" title={String(value)}>{value}</div>
+        {hint && <div className="text-[11px] text-muted-foreground mt-0.5">{hint}</div>}
       </CardContent>
     </Card>
   );
 }
+
 
 // ----------- Card do episódio (read-only + Editar) ----------
 
@@ -302,8 +393,19 @@ function EpisodioCard({
         </div>
       </div>
 
+      <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-sm pt-2 border-t">
+        <ReadField label="Identificado por" value={episodio.area_identificou ?? "—"} />
+        <ReadField label="Erro da produção" value={typeof episodio.erro_producao === "boolean" ? (episodio.erro_producao ? "Sim" : "Não") : "—"} />
+        {episodio.erro_producao && (
+          <>
+            <ReadField label="Área que errou" value={episodio.area_erro ?? "—"} />
+            <ReadField label="Problema" value={episodio.problema ?? "—"} />
+          </>
+        )}
+      </div>
+
       <div>
-        <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Motivo</div>
+        <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Observações</div>
         <div className="text-sm whitespace-pre-wrap">{episodio.motivo || "—"}</div>
       </div>
 
@@ -555,7 +657,7 @@ function EpisodioEditor({
         </Field>
       </div>
       <div>
-        <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Motivo</div>
+        <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Observações</div>
         <div className="text-sm whitespace-pre-wrap rounded-md border bg-background px-3 py-2">{local.motivo || "—"}</div>
       </div>
 
