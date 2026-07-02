@@ -120,16 +120,21 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
 
   const stats = useMemo(() => {
     const ativos = pedidos.filter((p) => pedidoAtivoNasAreas(p));
+    const naoFinalizados = pedidos.filter((p) => !p.finalizado_em);
     return {
       total: ativos.length,
-      atrasados: ativos.filter((p) => statusPrazo(p) === "atrasado").length,
+      atrasados: naoFinalizados.filter((p) => {
+        if (!p.saida_juff) return false;
+        const dias = diasUteisAteHoje(p.saida_juff, feriados);
+        return dias !== null && dias <= 0;
+      }).length,
       arte: pedidos.filter((p) => matchEtapaFiltro(p, "arte")).length,
       dtf: pedidos.filter((p) => matchEtapaFiltro(p, "dtf") && visivelEmDTF(p)).length,
       silk: pedidos.filter((p) => matchEtapaFiltro(p, "silk") && visivelEmSilk(p)).length,
       acabamento: pedidos.filter((p) => matchEtapaFiltro(p, "acabamento")).length,
       expedicao: pedidos.filter((p) => matchEtapaFiltro(p, "expedicao")).length,
     };
-  }, [pedidos]);
+  }, [pedidos, feriados]);
 
 
   /** Cor de fundo da linha — baseada em saida_juff e dias úteis. */
