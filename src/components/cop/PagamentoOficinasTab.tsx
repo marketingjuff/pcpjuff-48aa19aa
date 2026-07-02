@@ -185,6 +185,24 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
     onError: (e: any) => toast.error(e.message ?? "Erro."),
   });
 
+  const editarPagamento = useMutation({
+    mutationFn: async () => {
+      if (!selected) return;
+      const novoStatus = selected.status === "Aguardando Pagamento" ? "Romaneio Completo" : selected.status;
+      const { error } = await supabase.from("cops" as any).update({
+        pagamento_status: "nao_pago",
+        pagamento_liberado_em: null,
+        pagamento_liberado_por: null,
+        pagamento_valor_calculado: null,
+        observacoes_pagamento: null,
+        status: novoStatus,
+      } as any).eq("id", selected.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Pagamento editado. Volta para Romaneio Completo."); qc.invalidateQueries({ queryKey: ["cops"] }); },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao editar pagamento."),
+  });
+
   const [confirmApagar, setConfirmApagar] = useState(false);
   const apagarPagamento = useMutation({
     mutationFn: async () => {
