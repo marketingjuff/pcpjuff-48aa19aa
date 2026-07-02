@@ -169,6 +169,7 @@ export function DisponivelTab() {
                       const prod = producao.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const falt = faltantes.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const baix = recebido.get(pkKey(l.modelo, l.cor, t)) ?? 0;
+                      const perd = perdas.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const presente = prod > 0 || falt > 0 || baix > 0;
                       const temFalta = presente && falt > 0;
                       const color = !presente ? "text-muted-foreground"
@@ -176,7 +177,7 @@ export function DisponivelTab() {
                                   : v < 0 ? "text-red-700 font-bold"
                                   : v === 0 ? "text-amber-700 font-semibold"
                                   : "text-green-700 font-semibold";
-                      const display = !presente ? "—" : temFalta ? `-${falt}` : v;
+                      const display = !presente ? "—" : v;
                       return (
                         <td key={t} className="p-1 text-center">
                           <button
@@ -184,12 +185,13 @@ export function DisponivelTab() {
                             className={`w-full rounded px-2 py-0.5 tabular-nums hover:bg-accent/60 ${color}`}
                             onClick={() => presente && setPopup({ modelo: l.modelo, cor: l.cor, tamanho: t })}
                             disabled={!presente}
-                            title={presente ? `Produção ${prod} · Faltantes ${falt} · Baixado ${baix}` : "Sem registro"}
+                            title={presente ? `Produção ${prod} · Faltantes ${falt} · Recebido ${baix} · Perdas ${perd}` : "Sem registro"}
                           >
                             {display}
                           </button>
                         </td>
                       );
+
                     })}
                     <td className="p-1" />
                   </tr>
@@ -229,15 +231,18 @@ export function DisponivelTab() {
                 const prod = producao.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
                 const falt = faltantes.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
                 const baix = recebido.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
-                const saldo = prod - falt - baix;
+                const perd = perdas.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
+                const saldo = disponivel.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
                 return (
                   <>
                     <div className="text-xs flex gap-4">
                       <span>Produção: <b className="tabular-nums text-green-700">{prod}</b></span>
                       <span>Faltantes: <b className={`tabular-nums ${falt > 0 ? "text-red-700 font-bold" : ""}`}>{falt > 0 ? `-${falt}` : 0}</b></span>
-                      <span>Baixado: <b className="tabular-nums text-blue-700">{baix}</b></span>
+                      <span>Recebido: <b className="tabular-nums text-blue-700">{baix}</b></span>
+                      <span>Perdas: <b className={`tabular-nums ${perd > 0 ? "text-red-700" : ""}`}>{perd}</b></span>
                       <span>Saldo: <b className={`tabular-nums ${saldo < 0 ? "text-red-700" : "text-green-700"}`}>{saldo}</b></span>
                     </div>
+
                     <div className="rounded-md border overflow-x-auto max-h-[55vh]">
                       <table className="w-full text-sm">
                         <thead className="bg-muted/40 text-xs sticky top-0">
