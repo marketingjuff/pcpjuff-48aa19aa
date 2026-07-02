@@ -245,7 +245,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
 
   async function handleEntregaConfirm(rec: CopPecaRecebida[]) {
     if (!selected) return;
-    const completo = todasCompletas(selected.pecas || [], rec);
+    const completo = todasCompletas(selected.pecas || [], rec, selected.perdas ?? []);
     const algum = rec.some((r) => r.qtd_recebida > 0);
     const novoStatus: CopStatus =
       completo ? "Romaneio Completo" : algum ? "Romaneio Parcial" : "Na Oficina (Costura)";
