@@ -34,17 +34,13 @@ interface Props {
   onConfirm: (payload: RefacaoFormPayload) => void;
 }
 
-const AREAS = ["Defeito de fabricação", "Arte", "DTF", "Silk", "Acabamento"] as const;
-type Area = typeof AREAS[number];
-
 function kindForArea(area: string): AppListKind | null {
   switch (area) {
-    case "Defeito de fabricação": return "motivo_perda";
     case "Arte": return "refacao_problema_arte";
     case "DTF": return "refacao_problema_dtf";
     case "Silk": return "refacao_problema_silk";
     case "Acabamento": return "refacao_problema_acabamento";
-    default: return null;
+    default: return "motivo_perda";
   }
 }
 
