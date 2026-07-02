@@ -24,6 +24,8 @@ import { useIsAdmin, useHasRole, useCanAccessCop } from "@/hooks/use-role";
 import { useFeriados } from "@/hooks/use-feriados";
 import { addDiasUteis } from "@/lib/dias-uteis";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+import { PagamentoConsolidadoCard } from "@/components/cop/PagamentoConsolidadoCard";
+import { HistoricoPagamentosConsolidados } from "@/components/cop/HistoricoPagamentosConsolidados";
 
 function fmtMoney(n: number) {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
