@@ -100,6 +100,7 @@ export type Cop = {
   pagamento_valor_calculado: number | null;
   observacoes_pagamento: string | null;
   historico_recebimentos: HistoricoRecebimento[];
+  historico_perdas: HistoricoPerda[];
   perdas: CopPerdaLinha[];
   corte_em_correcao: boolean;
   created_at: string;
