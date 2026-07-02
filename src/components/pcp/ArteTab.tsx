@@ -110,9 +110,26 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
     }
     const pick = <K extends keyof Pedido>(k: K) =>
       (form[k] !== undefined ? form[k] : (selected as any)[k]) ?? null;
+
+    // Auto: se após salvar ambos os lados aplicáveis estiverem prontos,
+    // marca "Arte Finalizada" automaticamente (campo é apenas informativo).
+    const merged: Pedido = { ...(selected as Pedido), ...(form as any) };
+    const inclDTF = tipoIncluiDTF(selected.tipo_estampa);
+    const inclSilk = tipoIncluiSilk(selected.tipo_estampa);
+    const dtfOk = !inclDTF || (
+      (!selected.necessita_vetorizacao || ["Sim","Não","Não se aplica"].includes(String(merged.vetorizacao_dtf ?? ""))) &&
+      merged.dtf_impresso === "Sim" && !!merged.dtf_executado &&
+      merged.dtf_cortado === "Sim" && !!merged.dtf_cortado_data
+    );
+    const silkOk = !inclSilk || (
+      (!selected.necessita_vetorizacao || ["Sim","Não","Não se aplica"].includes(String(merged.vetorizacao_silk ?? ""))) &&
+      merged.fotolito_impresso === "Sim" && !!merged.fotolito_executado
+    );
+    const statusArteFinal = (dtfOk && silkOk) ? "Arte Finalizada" : pick("status_arte");
+
     onSave({
       id: selected.id,
-      status_arte: pick("status_arte"),
+      status_arte: statusArteFinal,
       dtf_impresso: pick("dtf_impresso"),
       dtf_executado: pick("dtf_executado"),
       dtf_cortado: pick("dtf_cortado"),

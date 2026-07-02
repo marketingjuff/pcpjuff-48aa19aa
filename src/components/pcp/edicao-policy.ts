@@ -12,25 +12,15 @@ export function canEditArte(p: Pedido | null | undefined): boolean {
   if (p.finalizado_em) return false;
   if (p.tipo_estampa === "Lisa") return false;
 
-  // Enquanto ainda faltar concluir algum lado de arte do tipo de estampa,
-  // a aba Arte continua editável para o operador, mesmo se status_arte já
-  // tiver sido marcado como "Arte Finalizada" no meio do processo.
-  const temArtePendente =
-    (tipoIncluiDTF(p.tipo_estampa) && !ladoDtfPronto(p)) ||
-    (tipoIncluiSilk(p.tipo_estampa) && !ladoSilkPronto(p));
-  if (temArtePendente) return true;
-
-  // Mantém também a liberação por etapa exibida, para cobrir variantes e
-  // pedidos antigos cujo cálculo de campos ainda aponte visualmente para Arte.
-  const etapa = etapaAtualSemAsterisco(p);
-  if (
-    etapa === "Aguardando Arte" ||
-    etapa === "DTF Liberado / Silk na Arte" ||
-    etapa === "Silk Liberado / DTF na Arte"
-  ) {
-    return true;
-  }
-  return p.status_arte !== "Arte Finalizada";
+  // A trava da Arte é definida exclusivamente pela conclusão dos campos de
+  // execução (impressão/corte de DTF e fotolito). O campo "Anotações"
+  // (status_arte) é apenas informativo e NUNCA bloqueia a edição.
+  // Em pedidos combinados (Silk + DTF), a arte só é travada quando AMBOS
+  // os lados aplicáveis estiverem prontos.
+  const dtfPendente = tipoIncluiDTF(p.tipo_estampa) && !ladoDtfPronto(p);
+  const silkPendente = tipoIncluiSilk(p.tipo_estampa) && !ladoSilkPronto(p);
+  if (dtfPendente || silkPendente) return true;
+  return false;
 }
 
 export function canEditDTF(p: Pedido | null | undefined): boolean {
