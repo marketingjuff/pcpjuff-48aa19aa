@@ -255,7 +255,7 @@ export function FaltaPorPedidoTab() {
         <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhum pedido com peças faltantes.</CardContent></Card>
       ) : (
         <div className="rounded-md border overflow-x-auto">
-          <table className="text-xs" style={{ borderCollapse: "collapse", tableLayout: "fixed", minWidth: "100%" }}>
+          <table className="text-sm" style={{ borderCollapse: "collapse", tableLayout: "fixed", minWidth: "100%" }}>
             <colgroup>
               <col style={{ width: 72 }} />
               <col style={{ width: 210 }} />
@@ -267,17 +267,17 @@ export function FaltaPorPedidoTab() {
               <col style={{ width: 44 }} />
               <col style={{ width: 52 }} />
             </colgroup>
-            <thead className="bg-muted/40 text-[10px]">
+            <thead className="bg-muted/40 text-xs">
               <tr>
-                <th className="px-1 py-1 text-left whitespace-nowrap">Início Est.</th>
-                <th className="px-1 py-1 text-left whitespace-nowrap">Orçamento</th>
-                <th className="px-1 py-1 text-left whitespace-nowrap">Modelo</th>
-                <th className="px-1 py-1 text-left whitespace-nowrap">Cor</th>
+                <th className="px-1 py-2 text-left whitespace-nowrap">Início Est.</th>
+                <th className="px-1 py-2 text-left whitespace-nowrap">Orçamento</th>
+                <th className="px-1 py-2 text-left whitespace-nowrap">Modelo</th>
+                <th className="px-1 py-2 text-left whitespace-nowrap">Cor</th>
                 {tamanhosColunas.map((t) => (
-                  <th key={t} className="px-0.5 py-1 text-center whitespace-nowrap">{t}</th>
+                  <th key={t} className="px-1 py-2 text-center whitespace-nowrap">{t}</th>
                 ))}
-                <th className="px-1 py-1 text-right whitespace-nowrap">Tot.</th>
-                <th className="px-1 py-1 whitespace-nowrap"> </th>
+                <th className="px-1 py-2 text-right whitespace-nowrap">Tot.</th>
+                <th className="px-1 py-2 whitespace-nowrap"> </th>
               </tr>
             </thead>
             <tbody>
@@ -292,34 +292,34 @@ export function FaltaPorPedidoTab() {
                       return (
                         <tr
                           key={`${r.pedido.id}|${r.grupo.modelo}|${r.grupo.cor}`}
-                          className="border-t hover:bg-accent/40 cursor-pointer leading-none"
+                          className="border-t hover:bg-accent/40 cursor-pointer leading-tight"
                           onClick={() => setHistorico(r.pedido)}
                         >
                           {r.primeira ? (
                             <>
-                              <td className={`px-1 py-0 align-middle whitespace-nowrap text-[10px] ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
+                              <td className={`px-1 py-1 align-middle whitespace-nowrap text-xs ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
                                 {fmtBR(r.inicioEstamparia)}
                               </td>
-                              <td className="px-1 py-0 align-middle font-mono break-words text-[10px]" rowSpan={r.rowSpan}>
+                              <td className="px-1 py-1 align-middle font-mono break-words text-xs" rowSpan={r.rowSpan}>
                                 <div>{r.pedido.orcamento ?? "—"}</div>
                                 {(r.pedido as any).pedido_olist && (
-                                  <div className="text-[9px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
+                                  <div className="text-[10px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
                                 )}
                               </td>
                             </>
                           ) : null}
-                          <td className="px-1 py-0 whitespace-nowrap">{r.grupo.modelo}</td>
-                          <td className="px-1 py-0">
-                            <span className="inline-block px-1 py-0 rounded text-[9px]" style={{ backgroundColor: hex, color: fg }}>{r.grupo.cor}</span>
+                          <td className="px-1 py-1 whitespace-nowrap">{r.grupo.modelo}</td>
+                          <td className="px-1 py-1">
+                            <span className="inline-block px-1 py-0 rounded text-[10px]" style={{ backgroundColor: hex, color: fg }}>{r.grupo.cor}</span>
                           </td>
                           {tamanhosColunas.map((t) => {
                             const info = r.grupo.porTamanho.get(t);
                             return (
-                              <td key={t} className="px-0.5 py-0 text-center tabular-nums">
+                              <td key={t} className="px-1 py-1 text-center tabular-nums">
                                 {info ? (
                                   <button
                                     type="button"
-                                    className="text-amber-700 font-semibold hover:underline text-[10px]"
+                                    className="text-amber-700 font-semibold hover:underline text-xs"
                                     onClick={(e) => { e.stopPropagation(); setPopupPeca({ modelo: r.grupo.modelo, cor: r.grupo.cor, tamanho: t }); }}
                                     title="Ver romaneios e pedidos com esta peça"
                                   >
@@ -331,34 +331,34 @@ export function FaltaPorPedidoTab() {
                               </td>
                             );
                           })}
-                          <td className="px-1 py-0 text-right tabular-nums text-amber-700 font-semibold text-[10px]">-{r.grupo.faltaTotal}</td>
+                          <td className="px-1 py-1 text-right tabular-nums text-amber-700 font-semibold text-xs">-{r.grupo.faltaTotal}</td>
                           <td className="px-1 py-0 text-right" onClick={(e) => e.stopPropagation()}>
-                            <Button size="sm" className="h-5 px-1.5 text-[10px]" style={btnStyle("dar_baixa")} onClick={() => setBaixa({ pedido: r.pedido, grupo: r.grupo })}>
+                            <Button size="sm" className="h-6 px-2 text-xs" style={btnStyle("dar_baixa")} onClick={() => setBaixa({ pedido: r.pedido, grupo: r.grupo })}>
                               Baixa
                             </Button>
                           </td>
                         </tr>
                       );
                     })}
-                    <tr key={`sub:${grp.key}`} className="border-t bg-muted/60 font-semibold leading-none">
-                      <td className="px-1 py-0.5 text-left" colSpan={4}>
+                    <tr key={`sub:${grp.key}`} className="border-t bg-muted/60 font-semibold leading-tight">
+                      <td className="px-1 py-1.5 text-left" colSpan={4}>
                         <button
                           onClick={() => toggle(grp.key)}
-                          className="inline-flex items-center gap-1 text-foreground hover:text-primary text-[10px]"
+                          className="inline-flex items-center gap-1 text-foreground hover:text-primary text-xs"
                         >
-                          {isExp ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                          {isExp ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                           <span className={atrasadoGrp ? "text-red-700" : ""}>
                             Total {fmtBR(grp.ancora)} · {grp.linhas.length} pedidos
                           </span>
                         </button>
                       </td>
                       {tamanhosColunas.map((t) => (
-                        <td key={t} className="px-0.5 py-0.5 text-center tabular-nums text-amber-700 text-[10px]">
+                        <td key={t} className="px-1 py-1.5 text-center tabular-nums text-amber-700 text-xs">
                           {grp.subtotais[t] ? `-${grp.subtotais[t]}` : "–"}
                         </td>
                       ))}
-                      <td className="px-1 py-0.5 text-right tabular-nums text-amber-700 text-[10px]">-{grp.total}</td>
-                      <td className="px-1 py-0.5"> </td>
+                      <td className="px-1 py-1.5 text-right tabular-nums text-amber-700 text-xs">-{grp.total}</td>
+                      <td className="px-1 py-1.5"> </td>
                     </tr>
                   </Fragment>
                 );
