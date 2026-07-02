@@ -212,7 +212,12 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               <ReadOnlyField label="Data da entrega" value={formatDateBR(selected.data_entrega)} />
               <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
               <ReadOnlyField label="Forma de pagamento" value={selected.forma_pagamento ?? "—"} />
-              <ReadOnlyField label="Nota Fiscal Emitida?" value={selected.nf_emitida ?? "—"} />
+              <FormField label="Nota Fiscal Emitida?">
+                <Select value={form.nf_emitida ?? ""} onValueChange={(v) => set("nf_emitida", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectContent>{nfOpcoes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                </Select>
+              </FormField>
             </div>
 
             {(() => {
