@@ -211,13 +211,13 @@ export function FaltaPorPedidoTab() {
         <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhum pedido com peças faltantes.</CardContent></Card>
       ) : (
         <div className="rounded-md border overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-auto text-xs" style={{ tableLayout: "auto" }}>
             <thead className="bg-muted/40 text-[10px]">
               <tr>
                 <th className="px-1 py-1 text-left whitespace-nowrap">Início Est.</th>
-                <th className="px-1 py-1 text-left w-32 max-w-[150px]">Orçamento</th>
-                <th className="px-1 py-1 text-left">Modelo</th>
-                <th className="px-1 py-1 text-left w-12">Cor</th>
+                <th className="px-1 py-1 text-left w-[150px]">Orçamento</th>
+                <th className="px-1 py-1 text-left whitespace-nowrap">Modelo</th>
+                <th className="px-1 py-1 text-left whitespace-nowrap">Cor</th>
                 {tamanhosColunas.map((t) => (
                   <th key={t} className="px-0.5 py-1 text-center w-8">{t}</th>
                 ))}
