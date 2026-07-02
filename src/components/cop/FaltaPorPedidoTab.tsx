@@ -360,7 +360,7 @@ export function FaltaPorPedidoTab() {
                       <td className="px-1 py-0.5 text-right tabular-nums text-amber-700 text-[10px]">-{grp.total}</td>
                       <td className="px-1 py-0.5"> </td>
                     </tr>
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
