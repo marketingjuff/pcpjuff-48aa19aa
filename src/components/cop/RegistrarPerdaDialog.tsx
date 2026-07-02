@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { CopPeca, CopPerdaLinha } from "@/lib/cop";
+import { MOTIVOS_PERDA_PADRAO } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+import { useAppList } from "@/lib/app-lists";
 
 type Props = {
   open: boolean;
@@ -14,41 +17,66 @@ type Props = {
   disabled?: boolean;
 };
 
+const SEM_MOTIVO = "__sem__";
+
 export function RegistrarPerdaDialog({ open, onOpenChange, pecas, perdas, onConfirm, disabled }: Props) {
   const key = (m: string, c: string, t: string) => `${m}|${c}|${t}`;
-  const [vals, setVals] = useState<Record<string, number>>({});
+  const [vals, setVals] = useState<Record<string, { qtd: number; motivo?: string }>>({});
+  const { names: motivosDb } = useAppList("motivo_perda");
+  const motivos = motivosDb.length > 0 ? motivosDb : MOTIVOS_PERDA_PADRAO;
 
   useEffect(() => {
     if (!open) return;
-    const init: Record<string, number> = {};
-    for (const p of perdas ?? []) init[key(p.modelo, p.cor, p.tamanho)] = Number(p.qtd) || 0;
+    const init: Record<string, { qtd: number; motivo?: string }> = {};
+    for (const p of perdas ?? []) {
+      const q = Number(p.qtd) || 0;
+      if (q > 0) init[key(p.modelo, p.cor, p.tamanho)] = { qtd: q, motivo: p.motivo ?? undefined };
+    }
     setVals(init);
   }, [open]); // eslint-disable-line
 
-  const total = useMemo(() => Object.values(vals).reduce((a, b) => a + (Number(b) || 0), 0), [vals]);
+  const total = useMemo(() => Object.values(vals).reduce((a, b) => a + (Number(b.qtd) || 0), 0), [vals]);
 
   function setQ(p: CopPeca, q: number) {
     const max = Number(p.qtd) || 0;
     const v = Math.max(0, Math.min(max, Math.floor(Number(q) || 0)));
-    setVals((s) => ({ ...s, [key(p.modelo, p.cor, p.tamanho)]: v }));
+    const k = key(p.modelo, p.cor, p.tamanho);
+    setVals((s) => {
+      const next = { ...s };
+      if (v === 0) delete next[k];
+      else next[k] = { qtd: v, motivo: s[k]?.motivo };
+      return next;
+    });
+  }
+
+  function setMotivo(p: CopPeca, motivo: string) {
+    const k = key(p.modelo, p.cor, p.tamanho);
+    const m = motivo === SEM_MOTIVO ? undefined : motivo;
+    setVals((s) => {
+      const cur = s[k];
+      if (!cur) return s;
+      return { ...s, [k]: { ...cur, motivo: m } };
+    });
   }
 
   function confirmar() {
     const out: CopPerdaLinha[] = [];
     for (const p of pecas) {
-      const q = vals[key(p.modelo, p.cor, p.tamanho)] || 0;
-      if (q > 0) out.push({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: q });
+      const data = vals[key(p.modelo, p.cor, p.tamanho)];
+      if (data && data.qtd > 0) {
+        out.push({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: data.qtd, motivo: data.motivo ?? null });
+      }
     }
     onConfirm(out);
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Registrar perdas do romaneio</DialogTitle>
           <DialogDescription>
-            Digite a quantidade perdida por linha. A peça perdida não é paga e sai do saldo Disponível.
+            Digite a quantidade perdida por linha e escolha um motivo. A peça perdida não é paga e sai do saldo Disponível.
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-md border overflow-x-auto max-h-[55vh]">
@@ -60,14 +88,17 @@ export function RegistrarPerdaDialog({ open, onOpenChange, pecas, perdas, onConf
                 <th className="p-2 text-center">Tam.</th>
                 <th className="p-2 text-right">Qtd</th>
                 <th className="p-2 text-right">Perda</th>
+                <th className="p-2 text-left">Motivo</th>
               </tr>
             </thead>
             <tbody>
               {pecas.length === 0 ? (
-                <tr><td colSpan={5} className="p-3 text-center text-muted-foreground">Sem peças.</td></tr>
+                <tr><td colSpan={6} className="p-3 text-center text-muted-foreground">Sem peças.</td></tr>
               ) : pecas.map((p, i) => {
                 const hex = corHex(p.cor); const fg = corTextoSobre(hex);
-                const v = vals[key(p.modelo, p.cor, p.tamanho)] ?? 0;
+                const k = key(p.modelo, p.cor, p.tamanho);
+                const cur = vals[k];
+                const v = cur?.qtd ?? 0;
                 return (
                   <tr key={i} className="border-t">
                     <td className="p-2">{p.modelo}</td>
@@ -83,6 +114,23 @@ export function RegistrarPerdaDialog({ open, onOpenChange, pecas, perdas, onConf
                         disabled={disabled}
                       />
                     </td>
+                    <td className="p-2">
+                      <Select
+                        value={cur?.motivo ?? SEM_MOTIVO}
+                        onValueChange={(m) => setMotivo(p, m)}
+                        disabled={disabled || v === 0}
+                      >
+                        <SelectTrigger className="h-7 w-40">
+                          <SelectValue placeholder="—" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={SEM_MOTIVO}>—</SelectItem>
+                          {motivos.map((m) => (
+                            <SelectItem key={m} value={m}>{m}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
                   </tr>
                 );
               })}
@@ -91,6 +139,7 @@ export function RegistrarPerdaDialog({ open, onOpenChange, pecas, perdas, onConf
               <tr>
                 <td colSpan={4} className="p-2 text-right"><b>Total de perdas</b></td>
                 <td className="p-2 text-right tabular-nums"><b>{total}</b></td>
+                <td></td>
               </tr>
             </tfoot>
           </table>

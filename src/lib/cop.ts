@@ -115,7 +115,15 @@ export type CopPerdaLinha = {
   cor: string;
   tamanho: string;
   qtd: number;
+  motivo?: string | null;
 };
+
+/** Motivos de perda padrão (fallback quando app_lists não tem entradas). */
+export const MOTIVOS_PERDA_PADRAO: string[] = [
+  "Defeito do tecido",
+  "Tecido desfiado",
+  "Erro de costura",
+];
 
 /** Resume perdas em uma string maiúscula. Ex: "PERDAS: 2 CAMISETA PRETA M, 1 REGATA AZUL G". */
 export function formatPerdasResumo(perdas: CopPerdaLinha[] | null | undefined): string {

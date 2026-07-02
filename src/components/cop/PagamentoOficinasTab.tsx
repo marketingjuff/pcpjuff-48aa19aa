@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Check, X, Trash2, AlertTriangle } from "lucide-react";
+import { RefreshCw, Check, X, Trash2, AlertTriangle, Undo2, ArrowLeft } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -69,7 +69,7 @@ function isPagamentoAtrasado(cop: Cop, feriados: Set<string>): boolean {
 
 const STATUS_ELEGIVEIS = ["Romaneio Completo", "Aguardando Pagamento", "Finalizado"];
 
-export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selectedId?: string | null; onSelect?: (id: string | null) => void } = {}) {
+export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab }: { selectedId?: string | null; onSelect?: (id: string | null) => void; onChangeTab?: (tab: string) => void } = {}) {
   const setSelectedId = (id: string | null) => onSelect?.(id);
   const qc = useQueryClient();
   const { btnStyle } = useCopColorSettings();
@@ -183,6 +183,24 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
     },
     onSuccess: () => { toast.success("Status de pagamento atualizado."); qc.invalidateQueries({ queryKey: ["cops"] }); },
     onError: (e: any) => toast.error(e.message ?? "Erro."),
+  });
+
+  const editarPagamento = useMutation({
+    mutationFn: async () => {
+      if (!selected) return;
+      const novoStatus = selected.status === "Aguardando Pagamento" ? "Romaneio Completo" : selected.status;
+      const { error } = await supabase.from("cops" as any).update({
+        pagamento_status: "nao_pago",
+        pagamento_liberado_em: null,
+        pagamento_liberado_por: null,
+        pagamento_valor_calculado: null,
+        observacoes_pagamento: null,
+        status: novoStatus,
+      } as any).eq("id", selected.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Pagamento editado. Volta para Romaneio Completo."); qc.invalidateQueries({ queryKey: ["cops"] }); },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao editar pagamento."),
   });
 
   const [confirmApagar, setConfirmApagar] = useState(false);
@@ -324,6 +342,11 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
             </div>
 
             <div className="flex flex-wrap items-center gap-2 justify-end">
+              {onChangeTab && (
+                <Button variant="outline" onClick={() => onChangeTab("romaneio")}>
+                  <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao Romaneio
+                </Button>
+              )}
               {selected.pagamento_status !== "pago" && (
                 <Button variant="outline" onClick={() => salvarObs.mutate()} disabled={salvarObs.isPending}>
                   Salvar
@@ -334,12 +357,23 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect }: { selected
                   <Check className="h-4 w-4 mr-1" /> Liberar pagamento (Gestor)
                 </Button>
               )}
-              {selected.pagamento_status === "liberado" && canManageCop && (
-                <Button style={btnStyle("marcar_pago")} onClick={() => marcar.mutate({ pago: true })} disabled={marcar.isPending}>
-                  <Check className="h-4 w-4 mr-1" /> Marcar como Pago
+              {selected.pagamento_status === "liberado" && (podeLiberar || isAdmin) && (
+                <Button
+                  variant="outline"
+                  className="border-orange-400 text-orange-700 hover:bg-orange-50"
+                  onClick={() => editarPagamento.mutate()}
+                  disabled={editarPagamento.isPending}
+                  title="Voltar para Romaneio Completo e limpar liberação"
+                >
+                  <Undo2 className="h-4 w-4 mr-1" /> Editar (voltar para Romaneio Completo)
                 </Button>
               )}
-              {selected.pagamento_status === "pago" && canManageCop && (
+              {selected.pagamento_status === "liberado" && isAdmin && (
+                <Button style={btnStyle("marcar_pago")} onClick={() => marcar.mutate({ pago: true })} disabled={marcar.isPending}>
+                  <Check className="h-4 w-4 mr-1" /> Marcar como Pago (Admin)
+                </Button>
+              )}
+              {selected.pagamento_status === "pago" && isAdmin && (
                 <Button variant="outline" onClick={() => marcar.mutate({ pago: false })} disabled={marcar.isPending}>
                   <X className="h-4 w-4 mr-1" /> Reverter para Liberado
                 </Button>
