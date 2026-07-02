@@ -108,25 +108,66 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
     let totalPerdaPecas = 0;
     let totalPerdaAdesivos = 0;
     let totalProduzidas = 0;
-    const porEtapa: Record<string, number> = {};
+    const problemaCount: Record<string, number> = {};
+    const areaIdCount: Record<string, number> = {};
+    let abertas = 0;
+    const episodiosPorPedido: Record<string, number> = {};
+    const duracoesDias: number[] = [];
+    const now = new Date();
+    const mesAtual = now.getMonth();
+    const anoAtual = now.getFullYear();
+    const mesPassado = new Date(anoAtual, mesAtual - 1, 1);
+    let perdaMes = 0;
+    let perdaMesAnt = 0;
+    const problemaUlt30: Record<string, number> = {};
+    const cutoff30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
     pedidos.forEach((p) => {
       totalProduzidas += totalProducao(p).total;
-      (p.refacoes ?? []).forEach((e) => {
+      const refs = p.refacoes ?? [];
+      if (refs.length > 0) episodiosPorPedido[p.id] = refs.length;
+      refs.forEach((e) => {
         totalRefeitas += Number(e.pecas_refazer ?? 0);
         totalPerdaPecas += Number(e.perda_pecas ?? 0);
         totalPerdaAdesivos += Number(e.perda_adesivos ?? 0);
-        const k = fmtEtapa(e.etapa_origem);
-        porEtapa[k] = (porEtapa[k] ?? 0) + Number(e.perda_pecas ?? 0) + Number(e.perda_adesivos ?? 0);
+        if (e.problema) problemaCount[e.problema] = (problemaCount[e.problema] ?? 0) + 1;
+        if (e.area_identificou) areaIdCount[e.area_identificou] = (areaIdCount[e.area_identificou] ?? 0) + 1;
+        if (e.aberto) abertas += 1;
+        if (!e.aberto && e.data && (e as any).fechado_em) {
+          const t0 = new Date(e.data).getTime();
+          const t1 = new Date((e as any).fechado_em as string).getTime();
+          if (Number.isFinite(t0) && Number.isFinite(t1) && t1 >= t0) {
+            duracoesDias.push((t1 - t0) / (1000 * 60 * 60 * 24));
+          }
+        }
+        const dtAb = e.data ? new Date(e.data) : null;
+        if (dtAb && !Number.isNaN(dtAb.getTime())) {
+          if (dtAb.getMonth() === mesAtual && dtAb.getFullYear() === anoAtual) {
+            perdaMes += Number(e.perda_pecas ?? 0);
+          } else if (dtAb.getMonth() === mesPassado.getMonth() && dtAb.getFullYear() === mesPassado.getFullYear()) {
+            perdaMesAnt += Number(e.perda_pecas ?? 0);
+          }
+          if (dtAb >= cutoff30 && e.problema) {
+            problemaUlt30[e.problema] = (problemaUlt30[e.problema] ?? 0) + 1;
+          }
+        }
       });
     });
     const pct = totalProduzidas > 0 ? (totalRefeitas / totalProduzidas) * 100 : 0;
-    let etapaTop = "—";
-    let maxV = 0;
-    Object.entries(porEtapa).forEach(([k, v]) => {
-      if (v > maxV) { maxV = v; etapaTop = k; }
-    });
-    return { totalRefeitas, totalPerdaPecas, totalPerdaAdesivos, pct, etapaTop };
+    const problemasRank = Object.entries(problemaCount).sort((a, b) => b[1] - a[1]);
+    const areasIdRank = Object.entries(areaIdCount).sort((a, b) => b[1] - a[1]);
+    const reincidencia = Object.values(episodiosPorPedido).filter((n) => n >= 2).length;
+    const tempoMedio = duracoesDias.length > 0 ? duracoesDias.reduce((a, b) => a + b, 0) / duracoesDias.length : null;
+    const deltaPerdaMes = perdaMes - perdaMesAnt;
+    const problemaRecorrenteMes = Object.entries(problemaUlt30).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
+    return {
+      totalRefeitas, totalPerdaPecas, totalPerdaAdesivos, pct,
+      problemasRank, areasIdRank, abertas, reincidencia, tempoMedio,
+      perdaMes, deltaPerdaMes, problemaRecorrenteMes,
+    };
   }, [pedidos]);
+
+  const [rankDialog, setRankDialog] = useState<null | { titulo: string; entries: [string, number][] }>(null);
 
   function toggleExpand(id: string) {
     setExpanded((prev) => {
