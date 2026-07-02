@@ -721,7 +721,19 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                   {/* Histórico de chegadas */}
                   {(() => {
                     const chegadas = (selected.historico_recebimentos ?? []).map((h) => ({ ...h, _kind: "recebimento" as const }));
-                    const perdas = (selected.historico_perdas ?? []).map((h) => ({ ...h, _kind: "perda" as const }));
+                    let perdas = (selected.historico_perdas ?? []).map((h) => ({ ...h, _kind: "perda" as const }));
+                    // Fallback: se há perdas registradas mas nenhum evento no histórico, mostra um resumo sintético.
+                    if (perdas.length === 0 && (selected.perdas ?? []).some((p) => (Number(p.qtd) || 0) > 0)) {
+                      const itens = (selected.perdas ?? []).filter((p) => (Number(p.qtd) || 0) > 0);
+                      const total = itens.reduce((s, p) => s + (Number(p.qtd) || 0), 0);
+                      perdas = [{
+                        em: selected.updated_at ?? selected.created_at ?? new Date().toISOString(),
+                        tipo: "perda" as const,
+                        total,
+                        itens,
+                        _kind: "perda" as const,
+                      }];
+                    }
                     const unificado = [...chegadas, ...perdas].sort((a, b) => (a.em < b.em ? 1 : -1));
                     if (unificado.length === 0) return null;
                     const badge = (h: HistoricoRecebimento | HistoricoPerda) => {
