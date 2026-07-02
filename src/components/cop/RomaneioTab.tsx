@@ -19,10 +19,10 @@ import { useCanAccessCop } from "@/hooks/use-role";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
-  type HistoricoRecebimento, type CopPerdaLinha,
+  type HistoricoRecebimento, type HistoricoPerda, type CopPerdaLinha,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, totalRecebidas,
   todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
-  getRecebida, colunasTamanhos, mesclarPerdasEmObservacoes,
+  getRecebida, getPerda, colunasTamanhos, mesclarPerdasEmObservacoes,
 } from "@/lib/cop";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
