@@ -346,7 +346,10 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
 
   async function handleConferir() {
     if (!selected) return;
-    if (selected.status !== "Romaneio Completo") return;
+    const rec = selected.pecas_recebidas ?? [];
+    const perdas = selected.perdas ?? [];
+    const completo = selected.status === "Romaneio Completo" || todasCompletas(selected.pecas || [], rec, perdas);
+    if (!completo) return;
     const { data: ses } = await supabase.auth.getUser();
     await salvar.mutateAsync({
       id: selected.id,
