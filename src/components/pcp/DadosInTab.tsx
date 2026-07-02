@@ -197,14 +197,18 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       return;
     }
     const wipe = await wipeProducaoSeRefacaoDados();
-    onSave({
+    const payload: any = {
       ...form,
       saida_juff: saidaJuffCalc ?? form.saida_juff ?? null,
       tempo_producao: tempoProducaoCalc ?? form.tempo_producao ?? null,
       inicio_acabamento: isLisa ? (form.inicio_acabamento ?? null) : (inicioAcabamentoCalc ?? form.inicio_acabamento ?? null),
       ...wipe,
-    });
+    };
+    delete payload.pecas_solicitadas;
+    delete payload.pecas_completadas_log;
+    onSave(payload);
   }
+
   async function saveProducao() {
     const missP = findMissing(PROD_REQUIRED);
     // Quando o tipo inclui Silk, Dias de Secagem é obrigatório (0 é válido).
