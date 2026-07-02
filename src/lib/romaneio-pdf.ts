@@ -1,6 +1,6 @@
 // Geração do PDF do Romaneio via janela de impressão.
 // A4 vertical com dois A5 horizontais (vias idênticas) para impressão.
-import logoJuff from "@/assets/logo-juff-preto.png.asset.json";
+import logoJuff from "@/assets/loguinhojuffpreto.png.asset.json";
 import type { Cop, CopPeca, Oficina } from "@/lib/cop";
 import { rotuloCop, totalPecasCop, numeroBaseCop, colunasTamanhos } from "@/lib/cop";
 
