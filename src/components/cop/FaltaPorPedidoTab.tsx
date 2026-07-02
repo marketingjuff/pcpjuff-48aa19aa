@@ -128,15 +128,59 @@ export function FaltaPorPedidoTab() {
     return colunasTamanhos(set);
   }, [linhas]);
 
-  type Row = LinhaFalta & { grupo: GrupoFalta; primeira: boolean; rowSpan: number };
-  const rows: Row[] = useMemo(() => {
-    const out: Row[] = [];
+  type PedidoRow = LinhaFalta & { grupo: GrupoFalta; primeira: boolean; rowSpan: number };
+  type DateGroup = {
+    key: string;
+    ancora: string | null;
+    linhas: LinhaFalta[];
+    rows: PedidoRow[];
+    subtotais: Record<string, number>;
+    total: number;
+  };
+
+  const dateGroups: DateGroup[] = useMemo(() => {
+    const map = new Map<string, LinhaFalta[]>();
     for (const l of linhas) {
-      const total = l.grupos.length;
-      l.grupos.forEach((g, i) => out.push({ ...l, grupo: g, primeira: i === 0, rowSpan: total }));
+      const k = l.ancora ?? "sem-data";
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(l);
+    }
+    const out: DateGroup[] = [];
+    for (const [k, ls] of map) {
+      const rs: PedidoRow[] = [];
+      for (const l of ls) {
+        const total = l.grupos.length;
+        l.grupos.forEach((g, i) => rs.push({ ...l, grupo: g, primeira: i === 0, rowSpan: total }));
+      }
+      const subtotais: Record<string, number> = {};
+      let total = 0;
+      for (const l of ls) {
+        for (const g of l.grupos) {
+          for (const [t, info] of g.porTamanho) {
+            subtotais[t] = (subtotais[t] ?? 0) + info.falta;
+            total += info.falta;
+          }
+        }
+      }
+      out.push({ key: k, ancora: ls[0]?.ancora ?? null, linhas: ls, rows: rs, subtotais, total });
     }
     return out;
   }, [linhas]);
+
+  const allGroupKeys = useMemo(() => dateGroups.map((g) => g.key), [dateGroups]);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      for (const k of allGroupKeys) if (!prev.has(k)) next.add(k);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allGroupKeys.join("|")]);
+  const toggle = (k: string) => setExpanded((p) => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const expandirTudo = () => setExpanded(new Set(allGroupKeys));
+  const recolherTudo = () => setExpanded(new Set());
+
 
   const [baixa, setBaixa] = useState<{ pedido: Pedido; grupo: GrupoFalta } | null>(null);
 
