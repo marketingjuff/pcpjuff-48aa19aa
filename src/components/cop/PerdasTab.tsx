@@ -197,12 +197,13 @@ export function PerdasTab() {
                   <th className="p-2 text-left">Cor</th>
                   <th className="p-2 text-center">Tam.</th>
                   <th className="p-2 text-right">Qtd</th>
+                  <th className="p-2 text-left">Motivo</th>
                   <th className="p-2 text-left">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {perdasRomaneios.length === 0 ? (
-                  <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">Sem perdas em romaneios.</td></tr>
+                  <tr><td colSpan={8} className="p-3 text-center text-muted-foreground">Sem perdas em romaneios.</td></tr>
                 ) : perdasRomaneios.map(({ key, cop, linha }) => {
                   const hex = corHex(linha.cor); const fg = corTextoSobre(hex);
                   return (
@@ -213,6 +214,7 @@ export function PerdasTab() {
                       <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{linha.cor}</span></td>
                       <td className="p-2 text-center">{linha.tamanho}</td>
                       <td className="p-2 text-right tabular-nums">{linha.qtd}</td>
+                      <td className="p-2 text-xs">{linha.motivo ?? "—"}</td>
                       <td className="p-2 text-xs">{cop.status}</td>
                     </tr>
                   );
