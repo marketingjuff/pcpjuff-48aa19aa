@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Check, Pencil } from "lucide-react";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+import { colunasTamanhos } from "@/lib/cop";
 
 export interface ItemFalta {
   idx: number;
@@ -28,6 +30,8 @@ export function BaixaCopDialog({ open, onOpenChange, modelo, cor, orcamento, ite
   const [qtds, setQtds] = useState<Record<string, number>>({});
   const [observacao, setObservacao] = useState("");
   const [saving, setSaving] = useState(false);
+  const [parcialEdit, setParcialEdit] = useState<string | null>(null);
+  const [parcialVal, setParcialVal] = useState<string>("");
 
   useEffect(() => {
     if (!open) return;
@@ -35,10 +39,33 @@ export function BaixaCopDialog({ open, onOpenChange, modelo, cor, orcamento, ite
     for (const it of itens) next[it.tamanho] = 0;
     setQtds(next);
     setObservacao("");
+    setParcialEdit(null);
+    setParcialVal("");
   }, [open, itens]);
 
+  const cols = useMemo(() => colunasTamanhos(itens.map((i) => i.tamanho)), [itens]);
+  const itensOrdenados = useMemo(
+    () => [...itens].sort((a, b) => cols.indexOf(a.tamanho) - cols.indexOf(b.tamanho)),
+    [itens, cols],
+  );
+
+  const totalFalta = useMemo(() => itens.reduce((s, i) => s + i.falta, 0), [itens]);
   const totalAbater = useMemo(() => Object.values(qtds).reduce((s, n) => s + (Number(n) || 0), 0), [qtds]);
   const hex = corHex(cor); const fg = corTextoSobre(hex);
+
+  function marcarCompleto(tam: string, falta: number) {
+    setQtds((s) => ({ ...s, [tam]: falta }));
+    setParcialEdit(null);
+  }
+  function abrirParcial(tam: string) {
+    setParcialEdit(tam);
+    setParcialVal(String(qtds[tam] || ""));
+  }
+  function salvarParcial(tam: string, max: number) {
+    const v = Math.max(0, Math.min(max, Math.floor(Number(parcialVal) || 0)));
+    setQtds((s) => ({ ...s, [tam]: v }));
+    setParcialEdit(null);
+  }
 
   async function handle() {
     const baixas = itens
@@ -52,7 +79,7 @@ export function BaixaCopDialog({ open, onOpenChange, modelo, cor, orcamento, ite
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[760px]">
+      <DialogContent className="max-w-[960px]">
         <DialogHeader>
           <DialogTitle>
             {orcamento != null && <>Orçamento <span className="font-mono">{orcamento}</span> — </>}
@@ -62,50 +89,83 @@ export function BaixaCopDialog({ open, onOpenChange, modelo, cor, orcamento, ite
         </DialogHeader>
         <div className="space-y-3 text-sm">
           <div className="text-xs text-muted-foreground">
-            Ajuste a quantidade a abater por tamanho. O sistema soma em <b>qtd_enviada</b> e grava no histórico.
-            Use o campo de observação para anotar a origem (ex: "COP 0001 e 0002" ou "misturado").
+            Clique no <b>número</b> para dar baixa <b>completa</b> da falta (bolinha verde).
+            Clique no <b>lápis</b> para informar uma quantidade <b>parcial</b> (bolinha cinza).
           </div>
 
           <div className="rounded-md border overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-xs">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/40 text-[10px]">
                 <tr>
-                  <th className="p-2 text-left">Tamanho</th>
-                  <th className="p-2 text-right">Falta</th>
-                  <th className="p-2 text-right">Abater</th>
+                  {itensOrdenados.map((it) => (
+                    <th key={it.tamanho} className="px-1 py-1 text-center w-[76px]">{it.tamanho}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {itens.map((it) => {
-                  const val = qtds[it.tamanho] ?? 0;
-                  return (
-                    <tr key={it.tamanho} className="border-t">
-                      <td className="p-2 font-medium">{it.tamanho}</td>
-                      <td className="p-2 text-right tabular-nums text-amber-700">{it.falta}</td>
-                      <td className="p-2 text-right">
-                        <Input
-                          type="number"
-                          min={0}
-                          max={it.falta}
-                          value={val}
-                          onChange={(e) => {
-                            const v = Math.max(0, Math.min(it.falta, Math.floor(Number(e.target.value) || 0)));
-                            setQtds((s) => ({ ...s, [it.tamanho]: v }));
-                          }}
-                          className="h-8 w-20 text-right ml-auto"
-                        />
+                <tr className="align-middle leading-tight">
+                  {itensOrdenados.map((it) => {
+                    const val = qtds[it.tamanho] ?? 0;
+                    const completo = val >= it.falta && it.falta > 0;
+                    const parcial = val > 0 && val < it.falta;
+                    const restante = it.falta - val;
+                    const bolaCor = completo ? "#16a34a" : parcial ? "#9ca3af" : "transparent";
+                    const numCor = (completo || parcial) ? "#ffffff" : "#111827";
+                    const numBg = (completo || parcial) ? bolaCor : "#f3f4f6";
+                    return (
+                      <td key={it.tamanho} className="px-1 py-2 text-center">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => marcarCompleto(it.tamanho, it.falta)}
+                            title="Baixar tudo"
+                            className="rounded-full w-10 h-10 flex items-center justify-center font-semibold tabular-nums text-[13px] border"
+                            style={{ backgroundColor: numBg, color: numCor, borderColor: completo ? "#15803d" : parcial ? "#6b7280" : "#d1d5db" }}
+                          >
+                            {restante}
+                          </button>
+                          {(completo || parcial) && (
+                            <div className="text-[10px] tabular-nums text-muted-foreground">baixa {val}</div>
+                          )}
+                          {parcialEdit === it.tamanho ? (
+                            <div className="flex items-center gap-0.5">
+                              <Input
+                                type="number"
+                                autoFocus
+                                min={0}
+                                max={it.falta}
+                                value={parcialVal}
+                                onChange={(e) => setParcialVal(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === "Enter") salvarParcial(it.tamanho, it.falta); }}
+                                className="h-6 w-16 text-center text-[11px] px-1"
+                              />
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => salvarParcial(it.tamanho, it.falta)}>
+                                <Check className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => abrirParcial(it.tamanho)}
+                              title="Baixa parcial"
+                              className="text-muted-foreground hover:text-foreground"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                          )}
+                          <div className="text-[9px] tabular-nums text-muted-foreground">{val}/{it.falta}</div>
+                        </div>
                       </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr className="bg-muted/30">
-                  <td className="p-2 text-right" colSpan={2}><b>Total a abater</b></td>
-                  <td className="p-2 text-right tabular-nums"><b>{totalAbater}</b></td>
+                    );
+                  })}
                 </tr>
-              </tfoot>
+              </tbody>
             </table>
+          </div>
+
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Falta total: <b className="tabular-nums text-amber-700">{totalFalta}</b></span>
+            <span>Total a abater: <b className="tabular-nums">{totalAbater}</b></span>
           </div>
 
           <div>
