@@ -824,23 +824,20 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                   </Dialog>
 
 
-                  {selected.status === "Romaneio Completo" && (
+                  {(completoTotal || selected.status === "Romaneio Completo") && (
                     selected.conferido_em ? (
                       <div className="text-xs text-green-700">
                         ✓ Conferido em {new Date(selected.conferido_em).toLocaleString("pt-BR")}.
                       </div>
                     ) : (
                       <Button style={btnStyle("conferir")} onClick={handleConferir} disabled={salvar.isPending} className="w-full">
-                        <Check className="h-4 w-4 mr-1" /> Confirmar conferência
+                        <Check className="h-4 w-4 mr-1" /> Mandar pro pagamento
                       </Button>
                     )
                   )}
                 </>
-              ) : (
-                <div className="rounded-md border bg-muted/20 p-3 text-muted-foreground">
-                  A conferência é liberada quando o romaneio começar a receber peças.
-                </div>
-              )}
+                );
+              })()}
             </CardContent>
           </Card>
         </div>
