@@ -342,6 +342,11 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
             </div>
 
             <div className="flex flex-wrap items-center gap-2 justify-end">
+              {onChangeTab && (
+                <Button variant="outline" onClick={() => onChangeTab("romaneio")}>
+                  <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao Romaneio
+                </Button>
+              )}
               {selected.pagamento_status !== "pago" && (
                 <Button variant="outline" onClick={() => salvarObs.mutate()} disabled={salvarObs.isPending}>
                   Salvar
@@ -352,12 +357,23 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
                   <Check className="h-4 w-4 mr-1" /> Liberar pagamento (Gestor)
                 </Button>
               )}
-              {selected.pagamento_status === "liberado" && canManageCop && (
-                <Button style={btnStyle("marcar_pago")} onClick={() => marcar.mutate({ pago: true })} disabled={marcar.isPending}>
-                  <Check className="h-4 w-4 mr-1" /> Marcar como Pago
+              {selected.pagamento_status === "liberado" && (podeLiberar || isAdmin) && (
+                <Button
+                  variant="outline"
+                  className="border-orange-400 text-orange-700 hover:bg-orange-50"
+                  onClick={() => editarPagamento.mutate()}
+                  disabled={editarPagamento.isPending}
+                  title="Voltar para Romaneio Completo e limpar liberação"
+                >
+                  <Undo2 className="h-4 w-4 mr-1" /> Editar (voltar para Romaneio Completo)
                 </Button>
               )}
-              {selected.pagamento_status === "pago" && canManageCop && (
+              {selected.pagamento_status === "liberado" && isAdmin && (
+                <Button style={btnStyle("marcar_pago")} onClick={() => marcar.mutate({ pago: true })} disabled={marcar.isPending}>
+                  <Check className="h-4 w-4 mr-1" /> Marcar como Pago (Admin)
+                </Button>
+              )}
+              {selected.pagamento_status === "pago" && isAdmin && (
                 <Button variant="outline" onClick={() => marcar.mutate({ pago: false })} disabled={marcar.isPending}>
                   <X className="h-4 w-4 mr-1" /> Reverter para Liberado
                 </Button>
