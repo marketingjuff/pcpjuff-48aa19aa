@@ -215,7 +215,7 @@ export function FaltaPorPedidoTab() {
             <thead className="bg-muted/40 text-[10px]">
               <tr>
                 <th className="px-2 py-1 text-left">Início Estamparia</th>
-                <th className="px-2 py-1 text-left">Orçamento</th>
+                <th className="px-2 py-1 text-left w-24 max-w-[90px]">Orçamento</th>
                 <th className="px-2 py-1 text-left">Modelo</th>
                 <th className="px-2 py-1 text-left">Cor</th>
                 {tamanhosColunas.map((t) => (
