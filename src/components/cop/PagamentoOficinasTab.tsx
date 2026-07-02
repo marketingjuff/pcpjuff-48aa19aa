@@ -60,7 +60,7 @@ function calcValor(cop: Cop, oficina: Oficina | null): number {
   return Math.max(0, pecas + fretes);
 }
 
-function isPagamentoAtrasado(cop: Cop, feriados: Set<string>): boolean {
+export function isPagamentoAtrasado(cop: Cop, feriados: Set<string>): boolean {
   if (cop.pagamento_status !== "liberado" || !cop.pagamento_liberado_em) return false;
   const limiteISO = addDiasUteis(new Date(cop.pagamento_liberado_em), 5, feriados);
   const hojeISO = new Date().toISOString().slice(0, 10);
