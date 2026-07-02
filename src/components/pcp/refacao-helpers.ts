@@ -132,6 +132,10 @@ export async function montarRefacoesAposRefazer(
     motivo: payload.motivo,
     aberto: true,
     retrato,
+    area_identificou: payload.area_identificou,
+    erro_producao: payload.erro_producao,
+    area_erro: payload.area_erro,
+    problema: payload.problema,
   };
   return { refacoes: [...refsAtuais, novo] };
 }
