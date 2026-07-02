@@ -66,6 +66,7 @@ function todosCompletos(p: Pedido, form: Partial<Pedido>): boolean {
 export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNavigate, onFinalizarMany }: Props) {
   const { feriados } = useFeriados();
   const { names: formasPagamento } = useAppList("pagamento");
+  const { names: nfOpcoes } = useAppList("nf");
   const expedicaoPedidos = useMemo(
     () => pedidos.filter((p) => p.expedicao_entrou_em && !p.finalizado_em),
     [pedidos],
@@ -103,6 +104,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
       exp_despachado_em: form.exp_despachado_em ?? null,
       exp_frete_solicitado_em: form.exp_frete_solicitado_em ?? null,
       exp_observacoes: form.exp_observacoes ?? null,
+      nf_emitida: form.nf_emitida ?? null,
     });
   }
 
@@ -118,6 +120,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
       exp_despachado_em: form.exp_despachado_em ?? null,
       exp_frete_solicitado_em: form.exp_frete_solicitado_em ?? null,
       exp_observacoes: form.exp_observacoes ?? null,
+      nf_emitida: form.nf_emitida ?? null,
       finalizado_em: new Date().toISOString(),
       reaberto: false,
     });
@@ -211,7 +214,12 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               <ReadOnlyField label="Data da entrega" value={formatDateBR(selected.data_entrega)} />
               <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
               <ReadOnlyField label="Forma de pagamento" value={selected.forma_pagamento ?? "—"} />
-              <ReadOnlyField label="Nota Fiscal Emitida?" value={selected.nf_emitida ?? "—"} />
+              <FormField label="Nota Fiscal Emitida?">
+                <Select value={form.nf_emitida ?? ""} onValueChange={(v) => set("nf_emitida", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectContent>{nfOpcoes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                </Select>
+              </FormField>
             </div>
 
             {(() => {
