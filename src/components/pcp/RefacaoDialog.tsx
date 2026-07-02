@@ -77,6 +77,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
   const kindProblema = kindForArea(areaErro);
   const { names: problemas } = useAppList((kindProblema ?? "motivo_perda") as AppListKind);
   const problemaOptions = useMemo(() => (kindProblema ? problemas : []), [kindProblema, problemas]);
+  const { names: areasIdentifica } = useAppList("refacao_area_identifica");
+  const { names: areasErro } = useAppList("refacao_area_erro");
 
   function confirmar() {
     // Novas perguntas obrigatórias (antes das existentes)
