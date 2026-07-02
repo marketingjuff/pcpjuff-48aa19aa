@@ -147,6 +147,7 @@ export type Database = {
           observacoes_pagamento: string | null
           observacoes_romaneio: string | null
           oficina_id: string | null
+          pagamento_consolidado_id: string | null
           pagamento_liberado_em: string | null
           pagamento_liberado_por: string | null
           pagamento_pago_em: string | null
@@ -187,6 +188,7 @@ export type Database = {
           observacoes_pagamento?: string | null
           observacoes_romaneio?: string | null
           oficina_id?: string | null
+          pagamento_consolidado_id?: string | null
           pagamento_liberado_em?: string | null
           pagamento_liberado_por?: string | null
           pagamento_pago_em?: string | null
@@ -227,6 +229,7 @@ export type Database = {
           observacoes_pagamento?: string | null
           observacoes_romaneio?: string | null
           oficina_id?: string | null
+          pagamento_consolidado_id?: string | null
           pagamento_liberado_em?: string | null
           pagamento_liberado_por?: string | null
           pagamento_pago_em?: string | null
@@ -335,6 +338,47 @@ export type Database = {
           valores_por_modelo?: Json
         }
         Relationships: []
+      }
+      pagamentos_consolidados: {
+        Row: {
+          created_at: string
+          detalhes: Json
+          id: string
+          observacao: string | null
+          oficina_id: string
+          pago_em: string
+          pago_por: string
+          valor_total: number
+        }
+        Insert: {
+          created_at?: string
+          detalhes?: Json
+          id?: string
+          observacao?: string | null
+          oficina_id: string
+          pago_em?: string
+          pago_por: string
+          valor_total: number
+        }
+        Update: {
+          created_at?: string
+          detalhes?: Json
+          id?: string
+          observacao?: string | null
+          oficina_id?: string
+          pago_em?: string
+          pago_por?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_consolidados_oficina_id_fkey"
+            columns: ["oficina_id"]
+            isOneToOne: false
+            referencedRelation: "oficinas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pedidos: {
         Row: {
@@ -645,6 +689,10 @@ export type Database = {
       marcar_pagamento_cop: {
         Args: { _cop_id: string; _pago: boolean }
         Returns: undefined
+      }
+      pagar_consolidado_oficina: {
+        Args: { _cop_ids: string[]; _observacao: string; _oficina_id: string }
+        Returns: string
       }
     }
     Enums: {
