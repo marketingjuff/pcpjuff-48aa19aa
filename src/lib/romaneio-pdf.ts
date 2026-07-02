@@ -97,7 +97,7 @@ export function abrirRomaneioParaImpressao(cop: Cop, oficina: Oficina | null, co
   .via header { display: flex; align-items: center; gap: 6mm; border-bottom: 1px solid #ddd; padding-bottom: 2mm; }
   .via header img { width: 16mm; height: 16mm; object-fit: cover; border-radius: 2mm; }
   .via .t1 { font-size: 13pt; font-weight: 700; }
-  .via .t2 { font-size: 8.5pt; color: #444; display: flex; flex-wrap: wrap; gap: 4mm; margin-top: 1mm; }
+  .via .t2 { font-size: 13pt; color: #444; display: flex; flex-wrap: wrap; gap: 4mm; margin-top: 1mm; }
   table.grid { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
   table.grid th, table.grid td { border: 1px solid #ccc; padding: 0.8mm 1.5mm; }
   table.grid th { background: #f3f4f6; text-align: left; font-weight: 600; }
