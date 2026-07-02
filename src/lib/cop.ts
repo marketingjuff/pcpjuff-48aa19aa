@@ -284,11 +284,20 @@ export function totalRecebidas(rec: CopPecaRecebida[] | null | undefined): numbe
   return rec.reduce((s, r) => s + (Number(r.qtd_recebida) || 0), 0);
 }
 
-/** True quando todas as linhas têm qtd_recebida === qtd. */
-export function todasCompletas(pecas: CopPeca[], rec: CopPecaRecebida[]): boolean {
+/** Lê qtd perdida para uma chave (modelo|cor|tamanho). */
+export function getPerda(perdas: CopPerdaLinha[] | null | undefined, m: string, c: string, t: string): number {
+  if (!perdas) return 0;
+  const f = perdas.find((p) => p.modelo === m && p.cor === c && p.tamanho === t);
+  return f ? Number(f.qtd) || 0 : 0;
+}
+
+/** True quando todas as linhas têm (recebido + perdido) ≥ qtd. */
+export function todasCompletas(pecas: CopPeca[], rec: CopPecaRecebida[], perdas: CopPerdaLinha[] = []): boolean {
   if (!pecas?.length) return false;
   for (const p of pecas) {
-    if (getRecebida(rec, p.modelo, p.cor, p.tamanho) < p.qtd) return false;
+    const recebido = getRecebida(rec, p.modelo, p.cor, p.tamanho);
+    const perdido = getPerda(perdas, p.modelo, p.cor, p.tamanho);
+    if (recebido + perdido < p.qtd) return false;
   }
   return true;
 }
