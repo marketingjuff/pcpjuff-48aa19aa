@@ -1,10 +1,11 @@
-import { pedidoAtivoNasAreas } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas, visivelEmDTF, visivelEmSilk } from "@/lib/pedidos";
 import { useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
   STATUS_PECAS_OPCOES, TIPOS_ESTAMPA,
   calcularEtapaAtual, statusPrazo, tipoIncluiDTF, tipoIncluiSilk,
 } from "@/lib/pedidos";
+
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { EtapaBadgeView, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, type SortDir } from "./shared";
+import { EtapaBadgeView, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, matchEtapaFiltro, type SortDir } from "./shared";
 
 interface Props {
   pedidos: Pedido[];
@@ -122,14 +123,11 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
     return {
       total: ativos.length,
       atrasados: ativos.filter((p) => statusPrazo(p) === "atrasado").length,
-      arte: ativos.filter((p) => p.tipo_estampa !== "Lisa" && p.status_arte !== "Arte Finalizada").length,
-      dtf: ativos.filter((p) => tipoIncluiDTF(p.tipo_estampa) && p.dtf_estampado !== "Sim").length,
-      silk: ativos.filter((p) => tipoIncluiSilk(p.tipo_estampa) && p.silk_feito !== "Sim").length,
-      acabamento: ativos.filter((p) => (p.tipo_estampa === "Lisa" || p.status_arte === "Arte Finalizada")
-        && (!tipoIncluiDTF(p.tipo_estampa) || p.dtf_estampado === "Sim")
-        && (!tipoIncluiSilk(p.tipo_estampa) || p.silk_feito === "Sim")
-        && p.embalado !== "Sim").length,
-      expedicao: pedidos.filter((p) => emExpedicao(p)).length,
+      arte: pedidos.filter((p) => matchEtapaFiltro(p, "arte")).length,
+      dtf: pedidos.filter((p) => matchEtapaFiltro(p, "dtf") && visivelEmDTF(p)).length,
+      silk: pedidos.filter((p) => matchEtapaFiltro(p, "silk") && visivelEmSilk(p)).length,
+      acabamento: pedidos.filter((p) => matchEtapaFiltro(p, "acabamento")).length,
+      expedicao: pedidos.filter((p) => matchEtapaFiltro(p, "expedicao")).length,
     };
   }, [pedidos]);
 
