@@ -56,7 +56,7 @@ function calcValor(cop: Cop, oficina: Oficina | null): number {
     const v = Number((oficina.valores_por_modelo ?? {})[modelo] ?? 0);
     pecas += v * q;
   }
-  const fretes = Number(oficina.valor_frete ?? 0) * Math.max(1, Number(cop.num_fretes) || 1);
+  const fretes = Number(oficina.valor_frete ?? 0) * Math.max(0, Math.floor(Number(cop.num_fretes) || 0));
   return Math.max(0, pecas + fretes);
 }
 
@@ -124,7 +124,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
   useEffect(() => {
     if (!selected) { setObsPag(""); setNumFretes(1); return; }
     setObsPag(selected.observacoes_pagamento ?? "");
-    setNumFretes(Math.max(1, Math.floor(Number(selected.num_fretes) || 1)));
+    setNumFretes(Math.max(0, Math.floor(Number(selected.num_fretes ?? 1))));
   }, [selectedId]); // eslint-disable-line
 
   const selectedComFretes = useMemo(
@@ -152,7 +152,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
       if (!selected) return;
       const { error } = await supabase.from("cops" as any).update({
         observacoes_pagamento: (obsPag || "").toUpperCase() || null,
-        num_fretes: Math.max(1, Math.floor(Number(numFretes) || 1)),
+        num_fretes: Math.max(0, Math.floor(Number(numFretes) || 0)),
       }).eq("id", selected.id);
       if (error) throw error;
     },
@@ -165,7 +165,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
       if (!selected) return;
       const { error: e1 } = await supabase.from("cops" as any).update({
         observacoes_pagamento: (obsPag || "").toUpperCase() || null,
-        num_fretes: Math.max(1, Math.floor(Number(numFretes) || 1)),
+        num_fretes: Math.max(0, Math.floor(Number(numFretes) || 0)),
       }).eq("id", selected.id);
       if (e1) throw e1;
       const { error } = await (supabase as any).rpc("liberar_pagamento_cop", { _cop_id: selected.id, _valor: valor });
@@ -310,10 +310,10 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
                           <span className="tabular-nums">{numFretes}</span>
                         ) : (
                           <Input
-                            type="number" min={1}
+                            type="number" min={0}
                             className="h-7 w-16 text-right"
                             value={numFretes}
-                            onChange={(e) => setNumFretes(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+                            onChange={(e) => setNumFretes(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
                           />
                         )}
                         <span>× {fmtMoney(Number(selectedOfi?.valor_frete ?? 0))}</span>
