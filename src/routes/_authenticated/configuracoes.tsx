@@ -851,31 +851,67 @@ function BackupTab() {
 }
 
 function ListasTab() {
-  const sections: { kind: AppListKind; title: string; placeholder: string }[] = [
-    { kind: "vendedor", title: "Vendedores", placeholder: "Novo vendedor" },
-    { kind: "frete", title: "Frete (transportadoras)", placeholder: "Nova opção de frete" },
-    { kind: "pagamento", title: "Tipo de Pagamento", placeholder: "Nova forma de pagamento" },
-    { kind: "nf", title: "Nota Fiscal", placeholder: "Nova opção (ex.: Sim, Não, Não se aplica)" },
-    { kind: "dtf", title: "Operadores DTF", placeholder: "Novo operador DTF" },
-    { kind: "silk", title: "Operadores Silk", placeholder: "Novo operador Silk" },
-    { kind: "acabamento", title: "Responsáveis pelo Acabamento", placeholder: "Novo responsável" },
-    { kind: "status_arte", title: "Status da Arte", placeholder: "Nova opção de Status da Arte" },
-    { kind: "corte_dtf", title: "Quem cortou o DTF", placeholder: "Novo responsável pelo corte" },
-    { kind: "revelacao_silk", title: "Quem revelou a tela (Silk)", placeholder: "Nova pessoa" },
-    { kind: "motivo_perda", title: "Motivos de perda", placeholder: "Novo motivo de perda" },
-    { kind: "refacao_area_identifica", title: "Refação — Área que identificou o problema", placeholder: "Nova área" },
-    { kind: "refacao_area_erro", title: "Refação — Área que errou a produção", placeholder: "Nova área" },
-    { kind: "refacao_problema_arte", title: "Refação — Problemas da Arte", placeholder: "Novo problema" },
-    { kind: "refacao_problema_dtf", title: "Refação — Problemas do DTF", placeholder: "Novo problema" },
-    { kind: "refacao_problema_silk", title: "Refação — Problemas do Silk", placeholder: "Novo problema" },
-    { kind: "refacao_problema_acabamento", title: "Refação — Problemas do Acabamento", placeholder: "Novo problema" },
+  type Section = { kind: AppListKind; title: string; placeholder: string };
+  const groups: { value: string; label: string; sections: Section[] }[] = [
+    {
+      value: "dados_in",
+      label: "Dados In",
+      sections: [
+        { kind: "vendedor", title: "Vendedores", placeholder: "Novo vendedor" },
+        { kind: "frete", title: "Frete (transportadoras)", placeholder: "Nova opção de frete" },
+        { kind: "pagamento", title: "Tipo de Pagamento", placeholder: "Nova forma de pagamento" },
+        { kind: "nf", title: "Nota Fiscal", placeholder: "Nova opção (ex.: Sim, Não, Não se aplica)" },
+      ],
+    },
+    {
+      value: "arte",
+      label: "Arte",
+      sections: [
+        { kind: "status_arte", title: "Status da Arte", placeholder: "Nova opção de Status da Arte" },
+      ],
+    },
+    {
+      value: "producao",
+      label: "Produção",
+      sections: [
+        { kind: "dtf", title: "Operadores DTF", placeholder: "Novo operador DTF" },
+        { kind: "silk", title: "Operadores Silk", placeholder: "Novo operador Silk" },
+        { kind: "acabamento", title: "Responsáveis pelo Acabamento", placeholder: "Novo responsável" },
+        { kind: "corte_dtf", title: "Quem cortou o DTF", placeholder: "Novo responsável pelo corte" },
+        { kind: "revelacao_silk", title: "Quem revelou a tela (Silk)", placeholder: "Nova pessoa" },
+        { kind: "motivo_perda", title: "Motivos de perda", placeholder: "Novo motivo de perda" },
+      ],
+    },
+    {
+      value: "refacao",
+      label: "Refação",
+      sections: [
+        { kind: "refacao_area_identifica", title: "Área que identificou o problema", placeholder: "Nova área" },
+        { kind: "refacao_area_erro", title: "Área que errou a produção", placeholder: "Nova área" },
+        { kind: "refacao_problema_arte", title: "Problemas da Arte", placeholder: "Novo problema" },
+        { kind: "refacao_problema_dtf", title: "Problemas do DTF", placeholder: "Novo problema" },
+        { kind: "refacao_problema_silk", title: "Problemas do Silk", placeholder: "Novo problema" },
+        { kind: "refacao_problema_acabamento", title: "Problemas do Acabamento", placeholder: "Novo problema" },
+      ],
+    },
   ];
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      {sections.map((s) => (
-        <ListaCard key={s.kind} {...s} />
+    <Tabs defaultValue="dados_in">
+      <TabsList className="mb-4 flex flex-wrap h-auto">
+        {groups.map((g) => (
+          <TabsTrigger key={g.value} value={g.value}>{g.label}</TabsTrigger>
+        ))}
+      </TabsList>
+      {groups.map((g) => (
+        <TabsContent key={g.value} value={g.value}>
+          <div className="grid gap-6 md:grid-cols-2">
+            {g.sections.map((s) => (
+              <ListaCard key={s.kind} {...s} />
+            ))}
+          </div>
+        </TabsContent>
       ))}
-    </div>
+    </Tabs>
   );
 }
 
