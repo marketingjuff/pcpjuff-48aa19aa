@@ -56,7 +56,7 @@ function calcValor(cop: Cop, oficina: Oficina | null): number {
     const v = Number((oficina.valores_por_modelo ?? {})[modelo] ?? 0);
     pecas += v * q;
   }
-  const fretes = Number(oficina.valor_frete ?? 0) * Math.max(1, Number(cop.num_fretes) || 1);
+  const fretes = Number(oficina.valor_frete ?? 0) * Math.max(0, Math.floor(Number(cop.num_fretes) || 0));
   return Math.max(0, pecas + fretes);
 }
 
