@@ -187,7 +187,9 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
                   <Select value={areaErro} onValueChange={(v) => { setAreaErro(v); setProblema(""); }}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
-                      {AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                      {areasErro.length === 0 ? (
+                        <div className="px-2 py-1.5 text-xs text-muted-foreground">Sem opções cadastradas.</div>
+                      ) : areasErro.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
