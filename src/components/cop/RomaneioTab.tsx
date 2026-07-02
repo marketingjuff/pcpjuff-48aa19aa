@@ -346,7 +346,10 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
 
   async function handleConferir() {
     if (!selected) return;
-    if (selected.status !== "Romaneio Completo") return;
+    const rec = selected.pecas_recebidas ?? [];
+    const perdas = selected.perdas ?? [];
+    const completo = selected.status === "Romaneio Completo" || todasCompletas(selected.pecas || [], rec, perdas);
+    if (!completo) return;
     const { data: ses } = await supabase.auth.getUser();
     await salvar.mutateAsync({
       id: selected.id,
@@ -652,10 +655,29 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
               <CardTitle className="text-base">Histórico</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              {selected.status === "Romaneio Completo" || selected.status === "Romaneio Parcial" || selected.conferido_em ? (
+              {(() => {
+                const perdasArr = selected.perdas ?? [];
+                const completoTotal = todasCompletas(selected.pecas || [], recebidas, perdasArr);
+                const totalPerda = perdasArr.reduce((s, p) => s + (Number(p.qtd) || 0), 0);
+                const completoViaPerda = completoTotal && totalPerda > 0 && totalRecebidas(recebidas) < totalPecasCop(selected.pecas);
+                const jaCompleto = selected.status === "Romaneio Completo" || selected.status === "Aguardando Pagamento" || selected.status === "Finalizado";
+                const mostrarPainel = jaCompleto || selected.status === "Romaneio Parcial" || completoTotal || selected.conferido_em;
+                if (!mostrarPainel) {
+                  return (
+                    <div className="rounded-md border bg-muted/20 p-3 text-muted-foreground">
+                      A conferência é liberada quando o romaneio começar a receber peças.
+                    </div>
+                  );
+                }
+                return (
                 <>
+                  {completoViaPerda && !jaCompleto && (
+                    <div className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-900">
+                      <b>Romaneio completo por perda.</b> As peças perdidas fecharam o saldo — envie para pagamento pelo botão abaixo.
+                    </div>
+                  )}
                   <div className="rounded-md border bg-muted/30 p-3">
-                    {selected.status === "Romaneio Parcial"
+                    {selected.status === "Romaneio Parcial" && !completoTotal
                       ? <>Romaneio <b>parcial</b>. Confira o que já chegou e use <b>Particionar</b> para liberar a parte recebida para pagamento.</>
                       : <>Conferência liberada. Verifique se as <b>quantidades recebidas</b> batem com o que foi solicitado neste romaneio.</>}
                   </div>
@@ -699,7 +721,19 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                   {/* Histórico de chegadas */}
                   {(() => {
                     const chegadas = (selected.historico_recebimentos ?? []).map((h) => ({ ...h, _kind: "recebimento" as const }));
-                    const perdas = (selected.historico_perdas ?? []).map((h) => ({ ...h, _kind: "perda" as const }));
+                    let perdas = (selected.historico_perdas ?? []).map((h) => ({ ...h, _kind: "perda" as const }));
+                    // Fallback: se há perdas registradas mas nenhum evento no histórico, mostra um resumo sintético.
+                    if (perdas.length === 0 && (selected.perdas ?? []).some((p) => (Number(p.qtd) || 0) > 0)) {
+                      const itens = (selected.perdas ?? []).filter((p) => (Number(p.qtd) || 0) > 0);
+                      const total = itens.reduce((s, p) => s + (Number(p.qtd) || 0), 0);
+                      perdas = [{
+                        em: selected.updated_at ?? selected.created_at ?? new Date().toISOString(),
+                        tipo: "perda" as const,
+                        total,
+                        itens,
+                        _kind: "perda" as const,
+                      }];
+                    }
                     const unificado = [...chegadas, ...perdas].sort((a, b) => (a.em < b.em ? 1 : -1));
                     if (unificado.length === 0) return null;
                     const badge = (h: HistoricoRecebimento | HistoricoPerda) => {
@@ -790,23 +824,20 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                   </Dialog>
 
 
-                  {selected.status === "Romaneio Completo" && (
+                  {(completoTotal || selected.status === "Romaneio Completo") && (
                     selected.conferido_em ? (
                       <div className="text-xs text-green-700">
                         ✓ Conferido em {new Date(selected.conferido_em).toLocaleString("pt-BR")}.
                       </div>
                     ) : (
                       <Button style={btnStyle("conferir")} onClick={handleConferir} disabled={salvar.isPending} className="w-full">
-                        <Check className="h-4 w-4 mr-1" /> Confirmar conferência
+                        <Check className="h-4 w-4 mr-1" /> Mandar pro pagamento
                       </Button>
                     )
                   )}
                 </>
-              ) : (
-                <div className="rounded-md border bg-muted/20 p-3 text-muted-foreground">
-                  A conferência é liberada quando o romaneio começar a receber peças.
-                </div>
-              )}
+                );
+              })()}
             </CardContent>
           </Card>
         </div>
