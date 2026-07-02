@@ -1,10 +1,11 @@
-import { pedidoAtivoNasAreas } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas, visivelEmDTF, visivelEmSilk } from "@/lib/pedidos";
 import { useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
   STATUS_PECAS_OPCOES, TIPOS_ESTAMPA,
   calcularEtapaAtual, statusPrazo, tipoIncluiDTF, tipoIncluiSilk,
 } from "@/lib/pedidos";
+import { matchEtapaFiltro } from "./shared";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
