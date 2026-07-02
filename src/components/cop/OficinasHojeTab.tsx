@@ -5,15 +5,41 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, ChevronRight, ChevronDown } from "lucide-react";
 import { type Cop, type Oficina } from "@/lib/cop";
-import { arvoreOficinasHoje, TAMANHOS_PIVOT, type NoOficina } from "@/lib/cop-oficinas";
-
-type Row =
-  | { kind: "of"; key: string; node: NoOficina; expanded: boolean }
-  | { kind: "cop"; key: string; ofId: string; copId: string; rotulo: string; total: number; expanded: boolean }
-  | { kind: "mod"; key: string; ofId: string; copId: string; modelo: string; total: number; expanded: boolean }
-  | { kind: "cor"; key: string; cor: string; porTamanho: Record<string, number>; total: number };
+import {
+  arvoreProducaoHoje,
+  tamanhosVisiveis,
+  subtotaisPorTamanho,
+  totaisGeraisPorTamanho,
+  OFICINA_EM_CORTE,
+  type NoOficina,
+} from "@/lib/cop-oficinas";
+import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
 const NUM = (n: number) => (n > 0 ? n : "–");
+
+type Row =
+  | {
+      kind: "cor";
+      key: string;
+      groupId: string;
+      oficinaNome: string;
+      copId: string;
+      copRotulo: string;
+      modelo: string;
+      cor: string;
+      porTamanho: Record<string, number>;
+      total: number;
+    }
+  | {
+      kind: "subtotal";
+      key: string;
+      groupId: string;
+      nome: string;
+      porTamanho: Record<string, number>;
+      total: number;
+      expanded: boolean;
+      isEmCorte: boolean;
+    };
 
 export function OficinasHojeTab() {
   const qc = useQueryClient();
@@ -39,111 +65,93 @@ export function OficinasHojeTab() {
   useEffect(() => {
     const ch = supabase
       .channel("cops-oficinas-hoje")
-      .on("postgres_changes", { event: "*", schema: "public", table: "cops" }, () => qc.invalidateQueries({ queryKey: ["cops"] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "cops" }, () =>
+        qc.invalidateQueries({ queryKey: ["cops"] }),
+      )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [qc]);
 
-  const arvore = useMemo(() => arvoreOficinasHoje(cops, oficinas), [cops, oficinas]);
+  const grupos = useMemo<NoOficina[]>(() => arvoreProducaoHoje(cops, oficinas), [cops, oficinas]);
+  const tamanhos = useMemo(() => tamanhosVisiveis(grupos), [grupos]);
 
-  // Todas as chaves possíveis
-  const allKeys = useMemo(() => {
-    const ofs: string[] = [];
-    const cps: string[] = [];
-    const mds: string[] = [];
-    for (const o of arvore) {
-      ofs.push(`of:${o.oficina.id}`);
-      for (const c of o.cops) {
-        cps.push(`cop:${o.oficina.id}/${c.cop.id}`);
-        for (const m of c.modelos) {
-          mds.push(`mod:${o.oficina.id}/${c.cop.id}/${m.modelo}`);
-        }
-      }
-    }
-    return { ofs, cps, mds, all: [...ofs, ...cps, ...mds] };
-  }, [arvore]);
+  const allGroupKeys = useMemo(() => grupos.map((g) => g.oficina.id), [grupos]);
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  // Semear: oficinas expandidas quando a lista de oficinas mudar
+  // Seed: começa tudo expandido quando lista muda
   useEffect(() => {
     setExpanded((prev) => {
       const next = new Set(prev);
-      for (const k of allKeys.ofs) if (!prev.has(k)) next.add(k);
+      for (const k of allGroupKeys) if (!prev.has(k)) next.add(k);
       return next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allKeys.ofs.join("|")]);
+  }, [allGroupKeys.join("|")]);
 
   const toggle = (k: string) => {
     setExpanded((prev) => {
       const n = new Set(prev);
-      if (n.has(k)) n.delete(k); else n.add(k);
+      if (n.has(k)) n.delete(k);
+      else n.add(k);
       return n;
     });
   };
 
-  const expandirTudo = () => setExpanded(new Set(allKeys.all));
+  const expandirTudo = () => setExpanded(new Set(allGroupKeys));
   const recolherTudo = () => setExpanded(new Set());
 
   const rows: Row[] = useMemo(() => {
     const r: Row[] = [];
-    for (const o of arvore) {
-      const kOf = `of:${o.oficina.id}`;
-      const eOf = expanded.has(kOf);
-      r.push({ kind: "of", key: kOf, node: o, expanded: eOf });
-      if (!eOf) continue;
-      for (const c of o.cops) {
-        const kCop = `cop:${o.oficina.id}/${c.cop.id}`;
-        const eCop = expanded.has(kCop);
-        r.push({ kind: "cop", key: kCop, ofId: o.oficina.id, copId: c.cop.id, rotulo: c.rotulo, total: c.total, expanded: eCop });
-        if (!eCop) continue;
-        for (const m of c.modelos) {
-          const kMod = `mod:${o.oficina.id}/${c.cop.id}/${m.modelo}`;
-          const eMod = expanded.has(kMod);
-          r.push({ kind: "mod", key: kMod, ofId: o.oficina.id, copId: c.cop.id, modelo: m.modelo, total: m.total, expanded: eMod });
-          if (!eMod) continue;
-          for (const cor of m.cores) {
-            r.push({
-              kind: "cor",
-              key: `cor:${o.oficina.id}/${c.cop.id}/${m.modelo}/${cor.cor}`,
-              cor: cor.cor,
-              porTamanho: cor.porTamanho,
-              total: cor.total,
-            });
+    for (const g of grupos) {
+      const gid = g.oficina.id;
+      const isEmCorte = gid === OFICINA_EM_CORTE.id;
+      const isExp = expanded.has(gid);
+      if (isExp) {
+        for (const c of g.cops) {
+          for (const m of c.modelos) {
+            for (const cor of m.cores) {
+              r.push({
+                kind: "cor",
+                key: `cor:${gid}/${c.cop.id}/${m.modelo}/${cor.cor}`,
+                groupId: gid,
+                oficinaNome: g.oficina.nome,
+                copId: c.cop.id,
+                copRotulo: c.rotulo,
+                modelo: m.modelo,
+                cor: cor.cor,
+                porTamanho: cor.porTamanho,
+                total: cor.total,
+              });
+            }
           }
         }
       }
+      r.push({
+        kind: "subtotal",
+        key: `sub:${gid}`,
+        groupId: gid,
+        nome: g.oficina.nome,
+        porTamanho: subtotaisPorTamanho(g, tamanhos),
+        total: g.total,
+        expanded: isExp,
+        isEmCorte,
+      });
     }
     return r;
-  }, [arvore, expanded]);
+  }, [grupos, expanded, tamanhos]);
 
-  const totalGeral = useMemo(() => arvore.reduce((s, g) => s + g.total, 0), [arvore]);
-  const totalRomaneios = useMemo(() => arvore.reduce((s, g) => s + g.cops.length, 0), [arvore]);
+  const totaisGerais = useMemo(() => totaisGeraisPorTamanho(grupos, tamanhos), [grupos, tamanhos]);
+  const totalGeral = useMemo(() => grupos.reduce((s, g) => s + g.total, 0), [grupos]);
+  const totalRomaneios = useMemo(() => grupos.reduce((s, g) => s + g.cops.length, 0), [grupos]);
+  const numOficinas = grupos.filter((g) => g.oficina.id !== OFICINA_EM_CORTE.id).length;
 
-  // Estilos sticky reutilizáveis
-  const stickyBg = "bg-background";
-  const parentBg = "bg-muted/20";
-  const thBg = "bg-muted/40";
-  // left offsets (px): 0, 200, 340, 480
-  const colL: Record<number, string> = {
-    0: "sticky left-0 z-10",
-    1: "sticky left-[200px] z-10",
-    2: "sticky left-[340px] z-10",
-    3: "sticky left-[480px] z-10",
-  };
-  const colWidths: Record<number, string> = {
-    0: "w-[200px] min-w-[200px]",
-    1: "w-[140px] min-w-[140px]",
-    2: "w-[140px] min-w-[140px]",
-    3: "w-[140px] min-w-[140px]",
-  };
-
-  const Chevron = ({ open, onClick }: { open: boolean; onClick: () => void }) => (
-    <button onClick={onClick} className="inline-flex items-center justify-center h-4 w-4 mr-1 align-middle text-muted-foreground hover:text-foreground">
-      {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-    </button>
-  );
+  // Supressão visual: comparar com linha de cor anterior no mesmo grupo
+  let prevGroup = "";
+  let prevCop = "";
+  let prevModelo = "";
 
   return (
     <div className="space-y-4">
@@ -151,90 +159,178 @@ export function OficinasHojeTab() {
 
       <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => qc.invalidateQueries({ queryKey: ["cops"] })} title="Recarregar">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => qc.invalidateQueries({ queryKey: ["cops"] })}
+            title="Recarregar"
+          >
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={expandirTudo}>Expandir tudo</Button>
-          <Button variant="outline" size="sm" onClick={recolherTudo}>Recolher tudo</Button>
+          <Button variant="outline" size="sm" onClick={expandirTudo}>
+            Expandir tudo
+          </Button>
+          <Button variant="outline" size="sm" onClick={recolherTudo}>
+            Recolher tudo
+          </Button>
         </div>
         <div className="text-xs text-muted-foreground">
-          {arvore.length} oficinas · {totalRomaneios} romaneios · {totalGeral} peças
+          {numOficinas} oficinas · {totalRomaneios} romaneios · {totalGeral} peças
         </div>
       </div>
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground">Carregando…</div>
-      ) : arvore.length === 0 ? (
-        <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhuma oficina com romaneio ativo no momento.</CardContent></Card>
+      ) : grupos.length === 0 ? (
+        <Card>
+          <CardContent className="p-6 text-sm text-muted-foreground text-center">
+            Nenhuma oficina com romaneio ativo no momento.
+          </CardContent>
+        </Card>
       ) : (
         <div className="rounded-md border overflow-auto max-h-[75vh]">
-          <table className="text-sm border-collapse w-max min-w-full">
-            <thead className={`${thBg} text-xs sticky top-0 z-30`}>
+          <table className="text-[12.5px] leading-[1.2] border-collapse w-max min-w-full">
+            <thead className="bg-muted/50 text-xs sticky top-0 z-20">
               <tr>
-                <th className={`${colL[0]} ${colWidths[0]} ${thBg} p-2 text-left border-r`}>Oficina</th>
-                <th className={`${colL[1]} ${colWidths[1]} ${thBg} p-2 text-left border-r`}>COP</th>
-                <th className={`${colL[2]} ${colWidths[2]} ${thBg} p-2 text-left border-r`}>Modelo</th>
-                <th className={`${colL[3]} ${colWidths[3]} ${thBg} p-2 text-left border-r`}>Cor</th>
-                {TAMANHOS_PIVOT.map((t) => (
-                  <th key={t} className="w-12 min-w-[3rem] p-2 text-right">{t}</th>
+                <th className="p-1.5 text-left border-r w-[160px] min-w-[160px]">Oficina</th>
+                <th className="p-1.5 text-left border-r w-[90px] min-w-[90px]">COP</th>
+                <th className="p-1.5 text-left border-r w-[140px] min-w-[140px]">Modelo</th>
+                <th className="p-1.5 text-left border-r w-[120px] min-w-[120px]">Cor</th>
+                {tamanhos.map((t) => (
+                  <th key={t} className="w-11 min-w-[2.75rem] p-1.5 text-right">
+                    {t}
+                  </th>
                 ))}
-                <th className={`sticky right-0 z-30 ${thBg} p-2 text-right border-l w-[110px] min-w-[110px]`}>Total Geral</th>
+                <th className="p-1.5 text-right border-l w-[80px] min-w-[80px]">Total</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => {
-                const isParent = row.kind !== "cor";
-                const bg = isParent ? parentBg : stickyBg;
+                if (row.kind === "subtotal") {
+                  prevGroup = "";
+                  prevCop = "";
+                  prevModelo = "";
+                  return (
+                    <tr key={row.key} className="border-t bg-muted/60 font-semibold">
+                      <td className="p-1.5 border-r" colSpan={4}>
+                        <button
+                          onClick={() => toggle(row.groupId)}
+                          className="inline-flex items-center gap-1 text-foreground hover:text-primary"
+                        >
+                          {row.expanded ? (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          )}
+                          <span>Total {row.nome}</span>
+                          {row.isEmCorte && (
+                            <span
+                              className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                              style={{ backgroundColor: "#FEF3C7", color: "#92400E" }}
+                            >
+                              não enviado
+                            </span>
+                          )}
+                        </button>
+                      </td>
+                      {tamanhos.map((t) => (
+                        <td
+                          key={t}
+                          className="w-11 min-w-[2.75rem] p-1.5 text-right tabular-nums"
+                        >
+                          {NUM(row.porTamanho[t] ?? 0)}
+                        </td>
+                      ))}
+                      <td className="p-1.5 text-right tabular-nums border-l">{row.total}</td>
+                    </tr>
+                  );
+                }
+
+                // linha de cor — supressão
+                const showOf = row.groupId !== prevGroup;
+                const showCop = showOf || row.copId !== prevCop;
+                const showMod = showCop || row.modelo !== prevModelo;
+                prevGroup = row.groupId;
+                prevCop = row.copId;
+                prevModelo = row.modelo;
+
+                const hex = corHex(row.cor);
+                const fg = corTextoSobre(hex);
+                const isEmCorte = row.groupId === OFICINA_EM_CORTE.id;
+
                 return (
-                  <tr key={row.key} className={`border-t ${isParent ? parentBg : ""} hover:bg-accent/30`}>
-                    {/* Oficina */}
-                    <td className={`${colL[0]} ${colWidths[0]} ${bg} p-2 border-r truncate`}>
-                      {row.kind === "of" && (
-                        <span className="font-semibold">
-                          <Chevron open={row.expanded} onClick={() => toggle(row.key)} />
-                          {row.node.oficina.nome}
-                        </span>
-                      )}
-                    </td>
-                    {/* COP */}
-                    <td className={`${colL[1]} ${colWidths[1]} ${bg} p-2 border-r truncate`}>
-                      {row.kind === "cop" && (
-                        <span className="font-semibold tabular-nums">
-                          <Chevron open={row.expanded} onClick={() => toggle(row.key)} />
-                          {row.rotulo}
-                        </span>
-                      )}
-                    </td>
-                    {/* Modelo */}
-                    <td className={`${colL[2]} ${colWidths[2]} ${bg} p-2 border-r truncate`}>
-                      {row.kind === "mod" && (
+                  <tr key={row.key} className="border-t hover:bg-accent/30">
+                    <td className="p-1.5 border-r truncate">
+                      {showOf ? (
                         <span className="font-medium">
-                          <Chevron open={row.expanded} onClick={() => toggle(row.key)} />
-                          {row.modelo}
+                          {row.oficinaNome}
+                          {isEmCorte && (
+                            <span
+                              className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                              style={{ backgroundColor: "#FEF3C7", color: "#92400E" }}
+                            >
+                              não enviado
+                            </span>
+                          )}
                         </span>
+                      ) : (
+                        ""
                       )}
                     </td>
-                    {/* Cor */}
-                    <td className={`${colL[3]} ${colWidths[3]} ${bg} p-2 border-r truncate`}>
-                      {row.kind === "cor" && <span>{row.cor}</span>}
+                    <td className="p-1.5 border-r truncate tabular-nums">
+                      {showCop ? row.copRotulo : ""}
                     </td>
-                    {/* Tamanhos */}
-                    {TAMANHOS_PIVOT.map((t) => (
-                      <td key={t} className="w-12 min-w-[3rem] p-2 text-right tabular-nums text-muted-foreground">
-                        {row.kind === "cor" ? NUM(row.porTamanho[t] ?? 0) : ""}
+                    <td className="p-1.5 border-r truncate">{showMod ? row.modelo : ""}</td>
+                    <td className="p-1.5 border-r truncate">
+                      <span
+                        className="inline-block px-2 py-0.5 rounded text-xs align-middle"
+                        style={{ backgroundColor: hex, color: fg }}
+                      >
+                        {row.cor}
+                      </span>
+                    </td>
+                    {tamanhos.map((t) => (
+                      <td
+                        key={t}
+                        className="w-11 min-w-[2.75rem] p-1.5 text-right tabular-nums text-muted-foreground"
+                      >
+                        {NUM(row.porTamanho[t] ?? 0)}
                       </td>
                     ))}
-                    {/* Total Geral */}
-                    <td className={`sticky right-0 ${bg} p-2 text-right tabular-nums font-semibold border-l w-[110px] min-w-[110px]`}>
-                      {row.kind === "of" ? row.node.total :
-                       row.kind === "cop" ? row.total :
-                       row.kind === "mod" ? row.total :
-                       row.total}
+                    <td className="p-1.5 text-right tabular-nums font-semibold border-l">
+                      {row.total}
                     </td>
                   </tr>
                 );
               })}
             </tbody>
+            <tfoot className="sticky bottom-0 z-20">
+              <tr
+                style={{
+                  backgroundColor: "#9FE1CB",
+                  color: "#04342C",
+                  borderTop: "1.5px solid #1D9E75",
+                }}
+              >
+                <td className="p-1.5 font-bold" colSpan={4}>
+                  Total geral
+                </td>
+                {tamanhos.map((t) => (
+                  <td
+                    key={t}
+                    className="w-11 min-w-[2.75rem] p-1.5 text-right tabular-nums font-semibold"
+                  >
+                    {NUM(totaisGerais[t] ?? 0)}
+                  </td>
+                ))}
+                <td
+                  className="p-1.5 text-right tabular-nums font-bold border-l"
+                  style={{ backgroundColor: "#5DCAA5" }}
+                >
+                  {totalGeral}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
