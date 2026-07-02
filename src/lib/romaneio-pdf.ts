@@ -104,7 +104,7 @@ export function abrirRomaneioParaImpressao(cop: Cop, oficina: Oficina | null, co
   table.grid td.num, table.grid th.num { text-align: center; }
   .obs { font-size: 8.5pt; }
   .obs .lbl { color: #555; margin-bottom: 1mm; }
-  .obs .box { min-height: 10mm; border: 1px solid #ccc; padding: 1.2mm; white-space: pre-wrap; }
+  .obs .box { white-space: pre-wrap; }
   .ass { margin-top: auto; text-align: center; font-size: 8.5pt; color: #555; }
   .ass .linha { border-top: 1px solid #333; margin: 0 auto; width: 70%; margin-bottom: 1mm; }
   @media print { .noprint { display: none !important; } }
