@@ -655,10 +655,29 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
               <CardTitle className="text-base">Histórico</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              {selected.status === "Romaneio Completo" || selected.status === "Romaneio Parcial" || selected.conferido_em ? (
+              {(() => {
+                const perdasArr = selected.perdas ?? [];
+                const completoTotal = todasCompletas(selected.pecas || [], recebidas, perdasArr);
+                const totalPerda = perdasArr.reduce((s, p) => s + (Number(p.qtd) || 0), 0);
+                const completoViaPerda = completoTotal && totalPerda > 0 && totalRecebidas(recebidas) < totalPecasCop(selected.pecas);
+                const jaCompleto = selected.status === "Romaneio Completo" || selected.status === "Aguardando Pagamento" || selected.status === "Finalizado";
+                const mostrarPainel = jaCompleto || selected.status === "Romaneio Parcial" || completoTotal || selected.conferido_em;
+                if (!mostrarPainel) {
+                  return (
+                    <div className="rounded-md border bg-muted/20 p-3 text-muted-foreground">
+                      A conferência é liberada quando o romaneio começar a receber peças.
+                    </div>
+                  );
+                }
+                return (
                 <>
+                  {completoViaPerda && !jaCompleto && (
+                    <div className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-900">
+                      <b>Romaneio completo por perda.</b> As peças perdidas fecharam o saldo — envie para pagamento pelo botão abaixo.
+                    </div>
+                  )}
                   <div className="rounded-md border bg-muted/30 p-3">
-                    {selected.status === "Romaneio Parcial"
+                    {selected.status === "Romaneio Parcial" && !completoTotal
                       ? <>Romaneio <b>parcial</b>. Confira o que já chegou e use <b>Particionar</b> para liberar a parte recebida para pagamento.</>
                       : <>Conferência liberada. Verifique se as <b>quantidades recebidas</b> batem com o que foi solicitado neste romaneio.</>}
                   </div>
