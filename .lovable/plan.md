@@ -1,45 +1,45 @@
-# Perdas contam como "entregue" para fechar o Romaneio
+## Mudanças COP — Pagamento, Motivo de Perda e Navegação
 
-Sem tocar em PCP, `cop-saldos.ts`, `cops.pecas` (corte) e sem alterar a lógica de pagamento.
+### 1. Pagamento: admin-only + botão "Editar"
+Em `src/components/cop/PagamentoOficinasTab.tsx`:
+- **"Marcar como Pago"** passa a aparecer só para **admin** (hoje aparece para qualquer gestor COP).
+- Enquanto o COP estiver em `pagamento_status = "liberado"`, exibir novo botão laranja **"Editar (voltar para Romaneio Completo)"** disponível para gestor COP ou admin. Ao clicar:
+  - Zera `pagamento_status → "nao_pago"`, `pagamento_liberado_em → null`, `pagamento_liberado_por → null`, `observacoes_pagamento → null`.
+  - Não muda o status do COP (continua "Aguardando Pagamento"/"Romaneio Completo" conforme o fluxo atual do romaneio).
+- Novo botão **"← Voltar ao Romaneio"** que troca de aba mantendo o mesmo COP selecionado (via prop `onChangeTab` já usada em outras abas).
+- Importar `Undo2` e `ArrowLeft` de `lucide-react`.
 
-## 1. Migração SQL (aditiva)
+Nota: mantemos os três status atuais (`nao_pago`, `liberado`, `pago`). O documento cita "aguardando_pagamento" mas a própria nota final confirma que se mantém `liberado`.
 
-```sql
-ALTER TABLE cops ADD COLUMN IF NOT EXISTS historico_perdas jsonb NOT NULL DEFAULT '[]'::jsonb;
-```
+### 2. Motivo da perda
+- Expandir tipo `CopPerdaLinha` em `src/lib/cop.ts` com `motivo?: string | null`.
+- Em `src/components/cop/RegistrarPerdaDialog.tsx`:
+  - Estado `vals` passa a guardar `{ qtd, motivo }` por linha.
+  - Nova coluna **Motivo** na tabela com `Select` mostrando os motivos configurados (fallback: "Defeito do tecido", "Tecido desfiado", "Erro de costura").
+  - `confirmar()` inclui `motivo` no payload.
+- `formatPerdasResumo` e histórico continuam funcionando (motivo é opcional).
+- Em `src/components/cop/PerdasTab.tsx`, adicionar coluna Motivo na listagem de perdas do romaneio.
 
-## 2. `src/lib/cop.ts`
+### 3. Configurações COP — lista de Motivos de Perda
+- Migration: expandir `CHECK` de `app_lists.kind` para incluir `'motivo_perda'` e semear os 3 motivos padrão.
+- `src/lib/cop.ts`: helpers `MOTIVOS_PERDA_PADRAO()` e `getMotivosPerdaFromList()`.
+- Em `src/components/cop/CopConfigPanel.tsx` (já existe, hoje cuida de oficinas): adicionar seção **"Motivos de Perda"** com input + botão adicionar e lista com remover. Gestor COP e admin podem editar (mesmo perfil que já edita oficinas).
+- `RegistrarPerdaDialog` carrega os motivos via `useAppList("motivo_perda")`.
 
-- Novo tipo `HistoricoPerda = { em, tipo: "perda", total, itens: CopPerdaLinha[] }`.
-- Adicionar `historico_perdas: HistoricoPerda[]` no `type Cop`.
-- Novo helper `getPerda(perdas, m, c, t)`.
-- Estender `todasCompletas(pecas, rec, perdas = [])` — retrocompatível — considerando `recebido + perdido ≥ qtd` por linha.
+### 4. Voltar ao Romaneio
+Já coberto no item 1 (botão + prop `onChangeTab`). O container `/cop` já propaga `selectedId` entre abas via search params, então basta trocar `tab` mantendo o `copId`.
 
-## 3. `src/components/cop/RomaneioTab.tsx`
+### Detalhes técnicos
+- Nenhuma alteração em `src/lib/cop-saldos.ts`.
+- Nenhuma alteração de RLS além do CHECK constraint de `app_lists`.
+- Realtime já está ativo em `app_lists` no CopConfigPanel existente; reaproveitar.
 
-**a) `salvarPerdas`**
-- Diff entre `perdas` novas e `cop.perdas` (só o que aumentou vira registro `HistoricoPerda`).
-- Append em `historico_perdas`.
-- Recalcular status com `todasCompletas(cop.pecas, cop.pecas_recebidas, perdasNovas)`:
-  - Se completo E status ∈ {`Na Oficina (Costura)`, `Romaneio Parcial`} → `Romaneio Completo`.
-  - Senão, se houver ao menos recebido/perda em alguma linha e status ∈ {`Na Oficina (Costura)`} → `Romaneio Parcial`.
-  - Nunca regredir estágios pós-completo (`Romaneio Completo`, `Aguardando Pagamento`, `Finalizado`, etc.).
-- Persistir `perdas`, `observacoes_romaneio`, `historico_perdas`, `status` num único update.
+### Arquivos alterados
+- `src/lib/cop.ts` (tipo + helpers)
+- `src/components/cop/RegistrarPerdaDialog.tsx`
+- `src/components/cop/PagamentoOficinasTab.tsx`
+- `src/components/cop/PerdasTab.tsx` (coluna motivo)
+- `src/components/cop/CopConfigPanel.tsx` (seção motivos)
+- Migration SQL: constraint + seed em `app_lists`
 
-**b) `handleEntregaConfirm`**
-- Passar `selected.perdas` como 3º arg em `todasCompletas(...)` (tanto no caminho completo quanto no parcial e no de partição), para o caso de já haver perda registrada.
-
-**c) Tabela "Peças do Romaneio"**
-- Novo estado visual roxo (`#9333ea` fundo, texto branco) quando `r < qtd` mas `r + perdaLinha ≥ qtd` e `perdaLinha > 0`. Texto `{r}/{qtd}` inalterado. Não mexer nos outros estados.
-
-**d) Painel "Histórico"**
-- Unificar `historico_recebimentos` + `historico_perdas` em lista única ordenada por `em` desc.
-- Nova tag `perda` (vermelho/rosa) para itens de `historico_perdas`.
-- `selectedHist` passa a aceitar união dos dois tipos; modal muda o título para "Peças perdidas" quando tipo = `perda`, mantendo a mesma tabela.
-- Renomear a seção para "Histórico".
-
-## Critério de aceite
-1. Perda que zera todas as diferenças → status vira `Romaneio Completo` automaticamente, liberando "Confirmar conferência".
-2. Cada registro de perda aparece no Histórico com tag própria, intercalado por data.
-3. Linhas fechadas por perda aparecem em roxo mantendo `recebido/total`.
-4. `cops.pecas` intacto; cálculo de pagamento inalterado.
+Confirma para eu implementar?
