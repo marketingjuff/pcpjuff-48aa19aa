@@ -123,14 +123,11 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
     return {
       total: ativos.length,
       atrasados: ativos.filter((p) => statusPrazo(p) === "atrasado").length,
-      arte: ativos.filter((p) => p.tipo_estampa !== "Lisa" && p.status_arte !== "Arte Finalizada").length,
-      dtf: ativos.filter((p) => tipoIncluiDTF(p.tipo_estampa) && p.dtf_estampado !== "Sim").length,
-      silk: ativos.filter((p) => tipoIncluiSilk(p.tipo_estampa) && p.silk_feito !== "Sim").length,
-      acabamento: ativos.filter((p) => (p.tipo_estampa === "Lisa" || p.status_arte === "Arte Finalizada")
-        && (!tipoIncluiDTF(p.tipo_estampa) || p.dtf_estampado === "Sim")
-        && (!tipoIncluiSilk(p.tipo_estampa) || p.silk_feito === "Sim")
-        && p.embalado !== "Sim").length,
-      expedicao: pedidos.filter((p) => emExpedicao(p)).length,
+      arte: pedidos.filter((p) => matchEtapaFiltro(p, "arte")).length,
+      dtf: pedidos.filter((p) => matchEtapaFiltro(p, "dtf") && visivelEmDTF(p)).length,
+      silk: pedidos.filter((p) => matchEtapaFiltro(p, "silk") && visivelEmSilk(p)).length,
+      acabamento: pedidos.filter((p) => matchEtapaFiltro(p, "acabamento")).length,
+      expedicao: pedidos.filter((p) => matchEtapaFiltro(p, "expedicao")).length,
     };
   }, [pedidos]);
 
