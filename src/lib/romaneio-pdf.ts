@@ -1,6 +1,6 @@
 // Geração do PDF do Romaneio via janela de impressão.
 // A4 vertical com dois A5 horizontais (vias idênticas) para impressão.
-import logoJuff from "@/assets/logo-juff.jpg.asset.json";
+import logoJuff from "@/assets/logo-juff-preto.png.asset.json";
 import type { Cop, CopPeca, Oficina } from "@/lib/cop";
 import { rotuloCop, totalPecasCop, numeroBaseCop, colunasTamanhos } from "@/lib/cop";
 
@@ -95,7 +95,7 @@ export function abrirRomaneioParaImpressao(cop: Cop, oficina: Oficina | null, co
   .page { width: 194mm; height: 281mm; display: flex; flex-direction: column; gap: 6mm; }
   .via { border: 1px dashed #000; padding: 5mm; height: 137mm; display: flex; flex-direction: column; gap: 2.5mm; }
   .via header { display: flex; align-items: center; gap: 6mm; border-bottom: 1px solid #000; padding-bottom: 2mm; }
-  .via header img { width: 16mm; height: 16mm; object-fit: cover; border-radius: 2mm; filter: grayscale(100%) brightness(0) contrast(1000%); }
+  .via header img { width: 16mm; height: 16mm; object-fit: cover; border-radius: 2mm; }
   .via .t1 { font-size: 13pt; font-weight: 700; }
   .via .t2 { font-size: 13pt; color: #000; display: flex; flex-wrap: wrap; gap: 4mm; margin-top: 1mm; }
   table.grid { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
