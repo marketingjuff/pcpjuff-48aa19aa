@@ -293,7 +293,8 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
                   ) : grupos.map((g, i) => {
                     const hex = corHex(g.cor); const fg = corTextoSobre(hex);
                     return (
-                      <tr key={i} className="border-t">
+                      <tr key={i} className={`border-t ${i % 2 === 1 ? "bg-muted/80" : ""}`}>
+
                         <td className="p-2">{g.modelo}</td>
                         <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
                         <td className="p-2 text-right tabular-nums">{g.qtd}</td>

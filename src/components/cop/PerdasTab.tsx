@@ -203,10 +203,11 @@ export function PerdasTab() {
               <tbody>
                 {perdasRomaneios.length === 0 ? (
                   <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">Sem perdas em romaneios.</td></tr>
-                ) : perdasRomaneios.map(({ key, cop, linha }) => {
+                ) : perdasRomaneios.map(({ key, cop, linha }, i) => {
                   const hex = corHex(linha.cor); const fg = corTextoSobre(hex);
                   return (
-                    <tr key={key} className="border-t">
+                    <tr key={key} className={`border-t ${i % 2 === 1 ? "bg-muted/80" : ""}`}>
+
                       <td className="p-2 font-mono">{formatCopNumero(cop.numero)}{cop.letra ? cop.letra : ""}</td>
                       <td className="p-2">{cop.oficina_id ? (ofiNome.get(cop.oficina_id) ?? "—") : "—"}</td>
                       <td className="p-2">{linha.modelo}</td>
@@ -244,10 +245,11 @@ export function PerdasTab() {
               <tbody>
                 {perdas.length === 0 ? (
                   <tr><td colSpan={isAdmin ? 9 : 8} className="p-3 text-center text-muted-foreground">Sem registros.</td></tr>
-                ) : perdas.map((p) => {
+                ) : perdas.map((p, i) => {
                   const hex = corHex(p.cor); const fg = corTextoSobre(hex);
                   return (
-                    <tr key={p.id} className="border-t">
+                    <tr key={p.id} className={`border-t ${i % 2 === 1 ? "bg-muted/80" : ""}`}>
+
                       <td className="p-2 text-xs">{new Date(p.created_at).toLocaleString("pt-BR")}</td>
                       <td className="p-2">{p.oficina_id ? (ofiNome.get(p.oficina_id) ?? "—") : "—"}</td>
                       <td className="p-2 font-mono text-xs">{p.etiqueta ?? "—"}</td>
