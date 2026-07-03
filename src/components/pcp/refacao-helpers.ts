@@ -255,3 +255,32 @@ export function camposAlimparAposInputProducao(pedido: Pedido): Record<string, a
   return out;
 }
 
+/**
+ * Restaura os campos de uma etapa (DTF ou Silk) a partir do retrato do episódio
+ * ABERTO de refação — útil quando um pedido DTF+Silk volta para refação e apenas
+ * um dos lados precisa ser refeito, permitindo à área que já executou "passar
+ * pra frente" sem refazer o trabalho.
+ *
+ * Retorna `null` quando não há histórico aproveitável.
+ */
+export function restaurarEtapaDoHistorico(
+  pedido: Pedido,
+  etapa: "dtf" | "silk",
+): Record<string, any> | null {
+  const aberto = episodioAberto(pedido);
+  if (!aberto) return null;
+  const campos = (aberto.retrato as any)?.campos_apagados as Record<string, any> | undefined;
+  if (!campos) return null;
+  const chaves = etapa === "dtf" ? Object.keys(WIPE_DTF) : Object.keys(WIPE_SILK);
+  const out: Record<string, any> = {};
+  let temAlgum = false;
+  for (const k of chaves) {
+    if (campos[k] !== undefined && campos[k] !== null && campos[k] !== "") {
+      out[k] = campos[k];
+      temAlgum = true;
+    }
+  }
+  return temAlgum ? out : null;
+}
+
+
