@@ -87,6 +87,18 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   const [showEntrega, setShowEntrega] = useState(false);
   const [showParticionar, setShowParticionar] = useState(false);
   const [selectedHist, setSelectedHist] = useState<HistoricoRecebimento | HistoricoPerda | null>(null);
+  const [sortKey, setSortKey] = useState<"numero" | "status" | "oficina" | "recebimento">("numero");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const toggleSort = (k: typeof sortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(k); setSortDir("asc"); }
+  };
+
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const selectAndScroll = (id: string | null) => {
+    setSelectedId(id);
+    if (id) requestAnimationFrame(() => editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   const selected = useMemo(() => cops.find((c) => c.id === selectedId) ?? null, [cops, selectedId]);
   const oficina = useMemo(
