@@ -208,7 +208,8 @@ export function DisponivelTab() {
                     <td className="p-0" />
                   </tr>
                 );
-              })}
+                });
+              })()}
             </tbody>
             {linhas.length > 0 && (
               <tfoot className="border-t-2 font-semibold bg-muted/30">
