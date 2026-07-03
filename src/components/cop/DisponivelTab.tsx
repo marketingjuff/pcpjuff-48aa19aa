@@ -214,7 +214,7 @@ export function DisponivelTab() {
             {linhas.length > 0 && (
               <tfoot className="border-t-2 font-semibold bg-muted/30">
                 <tr>
-                  <td colSpan={2} className="px-2 py-1 text-left font-bold">Total Geral</td>
+                  <td colSpan={2} className="px-2 py-1 text-left">Total Geral</td>
                   {REFACAO_TAMANHOS.map((t) => {
                     const v = totaisTam.get(t) ?? 0;
                     const color = v < 0 ? "text-red-700" : v > 0 ? "text-green-700" : "text-muted-foreground";
