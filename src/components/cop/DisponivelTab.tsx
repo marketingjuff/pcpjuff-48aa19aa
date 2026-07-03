@@ -163,15 +163,13 @@ export function DisponivelTab() {
                 const hex = corHex(l.cor); const fg = corTextoSobre(hex);
                 const prev = i > 0 ? linhas[i - 1] : null;
                 const novaCor = !prev || prev.cor !== l.cor;
-                const rowBg = `color-mix(in oklab, ${hex} 12%, transparent)`;
                 return (
                   <tr
                     key={i}
-                    className={`${novaCor ? "border-t-2 border-muted-foreground/40" : ""} hover:brightness-95`}
-                    style={{ backgroundColor: rowBg }}
+                    className={`${novaCor ? "border-t-2 border-muted-foreground/40" : ""} ${i % 2 ? "bg-muted/40" : ""} hover:bg-accent/60`}
                   >
                     <td className="px-2 py-0 leading-tight">{novaCor ? (
-                      <span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{l.cor}</span>
+                      <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{l.cor}</span>
                     ) : null}</td>
                     <td className="px-2 py-0 leading-tight font-medium">{l.modelo}</td>
                     {REFACAO_TAMANHOS.map((t) => {
