@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,8 +17,9 @@ import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopStatus, type Oficina,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, subtrairPecas,
-  calcularStatusCorte, getRecebida, rotuloCop, numeroBaseCop,
+  calcularStatusCorte, getRecebida, rotuloCop, numeroBaseCop, colunasTamanhos,
 } from "@/lib/cop";
+
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { DivisaoCorteDialog } from "./DivisaoCorteDialog";
 import { useCanAccessCop } from "@/hooks/use-role";
@@ -635,40 +636,18 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
           ) : lista.length === 0 ? (
             <div className="text-sm text-muted-foreground">Nenhum COP no filtro atual.</div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-xs">
-                  <tr>
-                    <SortableTh label="Número" active={sortKey === "numero"} dir={sortDir} onClick={() => toggleSort("numero")} />
-                    <SortableTh label="Status" active={sortKey === "status"} dir={sortDir} onClick={() => toggleSort("status")} />
-                    <SortableTh label="Oficina" active={sortKey === "oficina"} dir={sortDir} onClick={() => toggleSort("oficina")} />
-                    <th className="p-2 text-left">Resumo das peças</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lista.map((c) => {
-                    const ofiNome = c.oficina_id ? (oficinaNomeById.get(c.oficina_id) ?? "—") : "—";
-                    return (
-                      <tr
-                        key={c.id}
-                        className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : ""}`}
-                        onClick={() => selectAndScroll(c.id)}
-                      >
-                        <td className="p-2 font-semibold tabular-nums">
-                          {rotuloCop(numeroBaseCop(c, cops), c.letra)}
-                          {c.cop_pai_id && <span className="ml-1 text-[10px] text-muted-foreground">(filho)</span>}
-                        </td>
-                        <td className="p-2">
-                          <span className="px-2 py-0.5 rounded text-xs border" style={etapaStyle(c.status)}>{c.status}</span>
-                        </td>
-                        <td className="p-2">{ofiNome}</td>
-                        <td className="p-2"><ResumoPecas pecas={c.pecas || []} /></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <PecasTable
+              lista={lista}
+              cops={cops}
+              oficinaNomeById={oficinaNomeById}
+              selectedId={selectedId}
+              onSelect={selectAndScroll}
+              etapaStyle={etapaStyle}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              toggleSort={toggleSort}
+            />
+
           )}
         </CardContent>
       </Card>
@@ -723,32 +702,110 @@ function SortableTh({ label, active, dir, onClick }: { label: string; active: bo
   );
 }
 
-function ResumoPecas({ pecas }: { pecas: CopPeca[] }) {
-  const grupos = useMemo(() => {
-    const map = new Map<string, { modelo: string; cor: string; qtd: number }>();
-    for (const p of pecas ?? []) {
-      const k = `${p.modelo}|${p.cor}`;
-      const g = map.get(k) ?? { modelo: p.modelo, cor: p.cor, qtd: 0 };
-      g.qtd += Number(p.qtd) || 0;
-      map.set(k, g);
-    }
-    return Array.from(map.values());
-  }, [pecas]);
-  if (grupos.length === 0) return <span className="text-muted-foreground">—</span>;
+function PecasTable({
+  lista, cops, oficinaNomeById, selectedId, onSelect, etapaStyle,
+  sortKey, sortDir, toggleSort,
+}: {
+  lista: Cop[];
+  cops: Cop[];
+  oficinaNomeById: Map<string, string>;
+  selectedId: string | null | undefined;
+  onSelect: (id: string) => void;
+  etapaStyle: (s: string) => React.CSSProperties;
+  sortKey: "numero" | "status" | "oficina";
+  sortDir: "asc" | "desc";
+  toggleSort: (k: "numero" | "status" | "oficina") => void;
+}) {
+  const tamanhosColunas = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of lista) for (const p of c.pecas ?? []) if (p.tamanho) set.add(p.tamanho);
+    return colunasTamanhos(set);
+  }, [lista]);
+
+  type Grupo = { modelo: string; cor: string; porTamanho: Map<string, number>; total: number };
+  const linhas = useMemo(() => {
+    return lista.map((c) => {
+      const map = new Map<string, Grupo>();
+      for (const p of c.pecas ?? []) {
+        const k = `${p.modelo}|${p.cor}`;
+        let g = map.get(k);
+        if (!g) { g = { modelo: p.modelo, cor: p.cor, porTamanho: new Map(), total: 0 }; map.set(k, g); }
+        g.porTamanho.set(p.tamanho, (g.porTamanho.get(p.tamanho) ?? 0) + (Number(p.qtd) || 0));
+        g.total += Number(p.qtd) || 0;
+      }
+      return { cop: c, grupos: Array.from(map.values()) };
+    });
+  }, [lista]);
+
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs line-clamp-2">
-      {grupos.map((g, i) => {
-        const hex = corHex(g.cor); const fg = corTextoSobre(hex);
-        return (
-          <span key={i} className="inline-flex items-center gap-1">
-            <span className="font-medium">{g.modelo}</span>
-            <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span>
-            <span className="tabular-nums text-muted-foreground">({g.qtd})</span>
-            {i < grupos.length - 1 && <span className="text-muted-foreground">·</span>}
-          </span>
-        );
-      })}
+    <div className="rounded-md border overflow-x-auto">
+      <table className="text-sm w-full" style={{ borderCollapse: "collapse" }}>
+        <thead className="bg-muted/40 text-xs">
+          <tr>
+            <SortableTh label="Número" active={sortKey === "numero"} dir={sortDir} onClick={() => toggleSort("numero")} />
+            <SortableTh label="Oficina" active={sortKey === "oficina"} dir={sortDir} onClick={() => toggleSort("oficina")} />
+            <SortableTh label="Status" active={sortKey === "status"} dir={sortDir} onClick={() => toggleSort("status")} />
+            <th className="px-2 py-2 text-left whitespace-nowrap">Modelo</th>
+            <th className="px-2 py-2 text-left whitespace-nowrap">Cor</th>
+            {tamanhosColunas.map((t) => (
+              <th key={t} className="px-1 py-2 text-center whitespace-nowrap">{t}</th>
+            ))}
+            <th className="px-2 py-2 text-right whitespace-nowrap">Tot.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {linhas.map(({ cop: c, grupos }) => {
+            const ofiNome = c.oficina_id ? (oficinaNomeById.get(c.oficina_id) ?? "—") : "—";
+            const rows = grupos.length > 0 ? grupos : [null];
+            const span = rows.length;
+            const sel = c.id === selectedId;
+            return rows.map((g, i) => (
+              <tr
+                key={`${c.id}|${i}`}
+                className={`border-t cursor-pointer hover:bg-accent/40 ${sel ? "bg-accent/50" : ""}`}
+                onClick={() => onSelect(c.id)}
+              >
+                {i === 0 && (
+                  <>
+                    <td className="p-2 font-semibold tabular-nums align-top" rowSpan={span}>
+                      {rotuloCop(numeroBaseCop(c, cops), c.letra)}
+                      {c.cop_pai_id && <span className="ml-1 text-[10px] text-muted-foreground">(filho)</span>}
+                    </td>
+                    <td className="p-2 align-top" rowSpan={span}>{ofiNome}</td>
+                    <td className="p-2 align-top" rowSpan={span}>
+                      <span className="px-2 py-0.5 rounded text-xs border" style={etapaStyle(c.status)}>{c.status}</span>
+                    </td>
+                  </>
+                )}
+                {g ? (
+                  <>
+                    <td className="px-2 py-1 whitespace-nowrap text-xs">{g.modelo}</td>
+                    <td className="px-2 py-1">
+                      {(() => {
+                        const hex = corHex(g.cor); const fg = corTextoSobre(hex);
+                        return <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span>;
+                      })()}
+                    </td>
+                    {tamanhosColunas.map((t) => {
+                      const q = g.porTamanho.get(t) ?? 0;
+                      return (
+                        <td key={t} className="px-1 py-1 text-center tabular-nums text-xs">
+                          {q > 0 ? q : <span className="text-muted-foreground/40">–</span>}
+                        </td>
+                      );
+                    })}
+                    <td className="px-2 py-1 text-right tabular-nums text-xs font-semibold">{g.total}</td>
+                  </>
+                ) : (
+                  <td className="p-2 text-muted-foreground text-xs" colSpan={2 + tamanhosColunas.length + 1}>—</td>
+                )}
+              </tr>
+            ));
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
+
 
