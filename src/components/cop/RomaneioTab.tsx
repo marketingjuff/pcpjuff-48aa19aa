@@ -896,39 +896,18 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
           ) : lista.length === 0 ? (
             <div className="text-sm text-muted-foreground">Nenhum romaneio no filtro atual.</div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-xs">
-                  <tr>
-                    <SortableTh label="Romaneio" active={sortKey === "numero"} dir={sortDir} onClick={() => toggleSort("numero")} />
-                    <SortableTh label="Status" active={sortKey === "status"} dir={sortDir} onClick={() => toggleSort("status")} />
-                    <SortableTh label="Oficina" active={sortKey === "oficina"} dir={sortDir} onClick={() => toggleSort("oficina")} />
-                    <th className="p-2 text-left">Resumo das peças</th>
-                    <SortableTh label="Recebimento" active={sortKey === "recebimento"} dir={sortDir} onClick={() => toggleSort("recebimento")} />
-                  </tr>
-                </thead>
-                <tbody>
-                  {lista.map((c) => {
-                    const ofi = oficinas.find((o) => o.id === c.oficina_id);
-                    const totalPc = totalPecasCop(c.pecas);
-                    return (
-                      <tr key={c.id}
-                        className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : ""}`}
-                        onClick={() => selectAndScroll(c.id)}
-                      >
-                        <td className="p-2 font-semibold tabular-nums">{rotuloRomaneio(c, cops)}</td>
-                        <td className="p-2">
-                          <span className="px-2 py-0.5 rounded text-xs border" style={etapaStyle(c.status)}>{c.status}</span>
-                        </td>
-                        <td className="p-2">{ofi?.nome ?? "—"}</td>
-                        <td className="p-2"><ResumoPecas pecas={c.pecas || []} prefix={`${totalPc}x pçs`} /></td>
-                        <td className="p-2">{c.data_recebimento ?? "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <RomaneioPecasTable
+              lista={lista}
+              cops={cops}
+              oficinaNomeById={oficinaNomeById}
+              selectedId={selectedId}
+              onSelect={selectAndScroll}
+              etapaStyle={etapaStyle}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              toggleSort={toggleSort}
+            />
+
           )}
         </CardContent>
       </Card>
