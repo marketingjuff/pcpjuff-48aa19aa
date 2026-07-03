@@ -46,10 +46,11 @@ import {
   type BotaoKey as BotaoKeyType,
 } from "@/hooks/use-color-settings";
 import { CopConfigPanel } from "@/components/cop/CopConfigPanel";
+import { MapConfigPanel } from "@/components/map/MapConfigPanel";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   validateSearch: (s: Record<string, unknown>) => ({
-    area: (s.area === "cop" ? "cop" : "pcp") as "pcp" | "cop",
+    area: (s.area === "cop" ? "cop" : s.area === "map" ? "map" : "pcp") as "pcp" | "cop" | "map",
   }),
   component: ConfiguracoesPage,
 });
