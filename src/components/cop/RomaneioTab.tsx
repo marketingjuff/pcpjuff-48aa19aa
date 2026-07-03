@@ -13,7 +13,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2, AlertTriangle } from "lucide-react";
+import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { useCanAccessCop } from "@/hooks/use-role";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
