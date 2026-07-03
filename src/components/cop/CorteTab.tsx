@@ -653,7 +653,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
                         onClick={() => selectAndScroll(c.id)}
                       >
                         <td className="p-2 font-semibold tabular-nums">
-                          {formatCopNumero(c.numero)}
+                          {rotuloCop(numeroBaseCop(c, cops), c.letra)}
                           {c.cop_pai_id && <span className="ml-1 text-[10px] text-muted-foreground">(filho)</span>}
                         </td>
                         <td className="p-2">
