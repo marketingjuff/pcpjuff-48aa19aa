@@ -127,7 +127,11 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
         if (oficinaFiltro === "__sem__") { if (c.oficina_id) return false; }
         else if (c.oficina_id !== oficinaFiltro) return false;
       }
-      if (busca && !formatCopNumero(c.numero).includes(busca.replace(/\D/g, ""))) return false;
+      if (busca) {
+        const rot = rotuloCop(numeroBaseCop(c, cops), c.letra).toUpperCase();
+        const q = busca.toUpperCase().replace(/\s+/g, "");
+        if (!rot.includes(q) && !formatCopNumero(c.numero).includes(q.replace(/\D/g, ""))) return false;
+      }
       return true;
     });
   }, [cops, statusFiltro, oficinaFiltro, busca]);
