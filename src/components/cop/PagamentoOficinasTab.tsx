@@ -293,7 +293,8 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
                   ) : grupos.map((g, i) => {
                     const hex = corHex(g.cor); const fg = corTextoSobre(hex);
                     return (
-                      <tr key={i} className="border-t">
+                      <tr key={i} className={`border-t ${i % 2 === 1 ? "bg-muted/80" : ""}`}>
+
                         <td className="p-2">{g.modelo}</td>
                         <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
                         <td className="p-2 text-right tabular-nums">{g.qtd}</td>
@@ -436,14 +437,16 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
               <tbody>
                 {lista.length === 0 ? (
                   <tr><td colSpan={9} className="p-3 text-center text-muted-foreground">Nenhum COP no filtro atual.</td></tr>
-                ) : lista.map((c) => {
+                ) : lista.map((c, i) => {
                   const ofi = oficinas.find((o) => o.id === c.oficina_id) ?? null;
                   const v = calcValor(c, ofi);
                   const atras = isPagamentoAtrasado(c, feriados);
                   const libISO = c.pagamento_liberado_em ?? null;
                   const vencISO = libISO ? addDiasUteis(new Date(libISO), 5, feriados) : null;
+                  const zebra = i % 2 === 1;
                   return (
-                    <tr key={c.id} className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : ""}`} onClick={() => setSelectedId(c.id)}>
+                    <tr key={c.id} className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : zebra ? "bg-muted/80" : ""}`} onClick={() => setSelectedId(c.id)}>
+
                       <td className="p-2 font-semibold tabular-nums">{rotuloCop(c.numero, c.letra)}</td>
                       <td className="p-2">{ofi?.nome ?? "—"}</td>
                       <td className="p-2 text-center tabular-nums">{totalPecasCop(c.pecas)}</td>

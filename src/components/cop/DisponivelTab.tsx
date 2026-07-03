@@ -170,7 +170,7 @@ export function DisponivelTab() {
                   return (
                   <tr
                     key={i}
-                    className={`${novaCor ? "border-t" : ""} ${zebra ? "bg-muted/60" : ""} hover:bg-accent/60`}
+                    className={`${novaCor ? "border-t" : ""} ${zebra ? "bg-muted/80" : ""} hover:bg-accent/60`}
                   >
                     <td className="px-2 py-0 leading-tight">{novaCor ? (
                       <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{l.cor}</span>

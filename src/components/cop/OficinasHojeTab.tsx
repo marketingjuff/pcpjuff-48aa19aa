@@ -152,6 +152,9 @@ export function OficinasHojeTab() {
   let prevGroup = "";
   let prevCop = "";
   let prevModelo = "";
+  let copIdx = -1;
+  let lastCopKey = "";
+
 
   return (
     <div className="space-y-4">
@@ -210,8 +213,10 @@ export function OficinasHojeTab() {
                   prevGroup = "";
                   prevCop = "";
                   prevModelo = "";
+                  lastCopKey = "";
                   return (
                     <tr key={row.key} className="border-t bg-muted/60 font-semibold">
+
                       <td className="p-1.5 border-r" colSpan={4}>
                         <button
                           onClick={() => toggle(row.groupId)}
@@ -258,8 +263,13 @@ export function OficinasHojeTab() {
                 const fg = corTextoSobre(hex);
                 const isEmCorte = row.groupId === OFICINA_EM_CORTE.id;
 
+                const copKey = `${row.groupId}|${row.copId}`;
+                if (copKey !== lastCopKey) { copIdx++; lastCopKey = copKey; }
+                const zebra = copIdx % 2 === 1;
+
                 return (
-                  <tr key={row.key} className="border-t hover:bg-accent/30">
+                  <tr key={row.key} className={`border-t hover:bg-accent/30 ${zebra ? "bg-muted/80" : ""}`}>
+
                     <td className="p-1.5 border-r truncate">
                       {showOf ? (
                         <span className="font-medium">

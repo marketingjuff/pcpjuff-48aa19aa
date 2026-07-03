@@ -1158,7 +1158,7 @@ function RomaneioPecasTable({
             return rows.map((g, i) => (
               <tr
                 key={`${c.id}|${i}`}
-                className={`border-t cursor-pointer hover:bg-accent/40 ${sel ? "bg-accent/50" : zebra ? "bg-muted/60" : ""}`}
+                className={`border-t cursor-pointer hover:bg-accent/40 ${sel ? "bg-accent/50" : zebra ? "bg-muted/80" : ""}`}
                 onClick={() => onSelect(c.id)}
               >
 
