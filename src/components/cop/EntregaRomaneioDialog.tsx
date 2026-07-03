@@ -105,7 +105,7 @@ export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, on
                       <tr key={`${g.modelo}|${g.cor}`} className="border-t align-middle leading-tight">
                         <td className="px-2 py-1 font-medium">{g.modelo}</td>
                         <td className="px-2 py-1">
-                          <span className="inline-block px-1.5 py-0 rounded text-[10px]" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span>
+                          <span className="inline-block px-1.5 py-0 rounded text-[10px] font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span>
                         </td>
                         {cols.map((tam) => {
                           const qtd = byTam.get(tam) ?? 0;

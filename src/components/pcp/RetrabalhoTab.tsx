@@ -110,6 +110,7 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
     let totalProduzidas = 0;
     const problemaCount: Record<string, number> = {};
     const areaIdCount: Record<string, number> = {};
+    const areaErroCount: Record<string, number> = {};
     let abertas = 0;
     const episodiosPorPedido: Record<string, number> = {};
     const duracoesDias: number[] = [];
@@ -132,6 +133,7 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
         totalPerdaAdesivos += Number(e.perda_adesivos ?? 0);
         if (e.problema) problemaCount[e.problema] = (problemaCount[e.problema] ?? 0) + 1;
         if (e.area_identificou) areaIdCount[e.area_identificou] = (areaIdCount[e.area_identificou] ?? 0) + 1;
+        if (e.area_erro) areaErroCount[e.area_erro] = (areaErroCount[e.area_erro] ?? 0) + 1;
         if (e.aberto) abertas += 1;
         if (!e.aberto && e.data && (e as any).fechado_em) {
           const t0 = new Date(e.data).getTime();
@@ -156,13 +158,14 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
     const pct = totalProduzidas > 0 ? (totalRefeitas / totalProduzidas) * 100 : 0;
     const problemasRank = Object.entries(problemaCount).sort((a, b) => b[1] - a[1]);
     const areasIdRank = Object.entries(areaIdCount).sort((a, b) => b[1] - a[1]);
+    const areasErroRank = Object.entries(areaErroCount).sort((a, b) => b[1] - a[1]);
     const reincidencia = Object.values(episodiosPorPedido).filter((n) => n >= 2).length;
     const tempoMedio = duracoesDias.length > 0 ? duracoesDias.reduce((a, b) => a + b, 0) / duracoesDias.length : null;
     const deltaPerdaMes = perdaMes - perdaMesAnt;
     const problemaRecorrenteMes = Object.entries(problemaUlt30).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
     return {
       totalRefeitas, totalPerdaPecas, totalPerdaAdesivos, pct,
-      problemasRank, areasIdRank, abertas, reincidencia, tempoMedio,
+      problemasRank, areasIdRank, areasErroRank, abertas, reincidencia, tempoMedio,
       perdaMes, deltaPerdaMes, problemaRecorrenteMes,
     };
   }, [pedidos]);
@@ -204,7 +207,12 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
         <StatCard
           label="Área que mais identifica"
           value={stats.areasIdRank[0]?.[0] ?? "—"}
-          onClick={stats.areasIdRank.length ? () => setRankDialog({ titulo: "Áreas que identificam refação", entries: stats.areasIdRank }) : undefined}
+          onClick={() => setRankDialog({ titulo: "Áreas que identificam refação", entries: stats.areasIdRank })}
+        />
+        <StatCard
+          label="Área que mais errou"
+          value={stats.areasErroRank[0]?.[0] ?? "—"}
+          onClick={() => setRankDialog({ titulo: "Áreas que erraram", entries: stats.areasErroRank })}
         />
         <StatCard label="Refações em aberto" value={stats.abertas} />
         <StatCard label="Reincidência (pedidos ≥2)" value={stats.reincidencia} />
@@ -224,17 +232,21 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
             <DialogDescription>Distribuição por ocorrências</DialogDescription>
           </DialogHeader>
           {rankDialog && (
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={rankDialog.entries.map(([name, value]) => ({ name, value }))} layout="vertical" margin={{ left: 24, right: 24 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" allowDecimals={false} />
-                  <YAxis type="category" dataKey="name" width={140} />
-                  <RTooltip />
-                  <Bar dataKey="value" fill="hsl(var(--primary))" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            rankDialog.entries.length === 0 ? (
+              <div className="h-72 flex items-center justify-center text-sm text-muted-foreground">Sem dados.</div>
+            ) : (
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={rankDialog.entries.map(([name, value]) => ({ name, value }))} layout="vertical" margin={{ left: 24, right: 24 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" allowDecimals={false} />
+                    <YAxis type="category" dataKey="name" width={140} />
+                    <RTooltip />
+                    <Bar dataKey="value" fill="hsl(var(--primary))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )
           )}
         </DialogContent>
       </Dialog>

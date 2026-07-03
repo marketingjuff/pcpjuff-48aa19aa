@@ -102,7 +102,7 @@ export function RegistrarPerdaDialog({ open, onOpenChange, pecas, perdas, onConf
                 return (
                   <tr key={i} className="border-t">
                     <td className="p-2">{p.modelo}</td>
-                    <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{p.cor}</span></td>
+                    <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{p.cor}</span></td>
                     <td className="p-2 text-center">{p.tamanho}</td>
                     <td className="p-2 text-right tabular-nums">{p.qtd}</td>
                     <td className="p-2 text-right">

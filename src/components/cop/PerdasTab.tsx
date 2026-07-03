@@ -210,7 +210,7 @@ export function PerdasTab() {
                       <td className="p-2 font-mono">{formatCopNumero(cop.numero)}{cop.letra ? cop.letra : ""}</td>
                       <td className="p-2">{cop.oficina_id ? (ofiNome.get(cop.oficina_id) ?? "—") : "—"}</td>
                       <td className="p-2">{linha.modelo}</td>
-                      <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{linha.cor}</span></td>
+                      <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{linha.cor}</span></td>
                       <td className="p-2 text-center">{linha.tamanho}</td>
                       <td className="p-2 text-right tabular-nums">{linha.qtd}</td>
                       <td className="p-2 text-xs">{linha.motivo ?? "—"}</td>
@@ -252,7 +252,7 @@ export function PerdasTab() {
                       <td className="p-2">{p.oficina_id ? (ofiNome.get(p.oficina_id) ?? "—") : "—"}</td>
                       <td className="p-2 font-mono text-xs">{p.etiqueta ?? "—"}</td>
                       <td className="p-2">{p.modelo}</td>
-                      <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{p.cor}</span></td>
+                      <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{p.cor}</span></td>
                       <td className="p-2 text-center">{p.tamanho}</td>
                       <td className="p-2 text-right tabular-nums">{p.qtd}</td>
                       <td className="p-2 text-xs">{p.motivo ?? "—"}</td>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2, AlertTriangle } from "lucide-react";
+import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { useCanAccessCop } from "@/hooks/use-role";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
@@ -87,6 +87,18 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   const [showEntrega, setShowEntrega] = useState(false);
   const [showParticionar, setShowParticionar] = useState(false);
   const [selectedHist, setSelectedHist] = useState<HistoricoRecebimento | HistoricoPerda | null>(null);
+  const [sortKey, setSortKey] = useState<"numero" | "status" | "oficina" | "recebimento">("numero");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const toggleSort = (k: typeof sortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(k); setSortDir("asc"); }
+  };
+
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const selectAndScroll = (id: string | null) => {
+    setSelectedId(id);
+    if (id) requestAnimationFrame(() => editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   const selected = useMemo(() => cops.find((c) => c.id === selectedId) ?? null, [cops, selectedId]);
   const oficina = useMemo(
@@ -94,7 +106,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
     [oficinas, selected],
   );
 
-  const lista = useMemo(() => {
+  const listaFiltrada = useMemo(() => {
     return cops.filter((c) => {
       if (statusFiltro === "__ativos__") {
         if (c.status === "Finalizado" || c.pagamento_status === "pago") return false;
@@ -112,6 +124,31 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
       return true;
     });
   }, [cops, statusFiltro, oficinaFiltro, busca]);
+
+  const oficinaNomeById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const o of oficinas) m.set(o.id, o.nome);
+    return m;
+  }, [oficinas]);
+
+  const lista = useMemo(() => {
+    const arr = [...listaFiltrada];
+    const dir = sortDir === "asc" ? 1 : -1;
+    arr.sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "numero") cmp = a.numero - b.numero;
+      else if (sortKey === "status") cmp = String(a.status).localeCompare(String(b.status), "pt-BR");
+      else if (sortKey === "oficina") {
+        const na = a.oficina_id ? (oficinaNomeById.get(a.oficina_id) ?? "") : "";
+        const nb = b.oficina_id ? (oficinaNomeById.get(b.oficina_id) ?? "") : "";
+        cmp = na.localeCompare(nb, "pt-BR");
+      } else if (sortKey === "recebimento") {
+        cmp = String(a.data_recebimento ?? "").localeCompare(String(b.data_recebimento ?? ""));
+      }
+      return cmp * dir;
+    });
+    return arr;
+  }, [listaFiltrada, sortKey, sortDir, oficinaNomeById]);
 
   // ---- Draft ----
   const [draft, setDraft] = useState<Partial<Cop>>({});
@@ -423,6 +460,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
       </div>
 
       {/* Editor */}
+      <div ref={editorRef} />
       {selected && (
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] gap-4">
           {/* Lado Esquerdo — Ordem de Produção */}
@@ -530,7 +568,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                             return (
                               <tr key={i} className="border-t">
                                 <td className="p-2">{g.modelo}</td>
-                                <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
+                                <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
                                 {cols.map((tam) => {
                                   const qtd = byTam.get(tam) ?? 0;
                                   if (!qtd) {
@@ -862,38 +900,29 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-xs">
                   <tr>
-                    <th className="p-2 text-left">Romaneio</th>
-                    <th className="p-2 text-left">Status</th>
-                    <th className="p-2 text-left">Oficina</th>
-                    <th className="p-2 text-center">Peças</th>
-                    <th className="p-2 text-center">Recebido</th>
-                    <th className="p-2 text-left">Saída</th>
-                    <th className="p-2 text-left">Recebimento</th>
-                    <th className="p-2"></th>
+                    <SortableTh label="Romaneio" active={sortKey === "numero"} dir={sortDir} onClick={() => toggleSort("numero")} />
+                    <SortableTh label="Status" active={sortKey === "status"} dir={sortDir} onClick={() => toggleSort("status")} />
+                    <SortableTh label="Oficina" active={sortKey === "oficina"} dir={sortDir} onClick={() => toggleSort("oficina")} />
+                    <th className="p-2 text-left">Resumo das peças</th>
+                    <SortableTh label="Recebimento" active={sortKey === "recebimento"} dir={sortDir} onClick={() => toggleSort("recebimento")} />
                   </tr>
                 </thead>
                 <tbody>
                   {lista.map((c) => {
                     const ofi = oficinas.find((o) => o.id === c.oficina_id);
+                    const totalPc = totalPecasCop(c.pecas);
                     return (
                       <tr key={c.id}
                         className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : ""}`}
-                        onClick={() => setSelectedId(c.id)}
+                        onClick={() => selectAndScroll(c.id)}
                       >
                         <td className="p-2 font-semibold tabular-nums">{rotuloRomaneio(c, cops)}</td>
                         <td className="p-2">
                           <span className="px-2 py-0.5 rounded text-xs border" style={etapaStyle(c.status)}>{c.status}</span>
                         </td>
                         <td className="p-2">{ofi?.nome ?? "—"}</td>
-                        <td className="p-2 text-center tabular-nums">{totalPecasCop(c.pecas)}</td>
-                        <td className="p-2 text-center tabular-nums">{totalRecebidas(c.pecas_recebidas)}</td>
-                        <td className="p-2">{c.data_saida_oficina ?? "—"}</td>
+                        <td className="p-2"><ResumoPecas pecas={c.pecas || []} prefix={`${totalPc}x pçs`} /></td>
                         <td className="p-2">{c.data_recebimento ?? "—"}</td>
-                        <td className="p-2 text-right">
-                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setSelectedId(c.id); }}>
-                            Abrir
-                          </Button>
-                        </td>
                       </tr>
                     );
                   })}
@@ -1070,4 +1099,47 @@ function BuscaPecasBlock({ cops, oficinas, onSelect }: { cops: Cop[]; oficinas: 
     </Card>
   );
 }
+
+function SortableTh({ label, active, dir, onClick }: { label: string; active: boolean; dir: "asc" | "desc"; onClick: () => void }) {
+  return (
+    <th className="p-2 text-left">
+      <button type="button" onClick={onClick} className="inline-flex items-center gap-1 hover:text-primary">
+        <span>{label}</span>
+        {active ? (dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : null}
+      </button>
+    </th>
+  );
+}
+
+function ResumoPecas({ pecas, prefix }: { pecas: CopPeca[]; prefix?: string }) {
+  const grupos = useMemo(() => {
+    const map = new Map<string, { modelo: string; cor: string; qtd: number }>();
+    for (const p of pecas ?? []) {
+      const k = `${p.modelo}|${p.cor}`;
+      const g = map.get(k) ?? { modelo: p.modelo, cor: p.cor, qtd: 0 };
+      g.qtd += Number(p.qtd) || 0;
+      map.set(k, g);
+    }
+    return Array.from(map.values());
+  }, [pecas]);
+  if (grupos.length === 0) return <span className="text-muted-foreground">—</span>;
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs line-clamp-2">
+      {prefix && <span className="font-semibold tabular-nums">{prefix}</span>}
+      {prefix && <span className="text-muted-foreground">·</span>}
+      {grupos.map((g, i) => {
+        const hex = corHex(g.cor); const fg = corTextoSobre(hex);
+        return (
+          <span key={i} className="inline-flex items-center gap-1">
+            <span className="font-medium">{g.modelo}</span>
+            <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span>
+            <span className="tabular-nums text-muted-foreground">({g.qtd})</span>
+            {i < grupos.length - 1 && <span className="text-muted-foreground">·</span>}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 

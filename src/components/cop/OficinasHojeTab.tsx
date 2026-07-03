@@ -283,7 +283,7 @@ export function OficinasHojeTab() {
                     <td className="p-1.5 border-r truncate">{showMod ? row.modelo : ""}</td>
                     <td className="p-1.5 border-r truncate">
                       <span
-                        className="inline-block px-2 py-0.5 rounded text-xs align-middle"
+                        className="inline-block px-2 py-0.5 rounded text-xs align-middle font-bold"
                         style={{ backgroundColor: hex, color: fg }}
                       >
                         {row.cor}

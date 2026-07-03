@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,12 +10,12 @@ import { DateInputBR } from "@/components/ui/date-input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Scissors, Send, RefreshCw, Trash2, Undo2 } from "lucide-react";
+import { Plus, X, Scissors, Send, RefreshCw, Trash2, Undo2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
-  type Cop, type CopPeca, type CopStatus,
+  type Cop, type CopPeca, type CopStatus, type Oficina,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, subtrairPecas,
   calcularStatusCorte, getRecebida,
 } from "@/lib/cop";
@@ -73,6 +73,21 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     },
   });
 
+  const { data: oficinas = [] } = useQuery({
+    queryKey: ["oficinas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("oficinas" as any).select("*").order("nome");
+      if (error) throw error;
+      return (data ?? []) as unknown as Oficina[];
+    },
+  });
+
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const selectAndScroll = (id: string | null) => {
+    setSelectedId(id);
+    if (id) requestAnimationFrame(() => editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
   useEffect(() => {
     const ch = supabase
       .channel("cops-changes")
@@ -85,21 +100,54 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
 
   
   const [statusFiltro, setStatusFiltro] = useState<string>("__ativos__");
+  const [oficinaFiltro, setOficinaFiltro] = useState<string>("todas");
   const [busca, setBusca] = useState("");
   const [showDivisao, setShowDivisao] = useState(false);
+  const [sortKey, setSortKey] = useState<"numero" | "status" | "oficina">("numero");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const toggleSort = (k: typeof sortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(k); setSortDir("asc"); }
+  };
 
   const selected = useMemo(() => cops.find((c) => c.id === selectedId) ?? null, [cops, selectedId]);
+  const oficinaNomeById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const o of oficinas) m.set(o.id, o.nome);
+    return m;
+  }, [oficinas]);
 
   // Lista filtrada (por padrão, todos os COPs ATIVOS — exceto Finalizado/Pago)
-  const lista = useMemo(() => {
+  const listaFiltrada = useMemo(() => {
     return cops.filter((c) => {
       if (statusFiltro === "__ativos__") {
         if (c.status === "Finalizado" || c.pagamento_status === "pago") return false;
       } else if (statusFiltro !== "todos" && c.status !== statusFiltro) return false;
+      if (oficinaFiltro !== "todas") {
+        if (oficinaFiltro === "__sem__") { if (c.oficina_id) return false; }
+        else if (c.oficina_id !== oficinaFiltro) return false;
+      }
       if (busca && !formatCopNumero(c.numero).includes(busca.replace(/\D/g, ""))) return false;
       return true;
     });
-  }, [cops, statusFiltro, busca]);
+  }, [cops, statusFiltro, oficinaFiltro, busca]);
+
+  const lista = useMemo(() => {
+    const arr = [...listaFiltrada];
+    const dir = sortDir === "asc" ? 1 : -1;
+    arr.sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "numero") cmp = a.numero - b.numero;
+      else if (sortKey === "status") cmp = String(a.status).localeCompare(String(b.status), "pt-BR");
+      else if (sortKey === "oficina") {
+        const na = a.oficina_id ? (oficinaNomeById.get(a.oficina_id) ?? "") : "";
+        const nb = b.oficina_id ? (oficinaNomeById.get(b.oficina_id) ?? "") : "";
+        cmp = na.localeCompare(nb, "pt-BR");
+      }
+      return cmp * dir;
+    });
+    return arr;
+  }, [listaFiltrada, sortKey, sortDir, oficinaNomeById]);
 
   // Form draft espelha o COP selecionado
   const [draft, setDraft] = useState<Partial<Cop>>({});
@@ -315,6 +363,17 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
               </SelectContent>
             </Select>
           </div>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs">Oficina:</Label>
+            <Select value={oficinaFiltro} onValueChange={setOficinaFiltro}>
+              <SelectTrigger className="h-9 w-[200px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas</SelectItem>
+                <SelectItem value="__sem__">Sem oficina</SelectItem>
+                {oficinas.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <Input
             placeholder="Buscar número..."
             value={busca}
@@ -326,6 +385,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
       </div>
 
       {/* Editor do selecionado */}
+      <div ref={editorRef} />
       {selected && (
         <Card className="border-primary/30">
           <CardHeader className="pb-2">
@@ -573,38 +633,33 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-xs">
                   <tr>
-                    <th className="p-2 text-left">Número</th>
-                    <th className="p-2 text-left">Status</th>
-                    <th className="p-2 text-center">Peças</th>
-                    <th className="p-2 text-left">Solic. Risco</th>
-                    <th className="p-2 text-left">Exec. Corte</th>
-                    <th className="p-2"></th>
+                    <SortableTh label="Número" active={sortKey === "numero"} dir={sortDir} onClick={() => toggleSort("numero")} />
+                    <SortableTh label="Status" active={sortKey === "status"} dir={sortDir} onClick={() => toggleSort("status")} />
+                    <SortableTh label="Oficina" active={sortKey === "oficina"} dir={sortDir} onClick={() => toggleSort("oficina")} />
+                    <th className="p-2 text-left">Resumo das peças</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {lista.map((c) => (
-                    <tr
-                      key={c.id}
-                      className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : ""}`}
-                      onClick={() => setSelectedId(c.id)}
-                    >
-                      <td className="p-2 font-semibold tabular-nums">
-                        {formatCopNumero(c.numero)}
-                        {c.cop_pai_id && <span className="ml-1 text-[10px] text-muted-foreground">(filho)</span>}
-                      </td>
-                      <td className="p-2">
-                        <span className="px-2 py-0.5 rounded text-xs border" style={etapaStyle(c.status)}>{c.status}</span>
-                      </td>
-                      <td className="p-2 text-center tabular-nums">{totalPecasCop(c.pecas)}</td>
-                      <td className="p-2">{c.solicitacao_risco ?? "—"}</td>
-                      <td className="p-2">{c.execucao_corte ?? "—"}</td>
-                      <td className="p-2 text-right">
-                        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setSelectedId(c.id); }}>
-                          Abrir
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {lista.map((c) => {
+                    const ofiNome = c.oficina_id ? (oficinaNomeById.get(c.oficina_id) ?? "—") : "—";
+                    return (
+                      <tr
+                        key={c.id}
+                        className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : ""}`}
+                        onClick={() => selectAndScroll(c.id)}
+                      >
+                        <td className="p-2 font-semibold tabular-nums">
+                          {formatCopNumero(c.numero)}
+                          {c.cop_pai_id && <span className="ml-1 text-[10px] text-muted-foreground">(filho)</span>}
+                        </td>
+                        <td className="p-2">
+                          <span className="px-2 py-0.5 rounded text-xs border" style={etapaStyle(c.status)}>{c.status}</span>
+                        </td>
+                        <td className="p-2">{ofiNome}</td>
+                        <td className="p-2"><ResumoPecas pecas={c.pecas || []} /></td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -650,3 +705,44 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     </div>
   );
 }
+
+function SortableTh({ label, active, dir, onClick }: { label: string; active: boolean; dir: "asc" | "desc"; onClick: () => void }) {
+  return (
+    <th className="p-2 text-left">
+      <button type="button" onClick={onClick} className="inline-flex items-center gap-1 hover:text-primary">
+        <span>{label}</span>
+        {active ? (dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : null}
+      </button>
+    </th>
+  );
+}
+
+function ResumoPecas({ pecas }: { pecas: CopPeca[] }) {
+  const grupos = useMemo(() => {
+    const map = new Map<string, { modelo: string; cor: string; qtd: number }>();
+    for (const p of pecas ?? []) {
+      const k = `${p.modelo}|${p.cor}`;
+      const g = map.get(k) ?? { modelo: p.modelo, cor: p.cor, qtd: 0 };
+      g.qtd += Number(p.qtd) || 0;
+      map.set(k, g);
+    }
+    return Array.from(map.values());
+  }, [pecas]);
+  if (grupos.length === 0) return <span className="text-muted-foreground">—</span>;
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs line-clamp-2">
+      {grupos.map((g, i) => {
+        const hex = corHex(g.cor); const fg = corTextoSobre(hex);
+        return (
+          <span key={i} className="inline-flex items-center gap-1">
+            <span className="font-medium">{g.modelo}</span>
+            <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span>
+            <span className="tabular-nums text-muted-foreground">({g.qtd})</span>
+            {i < grupos.length - 1 && <span className="text-muted-foreground">·</span>}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+

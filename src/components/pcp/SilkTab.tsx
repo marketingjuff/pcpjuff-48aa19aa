@@ -1,7 +1,7 @@
 import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiSilk, visivelEmSilk } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiSilk, visivelEmSilk, tipoIncluiDTF, tipoIncluiSilk, episodioAberto } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, Download, FilterX } from "lucide-react";
+import { Save, Download, FilterX, FastForward } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_SILK, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
@@ -18,6 +18,7 @@ import { MultiSelectPeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
 import { RefacaoBadge } from "./RefacaoBadge";
 import { todayISO } from "@/lib/dias-uteis";
+import { restaurarEtapaDoHistorico } from "./refacao-helpers";
 
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { useFeriados } from "@/hooks/use-feriados";
@@ -111,6 +112,31 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
     } as any);
     if (onNavigate) onNavigate(destino);
   }
+
+  const restaurados = selected ? restaurarEtapaDoHistorico(selected, "silk") : null;
+  const podeAproveitar =
+    !!selected &&
+    !readOnly &&
+    tipoIncluiDTF(selected.tipo_estampa) &&
+    tipoIncluiSilk(selected.tipo_estampa) &&
+    !!episodioAberto(selected) &&
+    restaurados !== null;
+
+  function aproveitarHistorico() {
+    if (!selected || !restaurados) return;
+    const hoje = new Date();
+    const dd = String(hoje.getDate()).padStart(2, "0");
+    const mm = String(hoje.getMonth() + 1).padStart(2, "0");
+    const nota = `Aproveitado do histórico em ${dd}/${mm}/${hoje.getFullYear()}`;
+    const obsPrev = (form.silk_observacao ?? selected.silk_observacao ?? "").toString();
+    const obsNova = obsPrev.includes(nota) ? obsPrev : (obsPrev ? `${obsPrev}\n${nota}` : nota);
+    onSave({
+      id: selected.id,
+      ...restaurados,
+      silk_observacao: obsNova,
+    } as any);
+  }
+
 
 
   async function baixarLayout(path: string) {
@@ -252,6 +278,11 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                     </Button>
                   )}
                   {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Salvar Silk</UpdateButton>}
+                  {podeAproveitar && (
+                    <Button variant="secondary" size="sm" onClick={aproveitarHistorico} disabled={saving} title="Restaurar dados do Silk da última execução antes da refação">
+                      <FastForward className="h-4 w-4 mr-1" /> Já realizado
+                    </Button>
+                  )}
                   <RefacaoViewerButton pedido={selected} />
                 </div>
               </div>

@@ -87,7 +87,7 @@ export function FaltaPecaPopup({ open, onOpenChange, modelo, cor, tamanho, pedid
         <DialogHeader>
           <DialogTitle>
             {modelo} ·{" "}
-            <span className="inline-block px-2 py-0.5 rounded text-xs align-middle" style={{ backgroundColor: hex, color: fg }}>{cor}</span>
+            <span className="inline-block px-2 py-0.5 rounded text-xs align-middle font-bold" style={{ backgroundColor: hex, color: fg }}>{cor}</span>
             {" "}· {tamanho}
           </DialogTitle>
         </DialogHeader>

@@ -295,7 +295,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
                     return (
                       <tr key={i} className="border-t">
                         <td className="p-2">{g.modelo}</td>
-                        <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
+                        <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
                         <td className="p-2 text-right tabular-nums">{g.qtd}</td>
                         <td className="p-2 text-right tabular-nums">{fmtMoney(g.valUn)}</td>
                         <td className="p-2 text-right tabular-nums">{fmtMoney(g.subtotal)}</td>

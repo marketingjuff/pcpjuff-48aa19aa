@@ -186,13 +186,17 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     return new Set(keys.filter((k) => isEmpty((form as any)[k])).map(String));
   }
 
-  async function checkDuplicado(pedidoOlist: string, currentId?: string): Promise<boolean> {
-    if (!pedidoOlist) return false;
+  async function checkDuplicado(pedidoOlist: string, currentId?: string): Promise<{ bloqueado: boolean; motivo?: string }> {
+    if (!pedidoOlist) return { bloqueado: false };
     const { data, error } = await supabase
-      .from("pedidos").select("id").eq("pedido_olist", pedidoOlist).maybeSingle();
-    if (error) { console.error(error); return false; }
-    if (!data) return false;
-    return data.id !== currentId;
+      .from("pedidos").select("id, finalizado_em").eq("pedido_olist", pedidoOlist);
+    if (error) { console.error(error); return { bloqueado: false }; }
+    const rows = (data ?? []) as Array<{ id: string; finalizado_em: string | null }>;
+    const finalizado = rows.find((r) => r.finalizado_em && r.id !== currentId);
+    if (finalizado) return { bloqueado: true, motivo: `Número Olist "${pedidoOlist}" já foi utilizado por um pedido finalizado.` };
+    const ativo = rows.find((r) => !r.finalizado_em && r.id !== currentId);
+    if (ativo) return { bloqueado: true, motivo: `Já existe um pedido ativo com o número Olist "${pedidoOlist}".` };
+    return { bloqueado: false };
   }
 
   async function saveVendor() {
@@ -203,9 +207,9 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       toast.error("Preencha os campos obrigatórios do Input do Vendedor. O orçamento precisa conter números e no mínimo 2 letras.");
       return;
     }
-    if (await checkDuplicado(String(form.pedido_olist ?? ""), selected?.id)) {
-      toast.error(`Já existe um pedido com o número Olist "${form.pedido_olist}".`);
-      return;
+    {
+      const dup = await checkDuplicado(String(form.pedido_olist ?? ""), selected?.id);
+      if (dup.bloqueado) { toast.error(dup.motivo!); return; }
     }
     const wipe = await wipeProducaoSeRefacaoDados();
     const payload: any = {
@@ -245,9 +249,9 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         toast.error("Para criar o pedido, preencha também os obrigatórios do Input do Vendedor. O orçamento precisa conter números e no mínimo 2 letras.");
         return;
       }
-      if (await checkDuplicado(String(form.pedido_olist ?? ""))) {
-        toast.error(`Já existe um pedido com o número Olist "${form.pedido_olist}".`);
-        return;
+      {
+        const dup = await checkDuplicado(String(form.pedido_olist ?? ""));
+        if (dup.bloqueado) { toast.error(dup.motivo!); return; }
       }
     }
     // Validação das datas de produção (janela e ordem do fluxo)
