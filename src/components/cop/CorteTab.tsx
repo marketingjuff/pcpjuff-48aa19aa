@@ -100,21 +100,54 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
 
   
   const [statusFiltro, setStatusFiltro] = useState<string>("__ativos__");
+  const [oficinaFiltro, setOficinaFiltro] = useState<string>("todas");
   const [busca, setBusca] = useState("");
   const [showDivisao, setShowDivisao] = useState(false);
+  const [sortKey, setSortKey] = useState<"numero" | "status" | "oficina">("numero");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const toggleSort = (k: typeof sortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(k); setSortDir("asc"); }
+  };
 
   const selected = useMemo(() => cops.find((c) => c.id === selectedId) ?? null, [cops, selectedId]);
+  const oficinaNomeById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const o of oficinas) m.set(o.id, o.nome);
+    return m;
+  }, [oficinas]);
 
   // Lista filtrada (por padrão, todos os COPs ATIVOS — exceto Finalizado/Pago)
-  const lista = useMemo(() => {
+  const listaFiltrada = useMemo(() => {
     return cops.filter((c) => {
       if (statusFiltro === "__ativos__") {
         if (c.status === "Finalizado" || c.pagamento_status === "pago") return false;
       } else if (statusFiltro !== "todos" && c.status !== statusFiltro) return false;
+      if (oficinaFiltro !== "todas") {
+        if (oficinaFiltro === "__sem__") { if (c.oficina_id) return false; }
+        else if (c.oficina_id !== oficinaFiltro) return false;
+      }
       if (busca && !formatCopNumero(c.numero).includes(busca.replace(/\D/g, ""))) return false;
       return true;
     });
-  }, [cops, statusFiltro, busca]);
+  }, [cops, statusFiltro, oficinaFiltro, busca]);
+
+  const lista = useMemo(() => {
+    const arr = [...listaFiltrada];
+    const dir = sortDir === "asc" ? 1 : -1;
+    arr.sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "numero") cmp = a.numero - b.numero;
+      else if (sortKey === "status") cmp = String(a.status).localeCompare(String(b.status), "pt-BR");
+      else if (sortKey === "oficina") {
+        const na = a.oficina_id ? (oficinaNomeById.get(a.oficina_id) ?? "") : "";
+        const nb = b.oficina_id ? (oficinaNomeById.get(b.oficina_id) ?? "") : "";
+        cmp = na.localeCompare(nb, "pt-BR");
+      }
+      return cmp * dir;
+    });
+    return arr;
+  }, [listaFiltrada, sortKey, sortDir, oficinaNomeById]);
 
   // Form draft espelha o COP selecionado
   const [draft, setDraft] = useState<Partial<Cop>>({});
