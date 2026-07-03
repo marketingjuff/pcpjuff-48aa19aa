@@ -385,6 +385,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
       </div>
 
       {/* Editor do selecionado */}
+      <div ref={editorRef} />
       {selected && (
         <Card className="border-primary/30">
           <CardHeader className="pb-2">
