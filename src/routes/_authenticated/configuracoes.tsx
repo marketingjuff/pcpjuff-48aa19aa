@@ -87,15 +87,16 @@ function ConfiguracoesPage() {
       <header className="border-b bg-card sticky top-0 z-30">
         <div className="container mx-auto flex items-center justify-between gap-2 px-3 py-2 sm:px-4 sm:py-3">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <Link to={area === "cop" ? "/cop" : "/"}>
+            <Link to={area === "cop" ? "/cop" : area === "map" ? "/map" : "/"}>
               <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Voltar</span></Button>
             </Link>
             <h1 className="text-base sm:text-lg font-semibold truncate">Configurações</h1>
           </div>
-          {canAccessCop && (
+          {(canAccessCop || canAccessMap) && (
             <div className="inline-flex rounded-md border bg-card p-0.5 text-xs">
               <button type="button" onClick={() => setArea("pcp")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "pcp" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}>PCP</button>
-              <button type="button" onClick={() => setArea("cop")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "cop" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}>COP</button>
+              {canAccessCop && <button type="button" onClick={() => setArea("cop")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "cop" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}>COP</button>}
+              {canAccessMap && <button type="button" onClick={() => setArea("map")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "map" ? "bg-yellow-500 text-white" : "hover:bg-accent"}`}>MAP</button>}
             </div>
           )}
         </div>
@@ -103,6 +104,8 @@ function ConfiguracoesPage() {
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {area === "cop" && canAccessCop ? (
           <CopConfigPanel />
+        ) : area === "map" && canAccessMap ? (
+          <MapConfigPanel />
         ) : (
           <Tabs defaultValue={isAdmin ? "feriados" : "listas"}>
             <TabsList className="mb-6 flex flex-wrap h-auto w-full sm:w-auto">
