@@ -78,7 +78,7 @@ function ConfiguracoesPage() {
     return <div className="p-8 text-sm text-muted-foreground">Carregando…</div>;
   }
 
-  function setArea(a: "pcp" | "cop") {
+  function setArea(a: "pcp" | "cop" | "map") {
     navigate({ to: "/configuracoes", search: { area: a } });
   }
 
