@@ -291,6 +291,11 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                     </Button>
                   )}
                   {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Salvar DTF</UpdateButton>}
+                  {podeAproveitar && (
+                    <Button variant="secondary" size="sm" onClick={aproveitarHistorico} disabled={saving} title="Restaurar dados do DTF da última execução antes da refação">
+                      <FastForward className="h-4 w-4 mr-1" /> Já realizado
+                    </Button>
+                  )}
                   <RefacaoViewerButton pedido={selected} />
                 </div>
               </div>
