@@ -185,10 +185,10 @@ export function DisponivelTab() {
                       const presente = prod > 0 || falt > 0 || baix > 0;
                       const temFalta = presente && falt > 0;
                       const color = !presente ? "text-muted-foreground"
-                                  : temFalta ? "text-red-700 font-bold"
-                                  : v < 0 ? "text-red-700 font-bold"
-                                  : v === 0 ? "text-amber-700 font-semibold"
-                                  : "text-green-700 font-semibold";
+                                  : temFalta ? "text-red-700"
+                                  : v < 0 ? "text-red-700"
+                                  : v === 0 ? "text-amber-700"
+                                  : "text-green-700";
                       const display = !presente ? "—" : v;
                       return (
                         <td key={t} className="p-0 text-center leading-tight">
@@ -214,7 +214,7 @@ export function DisponivelTab() {
             {linhas.length > 0 && (
               <tfoot className="border-t-2 font-semibold bg-muted/30">
                 <tr>
-                  <td colSpan={2} className="px-2 py-1 text-left font-bold">Total Geral</td>
+                  <td colSpan={2} className="px-2 py-1 text-left">Total Geral</td>
                   {REFACAO_TAMANHOS.map((t) => {
                     const v = totaisTam.get(t) ?? 0;
                     const color = v < 0 ? "text-red-700" : v > 0 ? "text-green-700" : "text-muted-foreground";
@@ -222,7 +222,7 @@ export function DisponivelTab() {
                       <td key={t} className={`p-1 text-center tabular-nums ${color}`}>{v}</td>
                     );
                   })}
-                  <td className={`p-1 text-center tabular-nums font-bold ${totalGeral < 0 ? "text-red-700" : totalGeral > 0 ? "text-green-700" : "text-muted-foreground"}`}>{totalGeral}</td>
+                  <td className={`p-1 text-center tabular-nums ${totalGeral < 0 ? "text-red-700" : totalGeral > 0 ? "text-green-700" : "text-muted-foreground"}`}>{totalGeral}</td>
                 </tr>
               </tfoot>
             )}
