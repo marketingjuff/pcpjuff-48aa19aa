@@ -255,7 +255,7 @@ export function FaltaPorPedidoTab() {
         <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhum pedido com peças faltantes.</CardContent></Card>
       ) : (
         <div className="rounded-md border overflow-x-auto">
-          <table className="text-sm" style={{ borderCollapse: "collapse", tableLayout: "fixed", minWidth: "100%" }}>
+          <table className="text-[12.5px] leading-[1.2]" style={{ borderCollapse: "collapse", tableLayout: "fixed", minWidth: "100%" }}>
             <colgroup>
               <col style={{ width: 72 }} />
               <col style={{ width: 210 }} />
@@ -394,7 +394,7 @@ export function FaltaPorPedidoTab() {
             <div className="text-sm text-muted-foreground">Nenhuma baixa registrada ainda.</div>
           ) : historico ? (
             <div className="rounded-md border overflow-x-auto max-h-[60vh] overflow-y-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-[12.5px] leading-[1.2]">
                 <thead className="bg-muted/40 text-xs sticky top-0">
                   <tr>
                     <th className="p-2 text-left">Data/Hora</th>

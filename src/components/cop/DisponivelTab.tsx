@@ -145,7 +145,7 @@ export function DisponivelTab() {
           <CardTitle className="text-base">Disponível por Modelo · Cor</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-[12.5px] leading-[1.2]">
             <thead className="bg-muted/40 text-xs">
               <tr>
                 <th className="p-2 text-left min-w-[56px]">Cor</th>
@@ -170,7 +170,7 @@ export function DisponivelTab() {
                   return (
                   <tr
                     key={i}
-                    className={`${novaCor ? "border-t-2 border-muted-foreground/40" : ""} ${zebra ? "bg-muted/60" : ""} hover:bg-accent/60`}
+                    className={`${novaCor ? "border-t" : ""} ${zebra ? "bg-muted/60" : ""} hover:bg-accent/60`}
                   >
                     <td className="px-2 py-0 leading-tight">{novaCor ? (
                       <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{l.cor}</span>
@@ -257,7 +257,7 @@ export function DisponivelTab() {
                     </div>
 
                     <div className="rounded-md border overflow-x-auto max-h-[55vh]">
-                      <table className="w-full text-sm">
+                      <table className="w-full text-[12.5px] leading-[1.2]">
                         <thead className="bg-muted/40 text-xs sticky top-0">
                           <tr>
                             <th className="p-2 text-left">Orçamento</th>

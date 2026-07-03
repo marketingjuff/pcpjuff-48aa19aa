@@ -277,7 +277,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-md border overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-[12.5px] leading-[1.2]">
                 <thead className="bg-muted/40 text-xs">
                   <tr>
                     <th className="p-2 text-left">Modelo</th>
@@ -419,7 +419,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
         <CardHeader className="pb-2"><CardTitle className="text-base">COPs elegíveis para pagamento</CardTitle></CardHeader>
         <CardContent>
           <div className="rounded-md border overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-[12.5px] leading-[1.2]">
               <thead className="bg-muted/40 text-xs">
                 <tr>
                   <th className="p-2 text-left">COP</th>

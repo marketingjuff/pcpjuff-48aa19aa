@@ -188,7 +188,7 @@ export function PerdasTab() {
         <CardHeader className="pb-2"><CardTitle className="text-base">Perdas registradas em romaneios</CardTitle></CardHeader>
         <CardContent>
           <div className="rounded-md border overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-[12.5px] leading-[1.2]">
               <thead className="bg-muted/40 text-xs">
                 <tr>
                   <th className="p-2 text-left">COP</th>
@@ -227,7 +227,7 @@ export function PerdasTab() {
         <CardHeader className="pb-2"><CardTitle className="text-base">Histórico de perdas</CardTitle></CardHeader>
         <CardContent>
           <div className="rounded-md border overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-[12.5px] leading-[1.2]">
               <thead className="bg-muted/40 text-xs">
                 <tr>
                   <th className="p-2 text-left">Data</th>

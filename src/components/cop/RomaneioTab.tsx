@@ -1133,7 +1133,7 @@ function RomaneioPecasTable({
 
   return (
     <div className="rounded-md border overflow-x-auto">
-      <table className="text-sm w-full" style={{ borderCollapse: "collapse" }}>
+      <table className="text-[12.5px] leading-[1.2] w-full" style={{ borderCollapse: "collapse" }}>
         <thead className="bg-muted/40 text-xs">
           <tr>
             <SortableTh label="Romaneio" active={sortKey === "numero"} dir={sortDir} onClick={() => toggleSort("numero")} />

@@ -125,7 +125,7 @@ export function DashboardCopTab() {
             {topNegativos.length === 0 ? (
               <p className="text-sm text-muted-foreground">Tudo coberto.</p>
             ) : (
-              <table className="w-full text-sm">
+              <table className="w-full text-[12.5px] leading-[1.2]">
                 <thead className="text-xs text-muted-foreground"><tr><th className="text-left p-1">Item</th><th className="text-right p-1">Saldo</th></tr></thead>
                 <tbody>
                   {topNegativos.map((x, i) => (
@@ -147,7 +147,7 @@ export function DashboardCopTab() {
           {urgentes.length === 0 ? (
             <p className="text-sm text-muted-foreground">Sem urgências por data conhecida.</p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full text-[12.5px] leading-[1.2]">
               <thead className="text-xs text-muted-foreground"><tr>
                 <th className="text-left p-1">Orçamento</th>
                 <th className="text-left p-1">Pedido Olist</th>
