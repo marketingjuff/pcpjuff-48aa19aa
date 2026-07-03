@@ -6,7 +6,7 @@ import { LogOut, Settings } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMyRoles, useCanAccessCop } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessCop, useCanAccessMap } from "@/hooks/use-role";
 import { CorteTab } from "@/components/cop/CorteTab";
 import { RomaneioTab } from "@/components/cop/RomaneioTab";
 import { DisponivelTab } from "@/components/cop/DisponivelTab";
@@ -145,15 +145,19 @@ function CopHome() {
   );
 }
 
-export function MacroSwitch({ active }: { active: "pcp" | "cop" }) {
+export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" }) {
   const navigate = useNavigate();
   const canAccessCop = useCanAccessCop();
+  const canAccessMap = useCanAccessMap();
   const baseBtn = "px-6 py-2 rounded font-bold text-base transition-colors";
   const pcpActive = active === "pcp"
     ? "bg-blue-600 text-white"
     : "hover:bg-accent text-foreground";
   const copActive = active === "cop"
     ? "bg-green-600 text-white"
+    : "hover:bg-accent text-foreground";
+  const mapActive = active === "map"
+    ? "bg-yellow-500 text-white"
     : "hover:bg-accent text-foreground";
   return (
     <div className="inline-flex rounded-md border bg-card p-1">
@@ -171,6 +175,15 @@ export function MacroSwitch({ active }: { active: "pcp" | "cop" }) {
           className={`${baseBtn} ${copActive}`}
         >
           COP
+        </button>
+      )}
+      {canAccessMap && (
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/map" })}
+          className={`${baseBtn} ${mapActive}`}
+        >
+          MAP
         </button>
       )}
     </div>

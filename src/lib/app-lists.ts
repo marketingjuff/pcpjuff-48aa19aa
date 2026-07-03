@@ -5,7 +5,8 @@ export type AppListKind =
   | "vendedor" | "dtf" | "silk" | "acabamento" | "frete" | "pagamento" | "nf"
   | "status_arte" | "corte_dtf" | "revelacao_silk" | "motivo_perda"
   | "refacao_problema_arte" | "refacao_problema_dtf" | "refacao_problema_silk" | "refacao_problema_acabamento"
-  | "refacao_area_identifica" | "refacao_area_erro";
+  | "refacao_area_identifica" | "refacao_area_erro"
+  | "map_fio_fornecedor" | "map_malharia" | "map_tinturaria";
 
 export interface AppListItem {
   id: string;

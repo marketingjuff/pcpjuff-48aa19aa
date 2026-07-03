@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/map'
 import { Route as AuthenticatedCopRouteImport } from './routes/_authenticated/cop'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 
@@ -27,6 +28,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMapRoute = AuthenticatedMapRouteImport.update({
+  id: '/map',
+  path: '/map',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCopRoute = AuthenticatedCopRouteImport.update({
@@ -46,11 +52,13 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/cop': typeof AuthenticatedCopRoute
+  '/map': typeof AuthenticatedMapRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/cop': typeof AuthenticatedCopRoute
+  '/map': typeof AuthenticatedMapRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
@@ -59,19 +67,21 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/cop': typeof AuthenticatedCopRoute
+  '/_authenticated/map': typeof AuthenticatedMapRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/configuracoes' | '/cop'
+  fullPaths: '/' | '/auth' | '/configuracoes' | '/cop' | '/map'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/configuracoes' | '/cop' | '/'
+  to: '/auth' | '/configuracoes' | '/cop' | '/map' | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/configuracoes'
     | '/_authenticated/cop'
+    | '/_authenticated/map'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
@@ -103,6 +113,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/map': {
+      id: '/_authenticated/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof AuthenticatedMapRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/cop': {
       id: '/_authenticated/cop'
       path: '/cop'
@@ -123,12 +140,14 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCopRoute: typeof AuthenticatedCopRoute
+  AuthenticatedMapRoute: typeof AuthenticatedMapRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedCopRoute: AuthenticatedCopRoute,
+  AuthenticatedMapRoute: AuthenticatedMapRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
