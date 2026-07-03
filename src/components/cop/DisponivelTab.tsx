@@ -175,7 +175,7 @@ export function DisponivelTab() {
                     <td className="px-2 py-0 leading-tight">{novaCor ? (
                       <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{l.cor}</span>
                     ) : null}</td>
-                    <td className="px-2 py-0 leading-tight font-medium">{l.modelo}</td>
+                    <td className="px-2 py-0 leading-tight">{l.modelo}</td>
                     {REFACAO_TAMANHOS.map((t) => {
                       const v = disponivel.get(pkKey(l.modelo, l.cor, t)) ?? 0;
                       const prod = producao.get(pkKey(l.modelo, l.cor, t)) ?? 0;
