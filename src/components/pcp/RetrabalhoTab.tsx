@@ -216,6 +216,7 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
         />
         <StatCard label="Refações em aberto" value={stats.abertas} />
         <StatCard label="Reincidência (pedidos ≥2)" value={stats.reincidencia} />
+        <StatCard label="Tempo médio de resolução" value={stats.tempoMedio == null ? "—" : `${stats.tempoMedio.toFixed(1)} d`} />
         <StatCard
           label="Peças perdidas no mês"
           value={stats.perdaMes}
