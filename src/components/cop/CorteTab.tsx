@@ -397,7 +397,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
               <div>
                 <div className="text-xs uppercase text-muted-foreground tracking-wider">COP</div>
                 <div className="text-3xl sm:text-5xl font-bold tabular-nums">
-                  {formatCopNumero(selected.numero)}
+                  {rotuloCop(numeroBaseCop(selected, cops), selected.letra)}
                   {par && (
                     <span className="ml-3 text-sm font-normal text-muted-foreground">
                       (
