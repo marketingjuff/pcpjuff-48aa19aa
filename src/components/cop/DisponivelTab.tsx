@@ -222,7 +222,7 @@ export function DisponivelTab() {
                       <td key={t} className={`p-1 text-center tabular-nums ${color}`}>{v}</td>
                     );
                   })}
-                  <td className={`p-1 text-center tabular-nums font-bold ${totalGeral < 0 ? "text-red-700" : totalGeral > 0 ? "text-green-700" : "text-muted-foreground"}`}>{totalGeral}</td>
+                  <td className={`p-1 text-center tabular-nums ${totalGeral < 0 ? "text-red-700" : totalGeral > 0 ? "text-green-700" : "text-muted-foreground"}`}>{totalGeral}</td>
                 </tr>
               </tfoot>
             )}
