@@ -159,14 +159,18 @@ export function DisponivelTab() {
             <tbody>
               {linhas.length === 0 ? (
                 <tr><td colSpan={REFACAO_TAMANHOS.length + 3} className="p-4 text-center text-muted-foreground">Sem dados.</td></tr>
-              ) : linhas.map((l, i) => {
-                const hex = corHex(l.cor); const fg = corTextoSobre(hex);
-                const prev = i > 0 ? linhas[i - 1] : null;
-                const novaCor = !prev || prev.cor !== l.cor;
-                return (
+              ) : (() => {
+                let corIdx = -1;
+                let lastCor: string | null = null;
+                return linhas.map((l, i) => {
+                  const hex = corHex(l.cor); const fg = corTextoSobre(hex);
+                  const novaCor = lastCor !== l.cor;
+                  if (novaCor) { corIdx++; lastCor = l.cor; }
+                  const zebra = corIdx % 2 === 1;
+                  return (
                   <tr
                     key={i}
-                    className={`${novaCor ? "border-t-2 border-muted-foreground/40" : ""} ${i % 2 ? "bg-muted/40" : ""} hover:bg-accent/60`}
+                    className={`${novaCor ? "border-t-2 border-muted-foreground/40" : ""} ${zebra ? "bg-muted/40" : ""} hover:bg-accent/60`}
                   >
                     <td className="px-2 py-0 leading-tight">{novaCor ? (
                       <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{l.cor}</span>
