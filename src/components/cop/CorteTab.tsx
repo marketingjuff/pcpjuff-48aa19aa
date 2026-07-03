@@ -363,6 +363,17 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
               </SelectContent>
             </Select>
           </div>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs">Oficina:</Label>
+            <Select value={oficinaFiltro} onValueChange={setOficinaFiltro}>
+              <SelectTrigger className="h-9 w-[200px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas</SelectItem>
+                <SelectItem value="__sem__">Sem oficina</SelectItem>
+                {oficinas.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <Input
             placeholder="Buscar número..."
             value={busca}
