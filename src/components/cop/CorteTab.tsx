@@ -141,7 +141,9 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     const dir = sortDir === "asc" ? 1 : -1;
     arr.sort((a, b) => {
       let cmp = 0;
-      if (sortKey === "numero") cmp = a.numero - b.numero;
+      if (sortKey === "numero") {
+        cmp = (numeroBaseCop(a, cops) - numeroBaseCop(b, cops)) || (a.letra ?? "").localeCompare(b.letra ?? "");
+      }
       else if (sortKey === "status") cmp = String(a.status).localeCompare(String(b.status), "pt-BR");
       else if (sortKey === "oficina") {
         const na = a.oficina_id ? (oficinaNomeById.get(a.oficina_id) ?? "") : "";
