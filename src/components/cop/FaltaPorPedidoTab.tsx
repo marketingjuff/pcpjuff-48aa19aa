@@ -300,7 +300,7 @@ export function FaltaPorPedidoTab() {
                               <td className={`px-1 py-1 align-middle whitespace-nowrap text-xs ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
                                 {fmtBR(r.inicioEstamparia)}
                               </td>
-                              <td className="px-1 py-1 align-middle font-mono break-words text-xs" rowSpan={r.rowSpan}>
+                              <td className="px-1 py-1 align-middle break-words text-xs" rowSpan={r.rowSpan}>
                                 <div>{r.pedido.orcamento ?? "—"}</div>
                                 {(r.pedido as any).pedido_olist && (
                                   <div className="text-[10px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
