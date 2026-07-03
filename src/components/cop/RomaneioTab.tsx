@@ -900,38 +900,29 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-xs">
                   <tr>
-                    <th className="p-2 text-left">Romaneio</th>
-                    <th className="p-2 text-left">Status</th>
-                    <th className="p-2 text-left">Oficina</th>
-                    <th className="p-2 text-center">Peças</th>
-                    <th className="p-2 text-center">Recebido</th>
-                    <th className="p-2 text-left">Saída</th>
-                    <th className="p-2 text-left">Recebimento</th>
-                    <th className="p-2"></th>
+                    <SortableTh label="Romaneio" active={sortKey === "numero"} dir={sortDir} onClick={() => toggleSort("numero")} />
+                    <SortableTh label="Status" active={sortKey === "status"} dir={sortDir} onClick={() => toggleSort("status")} />
+                    <SortableTh label="Oficina" active={sortKey === "oficina"} dir={sortDir} onClick={() => toggleSort("oficina")} />
+                    <th className="p-2 text-left">Resumo das peças</th>
+                    <SortableTh label="Recebimento" active={sortKey === "recebimento"} dir={sortDir} onClick={() => toggleSort("recebimento")} />
                   </tr>
                 </thead>
                 <tbody>
                   {lista.map((c) => {
                     const ofi = oficinas.find((o) => o.id === c.oficina_id);
+                    const totalPc = totalPecasCop(c.pecas);
                     return (
                       <tr key={c.id}
                         className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : ""}`}
-                        onClick={() => setSelectedId(c.id)}
+                        onClick={() => selectAndScroll(c.id)}
                       >
                         <td className="p-2 font-semibold tabular-nums">{rotuloRomaneio(c, cops)}</td>
                         <td className="p-2">
                           <span className="px-2 py-0.5 rounded text-xs border" style={etapaStyle(c.status)}>{c.status}</span>
                         </td>
                         <td className="p-2">{ofi?.nome ?? "—"}</td>
-                        <td className="p-2 text-center tabular-nums">{totalPecasCop(c.pecas)}</td>
-                        <td className="p-2 text-center tabular-nums">{totalRecebidas(c.pecas_recebidas)}</td>
-                        <td className="p-2">{c.data_saida_oficina ?? "—"}</td>
+                        <td className="p-2"><ResumoPecas pecas={c.pecas || []} prefix={`${totalPc}x pçs`} /></td>
                         <td className="p-2">{c.data_recebimento ?? "—"}</td>
-                        <td className="p-2 text-right">
-                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setSelectedId(c.id); }}>
-                            Abrir
-                          </Button>
-                        </td>
                       </tr>
                     );
                   })}
