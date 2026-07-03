@@ -291,6 +291,193 @@ export type Database = {
         }
         Relationships: []
       }
+      map_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      map_malharia_entregas: {
+        Row: {
+          created_at: string
+          data_recebimento: string | null
+          id: string
+          kg: number | null
+          nota_cobertura: string | null
+          nota_fiscal_1: string | null
+          nota_fiscal_2: string | null
+          pecas: number | null
+          producao_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_recebimento?: string | null
+          id?: string
+          kg?: number | null
+          nota_cobertura?: string | null
+          nota_fiscal_1?: string | null
+          nota_fiscal_2?: string | null
+          pecas?: number | null
+          producao_id: string
+        }
+        Update: {
+          created_at?: string
+          data_recebimento?: string | null
+          id?: string
+          kg?: number | null
+          nota_cobertura?: string | null
+          nota_fiscal_1?: string | null
+          nota_fiscal_2?: string | null
+          pecas?: number | null
+          producao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_malharia_entregas_producao_id_fkey"
+            columns: ["producao_id"]
+            isOneToOne: false
+            referencedRelation: "map_producoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      map_producoes: {
+        Row: {
+          created_at: string
+          data_faturamento: string | null
+          data_pagamento: string | null
+          data_pedido: string
+          faturar_para: string
+          finalizado: boolean
+          finalizado_em: string | null
+          finalizado_por: string | null
+          fornecedor: string
+          id: string
+          kg_solicitados: number
+          malharia: string | null
+          nota_fiscal: string | null
+          numero: number
+          quebra_conciliacao_obs: string | null
+          quebra_conciliada: boolean
+          quebra_conciliada_em: string | null
+          quebra_conciliada_por: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_faturamento?: string | null
+          data_pagamento?: string | null
+          data_pedido: string
+          faturar_para: string
+          finalizado?: boolean
+          finalizado_em?: string | null
+          finalizado_por?: string | null
+          fornecedor: string
+          id?: string
+          kg_solicitados: number
+          malharia?: string | null
+          nota_fiscal?: string | null
+          numero: number
+          quebra_conciliacao_obs?: string | null
+          quebra_conciliada?: boolean
+          quebra_conciliada_em?: string | null
+          quebra_conciliada_por?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_faturamento?: string | null
+          data_pagamento?: string | null
+          data_pedido?: string
+          faturar_para?: string
+          finalizado?: boolean
+          finalizado_em?: string | null
+          finalizado_por?: string | null
+          fornecedor?: string
+          id?: string
+          kg_solicitados?: number
+          malharia?: string | null
+          nota_fiscal?: string | null
+          numero?: number
+          quebra_conciliacao_obs?: string | null
+          quebra_conciliada?: boolean
+          quebra_conciliada_em?: string | null
+          quebra_conciliada_por?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      map_tinturaria_programacoes: {
+        Row: {
+          cor: string | null
+          created_at: string
+          data_programacao: string | null
+          data_recebimento: string | null
+          id: string
+          kg_enviados: number | null
+          kg_recebidos: number | null
+          nota_cobertura: string | null
+          nota_fiscal_recebimento: string | null
+          pecas: number | null
+          pecas_recebidas: number | null
+          producao_id: string
+          tinturaria: string
+        }
+        Insert: {
+          cor?: string | null
+          created_at?: string
+          data_programacao?: string | null
+          data_recebimento?: string | null
+          id?: string
+          kg_enviados?: number | null
+          kg_recebidos?: number | null
+          nota_cobertura?: string | null
+          nota_fiscal_recebimento?: string | null
+          pecas?: number | null
+          pecas_recebidas?: number | null
+          producao_id: string
+          tinturaria: string
+        }
+        Update: {
+          cor?: string | null
+          created_at?: string
+          data_programacao?: string | null
+          data_recebimento?: string | null
+          id?: string
+          kg_enviados?: number | null
+          kg_recebidos?: number | null
+          nota_cobertura?: string | null
+          nota_fiscal_recebimento?: string | null
+          pecas?: number | null
+          pecas_recebidas?: number | null
+          producao_id?: string
+          tinturaria?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_tinturaria_programacoes_producao_id_fkey"
+            columns: ["producao_id"]
+            isOneToOne: false
+            referencedRelation: "map_producoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oficinas: {
         Row: {
           cep: string | null
