@@ -530,7 +530,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                             return (
                               <tr key={i} className="border-t">
                                 <td className="p-2">{g.modelo}</td>
-                                <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
+                                <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
                                 {cols.map((tam) => {
                                   const qtd = byTam.get(tam) ?? 0;
                                   if (!qtd) {

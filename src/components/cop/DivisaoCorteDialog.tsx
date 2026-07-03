@@ -75,7 +75,7 @@ export function DivisaoCorteDialog({ open, onOpenChange, pecas, onConfirm }: Pro
                     <tr key={i} className="border-t">
                       <td className="p-2">{p.modelo}</td>
                       <td className="p-2">
-                        <span className="inline-block px-2 py-0.5 rounded text-xs" style={{ backgroundColor: hex, color: fg }}>
+                        <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>
                           {p.cor}
                         </span>
                       </td>

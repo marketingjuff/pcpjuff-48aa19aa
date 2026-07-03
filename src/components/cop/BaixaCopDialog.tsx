@@ -84,7 +84,7 @@ export function BaixaCopDialog({ open, onOpenChange, modelo, cor, orcamento, ite
           <DialogTitle>
             {orcamento != null && <>Orçamento <span className="font-mono">{orcamento}</span> — </>}
             {modelo} ·{" "}
-            <span className="inline-block px-2 py-0.5 rounded text-xs align-middle" style={{ backgroundColor: hex, color: fg }}>{cor}</span>
+            <span className="inline-block px-2 py-0.5 rounded text-xs align-middle font-bold" style={{ backgroundColor: hex, color: fg }}>{cor}</span>
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3 text-sm">
