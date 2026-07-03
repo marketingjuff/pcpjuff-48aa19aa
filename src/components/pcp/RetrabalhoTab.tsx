@@ -207,11 +207,15 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
         <StatCard
           label="Área que mais identifica"
           value={stats.areasIdRank[0]?.[0] ?? "—"}
-          onClick={stats.areasIdRank.length ? () => setRankDialog({ titulo: "Áreas que identificam refação", entries: stats.areasIdRank }) : undefined}
+          onClick={() => setRankDialog({ titulo: "Áreas que identificam refação", entries: stats.areasIdRank })}
+        />
+        <StatCard
+          label="Área que mais errou"
+          value={stats.areasErroRank[0]?.[0] ?? "—"}
+          onClick={() => setRankDialog({ titulo: "Áreas que erraram", entries: stats.areasErroRank })}
         />
         <StatCard label="Refações em aberto" value={stats.abertas} />
         <StatCard label="Reincidência (pedidos ≥2)" value={stats.reincidencia} />
-        <StatCard label="Tempo médio de resolução" value={stats.tempoMedio == null ? "—" : `${stats.tempoMedio.toFixed(1)} d`} />
         <StatCard
           label="Peças perdidas no mês"
           value={stats.perdaMes}
