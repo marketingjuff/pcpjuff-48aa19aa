@@ -15,7 +15,8 @@ export type AppArea =
   | "acabamento"
   | "expedicao"
   | "finalizados"
-  | "cop";
+  | "cop"
+  | "map";
 
 export const APP_AREAS_GESTOR: AppArea[] = [
   "dashboard",
@@ -28,6 +29,7 @@ export const APP_AREAS_GESTOR: AppArea[] = [
   "expedicao",
   "finalizados",
   "cop",
+  "map",
 ];
 export const APP_AREAS_OPERADOR: AppArea[] = [
   "dashboard",
@@ -50,6 +52,7 @@ export const APP_AREA_LABEL: Record<AppArea, string> = {
   expedicao: "Expedição",
   finalizados: "Finalizados",
   cop: "COP — Controle de Ordem de Produção",
+  map: "MAP — Matéria Prima",
 };
 
 export type Profile = {
