@@ -18,6 +18,8 @@ import { MultiSelectPeople, parsePeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
 import { RefacaoBadge } from "./RefacaoBadge";
 import { todayISO } from "@/lib/dias-uteis";
+import { restaurarEtapaDoHistorico } from "./refacao-helpers";
+
 
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { useFeriados } from "@/hooks/use-feriados";
