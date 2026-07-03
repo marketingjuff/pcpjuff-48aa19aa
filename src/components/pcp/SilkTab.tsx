@@ -278,6 +278,11 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                     </Button>
                   )}
                   {!readOnly && <UpdateButton onClick={handleSave} disabled={saving}>Salvar Silk</UpdateButton>}
+                  {podeAproveitar && (
+                    <Button variant="secondary" size="sm" onClick={aproveitarHistorico} disabled={saving} title="Restaurar dados do Silk da última execução antes da refação">
+                      <FastForward className="h-4 w-4 mr-1" /> Já realizado
+                    </Button>
+                  )}
                   <RefacaoViewerButton pedido={selected} />
                 </div>
               </div>
