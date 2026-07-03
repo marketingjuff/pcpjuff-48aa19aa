@@ -70,3 +70,12 @@ export function useCanAccessCop() {
       (r.role === "gestor" && (r.areas_extras ?? []).includes("cop")),
   );
 }
+
+export function useCanAccessMap() {
+  const { data } = useMyRoles();
+  return (data ?? []).some(
+    (r) =>
+      r.role === "admin" ||
+      (r.role === "gestor" && (r.areas_extras ?? []).includes("map")),
+  );
+}
