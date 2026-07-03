@@ -310,7 +310,7 @@ export function FaltaPorPedidoTab() {
                           ) : null}
                           <td className="px-1 py-1 whitespace-nowrap">{r.grupo.modelo}</td>
                           <td className="px-1 py-1">
-                            <span className="inline-block px-1 py-0 rounded text-[10px]" style={{ backgroundColor: hex, color: fg }}>{r.grupo.cor}</span>
+                            <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{r.grupo.cor}</span>
                           </td>
                           {tamanhosColunas.map((t) => {
                             const info = r.grupo.porTamanho.get(t);
