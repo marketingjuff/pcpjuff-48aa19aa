@@ -106,7 +106,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
     [oficinas, selected],
   );
 
-  const lista = useMemo(() => {
+  const listaFiltrada = useMemo(() => {
     return cops.filter((c) => {
       if (statusFiltro === "__ativos__") {
         if (c.status === "Finalizado" || c.pagamento_status === "pago") return false;
@@ -124,6 +124,31 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
       return true;
     });
   }, [cops, statusFiltro, oficinaFiltro, busca]);
+
+  const oficinaNomeById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const o of oficinas) m.set(o.id, o.nome);
+    return m;
+  }, [oficinas]);
+
+  const lista = useMemo(() => {
+    const arr = [...listaFiltrada];
+    const dir = sortDir === "asc" ? 1 : -1;
+    arr.sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "numero") cmp = a.numero - b.numero;
+      else if (sortKey === "status") cmp = String(a.status).localeCompare(String(b.status), "pt-BR");
+      else if (sortKey === "oficina") {
+        const na = a.oficina_id ? (oficinaNomeById.get(a.oficina_id) ?? "") : "";
+        const nb = b.oficina_id ? (oficinaNomeById.get(b.oficina_id) ?? "") : "";
+        cmp = na.localeCompare(nb, "pt-BR");
+      } else if (sortKey === "recebimento") {
+        cmp = String(a.data_recebimento ?? "").localeCompare(String(b.data_recebimento ?? ""));
+      }
+      return cmp * dir;
+    });
+    return arr;
+  }, [listaFiltrada, sortKey, sortDir, oficinaNomeById]);
 
   // ---- Draft ----
   const [draft, setDraft] = useState<Partial<Cop>>({});
