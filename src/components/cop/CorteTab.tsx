@@ -705,3 +705,44 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     </div>
   );
 }
+
+function SortableTh({ label, active, dir, onClick }: { label: string; active: boolean; dir: "asc" | "desc"; onClick: () => void }) {
+  return (
+    <th className="p-2 text-left">
+      <button type="button" onClick={onClick} className="inline-flex items-center gap-1 hover:text-primary">
+        <span>{label}</span>
+        {active ? (dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : null}
+      </button>
+    </th>
+  );
+}
+
+function ResumoPecas({ pecas }: { pecas: CopPeca[] }) {
+  const grupos = useMemo(() => {
+    const map = new Map<string, { modelo: string; cor: string; qtd: number }>();
+    for (const p of pecas ?? []) {
+      const k = `${p.modelo}|${p.cor}`;
+      const g = map.get(k) ?? { modelo: p.modelo, cor: p.cor, qtd: 0 };
+      g.qtd += Number(p.qtd) || 0;
+      map.set(k, g);
+    }
+    return Array.from(map.values());
+  }, [pecas]);
+  if (grupos.length === 0) return <span className="text-muted-foreground">—</span>;
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs line-clamp-2">
+      {grupos.map((g, i) => {
+        const hex = corHex(g.cor); const fg = corTextoSobre(hex);
+        return (
+          <span key={i} className="inline-flex items-center gap-1">
+            <span className="font-medium">{g.modelo}</span>
+            <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span>
+            <span className="tabular-nums text-muted-foreground">({g.qtd})</span>
+            {i < grupos.length - 1 && <span className="text-muted-foreground">·</span>}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
