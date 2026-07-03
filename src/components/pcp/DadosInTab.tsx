@@ -186,13 +186,17 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     return new Set(keys.filter((k) => isEmpty((form as any)[k])).map(String));
   }
 
-  async function checkDuplicado(pedidoOlist: string, currentId?: string): Promise<boolean> {
-    if (!pedidoOlist) return false;
+  async function checkDuplicado(pedidoOlist: string, currentId?: string): Promise<{ bloqueado: boolean; motivo?: string }> {
+    if (!pedidoOlist) return { bloqueado: false };
     const { data, error } = await supabase
-      .from("pedidos").select("id").eq("pedido_olist", pedidoOlist).maybeSingle();
-    if (error) { console.error(error); return false; }
-    if (!data) return false;
-    return data.id !== currentId;
+      .from("pedidos").select("id, finalizado_em").eq("pedido_olist", pedidoOlist);
+    if (error) { console.error(error); return { bloqueado: false }; }
+    const rows = (data ?? []) as Array<{ id: string; finalizado_em: string | null }>;
+    const finalizado = rows.find((r) => r.finalizado_em && r.id !== currentId);
+    if (finalizado) return { bloqueado: true, motivo: `Número Olist "${pedidoOlist}" já foi utilizado por um pedido finalizado.` };
+    const ativo = rows.find((r) => !r.finalizado_em && r.id !== currentId);
+    if (ativo) return { bloqueado: true, motivo: `Já existe um pedido ativo com o número Olist "${pedidoOlist}".` };
+    return { bloqueado: false };
   }
 
   async function saveVendor() {
