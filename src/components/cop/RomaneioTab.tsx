@@ -1149,17 +1149,19 @@ function RomaneioPecasTable({
           </tr>
         </thead>
         <tbody>
-          {linhas.map(({ cop: c, grupos }) => {
+          {linhas.map(({ cop: c, grupos }, copIdx) => {
             const ofiNome = c.oficina_id ? (oficinaNomeById.get(c.oficina_id) ?? "—") : "—";
             const rows = grupos.length > 0 ? grupos : [null];
             const span = rows.length;
             const sel = c.id === selectedId;
+            const zebra = copIdx % 2 === 1;
             return rows.map((g, i) => (
               <tr
                 key={`${c.id}|${i}`}
-                className={`border-t cursor-pointer hover:bg-accent/40 ${sel ? "bg-accent/50" : ""}`}
+                className={`border-t cursor-pointer hover:bg-accent/40 ${sel ? "bg-accent/50" : zebra ? "bg-muted/60" : ""}`}
                 onClick={() => onSelect(c.id)}
               >
+
                 {i === 0 && (
                   <>
                     <td className="p-2 font-semibold tabular-nums align-top" rowSpan={span}>{rotuloRomaneio(c, cops)}</td>
