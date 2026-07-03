@@ -17,8 +17,9 @@ import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopStatus, type Oficina,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, subtrairPecas,
-  calcularStatusCorte, getRecebida, rotuloCop, numeroBaseCop,
+  calcularStatusCorte, getRecebida, rotuloCop, numeroBaseCop, colunasTamanhos,
 } from "@/lib/cop";
+
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { DivisaoCorteDialog } from "./DivisaoCorteDialog";
 import { useCanAccessCop } from "@/hooks/use-role";
