@@ -460,6 +460,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
       </div>
 
       {/* Editor */}
+      <div ref={editorRef} />
       {selected && (
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] gap-4">
           {/* Lado Esquerdo — Ordem de Produção */}
