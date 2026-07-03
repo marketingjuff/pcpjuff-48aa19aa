@@ -113,6 +113,31 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
     if (onNavigate) onNavigate(destino);
   }
 
+  const restaurados = selected ? restaurarEtapaDoHistorico(selected, "silk") : null;
+  const podeAproveitar =
+    !!selected &&
+    !readOnly &&
+    tipoIncluiDTF(selected.tipo_estampa) &&
+    tipoIncluiSilk(selected.tipo_estampa) &&
+    !!episodioAberto(selected) &&
+    restaurados !== null;
+
+  function aproveitarHistorico() {
+    if (!selected || !restaurados) return;
+    const hoje = new Date();
+    const dd = String(hoje.getDate()).padStart(2, "0");
+    const mm = String(hoje.getMonth() + 1).padStart(2, "0");
+    const nota = `Aproveitado do histórico em ${dd}/${mm}/${hoje.getFullYear()}`;
+    const obsPrev = (form.silk_observacao ?? selected.silk_observacao ?? "").toString();
+    const obsNova = obsPrev.includes(nota) ? obsPrev : (obsPrev ? `${obsPrev}\n${nota}` : nota);
+    onSave({
+      id: selected.id,
+      ...restaurados,
+      silk_observacao: obsNova,
+    } as any);
+  }
+
+
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
