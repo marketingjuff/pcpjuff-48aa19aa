@@ -17,7 +17,7 @@ import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopStatus, type Oficina,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, subtrairPecas,
-  calcularStatusCorte, getRecebida,
+  calcularStatusCorte, getRecebida, rotuloCop, numeroBaseCop,
 } from "@/lib/cop";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { DivisaoCorteDialog } from "./DivisaoCorteDialog";
@@ -127,7 +127,11 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
         if (oficinaFiltro === "__sem__") { if (c.oficina_id) return false; }
         else if (c.oficina_id !== oficinaFiltro) return false;
       }
-      if (busca && !formatCopNumero(c.numero).includes(busca.replace(/\D/g, ""))) return false;
+      if (busca) {
+        const rot = rotuloCop(numeroBaseCop(c, cops), c.letra).toUpperCase();
+        const q = busca.toUpperCase().replace(/\s+/g, "");
+        if (!rot.includes(q) && !formatCopNumero(c.numero).includes(q.replace(/\D/g, ""))) return false;
+      }
       return true;
     });
   }, [cops, statusFiltro, oficinaFiltro, busca]);
@@ -137,7 +141,9 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     const dir = sortDir === "asc" ? 1 : -1;
     arr.sort((a, b) => {
       let cmp = 0;
-      if (sortKey === "numero") cmp = a.numero - b.numero;
+      if (sortKey === "numero") {
+        cmp = (numeroBaseCop(a, cops) - numeroBaseCop(b, cops)) || (a.letra ?? "").localeCompare(b.letra ?? "");
+      }
       else if (sortKey === "status") cmp = String(a.status).localeCompare(String(b.status), "pt-BR");
       else if (sortKey === "oficina") {
         const na = a.oficina_id ? (oficinaNomeById.get(a.oficina_id) ?? "") : "";
@@ -393,7 +399,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
               <div>
                 <div className="text-xs uppercase text-muted-foreground tracking-wider">COP</div>
                 <div className="text-3xl sm:text-5xl font-bold tabular-nums">
-                  {formatCopNumero(selected.numero)}
+                  {rotuloCop(numeroBaseCop(selected, cops), selected.letra)}
                   {par && (
                     <span className="ml-3 text-sm font-normal text-muted-foreground">
                       (
@@ -649,7 +655,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
                         onClick={() => selectAndScroll(c.id)}
                       >
                         <td className="p-2 font-semibold tabular-nums">
-                          {formatCopNumero(c.numero)}
+                          {rotuloCop(numeroBaseCop(c, cops), c.letra)}
                           {c.cop_pai_id && <span className="ml-1 text-[10px] text-muted-foreground">(filho)</span>}
                         </td>
                         <td className="p-2">
