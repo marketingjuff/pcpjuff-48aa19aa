@@ -232,17 +232,21 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
             <DialogDescription>Distribuição por ocorrências</DialogDescription>
           </DialogHeader>
           {rankDialog && (
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={rankDialog.entries.map(([name, value]) => ({ name, value }))} layout="vertical" margin={{ left: 24, right: 24 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" allowDecimals={false} />
-                  <YAxis type="category" dataKey="name" width={140} />
-                  <RTooltip />
-                  <Bar dataKey="value" fill="hsl(var(--primary))" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            rankDialog.entries.length === 0 ? (
+              <div className="h-72 flex items-center justify-center text-sm text-muted-foreground">Sem dados.</div>
+            ) : (
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={rankDialog.entries.map(([name, value]) => ({ name, value }))} layout="vertical" margin={{ left: 24, right: 24 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" allowDecimals={false} />
+                    <YAxis type="category" dataKey="name" width={140} />
+                    <RTooltip />
+                    <Bar dataKey="value" fill="hsl(var(--primary))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )
           )}
         </DialogContent>
       </Dialog>
