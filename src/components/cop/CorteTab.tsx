@@ -491,7 +491,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
                 </div>
               </div>
               <div className="rounded-md border overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-[12.5px] leading-[1.2]">
                   <thead className="bg-muted/40 text-xs">
                     <tr>
                       <th className="p-2 text-left w-[90px] min-w-[90px]">Modelo</th>
@@ -739,7 +739,7 @@ function PecasTable({
 
   return (
     <div className="rounded-md border overflow-x-auto">
-      <table className="text-sm w-full" style={{ borderCollapse: "collapse" }}>
+      <table className="text-[12.5px] leading-[1.2] w-full" style={{ borderCollapse: "collapse" }}>
         <thead className="bg-muted/40 text-xs">
           <tr>
             <SortableTh label="Número" active={sortKey === "numero"} dir={sortDir} onClick={() => toggleSort("numero")} />
