@@ -43,11 +43,22 @@ function CopHome() {
   const canAccess = useCanAccessCop();
   const { isLoading } = useMyRoles();
   const search = Route.useSearch();
-  const [tab, setTab] = useState(search.tab ?? "corte");
+  const [tab, setTabState] = useState(() => {
+    if (search.tab) return search.tab;
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem("cop:tab");
+      if (saved) return saved;
+    }
+    return "corte";
+  });
+  const setTab = (t: string) => {
+    setTabState(t);
+    if (typeof window !== "undefined") window.localStorage.setItem("cop:tab", t);
+  };
   const [copSelId, setCopSelId] = useState<string | null>(search.copId ?? null);
 
   useEffect(() => {
-    if (search.tab) setTab(search.tab);
+    if (search.tab) setTabState(search.tab);
     if (search.copId) setCopSelId(search.copId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.tab, search.copId]);
