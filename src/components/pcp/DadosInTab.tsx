@@ -207,9 +207,9 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       toast.error("Preencha os campos obrigatórios do Input do Vendedor. O orçamento precisa conter números e no mínimo 2 letras.");
       return;
     }
-    if (await checkDuplicado(String(form.pedido_olist ?? ""), selected?.id)) {
-      toast.error(`Já existe um pedido com o número Olist "${form.pedido_olist}".`);
-      return;
+    {
+      const dup = await checkDuplicado(String(form.pedido_olist ?? ""), selected?.id);
+      if (dup.bloqueado) { toast.error(dup.motivo!); return; }
     }
     const wipe = await wipeProducaoSeRefacaoDados();
     const payload: any = {
