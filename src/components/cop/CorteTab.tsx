@@ -73,6 +73,21 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     },
   });
 
+  const { data: oficinas = [] } = useQuery({
+    queryKey: ["oficinas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("oficinas" as any).select("*").order("nome");
+      if (error) throw error;
+      return (data ?? []) as unknown as Oficina[];
+    },
+  });
+
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const selectAndScroll = (id: string | null) => {
+    setSelectedId(id);
+    if (id) requestAnimationFrame(() => editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
   useEffect(() => {
     const ch = supabase
       .channel("cops-changes")
