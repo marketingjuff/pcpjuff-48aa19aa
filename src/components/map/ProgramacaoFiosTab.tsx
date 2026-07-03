@@ -256,7 +256,7 @@ export function MapFiosTable({ finalizado }: Props) {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>
