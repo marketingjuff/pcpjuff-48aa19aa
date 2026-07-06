@@ -72,28 +72,34 @@ export function MalhariaBlock({ producao, entregas, kgPorPeca, onChanged, readOn
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[12.5px]">
+        <table className="w-full min-w-[700px] text-[12.5px] table-fixed">
+          <colgroup>
+            <col style={{ width: "22%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "24%" }} />
+            <col style={{ width: "24%" }} />
+            <col style={{ width: "6%" }} />
+          </colgroup>
           <thead className="bg-muted/40">
             <tr className="text-left">
               <th className="p-1.5 font-medium">Data recebimento</th>
               <th className="p-1.5 font-medium">Kg</th>
               <th className="p-1.5 font-medium">Peças</th>
               <th className="p-1.5 font-medium">NF 1</th>
-              <th className="p-1.5 font-medium">NF 2</th>
               <th className="p-1.5 font-medium">NF cobertura</th>
               <th className="p-1.5 w-8"></th>
             </tr>
           </thead>
           <tbody>
             {entregas.length === 0 ? (
-              <tr><td colSpan={7} className="p-2 text-center text-muted-foreground">Sem entregas.</td></tr>
+              <tr><td colSpan={6} className="p-2 text-center text-muted-foreground">Sem entregas.</td></tr>
             ) : entregas.map((e) => (
               <tr key={e.id} className="border-t">
                 <td className="p-1"><InlineInput type="date" value={e.data_recebimento} onCommit={(v) => commit(e.id, "data_recebimento", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="0.01" min="0" value={e.kg} onCommit={(v) => commit(e.id, "kg", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="1" min="0" value={e.pecas} onCommit={(v) => commit(e.id, "pecas", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput value={e.nota_fiscal_1} onCommit={(v) => commit(e.id, "nota_fiscal_1", v)} disabled={readOnly} /></td>
-                <td className="p-1"><InlineInput value={e.nota_fiscal_2} onCommit={(v) => commit(e.id, "nota_fiscal_2", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput value={e.nota_cobertura} onCommit={(v) => commit(e.id, "nota_cobertura", v)} disabled={readOnly} /></td>
                 <td className="p-1 text-right">
                   {!readOnly && (
