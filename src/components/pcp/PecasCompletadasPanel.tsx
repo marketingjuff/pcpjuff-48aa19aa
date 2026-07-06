@@ -89,8 +89,8 @@ export function PecasCompletadasPanel({ pedido }: Props) {
       // qty 0 = deletar
       novo.splice(idx, 1);
     } else {
-      const atual = novo[idx] as LogItem;
-      novo[idx] = { ...atual, qtd: q, observacao: editObs || null };
+      const atual = novo[idx] as any;
+      novo[idx] = { ...atual, qtd: q, observacao: editObs || null } as LogItem;
     }
     salvar.mutate(novo);
   }
