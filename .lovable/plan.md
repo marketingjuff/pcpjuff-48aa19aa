@@ -1,92 +1,47 @@
 ## Escopo
 
-Adicionar ao MAP:
-1. Lista gerenciável de **acabamentos** (`ACAB1`–`ACAB4` iniciais).
-2. Card no config do MAP mapeando cada cor do PCP a um acabamento.
-3. Na tabela de Tinturaria, trocar o input livre da coluna **Cor** por um dropdown que grava a string combinada `cor-ACABx` no momento da seleção.
+Tarefa 100% frontend. **Nenhuma migração SQL** será criada ou executada. A coluna `map_producoes.status` permanece intocada no banco (vira campo legado, não lido pela UI e não mais escrito).
 
-Sem tocar em PCP, COP, `REFACAO_CORES`, `cop-saldos`, ou no schema de `map_tinturaria_programacoes`.
+## Arquivos alterados (apenas 2)
 
-## 1. Migração (estritamente aditiva)
+1. `src/lib/map.ts` — adicionar 3 helpers puros + ajustar `podeFinalizar`.
+2. `src/components/map/ProgramacaoFiosTab.tsx` — cabeçalho, células, filtro, contadores, `commitProd`.
 
-Novo arquivo: `supabase/migrations/<timestamp>_map_cor_acabamentos.sql`
+Não serão tocados: `MalhariaBlock.tsx`, `TinturariaBlock.tsx`, `NovoProdDialog.tsx`, `MapConfigPanel.tsx`, nada de PCP/COP.
 
-```sql
--- Adiciona 'map_acabamento' ao check de app_lists (drop/recreate apenas do constraint)
-ALTER TABLE public.app_lists DROP CONSTRAINT IF EXISTS app_lists_kind_check;
-ALTER TABLE public.app_lists ADD CONSTRAINT app_lists_kind_check CHECK (kind = ANY (ARRAY[
-  'vendedor','dtf','silk','acabamento','frete','pagamento','nf',
-  'status_arte','corte_dtf','revelacao_silk','motivo_perda',
-  'refacao_problema_arte','refacao_problema_dtf','refacao_problema_silk','refacao_problema_acabamento',
-  'refacao_area_identifica','refacao_area_erro',
-  'map_fio_fornecedor','map_malharia','map_tinturaria',
-  'map_acabamento'
-]));
+## Novos helpers em `src/lib/map.ts`
 
--- Seed idempotente
-INSERT INTO public.app_lists (kind, nome, ordem)
-SELECT v.kind, v.nome, v.ordem
-FROM (VALUES
-  ('map_acabamento','ACAB1',10),
-  ('map_acabamento','ACAB2',20),
-  ('map_acabamento','ACAB3',30),
-  ('map_acabamento','ACAB4',40)
-) AS v(kind, nome, ordem)
-WHERE NOT EXISTS (SELECT 1 FROM public.app_lists a WHERE a.kind = v.kind AND a.nome = v.nome);
+```ts
+export type MapStatusFio = "entregue" | "aguardando_faturamento";
+export type MapStatusEtapa = "completo" | "incompleto";
 
--- Seed do mapa cor→acabamento em map_config
-INSERT INTO public.map_config (key, value) VALUES ('cor_acabamentos', '{}'::jsonb)
-ON CONFLICT (key) DO NOTHING;
+export function calcStatusFio(prod: MapProducao): MapStatusFio;
+// "entregue" se nota_fiscal != null/"" E data_faturamento != null/""; senão "aguardando_faturamento".
+
+export function calcStatusMalharia(prod: MapProducao, entregas: MapEntregaMalharia[]): MapStatusEtapa;
+// "completo" se sumKgEntregas(entregas) >= 0.99 * kg_solicitados; senão "incompleto".
+
+export function calcStatusTinturaria(progs: MapProgramacaoTinturaria[], pecasRecebidasMalharia: number): MapStatusEtapa;
+// "completo" se progs.length > 0
+//   E toda linha tem kg_recebidos, pecas_recebidas, data_recebimento, nota_fiscal_recebimento preenchidos
+//   E sumPecasProgramadas(progs) === pecasRecebidasMalharia (X === Y, exato).
+// Senão "incompleto".
 ```
 
-Nenhuma tabela nova, nenhuma coluna nova, nenhuma alteração de policy/GRANT (já cobertas).
+Ajuste em `podeFinalizar`: trocar `prod.status !== "entregue"` por `calcStatusFio(prod) !== "entregue"`. Resto da função inalterado.
 
-## 2. `src/lib/app-lists.ts`
+## Alterações em `ProgramacaoFiosTab.tsx`
 
-Adicionar `"map_acabamento"` ao union `AppListKind`. Nada mais.
+1. **Cabeçalho**: renomear coluna `Status` → `Fio`; adicionar `Malharia` e `Tinturaria` logo em seguida. Ajustar `<colgroup>` e `min-w` da tabela (colunas de status estreitas ~7–8% cada, só badges).
+2. **Células**: 3 `Badge` seguindo padrão visual atual — `emerald` para `Entregue`/`Completo`, `amber` para `Aguardando fat.`/`Incompleto`. Usar `byProdEntregas` / `byProdProgs` já existentes; `pecasRecebidasMalharia` = `sumPecasEntregas(entregas)`.
+3. **Filtro `fStatus`**: passa a filtrar por `calcStatusFio(p)` em vez de `p.status`. Renomear label visível "Status" → "Fio" se existir.
+4. **Contadores topo** (`totalAguardando` / `totalEntregues`): recalcular via `calcStatusFio`.
+5. **`commitProd`**: remover o bloco que faz `patch.status = "entregue"` quando `nota_fiscal` é preenchida. Nenhuma outra escrita no campo `status`.
 
-## 3. `src/lib/map.ts`
+## Confirmação de banco
 
-Adicionar, seguindo o padrão de `useKgPorPeca`:
+- ✅ Nenhum arquivo `supabase/migrations/*` será criado.
+- ✅ Nenhuma chamada `.update({ status: ... })` permanece em `map_producoes`.
+- ✅ Coluna `status` continua existindo, apenas ignorada pela UI.
 
-- `useCorAcabamentos()` → lê `map_config` key `cor_acabamentos` (jsonb `Record<string,string>`, ex.: `{ "amarelo": "ACAB3" }`); mutation `save(mapaCompleto)` faz `upsert` com `updated_at`.
-- Helper puro `corComAcabamento(nomeCor, mapa)` → retorna `"amarelo-ACAB3"` quando há acabamento; `"amarelo"` quando não há.
-
-## 4. `src/components/map/MapConfigPanel.tsx`
-
-- Novo `<ListaCard kind="map_acabamento" titulo="Acabamentos" placeholder="Ex.: ACAB5" />` (reusa componente atual sem alterá-lo).
-- Novo `CoresAcabamentoCard` posicionado antes do `AcessoMapCard`:
-  - Importa `REFACAO_CORES` de `@/lib/pedidos` (somente leitura).
-  - Tabela: bolinha `hex` + nome da cor + `Select` shadcn com opções vindas de `useAppList("map_acabamento")` + opção "— sem acabamento" (remove a chave do mapa).
-  - Coluna de prévia mostrando `corComAcabamento(nome, mapa)`.
-  - `onValueChange` → `save.mutateAsync(mapaAtualizado)` com toast.
-  - Texto explicativo: afeta apenas programações novas; registros existentes ficam intactos.
-
-## 5. `src/components/map/TinturariaBlock.tsx`
-
-Trocar o `InlineInput` da coluna **Cor** (linha 125) por um `Select` shadcn:
-
-- Opções: `REFACAO_CORES` na ordem da constante; cada item exibe bolinha `hex` + rótulo já combinado via `corComAcabamento`.
-- Opção "—" que grava `null`.
-- Legado: se `p.cor` atual não existe entre as opções combinadas (ex.: `"Amarelo"`), renderizar como item selecionado extra sem apagar/normalizar; só muda se o usuário selecionar outra opção.
-- Ao selecionar cor `X` com acabamento configurado `ACABy`, grava exatamente `"X-ACABy"` (ou `"X"` sem acabamento). Cadeia via `commit(p, "cor", valorCombinado)`.
-- Respeitar `readOnly` desabilitando o Select.
-
-## Comportamento congelado
-
-O valor gravado em `map_tinturaria_programacoes.cor` é a string do momento da seleção. Mudar o config depois **não** reescreve linhas antigas. Nada de recomputar sufixo dinamicamente na exibição.
-
-## Fora de escopo (proibições)
-
-- Não editar `src/lib/pedidos.ts`, `src/lib/cop*.ts`, `src/lib/cop-saldos.ts`, `src/components/pcp/**`, `src/components/cop/**`.
-- Não modificar `ListaCard` nem outros cards existentes do config.
-- Não criar tabela/coluna nova em `map_tinturaria_programacoes`.
-
-## Critérios de aceitação
-
-1. Card "Acabamentos" no config com ACAB1–ACAB4, add/remove funcionando.
-2. Card de cores lista todas as cores do PCP com bolinha, dropdown de acabamento e prévia; persiste após reload.
-3. Coluna Cor da Tinturaria virou dropdown com sufixo do acabamento; grava string combinada visível após reload.
-4. Alterar acabamento no config não altera linhas já gravadas.
-5. Programações antigas com texto livre continuam intactas.
-6. PCP/COP com zero diffs; build TS limpo.
+Aguardando aprovação para implementar.
