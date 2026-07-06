@@ -1,36 +1,30 @@
-## Ajuste fino da tabela MAP — apenas `ProgramacaoFiosTab.tsx`
+## Ajuste de espaçamento da tabela de Prods (MAP)
 
-Escopo 100% visual. Zero migrations. Nenhum outro arquivo alterado.
+Escopo único: `src/components/map/ProgramacaoFiosTab.tsx`. Zero migrations, zero lógica, apenas CSS/JSX das larguras da tabela. Vale para as duas abas (Programação e Finalizados) porque ambas renderizam a mesma tabela deste arquivo.
 
-### 1. Layout fixo com `<colgroup>`
-Adicionar `table-fixed w-full` na `<table>` e inserir um `<colgroup>` com larguras explícitas para garantir que todos os grupos fiquem idênticos:
+### 1. Trocar larguras fixas em px por percentuais no `<colgroup>`
 
-| Col | Largura |
+Somam 100%:
+
+| Coluna | Largura |
 |---|---|
-| Chevron | 32px |
-| Prod | 90px |
-| Empresa | 90px |
-| Kg solicitados | 110px |
-| Fornecedor | `auto` (flexível) |
-| Data pagamento | 130px |
-| Status | 130px |
-| Nota fiscal | 120px |
-| Data faturam. | 130px |
-| Ações | 150px |
+| Chevron | 3% |
+| Prod | 8% |
+| Empresa | 8% |
+| Kg solicitados | 9% |
+| Fornecedor | 14% |
+| Data pagamento | 12% |
+| Status | 11% |
+| Nota fiscal | 11% |
+| Data faturam. | 12% |
+| Ações | 12% |
 
-### 2. Alinhamentos
-- `<th>` e `<td>` centralizados (`text-center`) em: Empresa, Kg solicitados, Fornecedor, Data pagamento, Status, Nota fiscal, Data faturam.
-- Prod: `text-left` (th + td).
-- Ações: `text-right` (mantém).
-- Padding uniforme `p-1.5` em todos.
-- `whitespace-nowrap` em todos os `<th>` para garantir cabeçalhos em linha única.
+### 2. `min-w-[1050px]` na `<table>`
+Mantém `table-fixed w-full`. O `overflow-x-auto` do wrapper já existe, então em telas estreitas a tabela rola horizontalmente e os inputs de data (`w-[120px]`) / NF (`w-[110px]`) não são esmagados.
 
-### 3. Inputs uniformes
-- Envolver cada `InlineInput` de data/NF em um wrapper `flex justify-center` na `<td>`, aplicando largura fixa via classe (datas ~120px, NF ~110px) através da prop `className` do InlineInput — sem tocar no componente.
-- Badge de Status já centraliza com `text-center` da célula; envolver em `inline-flex justify-center` se necessário.
-
-### 4. Cabeçalho
-- Renomear "Data de faturamento" → "Data faturam.".
+### 3. Preservado
+- `table-fixed`, alinhamentos atuais, larguras dos `InlineInput`, badges, botões, expandir/recolher.
+- Nada além do `<colgroup>` e da classe da `<table>` é tocado.
 
 ### Fora de escopo
-Qualquer arquivo que não seja `src/components/map/ProgramacaoFiosTab.tsx`. Sem mudanças em lógica, dados, filtros ou ordenação.
+Qualquer outro arquivo (MalhariaBlock, TinturariaBlock, cop-saldos, PCP/COP, banco).
