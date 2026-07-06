@@ -101,8 +101,8 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
     } catch (e: any) { toast.error(e?.message ?? "Falha ao salvar."); }
   }
 
-  const saldoPcs = totalPedidoPcs - totalEntreguePcs;
-  const saldoKg = totalPedidoKg - totalEntregueKg;
+  const saldoPcs = totalEntreguePcs - totalPedidoPcs;
+  const saldoKg = totalEntregueKg - totalPedidoKg;
   const saldoClass = (v: number) => v > 0 ? "text-blue-600" : v < 0 ? "text-red-600" : "text-muted-foreground";
 
   return (
