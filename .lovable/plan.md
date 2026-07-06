@@ -1,47 +1,36 @@
-## Plano — Ajustes na tabela MAP Programação de Fios
+## Ajuste fino da tabela MAP — apenas `ProgramacaoFiosTab.tsx`
 
-Escopo 100% frontend. Sem migrations, sem tocar em `cop-saldos.ts`, PCP, COP nem nos blocos Malharia/Tinturaria/InlineInput/BaixaQuebra/MapConfigPanel.
+Escopo 100% visual. Zero migrations. Nenhum outro arquivo alterado.
 
-### Arquivos alterados
+### 1. Layout fixo com `<colgroup>`
+Adicionar `table-fixed w-full` na `<table>` e inserir um `<colgroup>` com larguras explícitas para garantir que todos os grupos fiquem idênticos:
 
-**1. `src/lib/map.ts`**
-- Adicionar helper `prodCode(numero: number): string` → `` `PROD${numero}` ``.
-- Em `useMapData`: trocar ordenação da query `map_producoes` para `data_pedido` ASC + `numero` ASC (ambas as abas).
+| Col | Largura |
+|---|---|
+| Chevron | 32px |
+| Prod | 90px |
+| Empresa | 90px |
+| Kg solicitados | 110px |
+| Fornecedor | `auto` (flexível) |
+| Data pagamento | 130px |
+| Status | 130px |
+| Nota fiscal | 120px |
+| Data faturam. | 130px |
+| Ações | 150px |
 
-**2. `src/components/map/NovoProdDialog.tsx`**
-- Aceitar prop opcional `producao?: MapProducao`.
-- Se `producao` presente: pré-preencher campos (`numero`, `data_pedido`, `faturar_para`, `fornecedor`, `kg_solicitados`, `malharia`), título "Editar PROD{n}", botão "Salvar alterações", `patchProducao` no submit.
-- Se ausente: comportamento atual (INSERT), inalterado.
-- Aviso de número duplicado (`window.confirm`) ignora o próprio Prod em edição.
-- Trocar label "Faturar para" → "Empresa" (valores Juff/Joke mantidos).
-- Mensagem de duplicado usa `prodCode(n)`.
+### 2. Alinhamentos
+- `<th>` e `<td>` centralizados (`text-center`) em: Empresa, Kg solicitados, Fornecedor, Data pagamento, Status, Nota fiscal, Data faturam.
+- Prod: `text-left` (th + td).
+- Ações: `text-right` (mantém).
+- Padding uniforme `p-1.5` em todos.
+- `whitespace-nowrap` em todos os `<th>` para garantir cabeçalhos em linha única.
 
-**3. `src/components/map/ProgramacaoFiosTab.tsx`** (MapFiosTable) — mudanças principais:
-- **Barra superior:** trocar lados no flex — botões "Novo pedido" + "Expandir tudo" + "Recolher tudo" à esquerda; contadores à direita.
-- **State novo:** `editingProd: MapProducao | null` para reaproveitar `NovoProdDialog` em modo edição.
-- **Barra de filtros** (nova, acima dos grupos), padrão visual dos `Select` do COP:
-  - Data de pedido (`DateInputBR` + botão limpar)
-  - Empresa (Todos / Juff / Joke)
-  - Fornecedor (Todos + distintos dos Prods carregados)
-  - Nota fiscal (input texto, "contém" case-insensitive)
-  - Status (Todos / Aguardando faturamento / Entregue) — só quando `!finalizado`
-  - Aplicados client-side (AND); grupos vazios somem; contadores refletem filtrados.
-- **Ordenação:** `grupos` em ordem ASC de data; dentro do grupo, `numero` ASC.
-- **Nova ordem de colunas** (após chevron):
-  1. Prod (`prodCode(numero)`, tabular-nums, esquerda)
-  2. Empresa (esquerda)
-  3. Kg solicitados (tabular-nums, esquerda)
-  4. Fornecedor (esquerda)
-  5. Data pagamento (InlineInput date, largura fixa)
-  6. Status (badge)
-  7. Nota fiscal (InlineInput; regra atual de setar status=entregue preservada)
-  8. Data de faturamento (InlineInput date, largura fixa)
-  9. Ações — direita: Finalizar (quando aplicável), **Editar**, Excluir; ou Reabrir na aba Finalizados.
-- **Editar:** botão abre `NovoProdDialog` com `producao={prod}`.
-- **Alinhamento uniforme:** padronizar padding `p-1.5` em `<th>` e `<td>`; alinhamentos conforme spec.
-- **Cabeçalho do grupo:** `text-[25px] font-semibold` com padding vertical maior (ex.: `py-2`), fundo amarelo mantido.
-- **Textos com `prodCode`:** toasts finalizar/reabrir, confirmação de excluir, coluna Prod.
-- Ajustar `colSpan` da linha expandida (agora 9 colunas de dados).
+### 3. Inputs uniformes
+- Envolver cada `InlineInput` de data/NF em um wrapper `flex justify-center` na `<td>`, aplicando largura fixa via classe (datas ~120px, NF ~110px) através da prop `className` do InlineInput — sem tocar no componente.
+- Badge de Status já centraliza com `text-center` da célula; envolver em `inline-flex justify-center` se necessário.
 
-### Fora de escopo (não tocar)
-`MalhariaBlock.tsx`, `TinturariaBlock.tsx`, `InlineInput.tsx`, `BaixaQuebraDialog.tsx`, `MapConfigPanel.tsx`, `cop-saldos.ts`, PCP, COP, banco de dados.
+### 4. Cabeçalho
+- Renomear "Data de faturamento" → "Data faturam.".
+
+### Fora de escopo
+Qualquer arquivo que não seja `src/components/map/ProgramacaoFiosTab.tsx`. Sem mudanças em lógica, dados, filtros ou ordenação.

@@ -260,19 +260,31 @@ export function MapFiosTable({ finalizado }: Props) {
             Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-[12.5px]">
+            <table className="w-full text-[12.5px] table-fixed">
+              <colgroup>
+                <col style={{ width: "32px" }} />
+                <col style={{ width: "90px" }} />
+                <col style={{ width: "90px" }} />
+                <col style={{ width: "110px" }} />
+                <col />
+                <col style={{ width: "130px" }} />
+                <col style={{ width: "130px" }} />
+                <col style={{ width: "120px" }} />
+                <col style={{ width: "130px" }} />
+                <col style={{ width: "150px" }} />
+              </colgroup>
               <thead className="bg-muted/40 text-[11.5px] uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="p-1.5 w-6"></th>
-                  <th className="p-1.5 text-left">Prod</th>
-                  <th className="p-1.5 text-left">Empresa</th>
-                  <th className="p-1.5 text-left">Kg solicitados</th>
-                  <th className="p-1.5 text-left">Fornecedor</th>
-                  <th className="p-1.5 text-left w-32">Data pagamento</th>
-                  <th className="p-1.5 text-left">Status</th>
-                  <th className="p-1.5 text-left w-28">Nota fiscal</th>
-                  <th className="p-1.5 text-left w-32">Data de faturamento</th>
-                  <th className="p-1.5 text-right"></th>
+                  <th className="p-1.5 whitespace-nowrap"></th>
+                  <th className="p-1.5 text-left whitespace-nowrap">Prod</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Empresa</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Kg solicitados</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Fornecedor</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Data pagamento</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Status</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Nota fiscal</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Data faturam.</th>
+                  <th className="p-1.5 text-right whitespace-nowrap"></th>
                 </tr>
               </thead>
               <tbody>
