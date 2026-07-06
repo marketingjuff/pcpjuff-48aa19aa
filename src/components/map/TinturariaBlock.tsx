@@ -123,7 +123,7 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
           </span>
           <span className="text-muted-foreground">|</span>
           <span className="text-muted-foreground">
-            Saldo <b className={`tabular-nums ${saldoClass}`}>{saldoPcs > 0 ? "+" : ""}{saldoPcs}</b> pcs
+            Saldo <b className={`tabular-nums ${saldoClass(saldoKg)}`}>{saldoKg > 0 ? "+" : ""}{fmt(saldoKg, { decimals: 2 })}</b> kg / <b className={`tabular-nums ${saldoClass(saldoPcs)}`}>{saldoPcs > 0 ? "+" : ""}{saldoPcs}</b> pcs
           </span>
         </div>
         {!readOnly && (
