@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,22 +8,20 @@ import { DateInputBR } from "@/components/ui/date-input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAppList } from "@/lib/app-lists";
-import type { MapProducao } from "@/lib/map";
+import { patchProducao, prodCode, type MapProducao } from "@/lib/map";
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onCreated: () => void;
   producoes: MapProducao[];
+  producao?: MapProducao | null;
 }
 
-export function NovoProdDialog({ open, onOpenChange, onCreated, producoes }: Props) {
+export function NovoProdDialog({ open, onOpenChange, onCreated, producoes, producao }: Props) {
+  const isEdit = !!producao;
   const maxNumero = useMemo(
     () => producoes.reduce((m, p) => Math.max(m, Number(p.numero) || 0), 0),
-    [producoes],
-  );
-  const numerosExistentes = useMemo(
-    () => new Set(producoes.map((p) => Number(p.numero))),
     [producoes],
   );
   const hoje = new Date().toISOString().slice(0, 10);
@@ -37,6 +35,32 @@ export function NovoProdDialog({ open, onOpenChange, onCreated, producoes }: Pro
   const { names: fornecedores } = useAppList("map_fio_fornecedor");
   const { names: malharias } = useAppList("map_malharia");
 
+  // Reset / prefill when opening
+  useEffect(() => {
+    if (!open) return;
+    if (producao) {
+      setNumero(String(producao.numero));
+      setDataPedido(producao.data_pedido);
+      setFaturarPara(producao.faturar_para);
+      setFornecedor(producao.fornecedor ?? "");
+      setKg(String(producao.kg_solicitados ?? ""));
+      setMalharia(producao.malharia ?? "");
+    } else {
+      setNumero(String(maxNumero + 1));
+      setDataPedido(hoje);
+      setFaturarPara("Juff");
+      setFornecedor("");
+      setKg("");
+      setMalharia("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, producao?.id]);
+
+  const numerosOutros = useMemo(
+    () => new Set(producoes.filter((p) => p.id !== producao?.id).map((p) => Number(p.numero))),
+    [producoes, producao?.id],
+  );
+
   async function handleSave() {
     const n = Number(numero);
     if (!Number.isFinite(n) || n <= 0) { toast.error("Número inválido."); return; }
@@ -45,34 +69,56 @@ export function NovoProdDialog({ open, onOpenChange, onCreated, producoes }: Pro
     const kgN = Number(kg);
     if (!Number.isFinite(kgN) || kgN <= 0) { toast.error("Informe kg solicitados."); return; }
 
-    if (numerosExistentes.has(n)) {
-      const ok = window.confirm(`Já existe Prod ${n} — deseja continuar?`);
+    if (numerosOutros.has(n)) {
+      const ok = window.confirm(`Já existe ${prodCode(n)} — deseja continuar?`);
       if (!ok) return;
     }
 
     setSaving(true);
-    const { error } = await (supabase as any).from("map_producoes").insert({
-      numero: n,
-      data_pedido: dataPedido,
-      faturar_para: faturarPara,
-      fornecedor: fornecedor.trim(),
-      kg_solicitados: kgN,
-      malharia: malharia.trim() || null,
-    });
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Prod criado.");
-    onCreated();
-    onOpenChange(false);
-    // reset
-    setKg(""); setFornecedor(""); setMalharia("");
-    setNumero(String(n + 1));
+    try {
+      if (isEdit && producao) {
+        await patchProducao(producao.id, {
+          numero: n,
+          data_pedido: dataPedido,
+          faturar_para: faturarPara,
+          fornecedor: fornecedor.trim(),
+          kg_solicitados: kgN,
+          malharia: malharia.trim() || null,
+        } as any);
+        toast.success(`${prodCode(n)} atualizado.`);
+      } else {
+        const { error } = await (supabase as any).from("map_producoes").insert({
+          numero: n,
+          data_pedido: dataPedido,
+          faturar_para: faturarPara,
+          fornecedor: fornecedor.trim(),
+          kg_solicitados: kgN,
+          malharia: malharia.trim() || null,
+        });
+        if (error) throw error;
+        toast.success(`${prodCode(n)} criado.`);
+      }
+      onCreated();
+      onOpenChange(false);
+      if (!isEdit) {
+        setKg(""); setFornecedor(""); setMalharia("");
+        setNumero(String(n + 1));
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao salvar.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[560px]">
-        <DialogHeader><DialogTitle>Novo pedido de fio (Prod)</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>
+            {isEdit ? `Editar ${prodCode(producao!.numero)}` : "Novo pedido de fio (Prod)"}
+          </DialogTitle>
+        </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Número do Prod</Label>
@@ -83,7 +129,7 @@ export function NovoProdDialog({ open, onOpenChange, onCreated, producoes }: Pro
             <DateInputBR value={dataPedido} onChange={(v) => setDataPedido(v ?? "")} />
           </div>
           <div>
-            <Label>Faturar para</Label>
+            <Label>Empresa</Label>
             <Select value={faturarPara} onValueChange={(v) => setFaturarPara(v as any)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -126,7 +172,9 @@ export function NovoProdDialog({ open, onOpenChange, onCreated, producoes }: Pro
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving}>Criar Prod</Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {isEdit ? "Salvar alterações" : "Criar Prod"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -97,6 +97,10 @@ export function fmt(v: unknown, opts?: { decimals?: number }): string {
   return String(v);
 }
 
+export function prodCode(numero: number | string): string {
+  return `PROD${numero}`;
+}
+
 export function fmtDateBR(iso: string | null | undefined): string {
   if (!iso) return "—";
   const [y, m, d] = iso.split("-");
@@ -152,8 +156,8 @@ export function useMapData(finalizado: boolean) {
         .from("map_producoes")
         .select("*")
         .eq("finalizado", finalizado)
-        .order(finalizado ? "finalizado_em" : "data_pedido", { ascending: false })
-        .order("numero", { ascending: false });
+        .order("data_pedido", { ascending: true })
+        .order("numero", { ascending: true });
       if (error) throw error;
       return (data ?? []) as MapProducao[];
     },
