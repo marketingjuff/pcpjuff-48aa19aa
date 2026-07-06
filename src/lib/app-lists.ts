@@ -6,7 +6,7 @@ export type AppListKind =
   | "status_arte" | "corte_dtf" | "revelacao_silk" | "motivo_perda"
   | "refacao_problema_arte" | "refacao_problema_dtf" | "refacao_problema_silk" | "refacao_problema_acabamento"
   | "refacao_area_identifica" | "refacao_area_erro"
-  | "map_fio_fornecedor" | "map_malharia" | "map_tinturaria";
+  | "map_fio_fornecedor" | "map_malharia" | "map_tinturaria" | "map_acabamento";
 
 export interface AppListItem {
   id: string;
