@@ -82,9 +82,14 @@ function desagrupar(grupos: GrupoLinha[]): PecaSolicitada[] {
 export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOnly = false, limite, onLiberarCompleto }: Props) {
   const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value));
   const [saving, setSaving] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const effectiveReadOnly = readOnly && !editMode;
 
   useEffect(() => {
-    if (open) setGrupos(agrupar(value));
+    if (open) {
+      setGrupos(agrupar(value));
+      setEditMode(false);
+    }
   }, [open, value]);
 
   function setGrupo(i: number, patch: Partial<GrupoLinha>) {
