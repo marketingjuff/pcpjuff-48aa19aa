@@ -115,7 +115,6 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
               <th className="p-1.5 font-medium">Peças rec.</th>
               <th className="p-1.5 font-medium">Data rec.</th>
               <th className="p-1.5 font-medium">NF rec.</th>
-              <th className="p-1.5 font-medium">NF cobertura</th>
               <th className="p-1.5 w-8"></th>
             </tr>
           </thead>
