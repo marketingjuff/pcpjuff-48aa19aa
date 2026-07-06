@@ -31,6 +31,11 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
   const Y = pecasRecebidasMalharia;
   const X = totalProgramado;
 
+  const totalPedidoKg = programacoes.reduce((s, p) => s + Number(p.kg_enviados ?? 0), 0);
+  const totalPedidoPcs = programacoes.reduce((s, p) => s + Number(p.pecas ?? 0), 0);
+  const totalEntregueKg = programacoes.reduce((s, p) => s + Number(p.kg_recebidos ?? 0), 0);
+  const totalEntreguePcs = programacoes.reduce((s, p) => s + Number(p.pecas_recebidas ?? 0), 0);
+
   let counterClass = "text-muted-foreground";
   let icon = null;
   if (Y > 0) {
