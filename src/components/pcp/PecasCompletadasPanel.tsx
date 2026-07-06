@@ -76,8 +76,8 @@ function recomputeEnviadas(
   });
 }
 
-function statusPecas(solicitadas: PecaSolicitada[]): "completo" | "incompleto" {
-  if (solicitadas.length === 0) return "incompleto";
+function statusPecas(solicitadas: PecaSolicitada[], fallback?: string | null): "completo" | "incompleto" {
+  if (solicitadas.length === 0) return fallback === "completo" ? "completo" : "incompleto";
   return solicitadas.some((s) => (Number(s.qtd_enviada) || 0) < (Number(s.qtd) || 0)) ? "incompleto" : "completo";
 }
 
@@ -99,7 +99,7 @@ export function PecasCompletadasPanel({ pedido }: Props) {
         .update({
           pecas_completadas_log: novoLog as any,
           pecas_solicitadas: novaSolic as any,
-          status_pecas: statusPecas(novaSolic),
+          status_pecas: statusPecas(novaSolic, pedido.status_pecas),
         })
         .eq("id", pedido.id);
       if (error) throw error;
