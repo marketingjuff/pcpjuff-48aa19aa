@@ -72,12 +72,52 @@ export function calcQuebra(prod: MapProducao, entregas: MapEntregaMalharia[]): n
   return Number(prod.kg_solicitados ?? 0) - sumKgEntregas(entregas);
 }
 
+// -------------------- Status derivados (frontend-only) --------------------
+
+export type MapStatusFio = "entregue" | "aguardando_faturamento";
+export type MapStatusEtapa = "completo" | "incompleto";
+
+function notEmpty(v: unknown): boolean {
+  return v != null && String(v).trim() !== "";
+}
+
+export function calcStatusFio(prod: MapProducao): MapStatusFio {
+  return notEmpty(prod.nota_fiscal) && notEmpty(prod.data_faturamento)
+    ? "entregue"
+    : "aguardando_faturamento";
+}
+
+export function calcStatusMalharia(
+  prod: MapProducao,
+  entregas: MapEntregaMalharia[],
+): MapStatusEtapa {
+  const solicitados = Number(prod.kg_solicitados ?? 0);
+  if (solicitados <= 0) return "incompleto";
+  return sumKgEntregas(entregas) >= 0.99 * solicitados ? "completo" : "incompleto";
+}
+
+export function calcStatusTinturaria(
+  progs: MapProgramacaoTinturaria[],
+  pecasRecebidasMalharia: number,
+): MapStatusEtapa {
+  if (progs.length === 0) return "incompleto";
+  const todasOk = progs.every(
+    (p) =>
+      p.kg_recebidos != null &&
+      p.pecas_recebidas != null &&
+      notEmpty(p.data_recebimento) &&
+      notEmpty(p.nota_fiscal_recebimento),
+  );
+  if (!todasOk) return "incompleto";
+  return sumPecasProgramadas(progs) === pecasRecebidasMalharia ? "completo" : "incompleto";
+}
+
 export function podeFinalizar(
   prod: MapProducao,
   entregas: MapEntregaMalharia[],
   progs: MapProgramacaoTinturaria[],
 ): boolean {
-  if (prod.status !== "entregue") return false;
+  if (calcStatusFio(prod) !== "entregue") return false;
   if (entregas.length === 0) return false;
   if (progs.length === 0) return false;
   return progs.every(
@@ -87,6 +127,7 @@ export function podeFinalizar(
       p.pecas_recebidas != null,
   );
 }
+
 
 export function fmt(v: unknown, opts?: { decimals?: number }): string {
   if (v == null || v === "") return "—";

@@ -12,8 +12,10 @@ import { toast } from "sonner";
 import {
   useMapData, useKgPorPeca, fmtDateBR, podeFinalizar, prodCode,
   patchProducao, sumPecasEntregas,
+  calcStatusFio, calcStatusMalharia, calcStatusTinturaria,
   type MapProducao, type MapEntregaMalharia, type MapProgramacaoTinturaria,
 } from "@/lib/map";
+
 import { MalhariaBlock } from "./MalhariaBlock";
 import { TinturariaBlock } from "./TinturariaBlock";
 import { NovoProdDialog } from "./NovoProdDialog";
@@ -71,7 +73,7 @@ export function MapFiosTable({ finalizado }: Props) {
       if (fEmpresa !== "__all__" && p.faturar_para !== fEmpresa) return false;
       if (fFornecedor !== "__all__" && p.fornecedor !== fFornecedor) return false;
       if (notaQ && !(p.nota_fiscal ?? "").toLowerCase().includes(notaQ)) return false;
-      if (!finalizado && fStatus !== "__all__" && p.status !== fStatus) return false;
+      if (!finalizado && fStatus !== "__all__" && calcStatusFio(p) !== fStatus) return false;
       return true;
     });
   }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fStatus, finalizado]);
@@ -117,8 +119,9 @@ export function MapFiosTable({ finalizado }: Props) {
   function collapseAll() { setExpanded(new Set()); }
 
   const totalProds = prods.length;
-  const totalAguardando = prods.filter((p) => p.status === "aguardando_faturamento").length;
-  const totalEntregues = prods.filter((p) => p.status === "entregue").length;
+  const totalAguardando = prods.filter((p) => calcStatusFio(p) === "aguardando_faturamento").length;
+  const totalEntregues = prods.filter((p) => calcStatusFio(p) === "entregue").length;
+
 
   async function commitProd(prod: MapProducao, field: keyof MapProducao, raw: string | null) {
     try {
@@ -128,13 +131,11 @@ export function MapFiosTable({ finalizado }: Props) {
       } else {
         patch[field] = raw;
       }
-      if (field === "nota_fiscal" && raw && raw.trim() !== "") {
-        patch.status = "entregue";
-      }
       await patchProducao(prod.id, patch);
       invalidateAll();
     } catch (e: any) { toast.error(e?.message ?? "Falha ao salvar."); }
   }
+
 
   async function finalizar(prod: MapProducao) {
     const { data: u } = await supabase.auth.getUser();
@@ -230,7 +231,7 @@ export function MapFiosTable({ finalizado }: Props) {
         </div>
         {!finalizado && (
           <div className="min-w-[180px]">
-            <Label className="text-[11px] text-muted-foreground">Status</Label>
+            <Label className="text-[11px] text-muted-foreground">Fio</Label>
             <Select value={fStatus} onValueChange={setFStatus}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -260,18 +261,20 @@ export function MapFiosTable({ finalizado }: Props) {
             Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] text-[12.5px] table-fixed">
+            <table className="w-full min-w-[1200px] text-[12.5px] table-fixed">
               <colgroup>
                 <col style={{ width: "3%" }} />
                 <col style={{ width: "8%" }} />
+                <col style={{ width: "7%" }} />
                 <col style={{ width: "8%" }} />
+                <col style={{ width: "11%" }} />
                 <col style={{ width: "9%" }} />
-                <col style={{ width: "14%" }} />
-                <col style={{ width: "12%" }} />
-                <col style={{ width: "11%" }} />
-                <col style={{ width: "11%" }} />
-                <col style={{ width: "12%" }} />
-                <col style={{ width: "12%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "15%" }} />
               </colgroup>
               <thead className="bg-muted/40 text-[11.5px] uppercase tracking-wide text-muted-foreground">
                 <tr>
@@ -281,12 +284,15 @@ export function MapFiosTable({ finalizado }: Props) {
                   <th className="p-1.5 text-center whitespace-nowrap">Kg solicitados</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Fornecedor</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Data pagamento</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Status</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Fio</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Malharia</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Tinturaria</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Nota fiscal</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Data faturam.</th>
                   <th className="p-1.5 text-right whitespace-nowrap"></th>
                 </tr>
               </thead>
+
               <tbody>
                 {lista.map((prod) => {
                   const isOpen = expanded.has(prod.id);
@@ -311,12 +317,27 @@ export function MapFiosTable({ finalizado }: Props) {
                           </div>
                         </td>
                         <td className="p-1.5 text-center">
-                          {prod.status === "entregue" ? (
+                          {calcStatusFio(prod) === "entregue" ? (
                             <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Entregue</Badge>
                           ) : (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Aguardando fat.</Badge>
                           )}
                         </td>
+                        <td className="p-1.5 text-center">
+                          {calcStatusMalharia(prod, es) === "completo" ? (
+                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Completo</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Incompleto</Badge>
+                          )}
+                        </td>
+                        <td className="p-1.5 text-center">
+                          {calcStatusTinturaria(ps, sumPecasEntregas(es)) === "completo" ? (
+                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Completo</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Incompleto</Badge>
+                          )}
+                        </td>
+
                         <td className="p-1.5 text-center">
                           <div className="flex justify-center">
                             <InlineInput value={prod.nota_fiscal} onCommit={(v) => commitProd(prod, "nota_fiscal", v)} disabled={finalizado} className="w-[110px]" />
@@ -350,7 +371,7 @@ export function MapFiosTable({ finalizado }: Props) {
                       {isOpen && (
                         <tr className="border-t bg-yellow-50/30">
                           <td></td>
-                          <td colSpan={9} className="p-2 space-y-2">
+                          <td colSpan={11} className="p-2 space-y-2">
                             <MalhariaBlock
                               producao={prod}
                               entregas={es}
