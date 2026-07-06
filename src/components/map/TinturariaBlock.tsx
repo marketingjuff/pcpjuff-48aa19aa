@@ -120,7 +120,7 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
           </thead>
           <tbody>
             {programacoes.length === 0 ? (
-              <tr><td colSpan={11} className="p-2 text-center text-muted-foreground">Sem programação.</td></tr>
+              <tr><td colSpan={10} className="p-2 text-center text-muted-foreground">Sem programação.</td></tr>
             ) : programacoes.map((p) => (
               <tr key={p.id} className="border-t">
                 <td className="p-1 font-medium">{p.tinturaria}</td>
