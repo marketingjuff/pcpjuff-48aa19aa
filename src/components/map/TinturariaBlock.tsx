@@ -101,21 +101,28 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
     } catch (e: any) { toast.error(e?.message ?? "Falha ao salvar."); }
   }
 
+  const saldoPcs = totalPedidoPcs - totalEntreguePcs;
+  const saldoClass = saldoPcs > 0 ? "text-blue-600" : saldoPcs < 0 ? "text-red-600" : "text-muted-foreground";
+
   return (
     <div className="rounded-md border bg-white/70 p-2 space-y-1">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-xs space-x-3">
-          <span className="text-muted-foreground">Tinturaria</span>
+        <div className="text-sm space-x-3">
+          <span className="text-muted-foreground font-medium">Tinturaria</span>
           <span className={`${counterClass}`}>
             Programadas: <span className="tabular-nums">{X}</span> / <span className="tabular-nums">{Y}</span>{icon}
           </span>
           <span className="text-muted-foreground">|</span>
           <span className="text-muted-foreground">
-            Pedido <span className="tabular-nums text-foreground">{fmt(totalPedidoKg, { decimals: 2 })} kg</span> / <span className="tabular-nums text-foreground">{totalPedidoPcs}</span> pcs
+            Pedido <b className="tabular-nums text-foreground">{fmt(totalPedidoKg, { decimals: 2 })} kg</b> / <b className="tabular-nums text-foreground">{totalPedidoPcs}</b> pcs
           </span>
           <span className="text-muted-foreground">|</span>
           <span className="text-muted-foreground">
-            Entregue <span className="tabular-nums text-foreground">{fmt(totalEntregueKg, { decimals: 2 })} kg</span> / <span className="tabular-nums text-foreground">{totalEntreguePcs}</span> pcs
+            Entregue <b className="tabular-nums text-foreground">{fmt(totalEntregueKg, { decimals: 2 })} kg</b> / <b className="tabular-nums text-foreground">{totalEntreguePcs}</b> pcs
+          </span>
+          <span className="text-muted-foreground">|</span>
+          <span className="text-muted-foreground">
+            Saldo <b className={`tabular-nums ${saldoClass}`}>{saldoPcs > 0 ? "+" : ""}{saldoPcs}</b> pcs
           </span>
         </div>
         {!readOnly && (
