@@ -73,7 +73,7 @@ export function MapFiosTable({ finalizado }: Props) {
       if (fEmpresa !== "__all__" && p.faturar_para !== fEmpresa) return false;
       if (fFornecedor !== "__all__" && p.fornecedor !== fFornecedor) return false;
       if (notaQ && !(p.nota_fiscal ?? "").toLowerCase().includes(notaQ)) return false;
-      if (!finalizado && fStatus !== "__all__" && p.status !== fStatus) return false;
+      if (!finalizado && fStatus !== "__all__" && calcStatusFio(p) !== fStatus) return false;
       return true;
     });
   }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fStatus, finalizado]);
