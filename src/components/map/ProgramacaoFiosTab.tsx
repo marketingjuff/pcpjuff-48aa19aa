@@ -371,7 +371,7 @@ export function MapFiosTable({ finalizado }: Props) {
                       {isOpen && (
                         <tr className="border-t bg-yellow-50/30">
                           <td></td>
-                          <td colSpan={9} className="p-2 space-y-2">
+                          <td colSpan={11} className="p-2 space-y-2">
                             <MalhariaBlock
                               producao={prod}
                               entregas={es}
