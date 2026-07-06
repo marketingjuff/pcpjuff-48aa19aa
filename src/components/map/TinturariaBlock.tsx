@@ -65,9 +65,13 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
         producao_id: producaoId,
         tinturaria: row.tinturaria,
         data_programacao: row.data_programacao,
-        pecas: row.pecas,
-        cor: row.cor,
         kg_enviados: row.kg_enviados,
+        data_recebimento: row.data_recebimento,
+        nota_fiscal_recebimento: row.nota_fiscal_recebimento,
+        pecas: null,
+        cor: null,
+        kg_recebidos: null,
+        pecas_recebidas: null,
       });
     if (error) { toast.error(error.message); return; }
     toast.success("Programação duplicada.");
