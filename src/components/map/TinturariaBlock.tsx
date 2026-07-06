@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Copy } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -55,6 +55,22 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
       .delete()
       .eq("id", id);
     if (error) { toast.error(error.message); return; }
+    onChanged();
+  }
+
+  async function dupProg(row: MapProgramacaoTinturaria) {
+    const { error } = await (supabase as any)
+      .from("map_tinturaria_programacoes")
+      .insert({
+        producao_id: producaoId,
+        tinturaria: row.tinturaria,
+        data_programacao: row.data_programacao,
+        pecas: row.pecas,
+        cor: row.cor,
+        kg_enviados: row.kg_enviados,
+      });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Programação duplicada.");
     onChanged();
   }
 
@@ -115,7 +131,7 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
               <th className="p-1.5 font-medium">Peças rec.</th>
               <th className="p-1.5 font-medium">Data rec.</th>
               <th className="p-1.5 font-medium">NF rec.</th>
-              <th className="p-1.5 w-8"></th>
+              <th className="p-1.5 w-16"></th>
             </tr>
           </thead>
           <tbody>
@@ -132,11 +148,16 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
                 <td className="p-1"><InlineInput type="number" step="1" min="0" value={p.pecas_recebidas} onCommit={(v) => commit(p, "pecas_recebidas", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="date" value={p.data_recebimento} onCommit={(v) => commit(p, "data_recebimento", v)} disabled={readOnly} /></td>
               <td className="p-1"><InlineInput value={p.nota_fiscal_recebimento} onCommit={(v) => commit(p, "nota_fiscal_recebimento", v)} disabled={readOnly} /></td>
-                <td className="p-1 text-right">
+                <td className="p-1 text-right whitespace-nowrap">
                   {!readOnly && (
-                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => delProg(p.id)} title="Remover">
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
+                    <>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => dupProg(p)} title="Duplicar">
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => delProg(p.id)} title="Remover">
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </>
                   )}
                 </td>
               </tr>

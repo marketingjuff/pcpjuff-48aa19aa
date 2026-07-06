@@ -294,15 +294,19 @@ export function MapFiosTable({ finalizado }: Props) {
               </thead>
 
               <tbody>
-                {lista.map((prod) => {
+                {lista.map((prod, idx) => {
                   const isOpen = expanded.has(prod.id);
                   const es = byProdEntregas.get(prod.id) ?? [];
                   const ps = byProdProgs.get(prod.id) ?? [];
                   const canFinalize = !finalizado && podeFinalizar(prod, es, ps);
+                  const zebra = idx % 2 === 1 ? "bg-muted/20" : "";
+                  const summaryClass = isOpen
+                    ? "border-t-2 border-yellow-400 bg-yellow-100/70"
+                    : `border-t hover:bg-yellow-50/50 ${zebra}`;
                   return (
                     <Fragment key={prod.id}>
-                      <tr className="border-t hover:bg-yellow-50/50">
-                        <td className="p-1.5 align-top">
+                      <tr className={summaryClass}>
+                        <td className={`p-1.5 align-top ${isOpen ? "border-l-4 border-yellow-400" : ""}`}>
                           <button type="button" onClick={() => toggle(prod.id)} className="p-0.5">
                             {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                           </button>
@@ -369,9 +373,9 @@ export function MapFiosTable({ finalizado }: Props) {
                         </td>
                       </tr>
                       {isOpen && (
-                        <tr className="border-t bg-yellow-50/30">
-                          <td></td>
-                          <td colSpan={11} className="p-2 space-y-2">
+                        <tr className="bg-yellow-50 border-b-4 border-yellow-400">
+                          <td className="border-l-4 border-yellow-400"></td>
+                          <td colSpan={11} className="p-2 pb-3 space-y-2 border-r-2 border-yellow-400">
                             <MalhariaBlock
                               producao={prod}
                               entregas={es}
