@@ -58,6 +58,22 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
     onChanged();
   }
 
+  async function dupProg(row: MapProgramacaoTinturaria) {
+    const { error } = await (supabase as any)
+      .from("map_tinturaria_programacoes")
+      .insert({
+        producao_id: producaoId,
+        tinturaria: row.tinturaria,
+        data_programacao: row.data_programacao,
+        pecas: row.pecas,
+        cor: row.cor,
+        kg_enviados: row.kg_enviados,
+      });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Programação duplicada.");
+    onChanged();
+  }
+
   async function commit(row: MapProgramacaoTinturaria, field: keyof MapProgramacaoTinturaria, raw: string | null) {
     try {
       const patch: any = {};
