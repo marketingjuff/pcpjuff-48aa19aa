@@ -260,19 +260,31 @@ export function MapFiosTable({ finalizado }: Props) {
             Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-[12.5px]">
+            <table className="w-full text-[12.5px] table-fixed">
+              <colgroup>
+                <col style={{ width: "32px" }} />
+                <col style={{ width: "90px" }} />
+                <col style={{ width: "90px" }} />
+                <col style={{ width: "110px" }} />
+                <col />
+                <col style={{ width: "130px" }} />
+                <col style={{ width: "130px" }} />
+                <col style={{ width: "120px" }} />
+                <col style={{ width: "130px" }} />
+                <col style={{ width: "150px" }} />
+              </colgroup>
               <thead className="bg-muted/40 text-[11.5px] uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="p-1.5 w-6"></th>
-                  <th className="p-1.5 text-left">Prod</th>
-                  <th className="p-1.5 text-left">Empresa</th>
-                  <th className="p-1.5 text-left">Kg solicitados</th>
-                  <th className="p-1.5 text-left">Fornecedor</th>
-                  <th className="p-1.5 text-left w-32">Data pagamento</th>
-                  <th className="p-1.5 text-left">Status</th>
-                  <th className="p-1.5 text-left w-28">Nota fiscal</th>
-                  <th className="p-1.5 text-left w-32">Data de faturamento</th>
-                  <th className="p-1.5 text-right"></th>
+                  <th className="p-1.5 whitespace-nowrap"></th>
+                  <th className="p-1.5 text-left whitespace-nowrap">Prod</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Empresa</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Kg solicitados</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Fornecedor</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Data pagamento</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Status</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Nota fiscal</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Data faturam.</th>
+                  <th className="p-1.5 text-right whitespace-nowrap"></th>
                 </tr>
               </thead>
               <tbody>
@@ -290,24 +302,30 @@ export function MapFiosTable({ finalizado }: Props) {
                           </button>
                         </td>
                         <td className="p-1.5 text-left font-semibold tabular-nums">{prodCode(prod.numero)}</td>
-                        <td className="p-1.5 text-left">{prod.faturar_para}</td>
-                        <td className="p-1.5 text-left tabular-nums">{Number(prod.kg_solicitados).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</td>
-                        <td className="p-1.5 text-left">{prod.fornecedor}</td>
-                        <td className="p-1.5 text-left w-32">
-                          <InlineInput type="date" value={prod.data_pagamento} onCommit={(v) => commitProd(prod, "data_pagamento", v)} disabled={finalizado} />
+                        <td className="p-1.5 text-center">{prod.faturar_para}</td>
+                        <td className="p-1.5 text-center tabular-nums">{Number(prod.kg_solicitados).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</td>
+                        <td className="p-1.5 text-center">{prod.fornecedor}</td>
+                        <td className="p-1.5 text-center">
+                          <div className="flex justify-center">
+                            <InlineInput type="date" value={prod.data_pagamento} onCommit={(v) => commitProd(prod, "data_pagamento", v)} disabled={finalizado} className="w-[120px]" />
+                          </div>
                         </td>
-                        <td className="p-1.5 text-left">
+                        <td className="p-1.5 text-center">
                           {prod.status === "entregue" ? (
                             <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Entregue</Badge>
                           ) : (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Aguardando fat.</Badge>
                           )}
                         </td>
-                        <td className="p-1.5 text-left w-28">
-                          <InlineInput value={prod.nota_fiscal} onCommit={(v) => commitProd(prod, "nota_fiscal", v)} disabled={finalizado} />
+                        <td className="p-1.5 text-center">
+                          <div className="flex justify-center">
+                            <InlineInput value={prod.nota_fiscal} onCommit={(v) => commitProd(prod, "nota_fiscal", v)} disabled={finalizado} className="w-[110px]" />
+                          </div>
                         </td>
-                        <td className="p-1.5 text-left w-32">
-                          <InlineInput type="date" value={prod.data_faturamento} onCommit={(v) => commitProd(prod, "data_faturamento", v)} disabled={finalizado} />
+                        <td className="p-1.5 text-center">
+                          <div className="flex justify-center">
+                            <InlineInput type="date" value={prod.data_faturamento} onCommit={(v) => commitProd(prod, "data_faturamento", v)} disabled={finalizado} className="w-[120px]" />
+                          </div>
                         </td>
                         <td className="p-1.5 text-right space-x-1 whitespace-nowrap">
                           {finalizado ? (
