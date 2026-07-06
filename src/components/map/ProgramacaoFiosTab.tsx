@@ -317,12 +317,27 @@ export function MapFiosTable({ finalizado }: Props) {
                           </div>
                         </td>
                         <td className="p-1.5 text-center">
-                          {prod.status === "entregue" ? (
+                          {calcStatusFio(prod) === "entregue" ? (
                             <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Entregue</Badge>
                           ) : (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Aguardando fat.</Badge>
                           )}
                         </td>
+                        <td className="p-1.5 text-center">
+                          {calcStatusMalharia(prod, es) === "completo" ? (
+                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Completo</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Incompleto</Badge>
+                          )}
+                        </td>
+                        <td className="p-1.5 text-center">
+                          {calcStatusTinturaria(ps, sumPecasEntregas(es)) === "completo" ? (
+                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Completo</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Incompleto</Badge>
+                          )}
+                        </td>
+
                         <td className="p-1.5 text-center">
                           <div className="flex justify-center">
                             <InlineInput value={prod.nota_fiscal} onCommit={(v) => commitProd(prod, "nota_fiscal", v)} disabled={finalizado} className="w-[110px]" />
