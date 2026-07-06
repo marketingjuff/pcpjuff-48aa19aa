@@ -12,26 +12,73 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Check, X } from "lucide-react";
+import { Pencil, Undo2, Check, X } from "lucide-react";
 
 interface Props { pedido: Pedido | null }
 
 type LogItem = NonNullable<Pedido["pecas_completadas_log"]>[number];
 
+function keyOf(p: { modelo: string; cor: string; tamanho: string }) {
+  return `${p.modelo}||${p.cor}||${p.tamanho}`;
+}
+
 function recomputeEnviadas(
   solicitadas: PecaSolicitada[],
+  logAnterior: LogItem[],
   log: LogItem[],
 ): PecaSolicitada[] {
-  const totals = new Map<string, number>();
-  for (const l of log) {
-    const k = `${l.modelo}||${l.cor}||${l.tamanho}`;
-    totals.set(k, (totals.get(k) ?? 0) + (Number(l.qtd) || 0));
+  const totaisAtuais = new Map<string, number>();
+  const totaisAnteriores = new Map<string, number>();
+  const exemploPorKey = new Map<string, LogItem>();
+
+  for (const l of logAnterior) {
+    const k = keyOf(l);
+    totaisAnteriores.set(k, (totaisAnteriores.get(k) ?? 0) + (Number(l.qtd) || 0));
+    exemploPorKey.set(k, l);
   }
-  return solicitadas.map((s) => {
-    const k = `${s.modelo}||${s.cor}||${s.tamanho}`;
-    const t = totals.get(k) ?? 0;
-    return { ...s, qtd_enviada: Math.min(Number(s.qtd) || 0, t) };
+  for (const l of log) {
+    const k = keyOf(l);
+    totaisAtuais.set(k, (totaisAtuais.get(k) ?? 0) + (Number(l.qtd) || 0));
+  }
+
+  const next = solicitadas.map((s) => ({ ...s }));
+  const totalSolicitadoPorKey = new Map<string, number>();
+  for (const s of next) {
+    const k = keyOf(s);
+    totalSolicitadoPorKey.set(k, (totalSolicitadoPorKey.get(k) ?? 0) + (Number(s.qtd) || 0));
+  }
+
+  for (const [k, totalAnterior] of totaisAnteriores) {
+    const totalAtual = totaisAtuais.get(k) ?? 0;
+    const totalSolicitado = totalSolicitadoPorKey.get(k) ?? 0;
+    if (totalAnterior <= totalAtual || totalSolicitado >= totalAnterior) continue;
+
+    const exemplo = exemploPorKey.get(k);
+    if (!exemplo) continue;
+    next.push({
+      modelo: exemplo.modelo,
+      cor: exemplo.cor,
+      tamanho: exemplo.tamanho,
+      qtd: totalAnterior - totalSolicitado,
+      qtd_enviada: 0,
+    });
+  }
+
+  const enviadoUsadoPorKey = new Map<string, number>();
+  return next.map((s) => {
+    const k = keyOf(s);
+    const enviadoDisponivel = totaisAtuais.get(k) ?? 0;
+    const enviadoUsado = enviadoUsadoPorKey.get(k) ?? 0;
+    const qtd = Number(s.qtd) || 0;
+    const qtdEnviada = Math.min(qtd, Math.max(0, enviadoDisponivel - enviadoUsado));
+    enviadoUsadoPorKey.set(k, enviadoUsado + qtdEnviada);
+    return { ...s, qtd_enviada: qtdEnviada };
   });
+}
+
+function statusPecas(solicitadas: PecaSolicitada[]): "completo" | "incompleto" {
+  if (solicitadas.length === 0) return "incompleto";
+  return solicitadas.some((s) => (Number(s.qtd_enviada) || 0) < (Number(s.qtd) || 0)) ? "incompleto" : "completo";
 }
 
 export function PecasCompletadasPanel({ pedido }: Props) {
@@ -46,12 +93,13 @@ export function PecasCompletadasPanel({ pedido }: Props) {
     mutationFn: async (novoLog: LogItem[]) => {
       if (!pedido) return;
       const solicitadas = ((pedido.pecas_solicitadas as PecaSolicitada[] | null) ?? []).slice();
-      const novaSolic = recomputeEnviadas(solicitadas, novoLog);
+      const novaSolic = recomputeEnviadas(solicitadas, log, novoLog);
       const { error } = await supabase
         .from("pedidos" as any)
         .update({
           pecas_completadas_log: novoLog as any,
           pecas_solicitadas: novaSolic as any,
+          status_pecas: statusPecas(novaSolic),
         })
         .eq("id", pedido.id);
       if (error) throw error;
@@ -60,7 +108,7 @@ export function PecasCompletadasPanel({ pedido }: Props) {
       qc.invalidateQueries({ queryKey: ["pedidos"] });
       qc.invalidateQueries({ queryKey: ["pedidos-falta"] });
       qc.invalidateQueries({ queryKey: ["pedidos-cop-saldos"] });
-      toast.success("Registro corrigido.");
+      toast.success("Baixa corrigida.");
       setEditIdx(null);
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao corrigir."),
@@ -68,7 +116,7 @@ export function PecasCompletadasPanel({ pedido }: Props) {
 
   if (!pedido || log.length === 0) return null;
 
-  // Ordena por data desc mantendo o índice original para editar/excluir.
+  // Ordena por data desc mantendo o índice original para editar/reverter.
   const ordenado = log
     .map((l, idx) => ({ l, idx }))
     .sort((a, b) => (b.l.em || "").localeCompare(a.l.em || ""));
@@ -86,7 +134,7 @@ export function PecasCompletadasPanel({ pedido }: Props) {
     const novo = log.slice();
     const q = Math.max(0, Math.floor(Number(editQtd) || 0));
     if (q <= 0) {
-      // qty 0 = deletar
+      // qtd 0 = reverter baixa
       novo.splice(idx, 1);
     } else {
       const atual = novo[idx] as any;
@@ -94,7 +142,7 @@ export function PecasCompletadasPanel({ pedido }: Props) {
     }
     salvar.mutate(novo);
   }
-  function excluir(idx: number) {
+  function reverter(idx: number) {
     const novo = log.slice();
     novo.splice(idx, 1);
     salvar.mutate(novo);
@@ -105,7 +153,7 @@ export function PecasCompletadasPanel({ pedido }: Props) {
       <div className="text-xs font-semibold uppercase tracking-wider text-emerald-900 mb-1 flex items-center justify-between">
         <span>Peças completadas pelo COP ({log.length})</span>
         <span className="text-[10px] font-normal normal-case text-emerald-700">
-          Clique no lápis para corrigir.
+          Lápis edita; seta reverte a baixa.
         </span>
       </div>
       <ul className="text-xs space-y-1">
@@ -191,24 +239,24 @@ export function PecasCompletadasPanel({ pedido }: Props) {
                           type="button"
                           size="icon"
                           variant="ghost"
-                          className="h-6 w-6 text-red-600 hover:bg-red-100"
-                          title="Excluir"
+                          className="h-6 w-6 text-amber-700 hover:bg-amber-100"
+                          title="Reverter baixa"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Undo2 className="h-3.5 w-3.5" />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir baixa do COP?</AlertDialogTitle>
+                          <AlertDialogTitle>Reverter baixa do COP?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Esta baixa de <b>{l.qtd}× {l.modelo} · {l.cor} · {l.tamanho}</b> será removida e o
-                            enviado da peça será recalculado. Não é possível desfazer.
+                            Esta baixa de <b>{l.qtd}× {l.modelo} · {l.cor} · {l.tamanho}</b> será revertida,
+                            voltando como pendência incompleta no COP.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => excluir(idx)}>
-                            Excluir
+                          <AlertDialogAction onClick={() => reverter(idx)}>
+                            Reverter baixa
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
