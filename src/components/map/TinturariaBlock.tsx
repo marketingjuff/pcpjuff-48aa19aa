@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAppList } from "@/lib/app-lists";
 import type { MapProgramacaoTinturaria } from "@/lib/map";
-import { patchProgramacao, sumPecasProgramadas, useCorAcabamentos, corComAcabamento } from "@/lib/map";
+import { patchProgramacao, sumPecasProgramadas, useCorAcabamentos, corComAcabamento, fmt } from "@/lib/map";
 import { REFACAO_CORES } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { InlineInput } from "./InlineInput";
@@ -30,6 +30,11 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
   const totalProgramado = sumPecasProgramadas(programacoes);
   const Y = pecasRecebidasMalharia;
   const X = totalProgramado;
+
+  const totalPedidoKg = programacoes.reduce((s, p) => s + Number(p.kg_enviados ?? 0), 0);
+  const totalPedidoPcs = programacoes.reduce((s, p) => s + Number(p.pecas ?? 0), 0);
+  const totalEntregueKg = programacoes.reduce((s, p) => s + Number(p.kg_recebidos ?? 0), 0);
+  const totalEntreguePcs = programacoes.reduce((s, p) => s + Number(p.pecas_recebidas ?? 0), 0);
 
   let counterClass = "text-muted-foreground";
   let icon = null;
@@ -99,10 +104,18 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
   return (
     <div className="rounded-md border bg-white/70 p-2 space-y-1">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-xs">
+        <div className="text-xs space-x-3">
           <span className="text-muted-foreground">Tinturaria</span>
-          <span className={`ml-3 ${counterClass}`}>
+          <span className={`${counterClass}`}>
             Programadas: <span className="tabular-nums">{X}</span> / <span className="tabular-nums">{Y}</span>{icon}
+          </span>
+          <span className="text-muted-foreground">|</span>
+          <span className="text-muted-foreground">
+            Pedido <span className="tabular-nums text-foreground">{fmt(totalPedidoKg, { decimals: 2 })} kg</span> / <span className="tabular-nums text-foreground">{totalPedidoPcs}</span> pcs
+          </span>
+          <span className="text-muted-foreground">|</span>
+          <span className="text-muted-foreground">
+            Entregue <span className="tabular-nums text-foreground">{fmt(totalEntregueKg, { decimals: 2 })} kg</span> / <span className="tabular-nums text-foreground">{totalEntreguePcs}</span> pcs
           </span>
         </div>
         {!readOnly && (
