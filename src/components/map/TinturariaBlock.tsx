@@ -131,8 +131,7 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
                 <td className="p-1"><InlineInput type="number" step="0.01" min="0" value={p.kg_recebidos} onCommit={(v) => commit(p, "kg_recebidos", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="1" min="0" value={p.pecas_recebidas} onCommit={(v) => commit(p, "pecas_recebidas", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="date" value={p.data_recebimento} onCommit={(v) => commit(p, "data_recebimento", v)} disabled={readOnly} /></td>
-                <td className="p-1"><InlineInput value={p.nota_fiscal_recebimento} onCommit={(v) => commit(p, "nota_fiscal_recebimento", v)} disabled={readOnly} /></td>
-                <td className="p-1"><InlineInput value={p.nota_cobertura} onCommit={(v) => commit(p, "nota_cobertura", v)} disabled={readOnly} /></td>
+              <td className="p-1"><InlineInput value={p.nota_fiscal_recebimento} onCommit={(v) => commit(p, "nota_fiscal_recebimento", v)} disabled={readOnly} /></td>
                 <td className="p-1 text-right">
                   {!readOnly && (
                     <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => delProg(p.id)} title="Remover">
