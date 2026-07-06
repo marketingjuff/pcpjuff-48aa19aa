@@ -6,8 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAppList } from "@/lib/app-lists";
 import type { MapProgramacaoTinturaria } from "@/lib/map";
-import { patchProgramacao, sumPecasProgramadas } from "@/lib/map";
+import { patchProgramacao, sumPecasProgramadas, useCorAcabamentos, corComAcabamento } from "@/lib/map";
+import { REFACAO_CORES } from "@/lib/pedidos";
 import { InlineInput } from "./InlineInput";
+
+const COR_NULA = "__none__";
 
 interface Props {
   producaoId: string;
