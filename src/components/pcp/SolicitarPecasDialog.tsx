@@ -187,7 +187,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
               >
                 <div>
                   <label className="md:hidden text-[11px] text-muted-foreground font-medium">Modelo</label>
-                  <Select value={g.modelo} onValueChange={(v) => setGrupo(i, { modelo: v })} disabled={readOnly}>
+                  <Select value={g.modelo} onValueChange={(v) => setGrupo(i, { modelo: v })} disabled={effectiveReadOnly}>
                     <SelectTrigger className="h-8"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
                       {REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
@@ -196,7 +196,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
                 </div>
                 <div>
                   <label className="md:hidden text-[11px] text-muted-foreground font-medium">Cor</label>
-                  <Select value={g.cor} onValueChange={(v) => setGrupo(i, { cor: v })} disabled={readOnly}>
+                  <Select value={g.cor} onValueChange={(v) => setGrupo(i, { cor: v })} disabled={effectiveReadOnly}>
                     <SelectTrigger
                       className="h-8"
                       style={g.cor ? { backgroundColor: hex, color: fg, borderColor: fg === "#ffffff" ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.15)" } : undefined}
@@ -233,7 +233,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
                         className="h-8 text-center px-1"
                         value={q || ""}
                         placeholder="0"
-                        disabled={readOnly}
+                        disabled={effectiveReadOnly}
                         onChange={(ev) => setQtd(i, tam, Number(ev.target.value) || 0)}
                       />
                       {q > 0 && (
@@ -255,7 +255,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
                 </div>
 
                 <div className="flex justify-end">
-                  {!readOnly && (
+                  {!effectiveReadOnly && (
                     <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => remover(i)} title="Remover">
                       <X className="h-4 w-4" />
                     </Button>
@@ -265,7 +265,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
             );
           })}
 
-          {!readOnly && (
+          {!effectiveReadOnly && (
             <div className="flex justify-start pt-1">
               <Button type="button" size="sm" variant="outline" onClick={adicionar}>
                 <Plus className="h-4 w-4 mr-1" />Adicionar peça
@@ -294,7 +294,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
-          {!readOnly && onLiberarCompleto && totals.pend > 0 && (
+          {!effectiveReadOnly && onLiberarCompleto && totals.pend > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -331,7 +331,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {readOnly ? "Fechar" : "Cancelar"}
           </Button>
-          {!readOnly && (
+          {!effectiveReadOnly && (
             <Button
               type="button"
               onClick={handleSave}
