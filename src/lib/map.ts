@@ -156,8 +156,8 @@ export function useMapData(finalizado: boolean) {
         .from("map_producoes")
         .select("*")
         .eq("finalizado", finalizado)
-        .order(finalizado ? "finalizado_em" : "data_pedido", { ascending: false })
-        .order("numero", { ascending: false });
+        .order("data_pedido", { ascending: true })
+        .order("numero", { ascending: true });
       if (error) throw error;
       return (data ?? []) as MapProducao[];
     },
