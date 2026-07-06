@@ -2,11 +2,15 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, Plus, CheckCircle2, RotateCcw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DateInputBR } from "@/components/ui/date-input";
+import { ChevronDown, ChevronRight, Plus, CheckCircle2, RotateCcw, Pencil, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  useMapData, useKgPorPeca, fmtDateBR, podeFinalizar,
+  useMapData, useKgPorPeca, fmtDateBR, podeFinalizar, prodCode,
   patchProducao, sumPecasEntregas,
   type MapProducao, type MapEntregaMalharia, type MapProgramacaoTinturaria,
 } from "@/lib/map";
@@ -23,7 +27,15 @@ export function MapFiosTable({ finalizado }: Props) {
   const { kgPorPeca } = useKgPorPeca();
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [dlgNovo, setDlgNovo] = useState(false);
+  const [dlgOpen, setDlgOpen] = useState(false);
+  const [editingProd, setEditingProd] = useState<MapProducao | null>(null);
+
+  // Filtros
+  const [fData, setFData] = useState<string>("");
+  const [fEmpresa, setFEmpresa] = useState<string>("__all__");
+  const [fFornecedor, setFFornecedor] = useState<string>("__all__");
+  const [fNota, setFNota] = useState<string>("");
+  const [fStatus, setFStatus] = useState<string>("__all__");
 
   // Realtime
   useEffect(() => {
@@ -42,9 +54,27 @@ export function MapFiosTable({ finalizado }: Props) {
     return () => { supabase.removeChannel(ch); };
   }, [qc, finalizado]);
 
-  const prods = producoes.data ?? [];
+  const prodsAll = producoes.data ?? [];
   const entregasAll = entregas.data ?? [];
   const progsAll = programacoes.data ?? [];
+
+  const fornecedoresOpts = useMemo(() => {
+    const s = new Set<string>();
+    for (const p of prodsAll) if (p.fornecedor) s.add(p.fornecedor);
+    return Array.from(s).sort((a, b) => a.localeCompare(b));
+  }, [prodsAll]);
+
+  const prods = useMemo(() => {
+    const notaQ = fNota.trim().toLowerCase();
+    return prodsAll.filter((p) => {
+      if (fData && p.data_pedido !== fData) return false;
+      if (fEmpresa !== "__all__" && p.faturar_para !== fEmpresa) return false;
+      if (fFornecedor !== "__all__" && p.fornecedor !== fFornecedor) return false;
+      if (notaQ && !(p.nota_fiscal ?? "").toLowerCase().includes(notaQ)) return false;
+      if (!finalizado && fStatus !== "__all__" && p.status !== fStatus) return false;
+      return true;
+    });
+  }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fStatus, finalizado]);
 
   const byProdEntregas = useMemo(() => {
     const m = new Map<string, MapEntregaMalharia[]>();
@@ -63,14 +93,17 @@ export function MapFiosTable({ finalizado }: Props) {
     return m;
   }, [progsAll]);
 
-  // Agrupamento por data_pedido (na aba finalizados, agrupa por data_pedido também, mas ordem por finalizado_em já vem da query)
+  // Grupos por data_pedido — ascendente; dentro do grupo, numero ascendente
   const grupos = useMemo(() => {
     const g = new Map<string, MapProducao[]>();
     for (const p of prods) {
       const arr = g.get(p.data_pedido) ?? [];
       arr.push(p); g.set(p.data_pedido, arr);
     }
-    return Array.from(g.entries()).sort((a, b) => (a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0));
+    for (const arr of g.values()) {
+      arr.sort((a, b) => Number(a.numero) - Number(b.numero));
+    }
+    return Array.from(g.entries()).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   }, [prods]);
 
   function toggle(id: string) {
@@ -95,7 +128,6 @@ export function MapFiosTable({ finalizado }: Props) {
       } else {
         patch[field] = raw;
       }
-      // Regra: setar nota_fiscal muda status -> entregue automaticamente
       if (field === "nota_fiscal" && raw && raw.trim() !== "") {
         patch.status = "entregue";
       }
@@ -113,7 +145,7 @@ export function MapFiosTable({ finalizado }: Props) {
         finalizado_por: u.user?.id ?? null,
       } as any);
       invalidateAll();
-      toast.success(`Prod ${prod.numero} finalizado.`);
+      toast.success(`${prodCode(prod.numero)} finalizado.`);
     } catch (e: any) { toast.error(e?.message ?? "Erro."); }
   }
 
@@ -121,21 +153,39 @@ export function MapFiosTable({ finalizado }: Props) {
     try {
       await patchProducao(prod.id, { finalizado: false, finalizado_em: null, finalizado_por: null } as any);
       invalidateAll();
-      toast.success(`Prod ${prod.numero} reaberto.`);
+      toast.success(`${prodCode(prod.numero)} reaberto.`);
     } catch (e: any) { toast.error(e?.message ?? "Erro."); }
   }
 
   async function excluirProd(prod: MapProducao) {
-    if (!window.confirm(`Excluir Prod ${prod.numero}? Esta ação apaga também suas entregas e programações.`)) return;
+    if (!window.confirm(`Excluir ${prodCode(prod.numero)}? Esta ação apaga também suas entregas e programações.`)) return;
     const { error } = await (supabase as any).from("map_producoes").delete().eq("id", prod.id);
     if (error) { toast.error(error.message); return; }
     invalidateAll();
-    toast.success("Prod excluído.");
+    toast.success(`${prodCode(prod.numero)} excluído.`);
+  }
+
+  function openNovo() { setEditingProd(null); setDlgOpen(true); }
+  function openEditar(p: MapProducao) { setEditingProd(p); setDlgOpen(true); }
+
+  const hasFilters =
+    !!fData || fEmpresa !== "__all__" || fFornecedor !== "__all__" || !!fNota.trim() || fStatus !== "__all__";
+  function limparFiltros() {
+    setFData(""); setFEmpresa("__all__"); setFFornecedor("__all__"); setFNota(""); setFStatus("__all__");
   }
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 justify-between">
+        <div className="flex items-center gap-1">
+          {!finalizado && (
+            <Button size="sm" className="h-7 bg-yellow-500 hover:bg-yellow-600 text-white" onClick={openNovo}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> Novo pedido
+            </Button>
+          )}
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={expandAll}>Expandir tudo</Button>
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={collapseAll}>Recolher tudo</Button>
+        </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>Prods: <b className="text-foreground tabular-nums">{totalProds}</b></span>
           {!finalizado && (
@@ -145,41 +195,83 @@ export function MapFiosTable({ finalizado }: Props) {
             </>
           )}
         </div>
-        <div className="flex items-center gap-1">
-          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={expandAll}>Expandir tudo</Button>
-          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={collapseAll}>Recolher tudo</Button>
-          {!finalizado && (
-            <Button size="sm" className="h-7 bg-yellow-500 hover:bg-yellow-600 text-white" onClick={() => setDlgNovo(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1" /> Novo pedido
-            </Button>
-          )}
+      </div>
+
+      {/* Barra de filtros */}
+      <div className="flex flex-wrap items-end gap-2 rounded-md border bg-muted/30 p-2">
+        <div className="min-w-[150px]">
+          <Label className="text-[11px] text-muted-foreground">Data do pedido</Label>
+          <DateInputBR value={fData || null} onChange={(v) => setFData(v ?? "")} />
         </div>
+        <div className="min-w-[140px]">
+          <Label className="text-[11px] text-muted-foreground">Empresa</Label>
+          <Select value={fEmpresa} onValueChange={setFEmpresa}>
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Todos</SelectItem>
+              <SelectItem value="Juff">Juff</SelectItem>
+              <SelectItem value="Joke">Joke</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="min-w-[180px]">
+          <Label className="text-[11px] text-muted-foreground">Fornecedor</Label>
+          <Select value={fFornecedor} onValueChange={setFFornecedor}>
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Todos</SelectItem>
+              {fornecedoresOpts.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="min-w-[180px]">
+          <Label className="text-[11px] text-muted-foreground">Nota fiscal</Label>
+          <Input className="h-9" placeholder="Contém…" value={fNota} onChange={(e) => setFNota(e.target.value)} />
+        </div>
+        {!finalizado && (
+          <div className="min-w-[180px]">
+            <Label className="text-[11px] text-muted-foreground">Status</Label>
+            <Select value={fStatus} onValueChange={setFStatus}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todos</SelectItem>
+                <SelectItem value="aguardando_faturamento">Aguardando faturamento</SelectItem>
+                <SelectItem value="entregue">Entregue</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {hasFilters && (
+          <Button variant="ghost" size="sm" className="h-9 text-xs" onClick={limparFiltros}>
+            <X className="h-3.5 w-3.5 mr-1" /> Limpar
+          </Button>
+        )}
       </div>
 
       {producoes.isLoading ? (
         <div className="text-sm text-muted-foreground p-4">Carregando…</div>
       ) : prods.length === 0 ? (
         <div className="text-sm text-muted-foreground p-6 text-center rounded-md border border-dashed">
-          {finalizado ? "Nenhum Prod finalizado." : "Nenhum Prod. Clique em Novo pedido para começar."}
+          {finalizado ? "Nenhum Prod finalizado." : hasFilters ? "Nenhum Prod para os filtros aplicados." : "Nenhum Prod. Clique em Novo pedido para começar."}
         </div>
       ) : grupos.map(([data, lista]) => (
         <div key={data} className="rounded-md border overflow-hidden">
-          <div className="bg-yellow-100/70 px-2 py-1 text-[12.5px] font-semibold">
+          <div className="bg-yellow-100/70 px-3 py-2 text-[25px] font-semibold leading-tight">
             Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-[12.5px]">
               <thead className="bg-muted/40 text-[11.5px] uppercase tracking-wide text-muted-foreground">
-                <tr className="text-left">
+                <tr>
                   <th className="p-1.5 w-6"></th>
-                  <th className="p-1.5">Prod</th>
-                  <th className="p-1.5">Faturar</th>
-                  <th className="p-1.5">Kg sol.</th>
-                  <th className="p-1.5">Fornecedor</th>
-                  <th className="p-1.5">Status</th>
-                  <th className="p-1.5">NF</th>
-                  <th className="p-1.5">Fat.</th>
-                  <th className="p-1.5">Pagto.</th>
+                  <th className="p-1.5 text-left">Prod</th>
+                  <th className="p-1.5 text-left">Empresa</th>
+                  <th className="p-1.5 text-left">Kg solicitados</th>
+                  <th className="p-1.5 text-left">Fornecedor</th>
+                  <th className="p-1.5 text-left w-32">Data pagamento</th>
+                  <th className="p-1.5 text-left">Status</th>
+                  <th className="p-1.5 text-left w-28">Nota fiscal</th>
+                  <th className="p-1.5 text-left w-32">Data de faturamento</th>
                   <th className="p-1.5 text-right"></th>
                 </tr>
               </thead>
@@ -192,32 +284,32 @@ export function MapFiosTable({ finalizado }: Props) {
                   return (
                     <Fragment key={prod.id}>
                       <tr className="border-t hover:bg-yellow-50/50">
-                        <td className="p-1 align-top">
+                        <td className="p-1.5 align-top">
                           <button type="button" onClick={() => toggle(prod.id)} className="p-0.5">
                             {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                           </button>
                         </td>
-                        <td className="p-1 font-semibold tabular-nums">{prod.numero}</td>
-                        <td className="p-1">{prod.faturar_para}</td>
-                        <td className="p-1 tabular-nums">{Number(prod.kg_solicitados).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</td>
-                        <td className="p-1">{prod.fornecedor}</td>
-                        <td className="p-1">
+                        <td className="p-1.5 text-left font-semibold tabular-nums">{prodCode(prod.numero)}</td>
+                        <td className="p-1.5 text-left">{prod.faturar_para}</td>
+                        <td className="p-1.5 text-left tabular-nums">{Number(prod.kg_solicitados).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</td>
+                        <td className="p-1.5 text-left">{prod.fornecedor}</td>
+                        <td className="p-1.5 text-left w-32">
+                          <InlineInput type="date" value={prod.data_pagamento} onCommit={(v) => commitProd(prod, "data_pagamento", v)} disabled={finalizado} />
+                        </td>
+                        <td className="p-1.5 text-left">
                           {prod.status === "entregue" ? (
                             <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Entregue</Badge>
                           ) : (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Aguardando fat.</Badge>
                           )}
                         </td>
-                        <td className="p-1 w-28">
+                        <td className="p-1.5 text-left w-28">
                           <InlineInput value={prod.nota_fiscal} onCommit={(v) => commitProd(prod, "nota_fiscal", v)} disabled={finalizado} />
                         </td>
-                        <td className="p-1 w-32">
+                        <td className="p-1.5 text-left w-32">
                           <InlineInput type="date" value={prod.data_faturamento} onCommit={(v) => commitProd(prod, "data_faturamento", v)} disabled={finalizado} />
                         </td>
-                        <td className="p-1 w-32">
-                          <InlineInput type="date" value={prod.data_pagamento} onCommit={(v) => commitProd(prod, "data_pagamento", v)} disabled={finalizado} />
-                        </td>
-                        <td className="p-1 text-right space-x-1 whitespace-nowrap">
+                        <td className="p-1.5 text-right space-x-1 whitespace-nowrap">
                           {finalizado ? (
                             <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => reabrir(prod)}>
                               <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
@@ -229,6 +321,9 @@ export function MapFiosTable({ finalizado }: Props) {
                                   <CheckCircle2 className="h-3 w-3 mr-1" /> Finalizar
                                 </Button>
                               )}
+                              <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => openEditar(prod)}>
+                                <Pencil className="h-3 w-3 mr-1" /> Editar
+                              </Button>
                               <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" onClick={() => excluirProd(prod)}>Excluir</Button>
                             </>
                           )}
@@ -265,7 +360,13 @@ export function MapFiosTable({ finalizado }: Props) {
         </div>
       ))}
 
-      <NovoProdDialog open={dlgNovo} onOpenChange={setDlgNovo} producoes={prods} onCreated={invalidateAll} />
+      <NovoProdDialog
+        open={dlgOpen}
+        onOpenChange={(v) => { setDlgOpen(v); if (!v) setEditingProd(null); }}
+        producoes={prodsAll}
+        producao={editingProd}
+        onCreated={invalidateAll}
+      />
     </div>
   );
 }
