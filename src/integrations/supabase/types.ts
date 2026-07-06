@@ -374,6 +374,7 @@ export type Database = {
           quebra_conciliada_em: string | null
           quebra_conciliada_por: string | null
           status: string
+          status_malharia: string
           updated_at: string
         }
         Insert: {
@@ -396,6 +397,7 @@ export type Database = {
           quebra_conciliada_em?: string | null
           quebra_conciliada_por?: string | null
           status?: string
+          status_malharia?: string
           updated_at?: string
         }
         Update: {
@@ -418,6 +420,7 @@ export type Database = {
           quebra_conciliada_em?: string | null
           quebra_conciliada_por?: string | null
           status?: string
+          status_malharia?: string
           updated_at?: string
         }
         Relationships: []

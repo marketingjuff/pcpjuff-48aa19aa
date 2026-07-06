@@ -1,0 +1,1 @@
+ALTER TABLE public.map_producoes ADD COLUMN IF NOT EXISTS status_malharia TEXT NOT NULL DEFAULT 'incompleto' CHECK (status_malharia IN ('completo','incompleto'));

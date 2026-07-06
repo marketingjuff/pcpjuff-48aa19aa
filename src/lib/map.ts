@@ -17,6 +17,7 @@ export interface MapProducao {
   data_pagamento: string | null;
   status: MapStatus;
   malharia: string | null;
+  status_malharia: "completo" | "incompleto";
   quebra_conciliada: boolean;
   quebra_conciliacao_obs: string | null;
   quebra_conciliada_em: string | null;
@@ -89,11 +90,9 @@ export function calcStatusFio(prod: MapProducao): MapStatusFio {
 
 export function calcStatusMalharia(
   prod: MapProducao,
-  entregas: MapEntregaMalharia[],
+  _entregas: MapEntregaMalharia[],
 ): MapStatusEtapa {
-  const solicitados = Number(prod.kg_solicitados ?? 0);
-  if (solicitados <= 0) return "incompleto";
-  return sumKgEntregas(entregas) >= 0.99 * solicitados ? "completo" : "incompleto";
+  return prod.status_malharia === "completo" ? "completo" : "incompleto";
 }
 
 export function calcStatusTinturaria(
