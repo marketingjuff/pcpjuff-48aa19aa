@@ -104,10 +104,18 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
   return (
     <div className="rounded-md border bg-white/70 p-2 space-y-1">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-xs">
+        <div className="text-xs space-x-3">
           <span className="text-muted-foreground">Tinturaria</span>
-          <span className={`ml-3 ${counterClass}`}>
+          <span className={`${counterClass}`}>
             Programadas: <span className="tabular-nums">{X}</span> / <span className="tabular-nums">{Y}</span>{icon}
+          </span>
+          <span className="text-muted-foreground">|</span>
+          <span className="text-muted-foreground">
+            Pedido <span className="tabular-nums text-foreground">{fmt(totalPedidoKg, { decimals: 2 })} kg</span> / <span className="tabular-nums text-foreground">{totalPedidoPcs}</span> pcs
+          </span>
+          <span className="text-muted-foreground">|</span>
+          <span className="text-muted-foreground">
+            Entregue <span className="tabular-nums text-foreground">{fmt(totalEntregueKg, { decimals: 2 })} kg</span> / <span className="tabular-nums text-foreground">{totalEntreguePcs}</span> pcs
           </span>
         </div>
         {!readOnly && (
