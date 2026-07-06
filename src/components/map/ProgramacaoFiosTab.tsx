@@ -119,8 +119,9 @@ export function MapFiosTable({ finalizado }: Props) {
   function collapseAll() { setExpanded(new Set()); }
 
   const totalProds = prods.length;
-  const totalAguardando = prods.filter((p) => p.status === "aguardando_faturamento").length;
-  const totalEntregues = prods.filter((p) => p.status === "entregue").length;
+  const totalAguardando = prods.filter((p) => calcStatusFio(p) === "aguardando_faturamento").length;
+  const totalEntregues = prods.filter((p) => calcStatusFio(p) === "entregue").length;
+
 
   async function commitProd(prod: MapProducao, field: keyof MapProducao, raw: string | null) {
     try {
