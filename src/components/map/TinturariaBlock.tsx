@@ -102,7 +102,8 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
   }
 
   const saldoPcs = totalPedidoPcs - totalEntreguePcs;
-  const saldoClass = saldoPcs > 0 ? "text-blue-600" : saldoPcs < 0 ? "text-red-600" : "text-muted-foreground";
+  const saldoKg = totalPedidoKg - totalEntregueKg;
+  const saldoClass = (v: number) => v > 0 ? "text-blue-600" : v < 0 ? "text-red-600" : "text-muted-foreground";
 
   return (
     <div className="rounded-md border bg-white/70 p-2 space-y-1">
@@ -122,7 +123,7 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
           </span>
           <span className="text-muted-foreground">|</span>
           <span className="text-muted-foreground">
-            Saldo <b className={`tabular-nums ${saldoClass}`}>{saldoPcs > 0 ? "+" : ""}{saldoPcs}</b> pcs
+            Saldo <b className={`tabular-nums ${saldoClass(saldoKg)}`}>{saldoKg > 0 ? "+" : ""}{fmt(saldoKg, { decimals: 2 })}</b> kg / <b className={`tabular-nums ${saldoClass(saldoPcs)}`}>{saldoPcs > 0 ? "+" : ""}{saldoPcs}</b> pcs
           </span>
         </div>
         {!readOnly && (
