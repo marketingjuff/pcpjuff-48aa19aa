@@ -115,13 +115,12 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
               <th className="p-1.5 font-medium">Peças rec.</th>
               <th className="p-1.5 font-medium">Data rec.</th>
               <th className="p-1.5 font-medium">NF rec.</th>
-              <th className="p-1.5 font-medium">NF cobertura</th>
               <th className="p-1.5 w-8"></th>
             </tr>
           </thead>
           <tbody>
             {programacoes.length === 0 ? (
-              <tr><td colSpan={11} className="p-2 text-center text-muted-foreground">Sem programação.</td></tr>
+              <tr><td colSpan={10} className="p-2 text-center text-muted-foreground">Sem programação.</td></tr>
             ) : programacoes.map((p) => (
               <tr key={p.id} className="border-t">
                 <td className="p-1 font-medium">{p.tinturaria}</td>
@@ -132,8 +131,7 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
                 <td className="p-1"><InlineInput type="number" step="0.01" min="0" value={p.kg_recebidos} onCommit={(v) => commit(p, "kg_recebidos", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="1" min="0" value={p.pecas_recebidas} onCommit={(v) => commit(p, "pecas_recebidas", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="date" value={p.data_recebimento} onCommit={(v) => commit(p, "data_recebimento", v)} disabled={readOnly} /></td>
-                <td className="p-1"><InlineInput value={p.nota_fiscal_recebimento} onCommit={(v) => commit(p, "nota_fiscal_recebimento", v)} disabled={readOnly} /></td>
-                <td className="p-1"><InlineInput value={p.nota_cobertura} onCommit={(v) => commit(p, "nota_cobertura", v)} disabled={readOnly} /></td>
+              <td className="p-1"><InlineInput value={p.nota_fiscal_recebimento} onCommit={(v) => commit(p, "nota_fiscal_recebimento", v)} disabled={readOnly} /></td>
                 <td className="p-1 text-right">
                   {!readOnly && (
                     <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => delProg(p.id)} title="Remover">
@@ -187,7 +185,7 @@ function CorSelect({
       onValueChange={(v) => onChange(v === COR_NULA ? null : v)}
     >
       <SelectTrigger
-        className="h-7 text-[12.5px] px-1.5 font-semibold"
+        className="h-7 text-[12.5px] px-1.5 font-semibold w-[140px]"
         style={triggerStyle}
       >
         <SelectValue placeholder="—" />
