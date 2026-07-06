@@ -261,18 +261,20 @@ export function MapFiosTable({ finalizado }: Props) {
             Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] text-[12.5px] table-fixed">
+            <table className="w-full min-w-[1200px] text-[12.5px] table-fixed">
               <colgroup>
                 <col style={{ width: "3%" }} />
                 <col style={{ width: "8%" }} />
+                <col style={{ width: "7%" }} />
                 <col style={{ width: "8%" }} />
+                <col style={{ width: "11%" }} />
                 <col style={{ width: "9%" }} />
-                <col style={{ width: "14%" }} />
-                <col style={{ width: "12%" }} />
-                <col style={{ width: "11%" }} />
-                <col style={{ width: "11%" }} />
-                <col style={{ width: "12%" }} />
-                <col style={{ width: "12%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "15%" }} />
               </colgroup>
               <thead className="bg-muted/40 text-[11.5px] uppercase tracking-wide text-muted-foreground">
                 <tr>
@@ -282,12 +284,15 @@ export function MapFiosTable({ finalizado }: Props) {
                   <th className="p-1.5 text-center whitespace-nowrap">Kg solicitados</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Fornecedor</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Data pagamento</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Status</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Fio</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Malharia</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Tinturaria</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Nota fiscal</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Data faturam.</th>
                   <th className="p-1.5 text-right whitespace-nowrap"></th>
                 </tr>
               </thead>
+
               <tbody>
                 {lista.map((prod) => {
                   const isOpen = expanded.has(prod.id);
