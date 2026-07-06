@@ -149,7 +149,13 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOn
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[1200px] w-[95vw]">
         <DialogHeader>
-          <DialogTitle>{readOnly ? "Peças solicitadas (somente leitura)" : "Solicitar Peças"}</DialogTitle>
+          <DialogTitle>
+            {effectiveReadOnly
+              ? "Peças solicitadas (somente leitura)"
+              : editMode
+                ? "Corrigir solicitação de peças"
+                : "Solicitar Peças"}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-2 overflow-x-auto">
