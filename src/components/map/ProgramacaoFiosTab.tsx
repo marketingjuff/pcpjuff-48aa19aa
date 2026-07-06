@@ -231,7 +231,7 @@ export function MapFiosTable({ finalizado }: Props) {
         </div>
         {!finalizado && (
           <div className="min-w-[180px]">
-            <Label className="text-[11px] text-muted-foreground">Status</Label>
+            <Label className="text-[11px] text-muted-foreground">Fio</Label>
             <Select value={fStatus} onValueChange={setFStatus}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
