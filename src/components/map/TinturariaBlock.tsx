@@ -6,8 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAppList } from "@/lib/app-lists";
 import type { MapProgramacaoTinturaria } from "@/lib/map";
-import { patchProgramacao, sumPecasProgramadas } from "@/lib/map";
+import { patchProgramacao, sumPecasProgramadas, useCorAcabamentos, corComAcabamento } from "@/lib/map";
+import { REFACAO_CORES } from "@/lib/pedidos";
 import { InlineInput } from "./InlineInput";
+
+const COR_NULA = "__none__";
 
 interface Props {
   producaoId: string;
@@ -20,6 +23,7 @@ interface Props {
 
 export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalharia, kgPorPeca, onChanged, readOnly }: Props) {
   const { names: tinturarias } = useAppList("map_tinturaria");
+  const { mapa: acabMapa } = useCorAcabamentos();
   const [addingTint, setAddingTint] = useState<string>("");
 
   const totalProgramado = sumPecasProgramadas(programacoes);
@@ -122,7 +126,7 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
                 <td className="p-1 font-medium">{p.tinturaria}</td>
                 <td className="p-1"><InlineInput type="date" value={p.data_programacao} onCommit={(v) => commit(p, "data_programacao", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="1" min="0" value={p.pecas} onCommit={(v) => commit(p, "pecas", v)} disabled={readOnly} /></td>
-                <td className="p-1"><InlineInput value={p.cor} onCommit={(v) => commit(p, "cor", v)} disabled={readOnly} /></td>
+                <td className="p-1"><CorSelect value={p.cor} mapa={acabMapa} disabled={readOnly} onChange={(v) => commit(p, "cor", v)} /></td>
                 <td className="p-1"><InlineInput type="number" step="0.01" min="0" value={p.kg_enviados} onCommit={(v) => commit(p, "kg_enviados", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="0.01" min="0" value={p.kg_recebidos} onCommit={(v) => commit(p, "kg_recebidos", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="1" min="0" value={p.pecas_recebidas} onCommit={(v) => commit(p, "pecas_recebidas", v)} disabled={readOnly} /></td>
@@ -142,5 +146,59 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
         </table>
       </div>
     </div>
+  );
+}
+
+function CorSelect({
+  value,
+  mapa,
+  disabled,
+  onChange,
+}: {
+  value: string | null;
+  mapa: Record<string, string>;
+  disabled?: boolean;
+  onChange: (v: string | null) => void;
+}) {
+  const current = value ?? COR_NULA;
+  // Se o valor atual não corresponde a nenhuma opção combinada, exibe-o como item extra (legado).
+  const opcoesCombinadas = REFACAO_CORES.map((c) => ({
+    ...c,
+    label: corComAcabamento(c.nome, mapa),
+  }));
+  const isLegado = value != null && !opcoesCombinadas.some((o) => o.label === value);
+
+  return (
+    <Select
+      value={current}
+      disabled={disabled}
+      onValueChange={(v) => onChange(v === COR_NULA ? null : v)}
+    >
+      <SelectTrigger className="h-7 text-[12.5px] px-1.5"><SelectValue placeholder="—" /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value={COR_NULA}>—</SelectItem>
+        {isLegado && (
+          <SelectItem value={value!}>
+            <span className="italic text-muted-foreground">{value} (legado)</span>
+          </SelectItem>
+        )}
+        {opcoesCombinadas.map((o) => {
+          if (opcoesCombinadas.filter((x) => x.label === o.label).length > 1) {
+            // improvável, mas garante keys únicas
+          }
+          return (
+            <SelectItem key={o.nome} value={o.label}>
+              <span className="inline-flex items-center gap-2">
+                <span
+                  className="inline-block h-3 w-3 rounded-full border border-border"
+                  style={{ backgroundColor: o.hex }}
+                />
+                {o.label}
+              </span>
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
   );
 }

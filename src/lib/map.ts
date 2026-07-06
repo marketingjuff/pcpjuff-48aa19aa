@@ -145,6 +145,49 @@ export function useKgPorPeca() {
   return { kgPorPeca: data, isLoading, save };
 }
 
+// -------------------- cor_acabamentos (map_config) --------------------
+
+export type CorAcabamentoMap = Record<string, string>;
+
+export function corComAcabamento(nomeCor: string, mapa: CorAcabamentoMap | undefined | null): string {
+  const acab = mapa?.[nomeCor];
+  return acab ? `${nomeCor}-${acab}` : nomeCor;
+}
+
+export function useCorAcabamentos() {
+  const qc = useQueryClient();
+  const { data = {} as CorAcabamentoMap, isLoading } = useQuery({
+    queryKey: ["map", "config", "cor_acabamentos"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("map_config")
+        .select("value")
+        .eq("key", "cor_acabamentos")
+        .maybeSingle();
+      if (error) throw error;
+      const v = data?.value;
+      return (v && typeof v === "object" ? v : {}) as CorAcabamentoMap;
+    },
+    staleTime: 60_000,
+  });
+
+  const save = useMutation({
+    mutationFn: async (mapa: CorAcabamentoMap) => {
+      const { error } = await (supabase as any)
+        .from("map_config")
+        .upsert({ key: "cor_acabamentos", value: mapa, updated_at: new Date().toISOString() });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["map", "config", "cor_acabamentos"] });
+      toast.success("Acabamento salvo.");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar."),
+  });
+
+  return { mapa: data, isLoading, save };
+}
+
 // -------------------- Queries principais --------------------
 
 export function useMapData(finalizado: boolean) {

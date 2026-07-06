@@ -3,10 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useAppList, useAppListMutations, type AppListKind } from "@/lib/app-lists";
-import { useKgPorPeca } from "@/lib/map";
+import { useKgPorPeca, useCorAcabamentos, corComAcabamento } from "@/lib/map";
+import { REFACAO_CORES } from "@/lib/pedidos";
+
+const SEM_ACABAMENTO = "__none__";
 
 export function MapConfigPanel() {
   return (
@@ -15,8 +19,72 @@ export function MapConfigPanel() {
       <ListaCard kind="map_fio_fornecedor" titulo="Fornecedores de fio" placeholder="Ex.: Ventuno" />
       <ListaCard kind="map_malharia" titulo="Malharias" placeholder="Ex.: Mavelo" />
       <ListaCard kind="map_tinturaria" titulo="Tinturarias" placeholder="Ex.: Martêxtil" />
+      <ListaCard kind="map_acabamento" titulo="Acabamentos" placeholder="Ex.: ACAB5" />
+      <CoresAcabamentoCard />
       <AcessoMapCard />
     </div>
+  );
+}
+
+function CoresAcabamentoCard() {
+  const { mapa, save } = useCorAcabamentos();
+  const { names: acabamentos } = useAppList("map_acabamento");
+
+  async function handleChange(cor: string, valor: string) {
+    const next = { ...mapa };
+    if (valor === SEM_ACABAMENTO) delete next[cor];
+    else next[cor] = valor;
+    try { await save.mutateAsync(next); } catch { /* toast já emitido */ }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Acabamento por cor</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-xs text-muted-foreground">
+          Define o sufixo de acabamento (ex.: <b>amarelo-ACAB3</b>) usado ao selecionar cores na Tinturaria.
+          <br />Só afeta <b>novas programações</b>. Registros já gravados permanecem inalterados.
+        </p>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12"></TableHead>
+              <TableHead>Cor</TableHead>
+              <TableHead className="w-56">Acabamento</TableHead>
+              <TableHead>Prévia</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {REFACAO_CORES.map((c) => {
+              const current = mapa?.[c.nome] ?? SEM_ACABAMENTO;
+              return (
+                <TableRow key={c.nome}>
+                  <TableCell>
+                    <span
+                      className="inline-block h-5 w-5 rounded-full border border-border"
+                      style={{ backgroundColor: c.hex }}
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">{c.nome}</TableCell>
+                  <TableCell>
+                    <Select value={current} onValueChange={(v) => handleChange(c.nome, v)} disabled={save.isPending}>
+                      <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={SEM_ACABAMENTO}>— sem acabamento</SelectItem>
+                        {acabamentos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell className="tabular-nums text-sm">{corComAcabamento(c.nome, mapa)}</TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
 
