@@ -185,7 +185,7 @@ function CorSelect({
       onValueChange={(v) => onChange(v === COR_NULA ? null : v)}
     >
       <SelectTrigger
-        className="h-7 text-[12.5px] px-1.5 font-semibold"
+        className="h-7 text-[12.5px] px-1.5 font-semibold w-[140px]"
         style={triggerStyle}
       >
         <SelectValue placeholder="—" />
