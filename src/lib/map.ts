@@ -97,6 +97,10 @@ export function fmt(v: unknown, opts?: { decimals?: number }): string {
   return String(v);
 }
 
+export function prodCode(numero: number | string): string {
+  return `PROD${numero}`;
+}
+
 export function fmtDateBR(iso: string | null | undefined): string {
   if (!iso) return "—";
   const [y, m, d] = iso.split("-");
