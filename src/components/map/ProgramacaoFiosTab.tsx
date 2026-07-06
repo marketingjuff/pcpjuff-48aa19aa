@@ -324,7 +324,7 @@ export function MapFiosTable({ finalizado }: Props) {
                         </td>
                         <td className="p-1.5 text-center">
                           <div className="flex justify-center">
-                            <InlineInput type="date" value={prod.data_faturamento} onCommit={(v) => commitProd(prod, "data_faturamento", v)} disabled={finalizado} className="w-[120px]" />
+                            <InlineInput type="date" value={prod.data_faturamento} onCommit={(v) => commitProd(prod, "data_faturamento", v)} disabled={finalizado} className="w-[140px] pr-1" />
                           </div>
                         </td>
                         <td className="p-1.5 text-right space-x-1 whitespace-nowrap">
