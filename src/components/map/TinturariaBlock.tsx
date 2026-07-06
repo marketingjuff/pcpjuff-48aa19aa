@@ -8,6 +8,7 @@ import { useAppList } from "@/lib/app-lists";
 import type { MapProgramacaoTinturaria } from "@/lib/map";
 import { patchProgramacao, sumPecasProgramadas, useCorAcabamentos, corComAcabamento } from "@/lib/map";
 import { REFACAO_CORES } from "@/lib/pedidos";
+import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { InlineInput } from "./InlineInput";
 
 const COR_NULA = "__none__";
@@ -161,12 +162,23 @@ function CorSelect({
   onChange: (v: string | null) => void;
 }) {
   const current = value ?? COR_NULA;
-  // Se o valor atual não corresponde a nenhuma opção combinada, exibe-o como item extra (legado).
   const opcoesCombinadas = REFACAO_CORES.map((c) => ({
     ...c,
     label: corComAcabamento(c.nome, mapa),
   }));
   const isLegado = value != null && !opcoesCombinadas.some((o) => o.label === value);
+
+  // Base cor name (antes do sufixo "-ACABx") para descobrir o hex do valor atual.
+  const baseNome = value ? value.split("-")[0] : "";
+  const hexAtual = value ? corHex(baseNome) : "";
+  const fgAtual = hexAtual ? corTextoSobre(hexAtual) : "";
+  const triggerStyle = value
+    ? {
+        backgroundColor: hexAtual,
+        color: fgAtual,
+        borderColor: fgAtual === "#ffffff" ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.15)",
+      }
+    : undefined;
 
   return (
     <Select
@@ -174,27 +186,29 @@ function CorSelect({
       disabled={disabled}
       onValueChange={(v) => onChange(v === COR_NULA ? null : v)}
     >
-      <SelectTrigger className="h-7 text-[12.5px] px-1.5"><SelectValue placeholder="—" /></SelectTrigger>
+      <SelectTrigger
+        className="h-7 text-[12.5px] px-1.5 font-semibold"
+        style={triggerStyle}
+      >
+        <SelectValue placeholder="—" />
+      </SelectTrigger>
       <SelectContent>
         <SelectItem value={COR_NULA}>—</SelectItem>
         {isLegado && (
-          <SelectItem value={value!}>
-            <span className="italic text-muted-foreground">{value} (legado)</span>
+          <SelectItem value={value!} className="italic text-muted-foreground">
+            {value} (legado)
           </SelectItem>
         )}
         {opcoesCombinadas.map((o) => {
-          if (opcoesCombinadas.filter((x) => x.label === o.label).length > 1) {
-            // improvável, mas garante keys únicas
-          }
+          const f = corTextoSobre(o.hex);
           return (
-            <SelectItem key={o.nome} value={o.label}>
-              <span className="inline-flex items-center gap-2">
-                <span
-                  className="inline-block h-3 w-3 rounded-full border border-border"
-                  style={{ backgroundColor: o.hex }}
-                />
-                {o.label}
-              </span>
+            <SelectItem
+              key={o.nome}
+              value={o.label}
+              style={{ backgroundColor: o.hex, color: f }}
+              className="my-0.5 rounded-sm font-semibold focus:opacity-90"
+            >
+              {o.label}
             </SelectItem>
           );
         })}
