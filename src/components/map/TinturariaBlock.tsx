@@ -148,3 +148,57 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
     </div>
   );
 }
+
+function CorSelect({
+  value,
+  mapa,
+  disabled,
+  onChange,
+}: {
+  value: string | null;
+  mapa: Record<string, string>;
+  disabled?: boolean;
+  onChange: (v: string | null) => void;
+}) {
+  const current = value ?? COR_NULA;
+  // Se o valor atual não corresponde a nenhuma opção combinada, exibe-o como item extra (legado).
+  const opcoesCombinadas = REFACAO_CORES.map((c) => ({
+    ...c,
+    label: corComAcabamento(c.nome, mapa),
+  }));
+  const isLegado = value != null && !opcoesCombinadas.some((o) => o.label === value);
+
+  return (
+    <Select
+      value={current}
+      disabled={disabled}
+      onValueChange={(v) => onChange(v === COR_NULA ? null : v)}
+    >
+      <SelectTrigger className="h-7 text-[12.5px] px-1.5"><SelectValue placeholder="—" /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value={COR_NULA}>—</SelectItem>
+        {isLegado && (
+          <SelectItem value={value!}>
+            <span className="italic text-muted-foreground">{value} (legado)</span>
+          </SelectItem>
+        )}
+        {opcoesCombinadas.map((o) => {
+          if (opcoesCombinadas.filter((x) => x.label === o.label).length > 1) {
+            // improvável, mas garante keys únicas
+          }
+          return (
+            <SelectItem key={o.nome} value={o.label}>
+              <span className="inline-flex items-center gap-2">
+                <span
+                  className="inline-block h-3 w-3 rounded-full border border-border"
+                  style={{ backgroundColor: o.hex }}
+                />
+                {o.label}
+              </span>
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
+  );
+}
