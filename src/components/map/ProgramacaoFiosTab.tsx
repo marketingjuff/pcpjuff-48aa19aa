@@ -260,18 +260,18 @@ export function MapFiosTable({ finalizado }: Props) {
             Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-[12.5px] table-fixed">
+            <table className="w-full min-w-[1050px] text-[12.5px] table-fixed">
               <colgroup>
-                <col style={{ width: "32px" }} />
-                <col style={{ width: "90px" }} />
-                <col style={{ width: "90px" }} />
-                <col style={{ width: "110px" }} />
-                <col />
-                <col style={{ width: "130px" }} />
-                <col style={{ width: "130px" }} />
-                <col style={{ width: "120px" }} />
-                <col style={{ width: "130px" }} />
-                <col style={{ width: "150px" }} />
+                <col style={{ width: "3%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "14%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "11%" }} />
+                <col style={{ width: "11%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "12%" }} />
               </colgroup>
               <thead className="bg-muted/40 text-[11.5px] uppercase tracking-wide text-muted-foreground">
                 <tr>
