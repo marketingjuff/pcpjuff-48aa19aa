@@ -23,6 +23,7 @@ interface Props {
 
 export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalharia, kgPorPeca, onChanged, readOnly }: Props) {
   const { names: tinturarias } = useAppList("map_tinturaria");
+  const { mapa: acabMapa } = useCorAcabamentos();
   const [addingTint, setAddingTint] = useState<string>("");
 
   const totalProgramado = sumPecasProgramadas(programacoes);
@@ -125,7 +126,7 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
                 <td className="p-1 font-medium">{p.tinturaria}</td>
                 <td className="p-1"><InlineInput type="date" value={p.data_programacao} onCommit={(v) => commit(p, "data_programacao", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="1" min="0" value={p.pecas} onCommit={(v) => commit(p, "pecas", v)} disabled={readOnly} /></td>
-                <td className="p-1"><InlineInput value={p.cor} onCommit={(v) => commit(p, "cor", v)} disabled={readOnly} /></td>
+                <td className="p-1"><CorSelect value={p.cor} mapa={acabMapa} disabled={readOnly} onChange={(v) => commit(p, "cor", v)} /></td>
                 <td className="p-1"><InlineInput type="number" step="0.01" min="0" value={p.kg_enviados} onCommit={(v) => commit(p, "kg_enviados", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="0.01" min="0" value={p.kg_recebidos} onCommit={(v) => commit(p, "kg_recebidos", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="1" min="0" value={p.pecas_recebidas} onCommit={(v) => commit(p, "pecas_recebidas", v)} disabled={readOnly} /></td>
