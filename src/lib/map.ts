@@ -70,7 +70,7 @@ export function sumPecasProgramadas(progs: MapProgramacaoTinturaria[]): number {
 }
 
 export function calcQuebra(prod: MapProducao, entregas: MapEntregaMalharia[]): number {
-  return Number(prod.kg_solicitados ?? 0) - sumKgEntregas(entregas);
+  return sumKgEntregas(entregas) - Number(prod.kg_solicitados ?? 0);
 }
 
 // -------------------- Status derivados (frontend-only) --------------------

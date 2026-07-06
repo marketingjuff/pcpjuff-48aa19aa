@@ -1,29 +1,31 @@
-## Escopo
+## Plano: Corrigir sinal do cálculo da quebra no MAP
 
-Duas mudanças de UI, apenas frontend, sem migrações.
+### Problema
+O usuário reportou que o valor da quebra está com o sinal invertido: onde deveria ser positivo está negativo, e vice-versa.
 
-## 1. Botão Duplicar na Tinturaria
+### Diagnóstico
+A função `calcQuebra` em `src/lib/map.ts` (linha 72-74) calcula:
+```ts
+return Number(prod.kg_solicitados ?? 0) - sumKgEntregas(entregas);
+```
 
-Arquivo: `src/components/map/TinturariaBlock.tsx`
+Isso resulta em:
+- **Positivo** quando o recebido é **menor** que o solicitado (falta material).
+- **Negativo** quando o recebido é **maior** que o solicitado (sobra material).
 
-- Adicionar botão "Duplicar" (ícone `Copy` do lucide-react) na última coluna de cada linha de programação, imediatamente **antes** do botão de lixeira.
-- Ao clicar, cria uma nova linha via insert em `map_tinturaria_programacoes` copiando os campos da linha atual: `producao_id`, `tinturaria`, `data_programacao`, `pecas_programadas`, `cor`, `kg_enviados`. Campos de recebimento (`kg_recebidos`, `pecas_recebidas`, `data_recebimento`, `nota_fiscal_recebimento`) ficam vazios/nulos — só a "programação" é duplicada, já que a ideia é reduzir digitação repetida.
-- Após insert, chamar `onChanged()` para revalidar. Toast de sucesso/erro.
-- Desabilitar quando `readOnly`.
+O usuário quer o **oposto**.
 
-## 2. Moldura no Prod expandido
+### Alteração
+1. **Inverter a ordem da subtração** em `src/lib/map.ts`:
+   ```ts
+   return sumKgEntregas(entregas) - Number(prod.kg_solicitados ?? 0);
+   ```
+   
+   Resultado esperado:
+   - **Negativo** quando recebeu menos que solicitado (quebra = deficit).
+   - **Positivo** quando recebeu mais que solicitado (quebra = excesso).
 
-Arquivo: `src/components/map/ProgramacaoFiosTab.tsx`
-
-Hoje, quando o Prod é expandido, a linha principal e a linha de detalhes só têm um `hover:bg-yellow-50/50` e `bg-yellow-50/30` respectivamente, o que confunde visualmente entre Prods vizinhos.
-
-Ajuste: quando `isOpen === true`, aplicar um destaque mais forte que englobe as duas linhas (a de resumo + a expandida):
-
-- Linha de resumo aberta: fundo amarelo mais forte (ex.: `bg-yellow-100`) + `border-l-4 border-yellow-400` na primeira célula para marcar início do bloco.
-- Linha de detalhes: mesmo `border-l-4 border-yellow-400`, fundo `bg-yellow-50`, e uma `border-b-4 border-yellow-400` (ou similar) para fechar a moldura visualmente.
-- Espaçamento inferior extra (ex.: uma linha "spacer" ou `pb-3` no conteúdo expandido) para separar do próximo Prod.
-
-Objetivo: quem olha a tabela vê claramente "este Prod, com todo o seu conteúdo expandido, é um bloco único", diferenciando do próximo Prod da mesma data.
-
-Sem alterações em lógica, dados, ou outros componentes.  
-os outros prods ficam em zebra para facilitar a leitura.
+### Escopo
+- Apenas a função `calcQuebra` em `src/lib/map.ts`.
+- Nenhuma mudança em banco de dados, migrações, ou outros componentes.
+- O `MalhariaBlock.tsx` exibe o valor retornado por `calcQuebra` sem lógica adicional de sinal, então a correção é transparente para a UI.
