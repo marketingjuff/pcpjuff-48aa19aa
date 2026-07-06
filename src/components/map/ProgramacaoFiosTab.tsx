@@ -131,13 +131,11 @@ export function MapFiosTable({ finalizado }: Props) {
       } else {
         patch[field] = raw;
       }
-      if (field === "nota_fiscal" && raw && raw.trim() !== "") {
-        patch.status = "entregue";
-      }
       await patchProducao(prod.id, patch);
       invalidateAll();
     } catch (e: any) { toast.error(e?.message ?? "Falha ao salvar."); }
   }
+
 
   async function finalizar(prod: MapProducao) {
     const { data: u } = await supabase.auth.getUser();
