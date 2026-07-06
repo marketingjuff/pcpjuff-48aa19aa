@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAppList } from "@/lib/app-lists";
 import type { MapProgramacaoTinturaria } from "@/lib/map";
-import { patchProgramacao, sumPecasProgramadas, useCorAcabamentos, corComAcabamento } from "@/lib/map";
+import { patchProgramacao, sumPecasProgramadas, useCorAcabamentos, corComAcabamento, fmt } from "@/lib/map";
 import { REFACAO_CORES } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { InlineInput } from "./InlineInput";
