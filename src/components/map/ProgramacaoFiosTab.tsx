@@ -328,11 +328,25 @@ export function MapFiosTable({ finalizado }: Props) {
                           )}
                         </td>
                         <td className="p-1.5 text-center">
-                          {calcStatusMalharia(prod, es) === "completo" ? (
-                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Completo</Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Incompleto</Badge>
-                          )}
+                          <Select
+                            value={prod.status_malharia ?? "incompleto"}
+                            onValueChange={(v) => commitProd(prod, "status_malharia", v)}
+                            disabled={finalizado}
+                          >
+                            <SelectTrigger
+                              className={`h-6 w-[120px] mx-auto text-xs ${
+                                (prod.status_malharia ?? "incompleto") === "completo"
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  : "bg-amber-50 text-amber-700 border-amber-200"
+                              }`}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="incompleto">Incompleto</SelectItem>
+                              <SelectItem value="completo">Completo</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="p-1.5 text-center">
                           {calcStatusTinturaria(ps, sumPecasEntregas(es)) === "completo" ? (
