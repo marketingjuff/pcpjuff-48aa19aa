@@ -131,22 +131,6 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
               <th className="p-1.5 font-medium">Peças rec.</th>
               <th className="p-1.5 font-medium">Data rec.</th>
               <th className="p-1.5 font-medium">NF rec.</th>
-              <th className="p-1.5 w-8"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {programacoes.length === 0 ? (
-              <tr><td colSpan={10} className="p-2 text-center text-muted-foreground">Sem programação.</td></tr>
-            ) : programacoes.map((p) => (
-              <tr key={p.id} className="border-t">
-                <td className="p-1 font-medium">{p.tinturaria}</td>
-                <td className="p-1"><InlineInput type="date" value={p.data_programacao} onCommit={(v) => commit(p, "data_programacao", v)} disabled={readOnly} /></td>
-                <td className="p-1"><InlineInput type="number" step="1" min="0" value={p.pecas} onCommit={(v) => commit(p, "pecas", v)} disabled={readOnly} /></td>
-                <td className="p-1"><CorSelect value={p.cor} mapa={acabMapa} disabled={readOnly} onChange={(v) => commit(p, "cor", v)} /></td>
-                <td className="p-1"><InlineInput type="number" step="0.01" min="0" value={p.kg_enviados} onCommit={(v) => commit(p, "kg_enviados", v)} disabled={readOnly} /></td>
-                <td className="p-1"><InlineInput type="number" step="0.01" min="0" value={p.kg_recebidos} onCommit={(v) => commit(p, "kg_recebidos", v)} disabled={readOnly} /></td>
-                <td className="p-1"><InlineInput type="number" step="1" min="0" value={p.pecas_recebidas} onCommit={(v) => commit(p, "pecas_recebidas", v)} disabled={readOnly} /></td>
-                <td className="p-1"><InlineInput type="date" value={p.data_recebimento} onCommit={(v) => commit(p, "data_recebimento", v)} disabled={readOnly} /></td>
               <th className="p-1.5 w-16"></th>
             </tr>
           </thead>
