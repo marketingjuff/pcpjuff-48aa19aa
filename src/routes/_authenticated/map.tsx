@@ -107,7 +107,7 @@ function MapHome() {
           </TabsList>
 
           <TabsContent value="programacao" forceMount hidden={tab !== "programacao"}>
-            <ProgramacaoFiosTab />
+            <ProgramacaoFiosTab prodId={search.prodId} />
           </TabsContent>
           <TabsContent value="finalizados" forceMount hidden={tab !== "finalizados"}>
             <FiosFinalizadosTab />
