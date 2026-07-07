@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateInputBR } from "@/components/ui/date-input";
-import { ChevronDown, ChevronRight, Plus, CheckCircle2, RotateCcw, Pencil, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, CheckCircle2, RotateCcw, Pencil, X, Undo2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -373,37 +373,70 @@ export function MapFiosTable({ finalizado }: Props) {
                             <InlineInput type="date" value={prod.data_faturamento} onCommit={(v) => commitProd(prod, "data_faturamento", v)} disabled={finalizado} className="w-[140px] pr-1" />
                           </div>
                         </td>
-                        <td className="p-1.5 text-right whitespace-nowrap">
+                        <td className="p-1.5 text-right whitespace-nowrap min-w-[140px]">
                           <div className="flex items-center justify-end gap-1">
                             {finalizado ? (
                               canManageMap && (
-                                <Button size="sm" variant="outline" className="h-6 text-xs w-[80px]" onClick={() => reabrir(prod)}>
-                                  <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 w-7 p-0 shrink-0"
+                                  onClick={() => reabrir(prod)}
+                                  title="Reabrir"
+                                  aria-label="Reabrir"
+                                >
+                                  <RotateCcw className="h-3.5 w-3.5" />
                                 </Button>
                               )
                             ) : (
                               <>
                                 <Button
                                   size="sm"
-                                  className="h-6 text-[10px] px-1.5 bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40 w-[88px]"
+                                  className="h-7 w-7 p-0 shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40"
                                   onClick={() => finalizar(prod)}
                                   disabled={!canFinalize}
+                                  title="Finalizar"
+                                  aria-label="Finalizar"
                                 >
-                                  <CheckCircle2 className="h-3 w-3 mr-0.5" /> Finalizar
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
                                 </Button>
-                                <Button size="sm" variant="outline" className="h-6 text-xs w-[72px]" onClick={() => openEditar(prod)}>
-                                  <Pencil className="h-3 w-3 mr-1" /> Editar
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 w-7 p-0 shrink-0"
+                                  onClick={() => openEditar(prod)}
+                                  title="Editar"
+                                  aria-label="Editar"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
                                 </Button>
-                                <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 w-[88px]" onClick={() => setDevProd(prod)}>
-                                  Devolução
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 w-7 p-0 shrink-0"
+                                  onClick={() => setDevProd(prod)}
+                                  title="Devolução"
+                                  aria-label="Devolução"
+                                >
+                                  <Undo2 className="h-3.5 w-3.5" />
                                 </Button>
                                 {canManageMap && (
-                                  <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive w-[72px]" onClick={() => excluirProd(prod)}>Excluir</Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0 shrink-0 text-destructive hover:text-destructive"
+                                    onClick={() => excluirProd(prod)}
+                                    title="Excluir"
+                                    aria-label="Excluir"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
                                 )}
                               </>
                             )}
                           </div>
                         </td>
+
                       </tr>
                       {isOpen && (
                         <tr className="bg-yellow-50 border-b-4 border-yellow-400">
