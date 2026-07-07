@@ -344,7 +344,7 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
                   const kgReceb = sumKgEntregas(es);
                   return (
                     <Fragment key={prod.id}>
-                      <tr className={summaryClass}>
+                      <tr id={`map-prod-${prod.id}`} className={summaryClass}>
                         <td className={`p-1.5 align-top ${isOpen ? "border-l-4 border-yellow-400" : ""}`}>
                           <button type="button" onClick={() => toggle(prod.id)} className="p-0.5">
                             {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
