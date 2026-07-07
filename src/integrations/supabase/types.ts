@@ -309,6 +309,65 @@ export type Database = {
         }
         Relationships: []
       }
+      map_devolucoes: {
+        Row: {
+          cor: string
+          created_at: string
+          created_by: string | null
+          data_devolucao: string
+          faturado_para: string
+          finalizada_em: string | null
+          finalizada_por: string | null
+          id: string
+          kg: number
+          nota_fiscal: string
+          obs: string | null
+          pecas: number
+          producao_id: string
+          status: string
+        }
+        Insert: {
+          cor: string
+          created_at?: string
+          created_by?: string | null
+          data_devolucao?: string
+          faturado_para: string
+          finalizada_em?: string | null
+          finalizada_por?: string | null
+          id?: string
+          kg: number
+          nota_fiscal: string
+          obs?: string | null
+          pecas: number
+          producao_id: string
+          status?: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          created_by?: string | null
+          data_devolucao?: string
+          faturado_para?: string
+          finalizada_em?: string | null
+          finalizada_por?: string | null
+          id?: string
+          kg?: number
+          nota_fiscal?: string
+          obs?: string | null
+          pecas?: number
+          producao_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_devolucoes_producao_id_fkey"
+            columns: ["producao_id"]
+            isOneToOne: false
+            referencedRelation: "map_producoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       map_malharia_entregas: {
         Row: {
           created_at: string

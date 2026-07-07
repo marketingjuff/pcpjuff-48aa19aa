@@ -11,6 +11,8 @@ import { MacroSwitch } from "@/routes/_authenticated/cop";
 import { ProgramacaoFiosTab } from "@/components/map/ProgramacaoFiosTab";
 import { FiosFinalizadosTab } from "@/components/map/FiosFinalizadosTab";
 import { EstoqueMpTab } from "@/components/map/EstoqueMpTab";
+import { QuebraTab } from "@/components/map/QuebraTab";
+import { DevolucoesTab } from "@/components/map/DevolucoesTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/map")({
@@ -25,6 +27,8 @@ const TABS = [
   { value: "programacao", label: "Programação de Fios" },
   { value: "finalizados", label: "Fios Finalizados" },
   { value: "estoque", label: "Estoque de MP" },
+  { value: "quebra", label: "Quebra" },
+  { value: "devolucoes", label: "Devoluções" },
 ];
 
 function MapHome() {
@@ -110,6 +114,12 @@ function MapHome() {
           </TabsContent>
           <TabsContent value="estoque" forceMount hidden={tab !== "estoque"}>
             <EstoqueMpTab />
+          </TabsContent>
+          <TabsContent value="quebra" forceMount hidden={tab !== "quebra"}>
+            <QuebraTab />
+          </TabsContent>
+          <TabsContent value="devolucoes" forceMount hidden={tab !== "devolucoes"}>
+            <DevolucoesTab />
           </TabsContent>
         </Tabs>
       </main>

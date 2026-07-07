@@ -20,6 +20,7 @@ import { MalhariaBlock } from "./MalhariaBlock";
 import { TinturariaBlock } from "./TinturariaBlock";
 import { NovoProdDialog } from "./NovoProdDialog";
 import { InlineInput } from "./InlineInput";
+import { DevolucaoDialog } from "./DevolucaoDialog";
 
 interface Props { finalizado: boolean; }
 
@@ -31,6 +32,8 @@ export function MapFiosTable({ finalizado }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [dlgOpen, setDlgOpen] = useState(false);
   const [editingProd, setEditingProd] = useState<MapProducao | null>(null);
+  const [devProd, setDevProd] = useState<MapProducao | null>(null);
+
 
   // Filtros
   const [fData, setFData] = useState<string>("");
@@ -312,7 +315,7 @@ export function MapFiosTable({ finalizado }: Props) {
                           </button>
                         </td>
                         <td className="p-1.5 text-left font-semibold tabular-nums">{prodCode(prod.numero)}</td>
-                        <td className="p-1.5 text-center">{prod.faturar_para}</td>
+                        <td className="p-1.5 text-center font-bold">{prod.faturar_para}</td>
                         <td className="p-1.5 text-center tabular-nums">{Number(prod.kg_solicitados).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</td>
                         <td className="p-1.5 text-center">{prod.fornecedor}</td>
                         <td className="p-1.5 text-center">
@@ -381,6 +384,9 @@ export function MapFiosTable({ finalizado }: Props) {
                               <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => openEditar(prod)}>
                                 <Pencil className="h-3 w-3 mr-1" /> Editar
                               </Button>
+                              <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => setDevProd(prod)}>
+                                Devolução
+                              </Button>
                               <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" onClick={() => excluirProd(prod)}>Excluir</Button>
                             </>
                           )}
@@ -424,6 +430,16 @@ export function MapFiosTable({ finalizado }: Props) {
         producao={editingProd}
         onCreated={invalidateAll}
       />
+
+      {devProd && (
+        <DevolucaoDialog
+          open={!!devProd}
+          onOpenChange={(v) => !v && setDevProd(null)}
+          producao={devProd}
+          programacoes={byProdProgs.get(devProd.id) ?? []}
+          onDone={invalidateAll}
+        />
+      )}
     </div>
   );
 }
