@@ -226,8 +226,13 @@ export function PecasPerdidasEditor({ value, onChange, readOnly = false }: Props
         {completas.length === 0 ? (
           <div className="text-sm text-muted-foreground">Nenhuma peça registrada.</div>
         ) : (
-          <div className="flex flex-col gap-1.5">
-            {completas.map((r, i) => <ChipGrouped key={i} row={r} />)}
+          <div className="overflow-x-auto">
+            <div className="inline-block min-w-full">
+              <ChipGroupedHeader />
+              <div className="flex flex-col gap-1.5">
+                {completas.map((r, i) => <ChipGrouped key={i} row={r} />)}
+              </div>
+            </div>
           </div>
         )}
         <div className="text-xs text-muted-foreground">
