@@ -58,6 +58,47 @@ export interface MapProgramacaoTinturaria {
   created_at: string;
 }
 
+export type MapEstoquePecaStatus = "Fechada" | "Aberta" | "Corte" | "Devolvida" | "100% utilizada";
+
+export interface MapEstoqueCorte {
+  cop_id: string;
+  cop_numero: number;
+  letra: string | null;
+  metros: number;
+  data: string;
+}
+
+export interface MapEstoquePeca {
+  id: string;
+  programacao_id: string;
+  producao_id: string;
+  nota_fiscal: string | null;
+  cor: string | null;
+  data_entrada: string | null;
+  numero_peca: string | null;
+  status: MapEstoquePecaStatus;
+  data_abertura: string | null;
+  alt_inicial: number | null;
+  cortes: MapEstoqueCorte[];
+  created_at: string;
+  updated_at: string;
+}
+
+// Cor base = parte antes do sufixo "-ACABx"
+export function corBase(cor: string | null | undefined): string {
+  if (!cor) return "";
+  return cor.split("-")[0];
+}
+
+export function programacaoRecebimentoCompleto(p: MapProgramacaoTinturaria): boolean {
+  return (
+    p.pecas_recebidas != null &&
+    Number(p.pecas_recebidas) > 0 &&
+    notEmpty(p.data_recebimento) &&
+    notEmpty(p.nota_fiscal_recebimento)
+  );
+}
+
 // -------------------- Helpers --------------------
 
 export function sumKgEntregas(entregas: MapEntregaMalharia[]): number {
