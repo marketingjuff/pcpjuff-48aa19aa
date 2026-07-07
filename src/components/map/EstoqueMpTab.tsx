@@ -167,27 +167,41 @@ export function EstoqueMpTab() {
     }
   }
 
+  const totalGeral = useMemo(() => cards.reduce((s, c) => s + c.Fechada + c.Aberta + c.Corte, 0), [cards]);
+
   return (
     <div className="space-y-3">
       {/* ---------- Resumo por cor (tabela) ---------- */}
       <div className="rounded-md border bg-white/70 overflow-x-auto">
-        <table className="w-full text-[12.5px]">
+        <table className="w-full text-[12.5px] table-fixed">
+          <colgroup>
+            <col style={{ width: "25%" }} />
+            <col style={{ width: "9.375%" }} />
+            <col style={{ width: "9.375%" }} />
+            <col style={{ width: "9.375%" }} />
+            <col style={{ width: "9.375%" }} />
+            <col style={{ width: "9.375%" }} />
+            <col style={{ width: "9.375%" }} />
+            <col style={{ width: "9.375%" }} />
+            <col style={{ width: "9.375%" }} />
+          </colgroup>
           <thead className="bg-muted/40">
             <tr className="text-left">
-              <th className="p-1.5 font-medium">Cor</th>
-              <th className="p-1.5 font-medium text-right">Produção</th>
-              <th className="p-1.5 font-medium text-right">Fechada</th>
-              <th className="p-1.5 font-medium text-right">Aberta</th>
-              <th className="p-1.5 font-medium text-right">Corte</th>
-              <th className="p-1.5 font-medium text-right">Total</th>
-              <th className="p-1.5 font-medium text-right text-muted-foreground/80">100% util.</th>
-              <th className="p-1.5 font-medium text-right text-red-700">Devolvida</th>
+              <th className="py-1 px-1.5 font-medium">Cor</th>
+              <th className="py-1 px-1.5 font-medium text-right tabular-nums">Produção</th>
+              <th className="py-1 px-1.5 font-medium text-right tabular-nums">Fechada</th>
+              <th className="py-1 px-1.5 font-medium text-right tabular-nums">Aberta</th>
+              <th className="py-1 px-1.5 font-medium text-right tabular-nums">Corte</th>
+              <th className="py-1 px-1.5 font-medium text-right tabular-nums text-red-700">Devolvida</th>
+              <th className="py-1 px-1.5 font-medium text-right tabular-nums">Total</th>
+              <th className="py-1 px-1.5 font-medium text-right tabular-nums text-muted-foreground/80">100% util.</th>
+              <th className="py-1 px-1.5 font-medium text-right tabular-nums text-muted-foreground/80">% part.</th>
             </tr>
           </thead>
           <tbody>
             {cards.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-3 text-center text-muted-foreground">
+                <td colSpan={9} className="p-3 text-center text-muted-foreground">
                   {isLoading ? "Carregando…" : "Sem dados de estoque ainda."}
                 </td>
               </tr>
@@ -196,9 +210,10 @@ export function EstoqueMpTab() {
                 const bg = corHex(c.cor);
                 const fg = corTextoSobre(bg);
                 const total = c.Fechada + c.Aberta + c.Corte;
+                const part = totalGeral > 0 ? Math.round((total / totalGeral) * 100) : 0;
                 return (
                   <tr key={c.cor} className={`border-t ${i % 2 === 1 ? "bg-muted/20" : ""}`}>
-                    <td className="p-1">
+                    <td className="py-0.5 px-1.5">
                       <span
                         className="inline-block rounded-sm px-1.5 py-0.5 text-[11.5px] font-semibold"
                         style={{ backgroundColor: bg, color: fg }}
@@ -206,22 +221,35 @@ export function EstoqueMpTab() {
                         {c.cor}
                       </span>
                     </td>
-                    <td className="p-1.5 text-right tabular-nums">{c.producao}</td>
-                    <td className="p-1.5 text-right tabular-nums">{c.Fechada}</td>
-                    <td className="p-1.5 text-right tabular-nums">{c.Aberta}</td>
-                    <td className="p-1.5 text-right tabular-nums">{c.Corte}</td>
-                    <td className="p-1.5 text-right tabular-nums font-semibold">{total}</td>
-                    <td className="p-1.5 text-right tabular-nums text-muted-foreground/80">
+                    <td className="py-0.5 px-1.5 text-right tabular-nums">{c.producao}</td>
+                    <td className="py-0.5 px-1.5 text-right tabular-nums">{c.Fechada}</td>
+                    <td className="py-0.5 px-1.5 text-right tabular-nums">{c.Aberta}</td>
+                    <td className="py-0.5 px-1.5 text-right tabular-nums">{c.Corte}</td>
+                    <td className="py-0.5 px-1.5 text-right tabular-nums text-red-700">{c.Devolvida}</td>
+                    <td className="py-0.5 px-1.5 text-right tabular-nums font-semibold">{total}</td>
+                    <td className="py-0.5 px-1.5 text-right tabular-nums text-muted-foreground/80">
                       {c["100% utilizada"]}
                     </td>
-                    <td className="p-1.5 text-right tabular-nums text-red-700">
-                      {c.Devolvida}
-                    </td>
+                    <td className="py-0.5 px-1.5 text-right tabular-nums text-muted-foreground/80">
+                      {part}%</td>
                   </tr>
                 );
               })
             )}
           </tbody>
+          <tfoot className="bg-muted/50 border-t-2">
+            <tr>
+              <td className="py-1 px-1.5 font-semibold">Total</td>
+              <td className="py-1 px-1.5 text-right tabular-nums font-semibold">{cards.reduce((s, c) => s + c.producao, 0)}</td>
+              <td className="py-1 px-1.5 text-right tabular-nums font-semibold">{cards.reduce((s, c) => s + c.Fechada, 0)}</td>
+              <td className="py-1 px-1.5 text-right tabular-nums font-semibold">{cards.reduce((s, c) => s + c.Aberta, 0)}</td>
+              <td className="py-1 px-1.5 text-right tabular-nums font-semibold">{cards.reduce((s, c) => s + c.Corte, 0)}</td>
+              <td className="py-1 px-1.5 text-right tabular-nums font-semibold text-red-700">{cards.reduce((s, c) => s + c.Devolvida, 0)}</td>
+              <td className="py-1 px-1.5 text-right tabular-nums font-semibold">{totalGeral}</td>
+              <td className="py-1 px-1.5 text-right tabular-nums font-semibold text-muted-foreground/80">{cards.reduce((s, c) => s + c["100% utilizada"], 0)}</td>
+              <td className="py-1 px-1.5 text-right tabular-nums font-semibold text-muted-foreground/80">{totalGeral > 0 ? "100%" : "—"}</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
 
