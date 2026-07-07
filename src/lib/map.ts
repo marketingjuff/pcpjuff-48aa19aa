@@ -25,6 +25,7 @@ export interface MapProducao {
   finalizado: boolean;
   finalizado_em: string | null;
   finalizado_por: string | null;
+  observacoes: string | null;
   created_at: string;
   updated_at: string;
 }
