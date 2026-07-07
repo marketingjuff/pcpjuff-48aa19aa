@@ -333,3 +333,78 @@ export async function patchProgramacao(id: string, patch: Partial<MapProgramacao
   const { error } = await (supabase as any).from("map_tinturaria_programacoes").update(patch).eq("id", id);
   if (error) throw error;
 }
+
+// -------------------- Estoque de MP (peças de tecido) --------------------
+
+export function useEstoquePecas() {
+  return useQuery({
+    queryKey: ["map", "estoque_pecas"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("map_estoque_pecas")
+        .select("*")
+        .order("data_entrada", { ascending: false });
+      if (error) throw error;
+      return (data ?? []).map((r: any) => ({
+        ...r,
+        cortes: Array.isArray(r.cortes) ? r.cortes : [],
+      })) as MapEstoquePeca[];
+    },
+  });
+}
+
+export async function patchEstoquePeca(id: string, patch: Partial<MapEstoquePeca>) {
+  const { error } = await (supabase as any).from("map_estoque_pecas").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+/**
+ * Idempotente: para cada programação de tinturaria com recebimento completo,
+ * garante que existam `pecas_recebidas` linhas em map_estoque_pecas com aquele
+ * programacao_id. Se faltarem, insere a diferença. Nunca deleta.
+ */
+export async function syncEstoquePecas(): Promise<void> {
+  const { data: progs, error: e1 } = await (supabase as any)
+    .from("map_tinturaria_programacoes")
+    .select("id, producao_id, pecas_recebidas, data_recebimento, nota_fiscal_recebimento, cor");
+  if (e1) throw e1;
+  const completas = ((progs ?? []) as any[]).filter(
+    (p) =>
+      p.pecas_recebidas != null &&
+      Number(p.pecas_recebidas) > 0 &&
+      p.data_recebimento &&
+      p.nota_fiscal_recebimento,
+  );
+  if (completas.length === 0) return;
+  const ids = completas.map((p) => p.id);
+  const { data: existentes, error: e2 } = await (supabase as any)
+    .from("map_estoque_pecas")
+    .select("programacao_id")
+    .in("programacao_id", ids);
+  if (e2) throw e2;
+  const contagem = new Map<string, number>();
+  for (const r of (existentes ?? []) as any[]) {
+    contagem.set(r.programacao_id, (contagem.get(r.programacao_id) ?? 0) + 1);
+  }
+  const inserts: any[] = [];
+  for (const p of completas) {
+    const alvo = Number(p.pecas_recebidas);
+    const atual = contagem.get(p.id) ?? 0;
+    const faltam = alvo - atual;
+    for (let i = 0; i < faltam; i++) {
+      inserts.push({
+        programacao_id: p.id,
+        producao_id: p.producao_id,
+        nota_fiscal: p.nota_fiscal_recebimento,
+        cor: p.cor,
+        data_entrada: p.data_recebimento,
+        status: "Fechada",
+        cortes: [],
+      });
+    }
+  }
+  if (inserts.length === 0) return;
+  const { error: e3 } = await (supabase as any).from("map_estoque_pecas").insert(inserts);
+  if (e3) throw e3;
+}
+
