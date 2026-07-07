@@ -695,6 +695,48 @@ export type Database = {
           },
         ]
       }
+      pedido_audit_log: {
+        Row: {
+          acao: string
+          feito_em: string
+          feito_por: string | null
+          feito_por_email: string | null
+          feito_por_nome: string | null
+          id: string
+          linha_completa: Json | null
+          mudancas: Json | null
+          orcamento: string | null
+          pedido_id: string
+          pedido_olist: string | null
+        }
+        Insert: {
+          acao: string
+          feito_em?: string
+          feito_por?: string | null
+          feito_por_email?: string | null
+          feito_por_nome?: string | null
+          id?: string
+          linha_completa?: Json | null
+          mudancas?: Json | null
+          orcamento?: string | null
+          pedido_id: string
+          pedido_olist?: string | null
+        }
+        Update: {
+          acao?: string
+          feito_em?: string
+          feito_por?: string | null
+          feito_por_email?: string | null
+          feito_por_nome?: string | null
+          id?: string
+          linha_completa?: Json | null
+          mudancas?: Json | null
+          orcamento?: string | null
+          pedido_id?: string
+          pedido_olist?: string | null
+        }
+        Relationships: []
+      }
       pedidos: {
         Row: {
           acabamento_data: string | null

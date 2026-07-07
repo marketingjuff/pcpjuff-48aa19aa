@@ -1,50 +1,83 @@
-# Lote de melhorias PCP + MAP
 
-Sem mudanças de schema. Apenas edições nos arquivos listados. Execução de tudo em uma tacada só após aprovação.
+# Auditoria e histórico de pedidos
 
-## Bloco 1 — PCP · Refação em linha única com grade completa
-**Arquivos:** `PecasPerdidasEditor.tsx`, `RefacaoDialog.tsx`, `RefacaoViewerButton.tsx`
+## Objetivo
 
-- **`ChipGrouped` (visualização/colapsado):** reescrever para uma linha única com colunas fixas na ordem `Modelo | Cor | PP | P | M | G | GG | EXG | EXXG | Total`. Iterar `REFACAO_TAMANHOS` inteiro, mostrar `-` quando 0/vazio. Larguras: tamanhos `w-10 text-center tabular-nums`, Modelo `w-32 uppercase font-semibold`, Cor `w-28` com fundo `corHex` + `corTextoSobre` negrito. Sem `flex-wrap`; container com `overflow-x-auto`. No modo `readOnly`, um cabeçalho com os rótulos alinhado às colunas.
-- **Linha expandida editável:** trocar `flex-wrap` por layout horizontal com as mesmas larguras fixas. Todos os tamanhos sempre visíveis; `overflow-x-auto` se preciso. Cor no select mantém fundo + negrito.
-- **Dialogs:** `RefacaoDialog` `max-w-2xl` → `max-w-4xl`; `RefacaoViewerButton` `max-w-3xl` → `max-w-5xl`.
-- Não tocar em `groupFromFlat`, `flattenRows`, `serialize`, `somaLinha` nem nas constantes `REFACAO_*`.
+Nunca mais perder o rastro de um pedido. Toda **criação, alteração e deleção** de um pedido passa a ser gravada automaticamente, com **quem fez, quando, e o que mudou**. No card do pedido aparece um botão **"Histórico"** que abre uma linha do tempo legível.
 
-## Bloco 2 — PCP · Dashboard: filtro "Em refação"
-**Arquivo:** `DashboardTab.tsx`
+## O que você vai ganhar
 
-- Adicionar `"em_refacao"` ao `type Etapa`.
-- Em `pedidoEmEtapa`, antes do mapa atual: se `e === "em_refacao"`, retorna `p.refacoes?.some((ep) => ep.aberto === true)`.
-- Novo `<SelectItem value="em_refacao">Em refação</SelectItem>` logo após "Todas (menos finalizados)". Nada mais muda.
+- Se alguém deletar e recriar um pedido, o log da deleção fica registrado (com quem foi).
+- Se um pedido "voltar" de etapa (ex.: Dados IN → Estamparia → Dados IN), cada troca aparece na linha do tempo com autor e data.
+- Se um campo importante mudar (data de entrega, quantidade, vendedor, layout, status), aparece "Fulano mudou X de A para B em DD/MM HH:MM".
+- Funciona para tudo que já existe: nenhum código de mutação precisa ser alterado, porque a captura é feita no próprio banco via trigger.
 
-## Bloco 3 — MAP · Quebra: conciliada não some, card-resumo, clique abre PROD
-**Arquivos:** `QuebraTab.tsx`, `map.tsx`, `ProgramacaoFiosTab.tsx`
+## Escopo (o que entra e o que fica de fora)
 
-- **QuebraTab:**
-  - Filtro padrão passa de `"pendente"` para `"todas"`.
-  - Linhas com `quebra_conciliada === true` recebem fundo `bg-emerald-50` no `<tr>` (mantém badge e "Desfazer baixa").
-  - Novo card-resumo no topo (estilo MAP, só leitura): Pendentes (`false`), Conciliadas (`true`), Quebra total (soma `kg`).
-  - Linha clicável: `useNavigate` do `@tanstack/react-router`; `<tr>` `cursor-pointer` → `navigate({ to: "/map", search: { tab: "programacao", prodId: prod.id } })`. `e.stopPropagation()` nos botões de ação e no Select de filtro.
-- **map.tsx:** passar `prodId={search.prodId}` para `<ProgramacaoFiosTab />` (a rota já valida `prodId`).
-- **ProgramacaoFiosTab:** aceitar prop `prodId?: string` e repassar para `MapFiosTable` como `focusProdId`. Não mexer em `FiosFinalizadosTab`.
-- **MapFiosTable:** nova prop `focusProdId?: string`. Adicionar `id={\`map-prod-${prod.id}\`}` no `<tr>` de resumo (o com `summaryClass`). `useEffect` sobre `focusProdId`: expande a PROD, `setTimeout(120)` faz `scrollIntoView({behavior:"smooth", block:"center"})` e limpa o `prodId` da URL via `navigate({ to: "/map", search: (prev) => ({ ...prev, prodId: undefined }), replace: true })`.
+**Entra agora:**
+- Tabela `pedidos` (todas as 80 colunas).
+- Registro de INSERT, UPDATE e DELETE.
+- Painel "Histórico" no card do pedido (aba **Dados IN** ou como botão no topo do card).
 
-## Bloco 4 — MAP · Tinturaria: Kg env. sempre + split automático
-**Arquivo:** `TinturariaBlock.tsx`
+**Fica de fora (por enquanto):**
+- Tabelas MAP (`map_producoes`, `map_estoque_pecas` etc.) e COP (`cops`, `oficinas`, `pagamentos_consolidados`). Se quiser depois, é uma expansão barata — mesmo padrão de trigger.
 
-- **Kg env. sempre:** dentro de `commit`, quando `field === "pecas"`: remover a condição `row.kg_enviados == null`. Numérico + `kgPorPeca > 0` → `patch.kg_enviados = n * kgPorPeca`; peças vazias/null → `patch.kg_enviados = null`.
-- **Split automático:** depois de aplicar o patch do campo, montar `merged = { ...row, ...patch }` e checar:
-  1. Recebimento completo: `kg_recebidos`, `pecas_recebidas`, `data_recebimento`, `nota_fiscal_recebimento` todos preenchidos.
-  2. Falta peça: `pecas_recebidas < pecas`.
-- Se ambas verdadeiras e `faltantes > 0`:
-  1. Aplicar o patch normal (recebimento persiste).
-  2. `patchProgramacao(row.id, { pecas: recebidas, kg_enviados: recebidas * kgPorPeca })` — recebimento permanece.
-  3. `INSERT` em `map_tinturaria_programacoes` com `producao_id`, `tinturaria`, `data_programacao`, `cor` copiados; `pecas = faltantes`, `kg_enviados = faltantes * kgPorPeca`; recebimento em branco; `created_at = row.created_at + 1ms` para ficar logo abaixo.
-  4. `onChanged()` uma vez ao final.
-- Idempotente: como `pecas` da original vira `recebidas`, a condição "falta peça" deixa de valer. Só dispara em falta.
+## Como funciona (parte técnica)
 
-## Fora de escopo
-- Não editar `src/lib/pedidos.ts` (mantém `REFACAO_*`), `src/lib/map.ts` (só importar), `cop-saldos.ts`, nem qualquer arquivo fora da lista.
-- Nenhuma alteração de schema. Sem `DROP`/`TRUNCATE`/`DELETE` em massa.
+### 1. Nova tabela `public.pedido_audit_log`
 
-Ao aprovar, executo os 4 blocos numa mesma sequência de edições.
+Colunas:
+- `pedido_id uuid` (não é FK — precisa sobreviver a DELETE do pedido)
+- `orcamento text`, `pedido_olist text` (snapshot legível mesmo se o pedido for deletado)
+- `acao text` — `insert`, `update`, `delete`
+- `mudancas jsonb` — array `[{ campo, de, para }]` (só campos que realmente mudaram; ignora `updated_at`)
+- `linha_completa jsonb` — snapshot da linha inteira (para deletes e primeira criação)
+- `feito_por uuid` (auth.uid()) + `feito_por_email text` (join com profiles no momento do log)
+- `feito_em timestamptz default now()`
+
+RLS: leitura só para quem tem `has_role(admin)` ou está autenticado com acesso PCP (mesmo critério que já entra em pedidos hoje). Sem insert/update/delete via API — só o trigger escreve.
+
+### 2. Trigger `AFTER INSERT/UPDATE/DELETE ON public.pedidos`
+
+Função SECURITY DEFINER que:
+- Em INSERT: grava `acao='insert'` + snapshot inicial.
+- Em UPDATE: diffs coluna a coluna (ignorando `updated_at`), grava `acao='update'` com o array `mudancas`. Se nenhum campo relevante mudou, não grava.
+- Em DELETE: grava `acao='delete'` + snapshot final.
+- Captura `auth.uid()` e busca `profiles.email/nome` para armazenar junto (para exibir mesmo se o usuário for removido depois).
+
+### 3. Server function `getPedidoHistorico`
+
+`src/lib/pedido-historico.functions.ts` — usa `requireSupabaseAuth`, retorna as entradas do log ordenadas por `feito_em desc` para um dado `pedido_id` **ou** um dado `pedido_olist` (para achar histórico de pedidos deletados/recriados com o mesmo Olist).
+
+### 4. UI — botão "Histórico" no card do pedido
+
+Novo componente `src/components/pcp/HistoricoPedidoDialog.tsx`:
+- Botão pequeno no topo do card (perto de "Duplicar" / "Deletar").
+- Abre um `Dialog` com uma timeline:
+  - `criado por Wander em 03/07 16:47`
+  - `Wander mudou status_pecas de "incompleto" para "completo" em 04/07 09:12`
+  - `Flávio marcou dtf_executado em 05/07 14:03`
+  - `Juliana deletou o pedido em 06/07 10:20`
+- Mostra também entradas de outros pedidos com o **mesmo `pedido_olist`** (para o caso deletado/recriado, aparece linha "outro registro deste Olist deletado em ...").
+
+Nomes de campos técnicos são traduzidos para PT-BR via um pequeno dicionário no componente (`dtf_executado` → "DTF executado", `status_pecas` → "Status de peças", etc.).
+
+## Passos de implementação
+
+```text
+1. Migration:
+   - CREATE TABLE public.pedido_audit_log + GRANT + RLS + policies
+   - CREATE FUNCTION public.log_pedido_change() SECURITY DEFINER
+   - CREATE TRIGGER audit_pedidos AFTER INSERT OR UPDATE OR DELETE ON pedidos
+2. Aguardar aprovação da migration e regeneração de types.
+3. Criar src/lib/pedido-historico.functions.ts (getPedidoHistorico com requireSupabaseAuth).
+4. Criar src/components/pcp/HistoricoPedidoDialog.tsx (Dialog + timeline + dicionário de labels).
+5. Adicionar botão "Histórico" no card do pedido (DadosInTab / shared header, junto de Duplicar/Deletar).
+6. Testar: editar um campo, verificar entrada; deletar, verificar entrada; recriar com mesmo Olist, verificar que timeline mostra os dois registros.
+```
+
+## Observações importantes
+
+- **Não retroage.** O 22961 atual não vai ganhar histórico do passado — o log só passa a existir a partir do momento em que a migration rodar. É por isso que estou frisando isto: se hoje já houve uma deleção, ela não vai aparecer. Serve para daqui pra frente.
+- Nenhum código existente precisa mudar de comportamento. As telas e mutations continuam iguais.
+- Custo em performance é baixo: uma linha inserida por update. Se quiser, podemos podar entradas com mais de N meses depois.
