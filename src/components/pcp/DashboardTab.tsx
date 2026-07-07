@@ -30,7 +30,7 @@ interface Props {
 }
 
 type Etapa =
-  | "todas" | "ativas" | "finalizados"
+  | "todas" | "ativas" | "finalizados" | "em_refacao"
   | "aguardando_entrada" | "aguardando_input"
   | "arte" | "dtf_pronto_silk_arte" | "silk_pronto_dtf_arte"
   | "dtf" | "silk" | "dtf_silk"
