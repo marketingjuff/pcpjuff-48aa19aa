@@ -20,6 +20,7 @@ import { MalhariaBlock } from "./MalhariaBlock";
 import { TinturariaBlock } from "./TinturariaBlock";
 import { NovoProdDialog } from "./NovoProdDialog";
 import { InlineInput } from "./InlineInput";
+import { DevolucaoDialog } from "./DevolucaoDialog";
 
 interface Props { finalizado: boolean; }
 
