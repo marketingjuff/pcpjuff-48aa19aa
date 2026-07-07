@@ -25,10 +25,11 @@ import { InlineInput } from "./InlineInput";
 import { DevolucaoDialog } from "./DevolucaoDialog";
 import { useCanAccessMap } from "@/hooks/use-role";
 
-interface Props { finalizado: boolean; }
+interface Props { finalizado: boolean; focusProdId?: string; }
 
-export function MapFiosTable({ finalizado }: Props) {
+export function MapFiosTable({ finalizado, focusProdId }: Props) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { producoes, entregas, programacoes, invalidateAll } = useMapData(finalizado);
   const { kgPorPeca } = useKgPorPeca();
   const canManageMap = useCanAccessMap();
@@ -37,6 +38,7 @@ export function MapFiosTable({ finalizado }: Props) {
   const [dlgOpen, setDlgOpen] = useState(false);
   const [editingProd, setEditingProd] = useState<MapProducao | null>(null);
   const [devProd, setDevProd] = useState<MapProducao | null>(null);
+  const focusedRef = useRef<string | null>(null);
 
 
   // Filtros
