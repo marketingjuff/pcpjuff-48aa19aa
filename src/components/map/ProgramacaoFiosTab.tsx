@@ -15,8 +15,10 @@ import {
   useMapData, useKgPorPeca, fmtDateBR, podeFinalizar, prodCode,
   patchProducao, sumPecasEntregas, sumKgEntregas,
   calcStatusFio, calcStatusMalharia, calcStatusTinturaria,
+  useEstoquePecas, syncEstoquePecas,
   type MapProducao, type MapEntregaMalharia, type MapProgramacaoTinturaria,
 } from "@/lib/map";
+
 
 import { MalhariaBlock } from "./MalhariaBlock";
 import { TinturariaBlock } from "./TinturariaBlock";
