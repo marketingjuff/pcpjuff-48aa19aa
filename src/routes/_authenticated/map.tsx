@@ -27,6 +27,8 @@ const TABS = [
   { value: "programacao", label: "Programação de Fios" },
   { value: "finalizados", label: "Fios Finalizados" },
   { value: "estoque", label: "Estoque de MP" },
+  { value: "quebra", label: "Quebra" },
+  { value: "devolucoes", label: "Devoluções" },
 ];
 
 function MapHome() {
