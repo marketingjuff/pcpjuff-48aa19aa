@@ -108,6 +108,9 @@ function MapHome() {
           <TabsContent value="finalizados" forceMount hidden={tab !== "finalizados"}>
             <FiosFinalizadosTab />
           </TabsContent>
+          <TabsContent value="estoque" forceMount hidden={tab !== "estoque"}>
+            <EstoqueMpTab />
+          </TabsContent>
         </Tabs>
       </main>
     </div>
