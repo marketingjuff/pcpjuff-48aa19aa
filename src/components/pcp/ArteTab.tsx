@@ -198,7 +198,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
         <>
         <OrcamentoTitle orcamento={selected.orcamento} />
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2"><CardTitle>Arte — {selected.pedido_olist}</CardTitle><RefacaoBadge pedido={selected} /></CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2"><CardTitle>Arte — {selected.pedido_olist}</CardTitle><div className="flex items-center gap-2"><RefacaoBadge pedido={selected} /><CorrecaoEtapaBadge pedido={selected} /></div></CardHeader>
           <CardContent className="space-y-3">
             <EtapaTopoBanner pedido={selected} tab="arte" />
 
@@ -341,6 +341,16 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 )}
               </div>
               </fieldset>
+              {canManage && !selected.finalizado_em && arteCompleta(selected) && (
+                <div className="flex justify-end pt-2">
+                  <CorrigirEtapaButton
+                    pedido={selected}
+                    destino="dados"
+                    abaOrigem="arte"
+                    onSave={onSave}
+                  />
+                </div>
+              )}
 
 
           </CardContent>
