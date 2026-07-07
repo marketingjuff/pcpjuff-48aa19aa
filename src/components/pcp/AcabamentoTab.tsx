@@ -1,7 +1,7 @@
 import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento, acabamentoCompleto } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,8 @@ import { useFeriados } from "@/hooks/use-feriados";
 import { MultiSelectPeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
 import { RefacaoBadge } from "./RefacaoBadge";
+import { CorrecaoEtapaBadge } from "./CorrecaoEtapaBadge";
+import { CorrigirEtapaButton } from "./CorrigirEtapaButton";
 import { todayISO } from "@/lib/dias-uteis";
 
 
@@ -143,6 +145,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             <CardTitle className="text-base sm:text-lg truncate">Acabamento — {selected.pedido_olist}</CardTitle>
             <div className="flex items-center gap-2">
               <RefacaoBadge pedido={selected} />
+              <CorrecaoEtapaBadge pedido={selected} />
               <Badge variant="outline" className={status.color}>{status.label}</Badge>
             </div>
           </CardHeader>
@@ -242,7 +245,46 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </div>
             </div>
             </fieldset>
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2 flex-wrap">
+              {canManage && !selected.finalizado_em && acabamentoCompleto(selected) && (() => {
+                const tipo = selected.tipo_estampa;
+                if (tipo === "DTF+Silk") {
+                  return (
+                    <>
+                      <CorrigirEtapaButton
+                        pedido={selected}
+                        destino="dtf"
+                        abaOrigem="acabamento"
+                        label="Corrigir → voltar pro DTF"
+                        onSave={onSave}
+                        onCorrigido={(d) => { if (onNavigate) onNavigate(d); }}
+                      />
+                      <CorrigirEtapaButton
+                        pedido={selected}
+                        destino="silk"
+                        abaOrigem="acabamento"
+                        label="Corrigir → voltar pro Silk"
+                        onSave={onSave}
+                        onCorrigido={(d) => { if (onNavigate) onNavigate(d); }}
+                      />
+                    </>
+                  );
+                }
+                const dest: "dados" | "dtf" | "silk" =
+                  tipo === "Lisa" ? "dados"
+                  : modeloIncluiDTF(tipo) ? "dtf"
+                  : modeloIncluiSilk(tipo) ? "silk"
+                  : "dados";
+                return (
+                  <CorrigirEtapaButton
+                    pedido={selected}
+                    destino={dest}
+                    abaOrigem="acabamento"
+                    onSave={onSave}
+                    onCorrigido={(d) => { if (onNavigate) onNavigate(d); }}
+                  />
+                );
+              })()}
               <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
             </div>
 

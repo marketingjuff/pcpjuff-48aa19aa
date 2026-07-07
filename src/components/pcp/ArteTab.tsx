@@ -5,7 +5,7 @@ import {
   SIM_NAO, STATUS_ARTE_OPCOES, VETOR_OPCOES,
   tipoIncluiDTF, tipoIncluiSilk, visivelEmArte,
   dtfFinalizadoLabel, fotolitoFinalizadoLabel,
-  TIPOS_ESTAMPA,
+  TIPOS_ESTAMPA, arteCompleta,
 } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
 import { todayISO } from "@/lib/dias-uteis";
@@ -30,6 +30,8 @@ import {
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { RefacaoBadge } from "./RefacaoBadge";
+import { CorrecaoEtapaBadge } from "./CorrecaoEtapaBadge";
+import { CorrigirEtapaButton } from "./CorrigirEtapaButton";
 import { isReadOnly } from "./edicao-policy";
 
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
@@ -198,7 +200,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
         <>
         <OrcamentoTitle orcamento={selected.orcamento} />
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2"><CardTitle>Arte — {selected.pedido_olist}</CardTitle><RefacaoBadge pedido={selected} /></CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2"><CardTitle>Arte — {selected.pedido_olist}</CardTitle><div className="flex items-center gap-2"><RefacaoBadge pedido={selected} /><CorrecaoEtapaBadge pedido={selected} /></div></CardHeader>
           <CardContent className="space-y-3">
             <EtapaTopoBanner pedido={selected} tab="arte" />
 
@@ -341,6 +343,16 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 )}
               </div>
               </fieldset>
+              {canManage && !selected.finalizado_em && arteCompleta(selected) && (
+                <div className="flex justify-end pt-2">
+                  <CorrigirEtapaButton
+                    pedido={selected}
+                    destino="dados"
+                    abaOrigem="arte"
+                    onSave={onSave}
+                  />
+                </div>
+              )}
 
 
           </CardContent>

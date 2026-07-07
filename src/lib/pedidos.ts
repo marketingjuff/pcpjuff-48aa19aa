@@ -94,6 +94,21 @@ export type RefacaoEpisodio = {
   problema?: string;
 };
 
+export type CorrecaoEtapa = {
+  /** ISO datetime da correção. */
+  data: string;
+  /** UUID do usuário que fez a correção. */
+  usuario_id: string | null;
+  /** Aba de onde a correção partiu (arte | dtf | silk | acabamento). */
+  aba_origem: "arte" | "dtf" | "silk" | "acabamento";
+  /** Rótulo humano da etapa que o pedido tinha antes da correção. */
+  etapa_anterior: string;
+  /** Rótulo humano da etapa para a qual o pedido foi enviado. */
+  etapa_nova_apos_correcao: string;
+  /** Motivo curto, obrigatório, não editável depois. */
+  observacao: string;
+};
+
 export const ETAPA_DESTINO_LABEL: Record<RefacaoEpisodio["etapa_destino"], string> = {
   dados: "Dados In",
   arte: "Arte",
@@ -160,6 +175,8 @@ export type Pedido = PedidoBase & {
     cop_letra?: string | null;
     observacao?: string | null;
   }> | null;
+  /** Histórico de correções de etapa feitas por gestor (append-only). */
+  correcoes_etapa?: CorrecaoEtapa[] | null;
 };
 
 type PedidoInsertBase = Omit<TablesInsert<"pedidos">, "modelo_estampa" | "status">;

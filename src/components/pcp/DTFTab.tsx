@@ -1,7 +1,7 @@
 import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiDTF, visivelEmDTF, tipoIncluiDTF, tipoIncluiSilk, episodioAberto } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiDTF, visivelEmDTF, tipoIncluiDTF, tipoIncluiSilk, episodioAberto, dtfCompleto } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { MultiSelectPeople, parsePeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
 import { RefacaoBadge } from "./RefacaoBadge";
+import { CorrecaoEtapaBadge } from "./CorrecaoEtapaBadge";
+import { CorrigirEtapaButton } from "./CorrigirEtapaButton";
 import { todayISO } from "@/lib/dias-uteis";
 import { restaurarEtapaDoHistorico } from "./refacao-helpers";
 
@@ -200,6 +202,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               <CardTitle className="text-base sm:text-lg truncate">DTF — {selected.pedido_olist}</CardTitle>
               <div className="flex items-center gap-2">
                 <RefacaoBadge pedido={selected} />
+                <CorrecaoEtapaBadge pedido={selected} />
                 <Badge variant="outline" className={statusColor}>
                   {form.dtf_estampado === "Sim" ? (atrasado ? "Atrasado" : "Concluído") : "Em andamento"}
                 </Badge>
@@ -300,7 +303,16 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 </div>
               </div>
               </fieldset>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2 flex-wrap">
+                {canManage && !selected.finalizado_em && dtfCompleto(selected) && (
+                  <CorrigirEtapaButton
+                    pedido={selected}
+                    destino="arte"
+                    abaOrigem="dtf"
+                    onSave={onSave}
+                    onCorrigido={(d) => { if (onNavigate) onNavigate(d); }}
+                  />
+                )}
                 <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />
               </div>
 

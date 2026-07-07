@@ -636,6 +636,7 @@ export type Database = {
           arte_data: string | null
           arte_observacao: string | null
           arte_warning: boolean
+          correcoes_etapa: Json
           created_at: string
           data_entrega: string | null
           data_entrega_proposta: string | null
@@ -716,6 +717,7 @@ export type Database = {
           arte_data?: string | null
           arte_observacao?: string | null
           arte_warning?: boolean
+          correcoes_etapa?: Json
           created_at?: string
           data_entrega?: string | null
           data_entrega_proposta?: string | null
@@ -796,6 +798,7 @@ export type Database = {
           arte_data?: string | null
           arte_observacao?: string | null
           arte_warning?: boolean
+          correcoes_etapa?: Json
           created_at?: string
           data_entrega?: string | null
           data_entrega_proposta?: string | null
