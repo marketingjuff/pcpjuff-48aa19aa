@@ -24,8 +24,8 @@ export const Route = createFileRoute("/_authenticated/map")({
 });
 
 const TABS = [
-  { value: "programacao", label: "Programação de Fios" },
-  { value: "finalizados", label: "Fios Finalizados" },
+  { value: "programacao", label: "Prod. de Tecido" },
+  { value: "finalizados", label: "Prod. Finalizados" },
   { value: "estoque", label: "Estoque de MP" },
   { value: "quebra", label: "Quebra" },
   { value: "devolucoes", label: "Devoluções" },
