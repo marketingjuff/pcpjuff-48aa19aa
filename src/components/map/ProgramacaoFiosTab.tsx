@@ -21,6 +21,7 @@ import { TinturariaBlock } from "./TinturariaBlock";
 import { NovoProdDialog } from "./NovoProdDialog";
 import { InlineInput } from "./InlineInput";
 import { DevolucaoDialog } from "./DevolucaoDialog";
+import { useCanAccessMap } from "@/hooks/use-role";
 
 interface Props { finalizado: boolean; }
 
@@ -28,6 +29,7 @@ export function MapFiosTable({ finalizado }: Props) {
   const qc = useQueryClient();
   const { producoes, entregas, programacoes, invalidateAll } = useMapData(finalizado);
   const { kgPorPeca } = useKgPorPeca();
+  const canManageMap = useCanAccessMap();
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [dlgOpen, setDlgOpen] = useState(false);
@@ -154,6 +156,7 @@ export function MapFiosTable({ finalizado }: Props) {
   }
 
   async function reabrir(prod: MapProducao) {
+    if (!canManageMap) { toast.error("Sem permissão."); return; }
     try {
       await patchProducao(prod.id, { finalizado: false, finalizado_em: null, finalizado_por: null } as any);
       invalidateAll();
@@ -162,6 +165,7 @@ export function MapFiosTable({ finalizado }: Props) {
   }
 
   async function excluirProd(prod: MapProducao) {
+    if (!canManageMap) { toast.error("Sem permissão."); return; }
     if (!window.confirm(`Excluir ${prodCode(prod.numero)}? Esta ação apaga também suas entregas e programações.`)) return;
     const { error } = await (supabase as any).from("map_producoes").delete().eq("id", prod.id);
     if (error) { toast.error(error.message); return; }
@@ -371,9 +375,11 @@ export function MapFiosTable({ finalizado }: Props) {
                         </td>
                         <td className="p-1.5 text-right space-x-1 whitespace-nowrap">
                           {finalizado ? (
-                            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => reabrir(prod)}>
-                              <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
-                            </Button>
+                            canManageMap && (
+                              <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => reabrir(prod)}>
+                                <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
+                              </Button>
+                            )
                           ) : (
                             <>
                               <Button
@@ -390,7 +396,9 @@ export function MapFiosTable({ finalizado }: Props) {
                               <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5" onClick={() => setDevProd(prod)}>
                                 Devolução
                               </Button>
-                              <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" onClick={() => excluirProd(prod)}>Excluir</Button>
+                              {canManageMap && (
+                                <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" onClick={() => excluirProd(prod)}>Excluir</Button>
+                              )}
                             </>
                           )}
                         </td>
