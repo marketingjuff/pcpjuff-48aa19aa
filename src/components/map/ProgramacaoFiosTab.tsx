@@ -460,7 +460,7 @@ export function MapFiosTable({ finalizado }: Props) {
                       {isOpen && (
                         <tr className="bg-yellow-50 border-b-4 border-yellow-400">
                           <td className="border-l-4 border-yellow-400"></td>
-                          <td colSpan={11} className="p-2 pb-3 space-y-2 border-r-2 border-yellow-400">
+                          <td colSpan={12} className="p-2 pb-3 space-y-2 border-r-2 border-yellow-400">
                             <MalhariaBlock
                               producao={prod}
                               entregas={es}
@@ -475,6 +475,11 @@ export function MapFiosTable({ finalizado }: Props) {
                               kgPorPeca={kgPorPeca}
                               onChanged={invalidateAll}
                               readOnly={finalizado}
+                            />
+                            <ObservacoesProdBlock
+                              prod={prod}
+                              readOnly={finalizado}
+                              onSaved={invalidateAll}
                             />
                           </td>
                         </tr>
