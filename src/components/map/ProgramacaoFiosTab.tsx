@@ -315,7 +315,7 @@ export function MapFiosTable({ finalizado }: Props) {
                           </button>
                         </td>
                         <td className="p-1.5 text-left font-semibold tabular-nums">{prodCode(prod.numero)}</td>
-                        <td className="p-1.5 text-center">{prod.faturar_para}</td>
+                        <td className="p-1.5 text-center font-bold">{prod.faturar_para}</td>
                         <td className="p-1.5 text-center tabular-nums">{Number(prod.kg_solicitados).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</td>
                         <td className="p-1.5 text-center">{prod.fornecedor}</td>
                         <td className="p-1.5 text-center">
