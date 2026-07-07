@@ -158,10 +158,10 @@ export function DevolucaoDialog({ open, onOpenChange, producao, programacoes, on
           <div className="col-span-1">
             <Label className="text-xs">Empresa faturada</Label>
             <Select value={faturado} onValueChange={(v) => setFaturado(v as any)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="uppercase"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Joke">Joke</SelectItem>
-                <SelectItem value="Juff">Juff</SelectItem>
+                <SelectItem value="Joke" className="uppercase">Joke</SelectItem>
+                <SelectItem value="Juff" className="uppercase">Juff</SelectItem>
               </SelectContent>
             </Select>
           </div>
