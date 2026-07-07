@@ -2,14 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
+
 export interface PedidoAuditEntry {
   id: string;
   pedido_id: string;
   orcamento: string | null;
   pedido_olist: string | null;
   acao: "insert" | "update" | "delete";
-  mudancas: Array<{ campo: string; de: unknown; para: unknown }> | null;
-  linha_completa: Record<string, unknown> | null;
+  mudancas: Array<{ campo: string; de: Json; para: Json }> | null;
+  linha_completa: { [k: string]: Json } | null;
   feito_por: string | null;
   feito_por_email: string | null;
   feito_por_nome: string | null;
