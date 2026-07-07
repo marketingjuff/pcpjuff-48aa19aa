@@ -5,7 +5,7 @@ import {
   SIM_NAO, STATUS_ARTE_OPCOES, VETOR_OPCOES,
   tipoIncluiDTF, tipoIncluiSilk, visivelEmArte,
   dtfFinalizadoLabel, fotolitoFinalizadoLabel,
-  TIPOS_ESTAMPA,
+  TIPOS_ESTAMPA, arteCompleta,
 } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
 import { todayISO } from "@/lib/dias-uteis";
@@ -30,6 +30,8 @@ import {
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { RefacaoBadge } from "./RefacaoBadge";
+import { CorrecaoEtapaBadge } from "./CorrecaoEtapaBadge";
+import { CorrigirEtapaButton } from "./CorrigirEtapaButton";
 import { isReadOnly } from "./edicao-policy";
 
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
