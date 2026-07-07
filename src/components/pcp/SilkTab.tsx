@@ -1,7 +1,7 @@
 import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiSilk, visivelEmSilk, tipoIncluiDTF, tipoIncluiSilk, episodioAberto } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiSilk, visivelEmSilk, tipoIncluiDTF, tipoIncluiSilk, episodioAberto, silkCompleto } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { MultiSelectPeople } from "./MultiSelectPeople";
 import { VoltarDropdown } from "./VoltarDropdown";
 import { RefacaoBadge } from "./RefacaoBadge";
+import { CorrecaoEtapaBadge } from "./CorrecaoEtapaBadge";
+import { CorrigirEtapaButton } from "./CorrigirEtapaButton";
 import { todayISO } from "@/lib/dias-uteis";
 import { restaurarEtapaDoHistorico } from "./refacao-helpers";
 
@@ -187,6 +189,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
               <CardTitle className="text-base sm:text-lg truncate">Silk Screen — {selected.pedido_olist}</CardTitle>
               <div className="flex items-center gap-2">
                 <RefacaoBadge pedido={selected} />
+                <CorrecaoEtapaBadge pedido={selected} />
                 <Badge variant="outline" className={statusColor}>
                   {form.silk_feito === "Sim" ? (atrasado ? "Atrasado" : "Concluído") : "Em andamento"}
                 </Badge>
