@@ -225,9 +225,7 @@ export function EstoqueMpTab() {
         </table>
       </div>
 
-          )}
-        </div>
-      </div>
+
 
       {/* ---------- Filtros ---------- */}
       <div className="flex flex-wrap items-center gap-2">
