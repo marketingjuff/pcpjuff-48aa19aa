@@ -232,8 +232,8 @@ export function MapFiosTable({ finalizado }: Props) {
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="__all__">Todos</SelectItem>
-              <SelectItem value="Juff">Juff</SelectItem>
-              <SelectItem value="Joke">Joke</SelectItem>
+              <SelectItem value="Juff" className="uppercase">Juff</SelectItem>
+              <SelectItem value="Joke" className="uppercase">Joke</SelectItem>
             </SelectContent>
           </Select>
         </div>
