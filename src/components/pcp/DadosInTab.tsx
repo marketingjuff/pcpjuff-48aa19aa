@@ -33,6 +33,7 @@ import { RefacaoBadge } from "./RefacaoBadge";
 import { SolicitarPecasDialog } from "./SolicitarPecasDialog";
 import { PecasCompletadasPanel } from "./PecasCompletadasPanel";
 import { useColorSettings } from "@/hooks/use-color-settings";
+import { HistoricoPedidoDialog } from "./HistoricoPedidoDialog";
 
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
@@ -464,6 +465,9 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               <Button size="sm" variant="outline" onClick={handleDuplicar}>
                 <Copy className="h-4 w-4 mr-1" />Duplicar
               </Button>
+            )}
+            {selected && (
+              <HistoricoPedidoDialog pedidoId={selected.id} pedidoOlist={selected.pedido_olist} />
             )}
             {selected && podeDeletar && (
               <AlertDialog>
