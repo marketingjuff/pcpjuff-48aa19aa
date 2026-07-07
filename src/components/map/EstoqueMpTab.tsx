@@ -234,11 +234,23 @@ export function EstoqueMpTab() {
             <SelectValue placeholder="Cor" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__todas__">Todas as cores</SelectItem>
-            {coresDisponiveis.map((c) => (
-              <SelectItem key={c} value={c}>{c}</SelectItem>
-            ))}
+            <SelectItem value="__todas__" className="py-1 text-xs">Todas as cores</SelectItem>
+            {coresDisponiveis.map((c) => {
+              const bg = corHex(c);
+              const fg = corTextoSobre(bg);
+              return (
+                <SelectItem
+                  key={c}
+                  value={c}
+                  style={{ backgroundColor: bg, color: fg }}
+                  className="my-0.5 py-1 rounded-sm text-xs font-semibold focus:opacity-90"
+                >
+                  {c}
+                </SelectItem>
+              );
+            })}
           </SelectContent>
+
         </Select>
         <Select value={fStatus} onValueChange={setFStatus}>
           <SelectTrigger className="h-8 w-[160px] text-xs">
