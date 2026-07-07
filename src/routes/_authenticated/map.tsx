@@ -10,6 +10,7 @@ import { useMyRoles, useCanAccessMap } from "@/hooks/use-role";
 import { MacroSwitch } from "@/routes/_authenticated/cop";
 import { ProgramacaoFiosTab } from "@/components/map/ProgramacaoFiosTab";
 import { FiosFinalizadosTab } from "@/components/map/FiosFinalizadosTab";
+import { EstoqueMpTab } from "@/components/map/EstoqueMpTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/map")({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/map")({
 const TABS = [
   { value: "programacao", label: "Programação de Fios" },
   { value: "finalizados", label: "Fios Finalizados" },
+  { value: "estoque", label: "Estoque de MP" },
 ];
 
 function MapHome() {
