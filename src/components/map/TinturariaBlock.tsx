@@ -136,19 +136,16 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
           </span>
         </div>
         {!readOnly && (
-          <div className="flex items-center gap-1">
-            <Select value={addingTint} onValueChange={setAddingTint}>
-              <SelectTrigger className="h-7 w-40 text-xs"><SelectValue placeholder="Selecionar tinturaria" /></SelectTrigger>
-              <SelectContent>
-                {tinturarias.length === 0 ? (
-                  <SelectItem value="__none__" disabled>Nenhuma cadastrada</SelectItem>
-                ) : tinturarias.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button size="sm" variant="outline" className="h-7" onClick={() => addProg(addingTint)} disabled={!addingTint}>
-              <Plus className="h-3 w-3 mr-1" /> Programação
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7"
+            onClick={addProg}
+            disabled={adding || tinturarias.length === 0}
+            title={tinturarias.length === 0 ? "Cadastre uma tinturaria em Configurações" : ""}
+          >
+            <Plus className="h-3 w-3 mr-1" /> Programação
+          </Button>
         )}
       </div>
 
