@@ -202,6 +202,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               <CardTitle className="text-base sm:text-lg truncate">DTF — {selected.pedido_olist}</CardTitle>
               <div className="flex items-center gap-2">
                 <RefacaoBadge pedido={selected} />
+                <CorrecaoEtapaBadge pedido={selected} />
                 <Badge variant="outline" className={statusColor}>
                   {form.dtf_estampado === "Sim" ? (atrasado ? "Atrasado" : "Concluído") : "Em andamento"}
                 </Badge>
