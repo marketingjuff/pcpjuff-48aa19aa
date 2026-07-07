@@ -273,3 +273,34 @@ function CorSelect({
     </Select>
   );
 }
+
+function TinturariaSelect({
+  value,
+  options,
+  disabled,
+  onChange,
+}: {
+  value: string;
+  options: string[];
+  disabled?: boolean;
+  onChange: (v: string) => void;
+}) {
+  const isLegado = !!value && !options.includes(value);
+  const current = value || "__none__";
+  return (
+    <Select value={current} disabled={disabled} onValueChange={(v) => onChange(v === "__none__" ? "" : v)}>
+      <SelectTrigger className="h-7 w-[140px] text-xs font-semibold">
+        <SelectValue placeholder="—" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__none__">—</SelectItem>
+        {isLegado && (
+          <SelectItem value={value} className="italic text-muted-foreground">
+            {value} (legado)
+          </SelectItem>
+        )}
+        {options.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+      </SelectContent>
+    </Select>
+  );
+}
