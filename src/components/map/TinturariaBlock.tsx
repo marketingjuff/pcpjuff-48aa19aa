@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, AlertTriangle, Copy } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Copy, PackageCheck } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAppList } from "@/lib/app-lists";
-import type { MapProgramacaoTinturaria } from "@/lib/map";
-import { patchProgramacao, sumPecasProgramadas, useCorAcabamentos, corComAcabamento, fmt } from "@/lib/map";
+import type { MapProgramacaoTinturaria, MapEstoquePeca } from "@/lib/map";
+import { patchProgramacao, sumPecasProgramadas, useCorAcabamentos, corComAcabamento, fmt, programacaoRecebimentoCompleto, corBase } from "@/lib/map";
 import { REFACAO_CORES } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { InlineInput } from "./InlineInput";
@@ -20,9 +20,11 @@ interface Props {
   kgPorPeca: number;
   onChanged: () => void;
   readOnly?: boolean;
+  estoquePecas?: MapEstoquePeca[];
 }
 
-export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalharia, kgPorPeca, onChanged, readOnly }: Props) {
+export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalharia, kgPorPeca, onChanged, readOnly, estoquePecas = [] }: Props) {
+
   const { names: tinturarias } = useAppList("map_tinturaria");
   const { mapa: acabMapa } = useCorAcabamentos();
   const [adding, setAdding] = useState(false);
