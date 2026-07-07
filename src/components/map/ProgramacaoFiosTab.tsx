@@ -65,6 +65,17 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
     return () => { supabase.removeChannel(ch); };
   }, [qc, finalizado]);
 
+  useEffect(() => {
+    if (!focusProdId || focusedRef.current === focusProdId) return;
+    focusedRef.current = focusProdId;
+    setExpanded((prev) => { const n = new Set(prev); n.add(focusProdId); return n; });
+    const t = window.setTimeout(() => {
+      document.getElementById(`map-prod-${focusProdId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      navigate({ to: "/map", search: (prev: any) => ({ ...prev, prodId: undefined }), replace: true });
+    }, 120);
+    return () => window.clearTimeout(t);
+  }, [focusProdId, navigate]);
+
   const prodsAll = producoes.data ?? [];
   const entregasAll = entregas.data ?? [];
   const progsAll = programacoes.data ?? [];
