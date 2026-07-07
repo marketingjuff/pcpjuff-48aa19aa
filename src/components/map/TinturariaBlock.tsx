@@ -344,3 +344,40 @@ function TinturariaSelect({
     </Select>
   );
 }
+
+function ReceiptDot({
+  row,
+  programacoes,
+  estoquePecas,
+}: {
+  row: MapProgramacaoTinturaria;
+  programacoes: MapProgramacaoTinturaria[];
+  estoquePecas: MapEstoquePeca[];
+}) {
+  const grupo = programacoes.filter(
+    (p) => corBase(p.cor) === corBase(row.cor),
+  );
+  const completos = grupo.filter(programacaoRecebimentoCompleto).length;
+  const total = grupo.length;
+
+  const gruposIds = new Set(grupo.map((g) => g.id));
+  const temDevolvida = estoquePecas.some(
+    (pe) => gruposIds.has(pe.programacao_id) && pe.status === "Devolvida",
+  );
+
+  let cls = "text-muted-foreground";
+  let title = "Sem recebimento.";
+  if (temDevolvida) { cls = "text-black"; title = "Peça devolvida no grupo."; }
+  else if (total > 0 && completos === total) { cls = "text-emerald-600"; title = "Grupo 100% recebido."; }
+  else if (completos > 0) { cls = "text-amber-500"; title = `Grupo parcialmente recebido (${completos}/${total}).`; }
+
+  return (
+    <span
+      title={title}
+      className={`inline-flex items-center justify-center h-6 w-6 rounded-full border border-current/20 mr-0.5 align-middle ${cls}`}
+    >
+      <PackageCheck className="h-3.5 w-3.5" />
+    </span>
+  );
+}
+
