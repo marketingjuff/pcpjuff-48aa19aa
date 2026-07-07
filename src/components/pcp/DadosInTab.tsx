@@ -201,7 +201,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }
 
   async function saveVendor() {
-    const miss = findMissing(VENDOR_REQUIRED);
+    const required = form.pecas_lisas
+      ? VENDOR_REQUIRED.filter((k) => k !== "layout_url")
+      : VENDOR_REQUIRED;
+    const miss = findMissing(required);
     if (!validarOrcamento(form.orcamento)) miss.add("orcamento");
     setMissingVendor(miss);
     if (miss.size > 0) {
