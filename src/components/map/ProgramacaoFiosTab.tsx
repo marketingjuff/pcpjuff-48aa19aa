@@ -514,5 +514,51 @@ export function MapFiosTable({ finalizado }: Props) {
   );
 }
 
+function ObservacoesProdBlock({
+  prod,
+  readOnly,
+  onSaved,
+}: {
+  prod: MapProducao;
+  readOnly: boolean;
+  onSaved: () => void;
+}) {
+  const [val, setVal] = useState<string>(prod.observacoes ?? "");
+  useEffect(() => { setVal(prod.observacoes ?? ""); }, [prod.observacoes]);
+
+  async function save() {
+    const next = val.trim();
+    const prev = (prod.observacoes ?? "").trim();
+    if (next === prev) return;
+    try {
+      await patchProducao(prod.id, { observacoes: next || null });
+      onSaved();
+      toast.success("Observações salvas.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao salvar.");
+    }
+  }
+
+  return (
+    <div className="rounded-md border bg-white/70 p-2 space-y-1">
+      <div className="text-sm text-muted-foreground font-medium">Observações</div>
+      {readOnly ? (
+        <div className="text-sm whitespace-pre-wrap min-h-[2.5rem]">
+          {prod.observacoes?.trim() ? prod.observacoes : <span className="text-muted-foreground italic">Sem observações.</span>}
+        </div>
+      ) : (
+        <Textarea
+          rows={2}
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onBlur={save}
+          placeholder="Observações internas sobre este Prod…"
+          className="text-sm"
+        />
+      )}
+    </div>
+  );
+}
+
 export function ProgramacaoFiosTab() { return <MapFiosTable finalizado={false} />; }
 export function FiosFinalizadosTab() { return <MapFiosTable finalizado={true} />; }
