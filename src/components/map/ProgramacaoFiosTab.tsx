@@ -9,9 +9,10 @@ import { DateInputBR } from "@/components/ui/date-input";
 import { ChevronDown, ChevronRight, Plus, CheckCircle2, RotateCcw, Pencil, X, Undo2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 import {
   useMapData, useKgPorPeca, fmtDateBR, podeFinalizar, prodCode,
-  patchProducao, sumPecasEntregas,
+  patchProducao, sumPecasEntregas, sumKgEntregas,
   calcStatusFio, calcStatusMalharia, calcStatusTinturaria,
   type MapProducao, type MapEntregaMalharia, type MapProgramacaoTinturaria,
 } from "@/lib/map";
