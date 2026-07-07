@@ -376,15 +376,18 @@ export function MapFiosTable({ finalizado }: Props) {
                             </Button>
                           ) : (
                             <>
-                              {canFinalize && (
-                                <Button size="sm" className="h-6 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => finalizar(prod)}>
-                                  <CheckCircle2 className="h-3 w-3 mr-1" /> Finalizar
-                                </Button>
-                              )}
+                              <Button
+                                size="sm"
+                                className="h-6 text-[10px] px-1.5 bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40"
+                                onClick={() => finalizar(prod)}
+                                disabled={!canFinalize}
+                              >
+                                <CheckCircle2 className="h-3 w-3 mr-0.5" /> Finalizar
+                              </Button>
                               <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => openEditar(prod)}>
                                 <Pencil className="h-3 w-3 mr-1" /> Editar
                               </Button>
-                              <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => setDevProd(prod)}>
+                              <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5" onClick={() => setDevProd(prod)}>
                                 Devolução
                               </Button>
                               <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" onClick={() => excluirProd(prod)}>Excluir</Button>
