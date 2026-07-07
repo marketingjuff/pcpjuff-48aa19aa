@@ -491,9 +491,16 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
                               programacoes={ps}
                               pecasRecebidasMalharia={sumPecasEntregas(es)}
                               kgPorPeca={kgPorPeca}
-                              onChanged={invalidateAll}
+                              estoquePecas={estoquePecas}
+                              onChanged={() => {
+                                invalidateAll();
+                                void syncEstoquePecas()
+                                  .then(() => qc.invalidateQueries({ queryKey: ["map", "estoque_pecas"] }))
+                                  .catch(() => { /* silencioso */ });
+                              }}
                               readOnly={finalizado}
                             />
+
                             <ObservacoesProdBlock
                               prod={prod}
                               readOnly={finalizado}
