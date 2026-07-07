@@ -97,36 +97,54 @@ function serialize(flat: PecaPerdida[]): string {
 
 /* ---------- chip agrupado (read-only e colapsado) ---------- */
 
+const COL_MODELO = "w-32";
+const COL_COR = "w-28";
+const COL_TAM = "w-10";
+const COL_TOTAL = "w-14";
+
+export function ChipGroupedHeader() {
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground font-medium whitespace-nowrap">
+      <span className={`${COL_MODELO} shrink-0`}>Modelo</span>
+      <span className={`${COL_COR} shrink-0`}>Cor</span>
+      {REFACAO_TAMANHOS.map((t) => (
+        <span key={t} className={`${COL_TAM} shrink-0 text-center`}>{t}</span>
+      ))}
+      <span className={`${COL_TOTAL} shrink-0 text-center`}>Total</span>
+    </div>
+  );
+}
+
 function ChipGrouped({ row }: { row: GroupedRow }) {
   const hex = corHex(row.cor);
   const fg = corTextoSobre(hex);
-  const partes = REFACAO_TAMANHOS
-    .map((t) => ({ t, q: Number(row.qtds[t]) || 0 }))
-    .filter((x) => x.q > 0);
-  const total = partes.reduce((s, x) => s + x.q, 0);
+  const total = REFACAO_TAMANHOS.reduce((s, t) => s + (Number(row.qtds[t]) || 0), 0);
   return (
-    <span className="inline-flex items-center gap-1.5 flex-wrap rounded-md px-2 py-1 text-xs font-medium border bg-muted/40">
-      <span className="uppercase font-semibold">{row.modelo || "—"}</span>
-      <span className="opacity-60">·</span>
+    <div className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium border bg-muted/40 whitespace-nowrap">
+      <span className={`${COL_MODELO} shrink-0 uppercase font-semibold truncate`} title={row.modelo || ""}>
+        {row.modelo || "—"}
+      </span>
       <span
-        className="px-1.5 py-0.5 rounded font-bold"
+        className={`${COL_COR} shrink-0 px-1.5 py-0.5 rounded font-bold text-center truncate`}
         style={{
           backgroundColor: hex,
           color: fg,
           borderColor: fg === "#ffffff" ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.15)",
         }}
+        title={row.cor || ""}
       >
         {row.cor || "—"}
       </span>
-      <span className="opacity-60">·</span>
-      <span className="tabular-nums">
-        {partes.length === 0
-          ? <span className="text-muted-foreground">sem tamanhos</span>
-          : partes.map((x) => `${x.t}:${x.q}`).join(" ")}
-      </span>
-      <span className="opacity-60">·</span>
-      <span className="tabular-nums">Total {total}</span>
-    </span>
+      {REFACAO_TAMANHOS.map((t) => {
+        const q = Number(row.qtds[t]) || 0;
+        return (
+          <span key={t} className={`${COL_TAM} shrink-0 text-center tabular-nums ${q > 0 ? "" : "text-muted-foreground"}`}>
+            {q > 0 ? q : "-"}
+          </span>
+        );
+      })}
+      <span className={`${COL_TOTAL} shrink-0 text-center tabular-nums font-semibold`}>{total}</span>
+    </div>
   );
 }
 
