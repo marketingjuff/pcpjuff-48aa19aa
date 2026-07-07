@@ -18,6 +18,12 @@ interface Props {
   producao?: MapProducao | null;
 }
 
+function pickDefaultMalharia(malharias: string[]): string | null {
+  if (malharias.length === 0) return null;
+  const found = malharias.find((n) => n.toLowerCase() === "mavelo");
+  return found ?? malharias[0];
+}
+
 export function NovoProdDialog({ open, onOpenChange, onCreated, producoes, producao }: Props) {
   const isEdit = !!producao;
   const maxNumero = useMemo(
@@ -30,7 +36,6 @@ export function NovoProdDialog({ open, onOpenChange, onCreated, producoes, produ
   const [faturarPara, setFaturarPara] = useState<"Joke" | "Juff">("Juff");
   const [fornecedor, setFornecedor] = useState<string>("");
   const [kg, setKg] = useState<string>("");
-  const [malharia, setMalharia] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const { names: fornecedores } = useAppList("map_fio_fornecedor");
   const { names: malharias } = useAppList("map_malharia");
@@ -44,14 +49,12 @@ export function NovoProdDialog({ open, onOpenChange, onCreated, producoes, produ
       setFaturarPara(producao.faturar_para);
       setFornecedor(producao.fornecedor ?? "");
       setKg(String(producao.kg_solicitados ?? ""));
-      setMalharia(producao.malharia ?? "");
     } else {
       setNumero(String(maxNumero + 1));
       setDataPedido(hoje);
       setFaturarPara("Juff");
       setFornecedor("");
       setKg("");
-      setMalharia("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, producao?.id]);
@@ -77,23 +80,24 @@ export function NovoProdDialog({ open, onOpenChange, onCreated, producoes, produ
     setSaving(true);
     try {
       if (isEdit && producao) {
+        // NÃO sobrescreve malharia existente na edição
         await patchProducao(producao.id, {
           numero: n,
           data_pedido: dataPedido,
           faturar_para: faturarPara,
           fornecedor: fornecedor.trim(),
           kg_solicitados: kgN,
-          malharia: malharia.trim() || null,
         } as any);
         toast.success(`${prodCode(n)} atualizado.`);
       } else {
+        const defaultMalharia = pickDefaultMalharia(malharias);
         const { error } = await (supabase as any).from("map_producoes").insert({
           numero: n,
           data_pedido: dataPedido,
           faturar_para: faturarPara,
           fornecedor: fornecedor.trim(),
           kg_solicitados: kgN,
-          malharia: malharia.trim() || null,
+          malharia: defaultMalharia,
         });
         if (error) throw error;
         toast.success(`${prodCode(n)} criado.`);
@@ -101,7 +105,7 @@ export function NovoProdDialog({ open, onOpenChange, onCreated, producoes, produ
       onCreated();
       onOpenChange(false);
       if (!isEdit) {
-        setKg(""); setFornecedor(""); setMalharia("");
+        setKg(""); setFornecedor("");
         setNumero(String(n + 1));
       }
     } catch (e: any) {
@@ -131,10 +135,10 @@ export function NovoProdDialog({ open, onOpenChange, onCreated, producoes, produ
           <div>
             <Label>Empresa</Label>
             <Select value={faturarPara} onValueChange={(v) => setFaturarPara(v as any)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="uppercase"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Juff">Juff</SelectItem>
-                <SelectItem value="Joke">Joke</SelectItem>
+                <SelectItem value="Juff" className="uppercase">Juff</SelectItem>
+                <SelectItem value="Joke" className="uppercase">Joke</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -153,20 +157,6 @@ export function NovoProdDialog({ open, onOpenChange, onCreated, producoes, produ
               </Select>
             ) : (
               <Input value={fornecedor} onChange={(e) => setFornecedor(e.target.value)} placeholder="Nenhum cadastrado — digite aqui" />
-            )}
-          </div>
-          <div className="col-span-2">
-            <Label>Malharia (opcional)</Label>
-            {malharias.length > 0 ? (
-              <Select value={malharia || "__none__"} onValueChange={(v) => setMalharia(v === "__none__" ? "" : v)}>
-                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">—</SelectItem>
-                  {malharias.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input value={malharia} onChange={(e) => setMalharia(e.target.value)} />
             )}
           </div>
         </div>

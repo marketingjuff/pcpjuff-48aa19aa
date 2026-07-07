@@ -25,7 +25,7 @@ interface Props {
 export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalharia, kgPorPeca, onChanged, readOnly }: Props) {
   const { names: tinturarias } = useAppList("map_tinturaria");
   const { mapa: acabMapa } = useCorAcabamentos();
-  const [addingTint, setAddingTint] = useState<string>("");
+  const [adding, setAdding] = useState(false);
 
   const totalProgramado = sumPecasProgramadas(programacoes);
   const Y = pecasRecebidasMalharia;
@@ -44,13 +44,22 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
     else { counterClass = "text-red-700 font-semibold"; icon = <AlertTriangle className="h-3.5 w-3.5 inline-block ml-1" />; }
   }
 
-  async function addProg(tint: string) {
-    if (!tint) { toast.error("Escolha a tinturaria."); return; }
+  function pickDefaultTint(): string {
+    if (tinturarias.length === 0) return "";
+    const found = tinturarias.find((n) => n.toLowerCase() === "guararema");
+    return found ?? tinturarias[0];
+  }
+
+  async function addProg() {
+    const tint = pickDefaultTint();
+    setAdding(true);
+    const payload: any = { producao_id: producaoId };
+    if (tint) payload.tinturaria = tint;
     const { error } = await (supabase as any)
       .from("map_tinturaria_programacoes")
-      .insert({ producao_id: producaoId, tinturaria: tint });
+      .insert(payload);
+    setAdding(false);
     if (error) { toast.error(error.message); return; }
-    setAddingTint("");
     onChanged();
   }
 
@@ -127,19 +136,16 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
           </span>
         </div>
         {!readOnly && (
-          <div className="flex items-center gap-1">
-            <Select value={addingTint} onValueChange={setAddingTint}>
-              <SelectTrigger className="h-7 w-40 text-xs"><SelectValue placeholder="Selecionar tinturaria" /></SelectTrigger>
-              <SelectContent>
-                {tinturarias.length === 0 ? (
-                  <SelectItem value="__none__" disabled>Nenhuma cadastrada</SelectItem>
-                ) : tinturarias.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button size="sm" variant="outline" className="h-7" onClick={() => addProg(addingTint)} disabled={!addingTint}>
-              <Plus className="h-3 w-3 mr-1" /> Programação
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7"
+            onClick={addProg}
+            disabled={adding || tinturarias.length === 0}
+            title={tinturarias.length === 0 ? "Cadastre uma tinturaria em Configurações" : ""}
+          >
+            <Plus className="h-3 w-3 mr-1" /> Programação
+          </Button>
         )}
       </div>
 
@@ -164,7 +170,14 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
               <tr><td colSpan={10} className="p-2 text-center text-muted-foreground">Sem programação.</td></tr>
             ) : programacoes.map((p) => (
               <tr key={p.id} className="border-t">
-                <td className="p-1 font-medium">{p.tinturaria}</td>
+                <td className="p-1 font-medium">
+                  <TinturariaSelect
+                    value={p.tinturaria}
+                    options={tinturarias}
+                    disabled={readOnly}
+                    onChange={(v) => commit(p, "tinturaria", v)}
+                  />
+                </td>
                 <td className="p-1"><InlineInput type="date" value={p.data_programacao} onCommit={(v) => commit(p, "data_programacao", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="1" min="0" value={p.pecas} onCommit={(v) => commit(p, "pecas", v)} disabled={readOnly} /></td>
                 <td className="p-1"><CorSelect value={p.cor} mapa={acabMapa} disabled={readOnly} onChange={(v) => commit(p, "cor", v)} /></td>
@@ -256,6 +269,37 @@ function CorSelect({
             </SelectItem>
           );
         })}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function TinturariaSelect({
+  value,
+  options,
+  disabled,
+  onChange,
+}: {
+  value: string;
+  options: string[];
+  disabled?: boolean;
+  onChange: (v: string) => void;
+}) {
+  const isLegado = !!value && !options.includes(value);
+  const current = value || "__none__";
+  return (
+    <Select value={current} disabled={disabled} onValueChange={(v) => onChange(v === "__none__" ? "" : v)}>
+      <SelectTrigger className="h-7 w-[140px] text-xs font-semibold">
+        <SelectValue placeholder="—" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__none__">—</SelectItem>
+        {isLegado && (
+          <SelectItem value={value} className="italic text-muted-foreground">
+            {value} (legado)
+          </SelectItem>
+        )}
+        {options.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
       </SelectContent>
     </Select>
   );

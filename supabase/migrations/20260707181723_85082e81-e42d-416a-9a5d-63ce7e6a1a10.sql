@@ -1,0 +1,1 @@
+ALTER TABLE public.map_producoes ADD COLUMN IF NOT EXISTS observacoes text;

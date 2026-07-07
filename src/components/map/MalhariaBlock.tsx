@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAppList } from "@/lib/app-lists";
 import type { MapProducao, MapEntregaMalharia } from "@/lib/map";
 import { calcQuebra, patchEntrega, patchProducao, sumKgEntregas } from "@/lib/map";
 import { InlineInput } from "./InlineInput";
@@ -20,6 +22,7 @@ interface Props {
 export function MalhariaBlock({ producao, entregas, kgPorPeca, onChanged, readOnly }: Props) {
   const [dlgBaixa, setDlgBaixa] = useState(false);
   const [adding, setAdding] = useState(false);
+  const { names: malharias } = useAppList("map_malharia");
 
   const quebraKg = calcQuebra(producao, entregas);
   const quebraPecas = kgPorPeca > 0 ? quebraKg / kgPorPeca : 0;
@@ -55,12 +58,40 @@ export function MalhariaBlock({ producao, entregas, kgPorPeca, onChanged, readOn
     } catch (e: any) { toast.error(e?.message ?? "Falha ao salvar."); }
   }
 
+  const malhariaAtual = producao.malharia ?? "";
+  const malhariaLegado = !!malhariaAtual && !malharias.includes(malhariaAtual);
+
+  async function commitMalharia(v: string) {
+    if (v === malhariaAtual) return;
+    try {
+      await patchProducao(producao.id, { malharia: v || null });
+      onChanged();
+    } catch (e: any) { toast.error(e?.message ?? "Falha ao salvar."); }
+  }
+
   return (
     <div className="rounded-md border bg-white/70 p-2 space-y-1">
-      <div className="flex items-center justify-between">
-        <div className="text-xs">
-          <span className="text-muted-foreground">Malharia: </span>
-          <b>{producao.malharia ?? "—"}</b>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm flex items-center gap-2 flex-wrap">
+          <span className="text-muted-foreground font-medium">Malharia</span>
+          {readOnly ? (
+            <b>{producao.malharia ?? "—"}</b>
+          ) : (
+            <Select value={malhariaAtual || "__none__"} onValueChange={(v) => commitMalharia(v === "__none__" ? "" : v)}>
+              <SelectTrigger className="h-7 w-[180px] text-xs font-semibold">
+                <SelectValue placeholder="—" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">—</SelectItem>
+                {malhariaLegado && (
+                  <SelectItem value={malhariaAtual} className="italic text-muted-foreground">
+                    {malhariaAtual} (legado)
+                  </SelectItem>
+                )}
+                {malharias.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
           <span className="ml-3 text-muted-foreground">Total recebido: </span>
           <b className="tabular-nums">{totalKg.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} kg</b>
         </div>

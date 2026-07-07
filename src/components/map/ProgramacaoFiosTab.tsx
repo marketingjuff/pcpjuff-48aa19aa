@@ -9,9 +9,10 @@ import { DateInputBR } from "@/components/ui/date-input";
 import { ChevronDown, ChevronRight, Plus, CheckCircle2, RotateCcw, Pencil, X, Undo2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 import {
   useMapData, useKgPorPeca, fmtDateBR, podeFinalizar, prodCode,
-  patchProducao, sumPecasEntregas,
+  patchProducao, sumPecasEntregas, sumKgEntregas,
   calcStatusFio, calcStatusMalharia, calcStatusTinturaria,
   type MapProducao, type MapEntregaMalharia, type MapProgramacaoTinturaria,
 } from "@/lib/map";
@@ -71,18 +72,6 @@ export function MapFiosTable({ finalizado }: Props) {
     return Array.from(s).sort((a, b) => a.localeCompare(b));
   }, [prodsAll]);
 
-  const prods = useMemo(() => {
-    const notaQ = fNota.trim().toLowerCase();
-    return prodsAll.filter((p) => {
-      if (fData && p.data_pedido !== fData) return false;
-      if (fEmpresa !== "__all__" && p.faturar_para !== fEmpresa) return false;
-      if (fFornecedor !== "__all__" && p.fornecedor !== fFornecedor) return false;
-      if (notaQ && !(p.nota_fiscal ?? "").toLowerCase().includes(notaQ)) return false;
-      if (!finalizado && fStatus !== "__all__" && calcStatusFio(p) !== fStatus) return false;
-      return true;
-    });
-  }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fStatus, finalizado]);
-
   const byProdEntregas = useMemo(() => {
     const m = new Map<string, MapEntregaMalharia[]>();
     for (const e of entregasAll) {
@@ -99,6 +88,32 @@ export function MapFiosTable({ finalizado }: Props) {
     }
     return m;
   }, [progsAll]);
+
+  const prods = useMemo(() => {
+    const notaQ = fNota.trim().toLowerCase();
+    return prodsAll.filter((p) => {
+      if (fData && p.data_pedido !== fData) return false;
+      if (fEmpresa !== "__all__" && p.faturar_para !== fEmpresa) return false;
+      if (fFornecedor !== "__all__" && p.fornecedor !== fFornecedor) return false;
+      if (notaQ) {
+        const nfFio = (p.nota_fiscal ?? "").toLowerCase();
+        const es = byProdEntregas.get(p.id) ?? [];
+        const ps = byProdProgs.get(p.id) ?? [];
+        const hitFio = nfFio.includes(notaQ);
+        const hitMalharia = es.some((e) =>
+          (e.nota_fiscal_1 ?? "").toLowerCase().includes(notaQ) ||
+          (e.nota_cobertura ?? "").toLowerCase().includes(notaQ),
+        );
+        const hitTint = ps.some((pg) =>
+          (pg.nota_fiscal_recebimento ?? "").toLowerCase().includes(notaQ),
+        );
+        if (!hitFio && !hitMalharia && !hitTint) return false;
+      }
+      if (!finalizado && fStatus !== "__all__" && calcStatusFio(p) !== fStatus) return false;
+      return true;
+    });
+  }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fStatus, finalizado, byProdEntregas, byProdProgs]);
+
 
   // Grupos por data_pedido — ascendente; dentro do grupo, numero ascendente
   const grupos = useMemo(() => {
@@ -217,8 +232,8 @@ export function MapFiosTable({ finalizado }: Props) {
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="__all__">Todos</SelectItem>
-              <SelectItem value="Juff">Juff</SelectItem>
-              <SelectItem value="Joke">Joke</SelectItem>
+              <SelectItem value="Juff" className="uppercase">Juff</SelectItem>
+              <SelectItem value="Joke" className="uppercase">Joke</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -268,27 +283,29 @@ export function MapFiosTable({ finalizado }: Props) {
             Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px] text-[12.5px] table-fixed">
+            <table className="w-full min-w-[1240px] text-[12.5px] table-fixed">
               <colgroup>
                 <col style={{ width: "3%" }} />
-                <col style={{ width: "8%" }} />
                 <col style={{ width: "7%" }} />
-                <col style={{ width: "8%" }} />
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "6%" }} />
                 <col style={{ width: "11%" }} />
                 <col style={{ width: "9%" }} />
                 <col style={{ width: "7%" }} />
-                <col style={{ width: "7%" }} />
+                <col style={{ width: "8%" }} />
                 <col style={{ width: "7%" }} />
                 <col style={{ width: "9%" }} />
                 <col style={{ width: "9%" }} />
-                <col style={{ width: "15%" }} />
+                <col style={{ width: "12%" }} />
               </colgroup>
-              <thead className="bg-muted/40 text-[11.5px] uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-muted/40 text-[10.5px] uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="p-1.5 whitespace-nowrap"></th>
                   <th className="p-1.5 text-left whitespace-nowrap">Prod</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Empresa</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Kg solicitados</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Kg sol.</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Kg receb.</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Fornecedor</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Data pagamento</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Fio</th>
@@ -310,6 +327,7 @@ export function MapFiosTable({ finalizado }: Props) {
                   const summaryClass = isOpen
                     ? "border-t-2 border-yellow-400 bg-yellow-100/70"
                     : `border-t hover:bg-yellow-50/50 ${zebra}`;
+                  const kgReceb = sumKgEntregas(es);
                   return (
                     <Fragment key={prod.id}>
                       <tr className={summaryClass}>
@@ -319,8 +337,9 @@ export function MapFiosTable({ finalizado }: Props) {
                           </button>
                         </td>
                         <td className="p-1.5 text-left font-semibold tabular-nums">{prodCode(prod.numero)}</td>
-                        <td className="p-1.5 text-center font-bold">{prod.faturar_para}</td>
+                        <td className="p-1.5 text-center font-bold uppercase">{prod.faturar_para}</td>
                         <td className="p-1.5 text-center tabular-nums">{Number(prod.kg_solicitados).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</td>
+                        <td className="p-1.5 text-center tabular-nums">{kgReceb.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</td>
                         <td className="p-1.5 text-center">{prod.fornecedor}</td>
                         <td className="p-1.5 text-center">
                           <div className="flex justify-center">
@@ -441,7 +460,7 @@ export function MapFiosTable({ finalizado }: Props) {
                       {isOpen && (
                         <tr className="bg-yellow-50 border-b-4 border-yellow-400">
                           <td className="border-l-4 border-yellow-400"></td>
-                          <td colSpan={11} className="p-2 pb-3 space-y-2 border-r-2 border-yellow-400">
+                          <td colSpan={12} className="p-2 pb-3 space-y-2 border-r-2 border-yellow-400">
                             <MalhariaBlock
                               producao={prod}
                               entregas={es}
@@ -456,6 +475,11 @@ export function MapFiosTable({ finalizado }: Props) {
                               kgPorPeca={kgPorPeca}
                               onChanged={invalidateAll}
                               readOnly={finalizado}
+                            />
+                            <ObservacoesProdBlock
+                              prod={prod}
+                              readOnly={finalizado}
+                              onSaved={invalidateAll}
                             />
                           </td>
                         </tr>
@@ -484,6 +508,52 @@ export function MapFiosTable({ finalizado }: Props) {
           producao={devProd}
           programacoes={byProdProgs.get(devProd.id) ?? []}
           onDone={invalidateAll}
+        />
+      )}
+    </div>
+  );
+}
+
+function ObservacoesProdBlock({
+  prod,
+  readOnly,
+  onSaved,
+}: {
+  prod: MapProducao;
+  readOnly: boolean;
+  onSaved: () => void;
+}) {
+  const [val, setVal] = useState<string>(prod.observacoes ?? "");
+  useEffect(() => { setVal(prod.observacoes ?? ""); }, [prod.observacoes]);
+
+  async function save() {
+    const next = val.trim();
+    const prev = (prod.observacoes ?? "").trim();
+    if (next === prev) return;
+    try {
+      await patchProducao(prod.id, { observacoes: next || null });
+      onSaved();
+      toast.success("Observações salvas.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao salvar.");
+    }
+  }
+
+  return (
+    <div className="rounded-md border bg-white/70 p-2 space-y-1">
+      <div className="text-sm text-muted-foreground font-medium">Observações</div>
+      {readOnly ? (
+        <div className="text-sm whitespace-pre-wrap min-h-[2.5rem]">
+          {prod.observacoes?.trim() ? prod.observacoes : <span className="text-muted-foreground italic">Sem observações.</span>}
+        </div>
+      ) : (
+        <Textarea
+          rows={2}
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onBlur={save}
+          placeholder="Observações internas sobre este Prod…"
+          className="text-sm"
         />
       )}
     </div>
