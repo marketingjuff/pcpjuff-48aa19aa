@@ -225,6 +225,26 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
               })()}
             </div>
             <div className="border-t pt-3">
+              <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">Expedição</div>
+              <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
+                <ReadOnlyField label="Forma de pagamento" value={historico.forma_pagamento ?? "—"} />
+                <ReadOnlyField label="Nota Fiscal Emitida" value={historico.nf_emitida ?? "—"} />
+                <ReadOnlyField label="Entrou na expedição em" value={formatDateBR(historico.expedicao_entrou_em?.slice(0,10))} />
+                <ReadOnlyField label="Cobrança do pagamento" value={historico.exp_cobranca_pagamento === true ? "Sim" : historico.exp_cobranca_pagamento === false ? "Não" : "—"} />
+                <ReadOnlyField label="Pagamento" value={historico.exp_pagamento === true ? "Sim" : historico.exp_pagamento === false ? "Não" : "—"} />
+                <ReadOnlyField label="Etiqueta" value={historico.exp_etiqueta === true ? "Sim" : historico.exp_etiqueta === false ? "Não" : "—"} />
+                <ReadOnlyField label="Frete solicitado" value={historico.exp_frete_solicitado === true ? "Sim" : historico.exp_frete_solicitado === false ? "Não" : "—"} />
+                <ReadOnlyField label="Frete solicitado em" value={formatDateBR(historico.exp_frete_solicitado_em)} />
+                <ReadOnlyField label="Despachado" value={historico.exp_despachado === true ? "Sim" : historico.exp_despachado === false ? "Não" : "—"} />
+                <ReadOnlyField label="Despachado em" value={formatDateBR(historico.exp_despachado_em)} />
+              </div>
+              {historico.exp_observacoes && (
+                <div className="mt-2">
+                  <ReadOnlyField label="Observações da Expedição" value={historico.exp_observacoes} />
+                </div>
+              )}
+            </div>
+            <div className="border-t pt-3">
               <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">Observações</div>
               <ObservacoesOutrosSetores
                 pedido={historico}
