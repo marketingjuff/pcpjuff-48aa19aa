@@ -283,27 +283,29 @@ export function MapFiosTable({ finalizado }: Props) {
             Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px] text-[12.5px] table-fixed">
+            <table className="w-full min-w-[1240px] text-[12.5px] table-fixed">
               <colgroup>
                 <col style={{ width: "3%" }} />
-                <col style={{ width: "8%" }} />
                 <col style={{ width: "7%" }} />
-                <col style={{ width: "8%" }} />
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "6%" }} />
                 <col style={{ width: "11%" }} />
                 <col style={{ width: "9%" }} />
                 <col style={{ width: "7%" }} />
-                <col style={{ width: "7%" }} />
+                <col style={{ width: "8%" }} />
                 <col style={{ width: "7%" }} />
                 <col style={{ width: "9%" }} />
                 <col style={{ width: "9%" }} />
-                <col style={{ width: "15%" }} />
+                <col style={{ width: "12%" }} />
               </colgroup>
-              <thead className="bg-muted/40 text-[11.5px] uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-muted/40 text-[10.5px] uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="p-1.5 whitespace-nowrap"></th>
                   <th className="p-1.5 text-left whitespace-nowrap">Prod</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Empresa</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Kg solicitados</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Kg sol.</th>
+                  <th className="p-1.5 text-center whitespace-nowrap">Kg receb.</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Fornecedor</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Data pagamento</th>
                   <th className="p-1.5 text-center whitespace-nowrap">Fio</th>
@@ -325,6 +327,7 @@ export function MapFiosTable({ finalizado }: Props) {
                   const summaryClass = isOpen
                     ? "border-t-2 border-yellow-400 bg-yellow-100/70"
                     : `border-t hover:bg-yellow-50/50 ${zebra}`;
+                  const kgReceb = sumKgEntregas(es);
                   return (
                     <Fragment key={prod.id}>
                       <tr className={summaryClass}>
@@ -334,8 +337,9 @@ export function MapFiosTable({ finalizado }: Props) {
                           </button>
                         </td>
                         <td className="p-1.5 text-left font-semibold tabular-nums">{prodCode(prod.numero)}</td>
-                        <td className="p-1.5 text-center font-bold">{prod.faturar_para}</td>
+                        <td className="p-1.5 text-center font-bold uppercase">{prod.faturar_para}</td>
                         <td className="p-1.5 text-center tabular-nums">{Number(prod.kg_solicitados).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</td>
+                        <td className="p-1.5 text-center tabular-nums">{kgReceb.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</td>
                         <td className="p-1.5 text-center">{prod.fornecedor}</td>
                         <td className="p-1.5 text-center">
                           <div className="flex justify-center">
