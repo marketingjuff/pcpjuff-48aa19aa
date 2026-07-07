@@ -32,6 +32,8 @@ export function MapFiosTable({ finalizado }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [dlgOpen, setDlgOpen] = useState(false);
   const [editingProd, setEditingProd] = useState<MapProducao | null>(null);
+  const [devProd, setDevProd] = useState<MapProducao | null>(null);
+
 
   // Filtros
   const [fData, setFData] = useState<string>("");
