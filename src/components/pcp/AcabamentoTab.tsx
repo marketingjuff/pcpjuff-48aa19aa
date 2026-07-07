@@ -245,7 +245,46 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </div>
             </div>
             </fieldset>
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2 flex-wrap">
+              {canManage && !selected.finalizado_em && acabamentoCompleto(selected) && (() => {
+                const tipo = selected.tipo_estampa;
+                if (tipo === "DTF+Silk") {
+                  return (
+                    <>
+                      <CorrigirEtapaButton
+                        pedido={selected}
+                        destino="dtf"
+                        abaOrigem="acabamento"
+                        label="Corrigir → voltar pro DTF"
+                        onSave={onSave}
+                        onCorrigido={(d) => { if (onNavigate) onNavigate(d); }}
+                      />
+                      <CorrigirEtapaButton
+                        pedido={selected}
+                        destino="silk"
+                        abaOrigem="acabamento"
+                        label="Corrigir → voltar pro Silk"
+                        onSave={onSave}
+                        onCorrigido={(d) => { if (onNavigate) onNavigate(d); }}
+                      />
+                    </>
+                  );
+                }
+                const dest: "dados" | "dtf" | "silk" =
+                  tipo === "Lisa" ? "dados"
+                  : modeloIncluiDTF(tipo) ? "dtf"
+                  : modeloIncluiSilk(tipo) ? "silk"
+                  : "dados";
+                return (
+                  <CorrigirEtapaButton
+                    pedido={selected}
+                    destino={dest}
+                    abaOrigem="acabamento"
+                    onSave={onSave}
+                    onCorrigido={(d) => { if (onNavigate) onNavigate(d); }}
+                  />
+                );
+              })()}
               <AcabamentoVoltar selected={selected} onSave={onSave} onNavigate={onNavigate} />
             </div>
 
