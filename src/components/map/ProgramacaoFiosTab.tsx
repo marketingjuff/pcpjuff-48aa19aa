@@ -574,5 +574,5 @@ function ObservacoesProdBlock({
   );
 }
 
-export function ProgramacaoFiosTab() { return <MapFiosTable finalizado={false} />; }
+export function ProgramacaoFiosTab({ prodId }: { prodId?: string } = {}) { return <MapFiosTable finalizado={false} focusProdId={prodId} />; }
 export function FiosFinalizadosTab() { return <MapFiosTable finalizado={true} />; }
