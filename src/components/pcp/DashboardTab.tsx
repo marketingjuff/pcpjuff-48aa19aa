@@ -30,7 +30,7 @@ interface Props {
 }
 
 type Etapa =
-  | "todas" | "ativas" | "finalizados"
+  | "todas" | "ativas" | "finalizados" | "em_refacao"
   | "aguardando_entrada" | "aguardando_input"
   | "arte" | "dtf_pronto_silk_arte" | "silk_pronto_dtf_arte"
   | "dtf" | "silk" | "dtf_silk"
@@ -56,6 +56,9 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
     if (e === "finalizados") return !!p.finalizado_em;
+    if (e === "em_refacao") {
+      return Array.isArray(p.refacoes) && p.refacoes.some((ep) => ep.aberto === true);
+    }
     const ativoNormal = pedidoAtivoNasAreas(p);
     const ativoExpedicao = emExpedicao(p);
     if (!ativoNormal && !ativoExpedicao) return false;
@@ -63,7 +66,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
     if (e === "expedicao") return ativoExpedicao;
     if (!ativoNormal) return false;
     const etapaAtual = calcularEtapaAtual(p).etapa.replace(/\*$/, "");
-    const map: Record<Exclude<Etapa, "todas"|"ativas"|"finalizados"|"expedicao">, string[]> = {
+    const map: Record<Exclude<Etapa, "todas"|"ativas"|"finalizados"|"expedicao"|"em_refacao">, string[]> = {
       aguardando_entrada: ["Aguardando entrada"],
       aguardando_input: ["Aguardando input de produção"],
       arte: ["Aguardando Arte", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
@@ -185,6 +188,8 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ativas">Todas (menos finalizados)</SelectItem>
+                  <SelectItem value="em_refacao">Em refação</SelectItem>
+                  
                   
                   <SelectItem value="aguardando_entrada">Aguardando entrada</SelectItem>
                   <SelectItem value="aguardando_input">Aguardando input de produção</SelectItem>

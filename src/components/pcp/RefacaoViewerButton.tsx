@@ -335,7 +335,7 @@ export function RefacaoViewerButton({ pedido, className }: ButtonProps) {
         Visualizar dados de refação
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Dados de refação — {pedido.pedido_olist ?? "—"}</DialogTitle>
             <DialogDescription>

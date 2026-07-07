@@ -97,36 +97,54 @@ function serialize(flat: PecaPerdida[]): string {
 
 /* ---------- chip agrupado (read-only e colapsado) ---------- */
 
+const COL_MODELO = "w-32";
+const COL_COR = "w-28";
+const COL_TAM = "w-10";
+const COL_TOTAL = "w-14";
+
+export function ChipGroupedHeader() {
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground font-medium whitespace-nowrap">
+      <span className={`${COL_MODELO} shrink-0`}>Modelo</span>
+      <span className={`${COL_COR} shrink-0`}>Cor</span>
+      {REFACAO_TAMANHOS.map((t) => (
+        <span key={t} className={`${COL_TAM} shrink-0 text-center`}>{t}</span>
+      ))}
+      <span className={`${COL_TOTAL} shrink-0 text-center`}>Total</span>
+    </div>
+  );
+}
+
 function ChipGrouped({ row }: { row: GroupedRow }) {
   const hex = corHex(row.cor);
   const fg = corTextoSobre(hex);
-  const partes = REFACAO_TAMANHOS
-    .map((t) => ({ t, q: Number(row.qtds[t]) || 0 }))
-    .filter((x) => x.q > 0);
-  const total = partes.reduce((s, x) => s + x.q, 0);
+  const total = REFACAO_TAMANHOS.reduce((s, t) => s + (Number(row.qtds[t]) || 0), 0);
   return (
-    <span className="inline-flex items-center gap-1.5 flex-wrap rounded-md px-2 py-1 text-xs font-medium border bg-muted/40">
-      <span className="uppercase font-semibold">{row.modelo || "—"}</span>
-      <span className="opacity-60">·</span>
+    <div className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium border bg-muted/40 whitespace-nowrap">
+      <span className={`${COL_MODELO} shrink-0 uppercase font-semibold truncate`} title={row.modelo || ""}>
+        {row.modelo || "—"}
+      </span>
       <span
-        className="px-1.5 py-0.5 rounded font-bold"
+        className={`${COL_COR} shrink-0 px-1.5 py-0.5 rounded font-bold text-center truncate`}
         style={{
           backgroundColor: hex,
           color: fg,
           borderColor: fg === "#ffffff" ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.15)",
         }}
+        title={row.cor || ""}
       >
         {row.cor || "—"}
       </span>
-      <span className="opacity-60">·</span>
-      <span className="tabular-nums">
-        {partes.length === 0
-          ? <span className="text-muted-foreground">sem tamanhos</span>
-          : partes.map((x) => `${x.t}:${x.q}`).join(" ")}
-      </span>
-      <span className="opacity-60">·</span>
-      <span className="tabular-nums">Total {total}</span>
-    </span>
+      {REFACAO_TAMANHOS.map((t) => {
+        const q = Number(row.qtds[t]) || 0;
+        return (
+          <span key={t} className={`${COL_TAM} shrink-0 text-center tabular-nums ${q > 0 ? "" : "text-muted-foreground"}`}>
+            {q > 0 ? q : "-"}
+          </span>
+        );
+      })}
+      <span className={`${COL_TOTAL} shrink-0 text-center tabular-nums font-semibold`}>{total}</span>
+    </div>
   );
 }
 
@@ -208,8 +226,13 @@ export function PecasPerdidasEditor({ value, onChange, readOnly = false }: Props
         {completas.length === 0 ? (
           <div className="text-sm text-muted-foreground">Nenhuma peça registrada.</div>
         ) : (
-          <div className="flex flex-col gap-1.5">
-            {completas.map((r, i) => <ChipGrouped key={i} row={r} />)}
+          <div className="overflow-x-auto">
+            <div className="inline-block min-w-full">
+              <ChipGroupedHeader />
+              <div className="flex flex-col gap-1.5">
+                {completas.map((r, i) => <ChipGrouped key={i} row={r} />)}
+              </div>
+            </div>
           </div>
         )}
         <div className="text-xs text-muted-foreground">
@@ -234,11 +257,11 @@ export function PecasPerdidasEditor({ value, onChange, readOnly = false }: Props
                 <button
                   type="button"
                   onClick={() => expandir(i)}
-                  className="flex-1 text-left"
+                  className="flex-1 text-left overflow-x-auto"
                   title="Editar peças"
                 >
-                  <div className="inline-flex items-center gap-1.5 flex-wrap">
-                    <Pencil className="h-3 w-3 opacity-60" />
+                  <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                    <Pencil className="h-3 w-3 opacity-60 shrink-0" />
                     <ChipGrouped row={r} />
                   </div>
                 </button>
@@ -251,62 +274,65 @@ export function PecasPerdidasEditor({ value, onChange, readOnly = false }: Props
 
           return (
             <div key={i} className="rounded-md border p-2 space-y-2 bg-muted/30">
-              <div className="flex flex-wrap items-end gap-2">
-                <div className="min-w-[180px]">
-                  <label className="text-[11px] text-muted-foreground font-medium block">Modelo</label>
-                  <Select value={r.modelo} onValueChange={(v) => setLinha(i, { modelo: v })}>
-                    <SelectTrigger className="h-8 w-[180px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>
-                      {REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="min-w-[160px]">
-                  <label className="text-[11px] text-muted-foreground font-medium block">Cor</label>
-                  <Select value={r.cor} onValueChange={(v) => setLinha(i, { cor: v })}>
-                    <SelectTrigger
-                      className="h-8 w-[160px] font-bold"
-                      style={r.cor ? { backgroundColor: hex, color: fg, borderColor: fg === "#ffffff" ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.15)" } : undefined}
-                    >
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {REFACAO_CORES.map((c) => {
-                        const f = corTextoSobre(c.hex);
-                        return (
-                          <SelectItem
-                            key={c.nome}
-                            value={c.nome}
-                            style={{ backgroundColor: c.hex, color: f }}
-                            className="my-0.5 rounded-sm font-semibold focus:opacity-90"
-                          >
-                            {c.nome}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {REFACAO_TAMANHOS.map((t) => (
-                  <div key={t} className="w-[56px]">
-                    <label className="text-[11px] text-muted-foreground font-medium block text-center">{t}</label>
-                    <Input
-                      type="number"
-                      min={0}
-                      className="h-8 text-center px-1"
-                      value={r.qtds[t] ?? ""}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        const n = raw === "" ? 0 : Math.max(0, Number(raw) || 0);
-                        setQtd(i, t, n);
-                      }}
-                    />
+              <div className="overflow-x-auto">
+                <div className="inline-flex items-end gap-2 whitespace-nowrap min-w-full">
+                  <div className="shrink-0">
+                    <label className="text-[11px] text-muted-foreground font-medium block">Modelo</label>
+                    <Select value={r.modelo} onValueChange={(v) => setLinha(i, { modelo: v })}>
+                      <SelectTrigger className={`h-8 ${COL_MODELO}`}><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        {REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
-                ))}
+                  <div className="shrink-0">
+                    <label className="text-[11px] text-muted-foreground font-medium block">Cor</label>
+                    <Select value={r.cor} onValueChange={(v) => setLinha(i, { cor: v })}>
+                      <SelectTrigger
+                        className={`h-8 ${COL_COR} font-bold`}
+                        style={r.cor ? { backgroundColor: hex, color: fg, borderColor: fg === "#ffffff" ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.15)" } : undefined}
+                      >
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {REFACAO_CORES.map((c) => {
+                          const f = corTextoSobre(c.hex);
+                          return (
+                            <SelectItem
+                              key={c.nome}
+                              value={c.nome}
+                              style={{ backgroundColor: c.hex, color: f }}
+                              className="my-0.5 rounded-sm font-semibold focus:opacity-90"
+                            >
+                              {c.nome}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="ml-auto text-xs text-muted-foreground pb-1">
-                  Total <span className="font-semibold tabular-nums text-foreground">{somaLinha(r)}</span>
+                  {REFACAO_TAMANHOS.map((t) => (
+                    <div key={t} className={`${COL_TAM} shrink-0`}>
+                      <label className="text-[11px] text-muted-foreground font-medium block text-center">{t}</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        className="h-8 text-center px-1"
+                        value={r.qtds[t] ?? ""}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          const n = raw === "" ? 0 : Math.max(0, Number(raw) || 0);
+                          setQtd(i, t, n);
+                        }}
+                      />
+                    </div>
+                  ))}
+
+                  <div className={`${COL_TOTAL} shrink-0 text-xs text-muted-foreground pb-1 text-center`}>
+                    <div className="text-[11px] font-medium">Total</div>
+                    <div className="h-8 flex items-center justify-center font-semibold tabular-nums text-foreground">{somaLinha(r)}</div>
+                  </div>
                 </div>
               </div>
               <div className="flex justify-end gap-1">

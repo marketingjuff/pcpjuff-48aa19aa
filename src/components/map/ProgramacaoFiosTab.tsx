@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,10 +25,11 @@ import { InlineInput } from "./InlineInput";
 import { DevolucaoDialog } from "./DevolucaoDialog";
 import { useCanAccessMap } from "@/hooks/use-role";
 
-interface Props { finalizado: boolean; }
+interface Props { finalizado: boolean; focusProdId?: string; }
 
-export function MapFiosTable({ finalizado }: Props) {
+export function MapFiosTable({ finalizado, focusProdId }: Props) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { producoes, entregas, programacoes, invalidateAll } = useMapData(finalizado);
   const { kgPorPeca } = useKgPorPeca();
   const canManageMap = useCanAccessMap();
@@ -36,6 +38,7 @@ export function MapFiosTable({ finalizado }: Props) {
   const [dlgOpen, setDlgOpen] = useState(false);
   const [editingProd, setEditingProd] = useState<MapProducao | null>(null);
   const [devProd, setDevProd] = useState<MapProducao | null>(null);
+  const focusedRef = useRef<string | null>(null);
 
 
   // Filtros
@@ -61,6 +64,17 @@ export function MapFiosTable({ finalizado }: Props) {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [qc, finalizado]);
+
+  useEffect(() => {
+    if (!focusProdId || focusedRef.current === focusProdId) return;
+    focusedRef.current = focusProdId;
+    setExpanded((prev) => { const n = new Set(prev); n.add(focusProdId); return n; });
+    const t = window.setTimeout(() => {
+      document.getElementById(`map-prod-${focusProdId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      navigate({ to: "/map", search: (prev: any) => ({ ...prev, prodId: undefined }), replace: true });
+    }, 120);
+    return () => window.clearTimeout(t);
+  }, [focusProdId, navigate]);
 
   const prodsAll = producoes.data ?? [];
   const entregasAll = entregas.data ?? [];
@@ -330,7 +344,7 @@ export function MapFiosTable({ finalizado }: Props) {
                   const kgReceb = sumKgEntregas(es);
                   return (
                     <Fragment key={prod.id}>
-                      <tr className={summaryClass}>
+                      <tr id={`map-prod-${prod.id}`} className={summaryClass}>
                         <td className={`p-1.5 align-top ${isOpen ? "border-l-4 border-yellow-400" : ""}`}>
                           <button type="button" onClick={() => toggle(prod.id)} className="p-0.5">
                             {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
@@ -560,5 +574,5 @@ function ObservacoesProdBlock({
   );
 }
 
-export function ProgramacaoFiosTab() { return <MapFiosTable finalizado={false} />; }
+export function ProgramacaoFiosTab({ prodId }: { prodId?: string } = {}) { return <MapFiosTable finalizado={false} focusProdId={prodId} />; }
 export function FiosFinalizadosTab() { return <MapFiosTable finalizado={true} />; }
