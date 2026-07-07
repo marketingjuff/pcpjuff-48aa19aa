@@ -25,7 +25,7 @@ interface Props {
 export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalharia, kgPorPeca, onChanged, readOnly }: Props) {
   const { names: tinturarias } = useAppList("map_tinturaria");
   const { mapa: acabMapa } = useCorAcabamentos();
-  const [addingTint, setAddingTint] = useState<string>("");
+  const [adding, setAdding] = useState(false);
 
   const totalProgramado = sumPecasProgramadas(programacoes);
   const Y = pecasRecebidasMalharia;
@@ -44,13 +44,22 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
     else { counterClass = "text-red-700 font-semibold"; icon = <AlertTriangle className="h-3.5 w-3.5 inline-block ml-1" />; }
   }
 
-  async function addProg(tint: string) {
-    if (!tint) { toast.error("Escolha a tinturaria."); return; }
+  function pickDefaultTint(): string {
+    if (tinturarias.length === 0) return "";
+    const found = tinturarias.find((n) => n.toLowerCase() === "guararema");
+    return found ?? tinturarias[0];
+  }
+
+  async function addProg() {
+    const tint = pickDefaultTint();
+    setAdding(true);
+    const payload: any = { producao_id: producaoId };
+    if (tint) payload.tinturaria = tint;
     const { error } = await (supabase as any)
       .from("map_tinturaria_programacoes")
-      .insert({ producao_id: producaoId, tinturaria: tint });
+      .insert(payload);
+    setAdding(false);
     if (error) { toast.error(error.message); return; }
-    setAddingTint("");
     onChanged();
   }
 
