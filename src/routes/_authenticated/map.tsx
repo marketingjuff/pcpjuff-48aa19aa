@@ -11,6 +11,8 @@ import { MacroSwitch } from "@/routes/_authenticated/cop";
 import { ProgramacaoFiosTab } from "@/components/map/ProgramacaoFiosTab";
 import { FiosFinalizadosTab } from "@/components/map/FiosFinalizadosTab";
 import { EstoqueMpTab } from "@/components/map/EstoqueMpTab";
+import { QuebraTab } from "@/components/map/QuebraTab";
+import { DevolucoesTab } from "@/components/map/DevolucoesTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/map")({
