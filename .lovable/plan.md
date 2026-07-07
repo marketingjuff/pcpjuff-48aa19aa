@@ -1,31 +1,36 @@
-## Plano: Corrigir sinal do cálculo da quebra no MAP
-
-### Problema
-O usuário reportou que o valor da quebra está com o sinal invertido: onde deveria ser positivo está negativo, e vice-versa.
-
-### Diagnóstico
-A função `calcQuebra` em `src/lib/map.ts` (linha 72-74) calcula:
-```ts
-return Number(prod.kg_solicitados ?? 0) - sumKgEntregas(entregas);
-```
-
-Isso resulta em:
-- **Positivo** quando o recebido é **menor** que o solicitado (falta material).
-- **Negativo** quando o recebido é **maior** que o solicitado (sobra material).
-
-O usuário quer o **oposto**.
-
-### Alteração
-1. **Inverter a ordem da subtração** em `src/lib/map.ts`:
-   ```ts
-   return sumKgEntregas(entregas) - Number(prod.kg_solicitados ?? 0);
-   ```
-   
-   Resultado esperado:
-   - **Negativo** quando recebeu menos que solicitado (quebra = deficit).
-   - **Positivo** quando recebeu mais que solicitado (quebra = excesso).
+## Ajuste de cores/exibição na aba Disponível (COP)
 
 ### Escopo
-- Apenas a função `calcQuebra` em `src/lib/map.ts`.
-- Nenhuma mudança em banco de dados, migrações, ou outros componentes.
-- O `MalhariaBlock.tsx` exibe o valor retornado por `calcQuebra` sem lógica adicional de sinal, então a correção é transparente para a UI.
+- Único arquivo: `src/components/cop/DisponivelTab.tsx`
+- Único trecho: cálculo de `color` e `display` dentro do `REFACAO_TAMANHOS.map` (linhas ~186-192)
+- 100% front-end. Sem banco, sem migration, sem toque no Supabase.
+
+### Regra nova
+- Vermelho **só** para `v < 0`.
+- Positivo/zero com faltante pendente → **cinza** (`text-gray-500`), mostrando o número.
+- Saldo `0` sem faltante → exibir **`—`** (em vez de `0` laranja).
+- Célula sem presença → segue `—` em `text-muted-foreground`.
+
+### Alteração exata
+Substituir:
+```tsx
+const presente = prod > 0 || falt > 0 || baix > 0;
+const temFalta = presente && falt > 0;
+const color = !presente ? "text-muted-foreground"
+            : temFalta ? "text-red-700"
+            : v < 0 ? "text-red-700"
+            : v === 0 ? "text-amber-700"
+            : "text-green-700";
+const display = !presente ? "—" : v;
+```
+Por:
+```tsx
+const presente = prod > 0 || falt > 0 || baix > 0;
+const temFalta = presente && falt > 0;
+const color = !presente ? "text-muted-foreground"
+            : v < 0 ? "text-red-700"
+            : temFalta ? "text-gray-500"
+            : v === 0 ? "text-muted-foreground"
+            : "text-green-700";
+const display = (!presente || (v === 0 && !temFalta)) ? "—" : v;
+```
