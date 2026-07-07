@@ -115,6 +115,12 @@ function MapHome() {
           <TabsContent value="estoque" forceMount hidden={tab !== "estoque"}>
             <EstoqueMpTab />
           </TabsContent>
+          <TabsContent value="quebra" forceMount hidden={tab !== "quebra"}>
+            <QuebraTab />
+          </TabsContent>
+          <TabsContent value="devolucoes" forceMount hidden={tab !== "devolucoes"}>
+            <DevolucoesTab />
+          </TabsContent>
         </Tabs>
       </main>
     </div>
