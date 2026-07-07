@@ -257,11 +257,11 @@ export function PecasPerdidasEditor({ value, onChange, readOnly = false }: Props
                 <button
                   type="button"
                   onClick={() => expandir(i)}
-                  className="flex-1 text-left"
+                  className="flex-1 text-left overflow-x-auto"
                   title="Editar peças"
                 >
-                  <div className="inline-flex items-center gap-1.5 flex-wrap">
-                    <Pencil className="h-3 w-3 opacity-60" />
+                  <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                    <Pencil className="h-3 w-3 opacity-60 shrink-0" />
                     <ChipGrouped row={r} />
                   </div>
                 </button>
