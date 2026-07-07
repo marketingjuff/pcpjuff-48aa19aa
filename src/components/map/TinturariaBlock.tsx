@@ -170,7 +170,14 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
               <tr><td colSpan={10} className="p-2 text-center text-muted-foreground">Sem programação.</td></tr>
             ) : programacoes.map((p) => (
               <tr key={p.id} className="border-t">
-                <td className="p-1 font-medium">{p.tinturaria}</td>
+                <td className="p-1 font-medium">
+                  <TinturariaSelect
+                    value={p.tinturaria}
+                    options={tinturarias}
+                    disabled={readOnly}
+                    onChange={(v) => commit(p, "tinturaria", v)}
+                  />
+                </td>
                 <td className="p-1"><InlineInput type="date" value={p.data_programacao} onCommit={(v) => commit(p, "data_programacao", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="1" min="0" value={p.pecas} onCommit={(v) => commit(p, "pecas", v)} disabled={readOnly} /></td>
                 <td className="p-1"><CorSelect value={p.cor} mapa={acabMapa} disabled={readOnly} onChange={(v) => commit(p, "cor", v)} /></td>
