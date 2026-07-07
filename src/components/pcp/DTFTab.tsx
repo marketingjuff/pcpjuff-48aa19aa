@@ -303,7 +303,16 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 </div>
               </div>
               </fieldset>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2 flex-wrap">
+                {canManage && !selected.finalizado_em && dtfCompleto(selected) && (
+                  <CorrigirEtapaButton
+                    pedido={selected}
+                    destino="arte"
+                    abaOrigem="dtf"
+                    onSave={onSave}
+                    onCorrigido={(d) => { if (onNavigate) onNavigate(d); }}
+                  />
+                )}
                 <VoltarDropdown pedido={selected} destinos={["dados", "arte"]} onVoltar={handleVoltar} />
               </div>
 
