@@ -1,0 +1,1 @@
+ALTER TABLE public.map_estoque_pecas DROP CONSTRAINT IF EXISTS map_estoque_pecas_programacao_id_fkey; ALTER TABLE public.map_estoque_pecas ADD CONSTRAINT map_estoque_pecas_programacao_id_fkey FOREIGN KEY (programacao_id) REFERENCES public.map_tinturaria_programacoes(id) ON DELETE CASCADE;
