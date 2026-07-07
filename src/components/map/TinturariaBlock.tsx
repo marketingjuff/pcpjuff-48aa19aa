@@ -97,15 +97,51 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
       const patch: any = {};
       if (field === "pecas" || field === "kg_enviados" || field === "kg_recebidos" || field === "pecas_recebidas") {
         patch[field] = raw === null || raw === "" ? null : Number(raw);
-        // Auto-preenche kg_enviados quando pecas é alterado e kg_enviados está vazio
-        if (field === "pecas" && (row.kg_enviados == null)) {
+        // Kg env. recalcula SEMPRE quando peças mudam.
+        if (field === "pecas") {
           const n = raw === null || raw === "" ? null : Number(raw);
-          if (n != null && kgPorPeca > 0) patch.kg_enviados = n * kgPorPeca;
+          if (n == null) patch.kg_enviados = null;
+          else if (kgPorPeca > 0) patch.kg_enviados = n * kgPorPeca;
         }
       } else {
         patch[field] = raw;
       }
       await patchProgramacao(row.id, patch);
+
+      // Split automático: se a linha ficou completa no recebimento e chegou MENOS peças que as enviadas,
+      // fecha esta com o que chegou e abre uma nova com o que faltou.
+      const merged: any = { ...row, ...patch };
+      const recebComplete =
+        merged.kg_recebidos != null &&
+        merged.pecas_recebidas != null &&
+        !!merged.data_recebimento &&
+        !!merged.nota_fiscal_recebimento;
+      const enviadas = merged.pecas;
+      const recebidas = merged.pecas_recebidas;
+      const faltantes = enviadas != null && recebidas != null ? Number(enviadas) - Number(recebidas) : 0;
+      if (recebComplete && enviadas != null && recebidas != null && faltantes > 0) {
+        await patchProgramacao(row.id, {
+          pecas: Number(recebidas),
+          kg_enviados: kgPorPeca > 0 ? Number(recebidas) * kgPorPeca : merged.kg_enviados,
+        });
+        const baseCreated = row.created_at ? new Date(row.created_at).getTime() : Date.now();
+        const { error } = await (supabase as any).from("map_tinturaria_programacoes").insert({
+          producao_id: producaoId,
+          tinturaria: row.tinturaria,
+          data_programacao: row.data_programacao,
+          cor: row.cor,
+          pecas: faltantes,
+          kg_enviados: kgPorPeca > 0 ? faltantes * kgPorPeca : null,
+          kg_recebidos: null,
+          pecas_recebidas: null,
+          data_recebimento: null,
+          nota_fiscal_recebimento: null,
+          created_at: new Date(baseCreated + 1).toISOString(),
+        });
+        if (error) { toast.error(error.message); return; }
+        toast.success(`Split: ${recebidas} recebidas · ${faltantes} pendente(s).`);
+      }
+
       onChanged();
     } catch (e: any) { toast.error(e?.message ?? "Falha ao salvar."); }
   }
