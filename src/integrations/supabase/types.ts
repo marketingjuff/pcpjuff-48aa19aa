@@ -428,6 +428,7 @@ export type Database = {
           malharia: string | null
           nota_fiscal: string | null
           numero: number
+          observacoes: string | null
           quebra_conciliacao_obs: string | null
           quebra_conciliada: boolean
           quebra_conciliada_em: string | null
@@ -451,6 +452,7 @@ export type Database = {
           malharia?: string | null
           nota_fiscal?: string | null
           numero: number
+          observacoes?: string | null
           quebra_conciliacao_obs?: string | null
           quebra_conciliada?: boolean
           quebra_conciliada_em?: string | null
@@ -474,6 +476,7 @@ export type Database = {
           malharia?: string | null
           nota_fiscal?: string | null
           numero?: number
+          observacoes?: string | null
           quebra_conciliacao_obs?: string | null
           quebra_conciliada?: boolean
           quebra_conciliada_em?: string | null
