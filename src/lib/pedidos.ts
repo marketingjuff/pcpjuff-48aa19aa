@@ -131,6 +131,7 @@ export type Pedido = PedidoBase & {
   dtf_cortado_data: string | null;
   obs_vendedor: string | null;
   layout_url: string | null;
+  pecas_lisas: boolean | null;
   status_arte: string | null;
   quem_bateu_dtf: string | null;
   quem_bateu_silk: string | null;
@@ -194,6 +195,7 @@ export type PedidoInsert = PedidoInsertBase & {
   dtf_cortado_data?: string | null;
   obs_vendedor?: string | null;
   layout_url?: string | null;
+  pecas_lisas?: boolean | null;
   status_arte?: string | null;
   quem_bateu_dtf?: string | null;
   quem_bateu_silk?: string | null;

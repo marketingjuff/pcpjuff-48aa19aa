@@ -684,6 +684,7 @@ export type Database = {
           observacoes_pedido: string | null
           orcamento: string | null
           pecas_completadas_log: Json
+          pecas_lisas: boolean
           pecas_solicitadas: Json
           pedido_olist: string | null
           qtd: number | null
@@ -765,6 +766,7 @@ export type Database = {
           observacoes_pedido?: string | null
           orcamento?: string | null
           pecas_completadas_log?: Json
+          pecas_lisas?: boolean
           pecas_solicitadas?: Json
           pedido_olist?: string | null
           qtd?: number | null
@@ -846,6 +848,7 @@ export type Database = {
           observacoes_pedido?: string | null
           orcamento?: string | null
           pecas_completadas_log?: Json
+          pecas_lisas?: boolean
           pecas_solicitadas?: Json
           pedido_olist?: string | null
           qtd?: number | null

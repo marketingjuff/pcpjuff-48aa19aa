@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -200,7 +201,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }
 
   async function saveVendor() {
-    const miss = findMissing(VENDOR_REQUIRED);
+    const required = form.pecas_lisas
+      ? VENDOR_REQUIRED.filter((k) => k !== "layout_url")
+      : VENDOR_REQUIRED;
+    const miss = findMissing(required);
     if (!validarOrcamento(form.orcamento)) miss.add("orcamento");
     setMissingVendor(miss);
     if (miss.size > 0) {
@@ -242,7 +246,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       return;
     }
     if (!selected?.id) {
-      const missV = findMissing(VENDOR_REQUIRED);
+      const requiredV = form.pecas_lisas ? VENDOR_REQUIRED.filter((k) => k !== "layout_url") : VENDOR_REQUIRED;
+      const missV = findMissing(requiredV);
       if (!validarOrcamento(form.orcamento)) missV.add("orcamento");
       setMissingVendor(missV);
       if (missV.size > 0) {
@@ -548,15 +553,22 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
             </Field>
 
             <div className="sm:col-span-2 lg:col-span-2">
-              <Field label="Layout (PDF até 30MB) *" invalid={missingVendor.has("layout_url")}>
-                <div className="flex items-center gap-2">
-                  <Input type="file" accept="application/pdf" disabled={uploading}
+              <Field label={form.pecas_lisas ? "Layout (PDF até 30MB)" : "Layout (PDF até 30MB) *"} invalid={missingVendor.has("layout_url")}>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Input type="file" accept="application/pdf" disabled={uploading || !!form.pecas_lisas}
                     onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
                   {form.layout_url && (
                     <Button type="button" variant="outline" size="sm" onClick={() => baixarLayout(form.layout_url!)}>
                       <Download className="h-4 w-4 mr-1" /> Baixar layout
                     </Button>
                   )}
+                  <label className="flex items-center gap-1.5 text-xs whitespace-nowrap cursor-pointer select-none pl-1">
+                    <Checkbox
+                      checked={!!form.pecas_lisas}
+                      onCheckedChange={(v) => set("pecas_lisas", v === true)}
+                    />
+                    Peças lisas
+                  </label>
                 </div>
                 {form.layout_url && (
                   <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1 truncate">
