@@ -33,6 +33,8 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { producoes, entregas, programacoes, invalidateAll } = useMapData(finalizado);
+  const { data: estoquePecas = [] } = useEstoquePecas();
+
   const { kgPorPeca } = useKgPorPeca();
   const canManageMap = useCanAccessMap();
 
