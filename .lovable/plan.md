@@ -1,27 +1,39 @@
-## Plano 1 de 2 — MAP: restringir "Reabrir" e "Excluir" a Admin + Gestor MAP
-
-Escopo estrito do Prompt 1. Sem alteração de banco. Depois que este for aprovado/implementado, envio o Plano 2 (PCP "Corrigir etapa").
+## Plano — Corrigir botões encavalados (MAP > Programação de Fios)
 
 ### Arquivo tocado
 - `src/components/map/ProgramacaoFiosTab.tsx` (único)
 
-### Mudanças
-1. **Import novo**: `import { useCanAccessMap } from "@/hooks/use-role";` (hook já existe e resolve exatamente `admin OR (gestor com area_extra "map")`, mesmo padrão do COP).
-2. **Chamada do hook** dentro do componente:
-   ```ts
-   const canManageMap = useCanAccessMap();
-   ```
-3. **Trava dupla nas duas ações** (UI + handler), sem tocar em mais nada:
-   - `reabrir(prod)`: early-return no início do handler se `!canManageMap` (com `toast.error("Sem permissão.")` no mesmo estilo já usado no arquivo). O botão "Reabrir" (linha ~374) só renderiza se `canManageMap`.
-   - `excluirProd(prod)`: mesmo tratamento — early-return no handler + botão/ícone de excluir só renderiza se `canManageMap`.
-4. **Nada mais muda**: `finalizar()`, botão "Devolução", inputs inline, layout, tamanhos, cores — tudo intocado. As mudanças recentes de tamanho dos botões `Finalizar`/`Devolução` continuam como estão.
+Sem alteração de banco, sem tocar em cálculo de status (FIO/MALHARIA/TINTURARIA), sem mexer em `map_config`/cores, sem tocar nada fora de `src/components/map/`.
 
-### Fora do escopo (não vou tocar)
-- Qualquer outro componente de `src/components/map/`.
-- `src/lib/map.ts`, `src/hooks/use-role.ts`, PCP, COP.
-- Banco: nenhuma migração.
+### Diagnóstico
+A célula de ações renderiza até 4 botões com texto (`Finalizar`, `Editar`, `Devolução`, `Excluir`) com larguras fixas somando ~320px + gaps. Em zoom/telas menores, a coluna encolhe e os botões se sobrepõem.
+
+### Solução proposta — icon buttons sempre visíveis
+Converter os 4 botões para **icon buttons quadrados** (`h-7 w-7`, sem texto), com `title` + `aria-label` para acessibilidade e tooltip nativo. Mesmas cores/semântica de hoje. Sem dropdown de overflow — 4 ícones cabem em qualquer resolução de desktop e o alinhamento fica trivial.
+
+Ícones (lucide, já importados/disponíveis):
+- **Finalizar** → `CheckCircle2` — botão verde (`bg-emerald-600`), fica `disabled` (opacidade reduzida) quando `!canFinalize`. **Sempre renderizado** quando não-finalizado, para manter o alinhamento da coluna.
+- **Editar** → `Pencil` — `variant="outline"`.
+- **Devolução** → `Undo2` — `variant="outline"`.
+- **Excluir** → `Trash2` — `variant="ghost"` com `text-destructive`; só aparece se `canManageMap` (mantém a trava do Plano 1 do MAP).
+- **Reabrir** (linha finalizada, só admin/gestor MAP) → segue como `RotateCcw` icon-only também, para consistência.
+
+### Layout da célula
+- Container: `flex items-center justify-end gap-1` (já é).
+- Cada botão: `h-7 w-7 p-0 shrink-0` com o ícone em `h-3.5 w-3.5`.
+- `td`: adicionar `min-w-[140px]` para reservar espaço confortável dos 4 ícones + gaps e evitar que o browser encolha a coluna.
+- Remover as larguras fixas por texto (`w-[88px]`, `w-[72px]`, `w-[80px]`).
+
+### Comportamento
+- Zero mudança de lógica: `finalizar`, `openEditar`, `setDevProd`, `excluirProd`, `reabrir`, `canFinalize`, `canManageMap` seguem idênticos.
+- Botão Finalizar continua `disabled={!canFinalize}` com o mesmo verde e opacidade quando desabilitado.
+
+### Fora do escopo
+- Dropdown de overflow (item 4 do prompt): **não vou implementar** — com icon buttons de 28px, os 4 cabem sem risco. Se depois de aprovado você quiser overflow em uma faixa específica, faço num plano separado.
+- Qualquer outro arquivo, banco ou lógica de cálculo.
 
 ### Critério de pronto
-- Usuário MAP comum: sem botão "Reabrir" e sem botão de excluir na aba.
-- Admin / Gestor com área `map`: comportamento idêntico ao atual.
-- Mesmo que alguém force o handler, o early-return bloqueia a execução.
+- Nenhuma sobreposição em qualquer largura de desktop.
+- Coluna alinhada linha a linha (Finalizar sempre presente quando não-finalizado, mesmo desabilitado).
+- Tooltip nativo ao passar o mouse com o nome completo da ação.
+- Trava do `canManageMap` para Excluir/Reabrir preservada.
