@@ -215,8 +215,9 @@ export function EstoqueMpTab() {
                   <tr key={c.cor} className={`border-t ${i % 2 === 1 ? "bg-muted/20" : ""}`}>
                     <td className="py-0.5 px-1.5">
                       <span
-                        className="inline-block rounded-sm px-1.5 py-0.5 text-[11.5px] font-semibold"
+                        className="block w-full text-center truncate rounded-sm px-1.5 py-0.5 text-[11.5px] font-semibold"
                         style={{ backgroundColor: bg, color: fg }}
+                        title={c.cor}
                       >
                         {c.cor}
                       </span>
