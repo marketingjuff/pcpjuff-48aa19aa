@@ -246,7 +246,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       return;
     }
     if (!selected?.id) {
-      const missV = findMissing(VENDOR_REQUIRED);
+      const requiredV = form.pecas_lisas ? VENDOR_REQUIRED.filter((k) => k !== "layout_url") : VENDOR_REQUIRED;
+      const missV = findMissing(requiredV);
       if (!validarOrcamento(form.orcamento)) missV.add("orcamento");
       setMissingVendor(missV);
       if (missV.size > 0) {
