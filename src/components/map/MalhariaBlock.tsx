@@ -22,6 +22,7 @@ interface Props {
 export function MalhariaBlock({ producao, entregas, kgPorPeca, onChanged, readOnly }: Props) {
   const [dlgBaixa, setDlgBaixa] = useState(false);
   const [adding, setAdding] = useState(false);
+  const { names: malharias } = useAppList("map_malharia");
 
   const quebraKg = calcQuebra(producao, entregas);
   const quebraPecas = kgPorPeca > 0 ? quebraKg / kgPorPeca : 0;
