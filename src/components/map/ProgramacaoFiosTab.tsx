@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateInputBR } from "@/components/ui/date-input";
-import { ChevronDown, ChevronRight, Plus, CheckCircle2, RotateCcw, Pencil, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, CheckCircle2, RotateCcw, Pencil, X, Undo2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
