@@ -466,6 +466,9 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <Copy className="h-4 w-4 mr-1" />Duplicar
               </Button>
             )}
+            {selected && (
+              <HistoricoPedidoDialog pedidoId={selected.id} pedidoOlist={selected.pedido_olist} />
+            )}
             {selected && podeDeletar && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
