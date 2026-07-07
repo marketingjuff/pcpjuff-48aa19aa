@@ -15,8 +15,10 @@ import {
   useMapData, useKgPorPeca, fmtDateBR, podeFinalizar, prodCode,
   patchProducao, sumPecasEntregas, sumKgEntregas,
   calcStatusFio, calcStatusMalharia, calcStatusTinturaria,
+  useEstoquePecas, syncEstoquePecas,
   type MapProducao, type MapEntregaMalharia, type MapProgramacaoTinturaria,
 } from "@/lib/map";
+
 
 import { MalhariaBlock } from "./MalhariaBlock";
 import { TinturariaBlock } from "./TinturariaBlock";
@@ -31,6 +33,8 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { producoes, entregas, programacoes, invalidateAll } = useMapData(finalizado);
+  const { data: estoquePecas = [] } = useEstoquePecas();
+
   const { kgPorPeca } = useKgPorPeca();
   const canManageMap = useCanAccessMap();
 
@@ -487,9 +491,16 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
                               programacoes={ps}
                               pecasRecebidasMalharia={sumPecasEntregas(es)}
                               kgPorPeca={kgPorPeca}
-                              onChanged={invalidateAll}
+                              estoquePecas={estoquePecas}
+                              onChanged={() => {
+                                invalidateAll();
+                                void syncEstoquePecas()
+                                  .then(() => qc.invalidateQueries({ queryKey: ["map", "estoque_pecas"] }))
+                                  .catch(() => { /* silencioso */ });
+                              }}
                               readOnly={finalizado}
                             />
+
                             <ObservacoesProdBlock
                               prod={prod}
                               readOnly={finalizado}

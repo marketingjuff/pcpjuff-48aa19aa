@@ -368,6 +368,69 @@ export type Database = {
           },
         ]
       }
+      map_estoque_pecas: {
+        Row: {
+          alt_inicial: number | null
+          cor: string | null
+          cortes: Json
+          created_at: string
+          data_abertura: string | null
+          data_entrada: string | null
+          id: string
+          nota_fiscal: string | null
+          numero_peca: string | null
+          producao_id: string
+          programacao_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          alt_inicial?: number | null
+          cor?: string | null
+          cortes?: Json
+          created_at?: string
+          data_abertura?: string | null
+          data_entrada?: string | null
+          id?: string
+          nota_fiscal?: string | null
+          numero_peca?: string | null
+          producao_id: string
+          programacao_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          alt_inicial?: number | null
+          cor?: string | null
+          cortes?: Json
+          created_at?: string
+          data_abertura?: string | null
+          data_entrada?: string | null
+          id?: string
+          nota_fiscal?: string | null
+          numero_peca?: string | null
+          producao_id?: string
+          programacao_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_estoque_pecas_producao_id_fkey"
+            columns: ["producao_id"]
+            isOneToOne: false
+            referencedRelation: "map_producoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_estoque_pecas_programacao_id_fkey"
+            columns: ["programacao_id"]
+            isOneToOne: false
+            referencedRelation: "map_tinturaria_programacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       map_malharia_entregas: {
         Row: {
           created_at: string

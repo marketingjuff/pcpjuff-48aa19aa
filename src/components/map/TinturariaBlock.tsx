@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, AlertTriangle, Copy } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Copy, PackageCheck } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAppList } from "@/lib/app-lists";
-import type { MapProgramacaoTinturaria } from "@/lib/map";
-import { patchProgramacao, sumPecasProgramadas, useCorAcabamentos, corComAcabamento, fmt } from "@/lib/map";
+import type { MapProgramacaoTinturaria, MapEstoquePeca } from "@/lib/map";
+import { patchProgramacao, sumPecasProgramadas, useCorAcabamentos, corComAcabamento, fmt, programacaoRecebimentoCompleto, corBase } from "@/lib/map";
 import { REFACAO_CORES } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { InlineInput } from "./InlineInput";
@@ -20,9 +20,11 @@ interface Props {
   kgPorPeca: number;
   onChanged: () => void;
   readOnly?: boolean;
+  estoquePecas?: MapEstoquePeca[];
 }
 
-export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalharia, kgPorPeca, onChanged, readOnly }: Props) {
+export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalharia, kgPorPeca, onChanged, readOnly, estoquePecas = [] }: Props) {
+
   const { names: tinturarias } = useAppList("map_tinturaria");
   const { mapa: acabMapa } = useCorAcabamentos();
   const [adding, setAdding] = useState(false);
@@ -223,6 +225,7 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
                 <td className="p-1"><InlineInput type="date" value={p.data_recebimento} onCommit={(v) => commit(p, "data_recebimento", v)} disabled={readOnly} /></td>
               <td className="p-1"><InlineInput value={p.nota_fiscal_recebimento} onCommit={(v) => commit(p, "nota_fiscal_recebimento", v)} disabled={readOnly} /></td>
                 <td className="p-1 text-right whitespace-nowrap">
+                  <ReceiptDot row={p} programacoes={programacoes} estoquePecas={estoquePecas} />
                   {!readOnly && (
                     <>
                       <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => dupProg(p)} title="Duplicar">
@@ -234,6 +237,7 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
                     </>
                   )}
                 </td>
+
               </tr>
             ))}
           </tbody>
@@ -340,3 +344,40 @@ function TinturariaSelect({
     </Select>
   );
 }
+
+function ReceiptDot({
+  row,
+  programacoes,
+  estoquePecas,
+}: {
+  row: MapProgramacaoTinturaria;
+  programacoes: MapProgramacaoTinturaria[];
+  estoquePecas: MapEstoquePeca[];
+}) {
+  const grupo = programacoes.filter(
+    (p) => corBase(p.cor) === corBase(row.cor),
+  );
+  const completos = grupo.filter(programacaoRecebimentoCompleto).length;
+  const total = grupo.length;
+
+  const gruposIds = new Set(grupo.map((g) => g.id));
+  const temDevolvida = estoquePecas.some(
+    (pe) => gruposIds.has(pe.programacao_id) && pe.status === "Devolvida",
+  );
+
+  let cls = "text-muted-foreground";
+  let title = "Sem recebimento.";
+  if (temDevolvida) { cls = "text-black"; title = "Peça devolvida no grupo."; }
+  else if (total > 0 && completos === total) { cls = "text-emerald-600"; title = "Grupo 100% recebido."; }
+  else if (completos > 0) { cls = "text-amber-500"; title = `Grupo parcialmente recebido (${completos}/${total}).`; }
+
+  return (
+    <span
+      title={title}
+      className={`inline-flex items-center justify-center h-6 w-6 rounded-full border border-current/20 mr-0.5 align-middle ${cls}`}
+    >
+      <PackageCheck className="h-3.5 w-3.5" />
+    </span>
+  );
+}
+
