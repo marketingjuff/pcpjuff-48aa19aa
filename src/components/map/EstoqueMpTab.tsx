@@ -169,55 +169,62 @@ export function EstoqueMpTab() {
 
   return (
     <div className="space-y-3">
-      {/* ---------- Cards por cor ---------- */}
-      <div className="overflow-x-auto">
-        <div className="flex gap-2 min-w-min pb-1">
-          {cards.length === 0 ? (
-            <div className="text-sm text-muted-foreground p-2">
-              {isLoading ? "Carregando…" : "Sem dados de estoque ainda."}
-            </div>
-          ) : (
-            cards.map((c) => {
-              const bg = corHex(c.cor);
-              const fg = corTextoSobre(bg);
-              const total = c.Fechada + c.Aberta + c.Corte;
-              return (
-                <div
-                  key={c.cor}
-                  className="min-w-[180px] rounded-md border shadow-sm bg-white/70 overflow-hidden shrink-0"
-                >
-                  <div
-                    className="px-2 py-1 text-[12px] font-semibold tracking-tight"
-                    style={{ backgroundColor: bg, color: fg }}
-                    title={c.cor}
-                  >
-                    {c.cor}
-                  </div>
-                  <div className="px-2 py-1.5 space-y-1 text-[11.5px]">
-                    <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 tabular-nums">
-                      <span className="text-muted-foreground">Produção</span>
-                      <span className="text-right">{c.producao}</span>
-                      <span className="text-muted-foreground">Fechada</span>
-                      <span className="text-right">{c.Fechada}</span>
-                      <span className="text-muted-foreground">Aberta</span>
-                      <span className="text-right">{c.Aberta}</span>
-                      <span className="text-muted-foreground">Corte</span>
-                      <span className="text-right">{c.Corte}</span>
-                      <span className="font-semibold">Total</span>
-                      <span className="text-right font-semibold">{total}</span>
-                    </div>
-                    <div className="border-t pt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 tabular-nums">
-                      <span className="text-muted-foreground/70">100% util.</span>
-                      <span className="text-right text-muted-foreground/70">
-                        {c["100% utilizada"]}
+      {/* ---------- Resumo por cor (tabela) ---------- */}
+      <div className="rounded-md border bg-white/70 overflow-x-auto">
+        <table className="w-full text-[12.5px]">
+          <thead className="bg-muted/40">
+            <tr className="text-left">
+              <th className="p-1.5 font-medium">Cor</th>
+              <th className="p-1.5 font-medium text-right">Produção</th>
+              <th className="p-1.5 font-medium text-right">Fechada</th>
+              <th className="p-1.5 font-medium text-right">Aberta</th>
+              <th className="p-1.5 font-medium text-right">Corte</th>
+              <th className="p-1.5 font-medium text-right">Total</th>
+              <th className="p-1.5 font-medium text-right text-muted-foreground/80">100% util.</th>
+              <th className="p-1.5 font-medium text-right text-red-700">Devolvida</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cards.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="p-3 text-center text-muted-foreground">
+                  {isLoading ? "Carregando…" : "Sem dados de estoque ainda."}
+                </td>
+              </tr>
+            ) : (
+              cards.map((c, i) => {
+                const bg = corHex(c.cor);
+                const fg = corTextoSobre(bg);
+                const total = c.Fechada + c.Aberta + c.Corte;
+                return (
+                  <tr key={c.cor} className={`border-t ${i % 2 === 1 ? "bg-muted/20" : ""}`}>
+                    <td className="p-1">
+                      <span
+                        className="inline-block rounded-sm px-1.5 py-0.5 text-[11.5px] font-semibold"
+                        style={{ backgroundColor: bg, color: fg }}
+                      >
+                        {c.cor}
                       </span>
-                      <span className="text-red-700">Devolvida</span>
-                      <span className="text-right text-red-700">{c.Devolvida}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
+                    </td>
+                    <td className="p-1.5 text-right tabular-nums">{c.producao}</td>
+                    <td className="p-1.5 text-right tabular-nums">{c.Fechada}</td>
+                    <td className="p-1.5 text-right tabular-nums">{c.Aberta}</td>
+                    <td className="p-1.5 text-right tabular-nums">{c.Corte}</td>
+                    <td className="p-1.5 text-right tabular-nums font-semibold">{total}</td>
+                    <td className="p-1.5 text-right tabular-nums text-muted-foreground/80">
+                      {c["100% utilizada"]}
+                    </td>
+                    <td className="p-1.5 text-right tabular-nums text-red-700">
+                      {c.Devolvida}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
           )}
         </div>
       </div>
