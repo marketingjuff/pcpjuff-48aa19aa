@@ -274,62 +274,65 @@ export function PecasPerdidasEditor({ value, onChange, readOnly = false }: Props
 
           return (
             <div key={i} className="rounded-md border p-2 space-y-2 bg-muted/30">
-              <div className="flex flex-wrap items-end gap-2">
-                <div className="min-w-[180px]">
-                  <label className="text-[11px] text-muted-foreground font-medium block">Modelo</label>
-                  <Select value={r.modelo} onValueChange={(v) => setLinha(i, { modelo: v })}>
-                    <SelectTrigger className="h-8 w-[180px]"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>
-                      {REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="min-w-[160px]">
-                  <label className="text-[11px] text-muted-foreground font-medium block">Cor</label>
-                  <Select value={r.cor} onValueChange={(v) => setLinha(i, { cor: v })}>
-                    <SelectTrigger
-                      className="h-8 w-[160px] font-bold"
-                      style={r.cor ? { backgroundColor: hex, color: fg, borderColor: fg === "#ffffff" ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.15)" } : undefined}
-                    >
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {REFACAO_CORES.map((c) => {
-                        const f = corTextoSobre(c.hex);
-                        return (
-                          <SelectItem
-                            key={c.nome}
-                            value={c.nome}
-                            style={{ backgroundColor: c.hex, color: f }}
-                            className="my-0.5 rounded-sm font-semibold focus:opacity-90"
-                          >
-                            {c.nome}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {REFACAO_TAMANHOS.map((t) => (
-                  <div key={t} className="w-[56px]">
-                    <label className="text-[11px] text-muted-foreground font-medium block text-center">{t}</label>
-                    <Input
-                      type="number"
-                      min={0}
-                      className="h-8 text-center px-1"
-                      value={r.qtds[t] ?? ""}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        const n = raw === "" ? 0 : Math.max(0, Number(raw) || 0);
-                        setQtd(i, t, n);
-                      }}
-                    />
+              <div className="overflow-x-auto">
+                <div className="inline-flex items-end gap-2 whitespace-nowrap min-w-full">
+                  <div className="shrink-0">
+                    <label className="text-[11px] text-muted-foreground font-medium block">Modelo</label>
+                    <Select value={r.modelo} onValueChange={(v) => setLinha(i, { modelo: v })}>
+                      <SelectTrigger className={`h-8 ${COL_MODELO}`}><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        {REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
-                ))}
+                  <div className="shrink-0">
+                    <label className="text-[11px] text-muted-foreground font-medium block">Cor</label>
+                    <Select value={r.cor} onValueChange={(v) => setLinha(i, { cor: v })}>
+                      <SelectTrigger
+                        className={`h-8 ${COL_COR} font-bold`}
+                        style={r.cor ? { backgroundColor: hex, color: fg, borderColor: fg === "#ffffff" ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.15)" } : undefined}
+                      >
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {REFACAO_CORES.map((c) => {
+                          const f = corTextoSobre(c.hex);
+                          return (
+                            <SelectItem
+                              key={c.nome}
+                              value={c.nome}
+                              style={{ backgroundColor: c.hex, color: f }}
+                              className="my-0.5 rounded-sm font-semibold focus:opacity-90"
+                            >
+                              {c.nome}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="ml-auto text-xs text-muted-foreground pb-1">
-                  Total <span className="font-semibold tabular-nums text-foreground">{somaLinha(r)}</span>
+                  {REFACAO_TAMANHOS.map((t) => (
+                    <div key={t} className={`${COL_TAM} shrink-0`}>
+                      <label className="text-[11px] text-muted-foreground font-medium block text-center">{t}</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        className="h-8 text-center px-1"
+                        value={r.qtds[t] ?? ""}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          const n = raw === "" ? 0 : Math.max(0, Number(raw) || 0);
+                          setQtd(i, t, n);
+                        }}
+                      />
+                    </div>
+                  ))}
+
+                  <div className={`${COL_TOTAL} shrink-0 text-xs text-muted-foreground pb-1 text-center`}>
+                    <div className="text-[11px] font-medium">Total</div>
+                    <div className="h-8 flex items-center justify-center font-semibold tabular-nums text-foreground">{somaLinha(r)}</div>
+                  </div>
                 </div>
               </div>
               <div className="flex justify-end gap-1">
