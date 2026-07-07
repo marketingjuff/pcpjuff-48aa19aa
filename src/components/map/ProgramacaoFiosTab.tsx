@@ -373,34 +373,36 @@ export function MapFiosTable({ finalizado }: Props) {
                             <InlineInput type="date" value={prod.data_faturamento} onCommit={(v) => commitProd(prod, "data_faturamento", v)} disabled={finalizado} className="w-[140px] pr-1" />
                           </div>
                         </td>
-                        <td className="p-1.5 text-right space-x-1 whitespace-nowrap">
-                          {finalizado ? (
-                            canManageMap && (
-                              <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => reabrir(prod)}>
-                                <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
-                              </Button>
-                            )
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                className="h-6 text-[10px] px-1.5 bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40"
-                                onClick={() => finalizar(prod)}
-                                disabled={!canFinalize}
-                              >
-                                <CheckCircle2 className="h-3 w-3 mr-0.5" /> Finalizar
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => openEditar(prod)}>
-                                <Pencil className="h-3 w-3 mr-1" /> Editar
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5" onClick={() => setDevProd(prod)}>
-                                Devolução
-                              </Button>
-                              {canManageMap && (
-                                <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" onClick={() => excluirProd(prod)}>Excluir</Button>
-                              )}
-                            </>
-                          )}
+                        <td className="p-1.5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1">
+                            {finalizado ? (
+                              canManageMap && (
+                                <Button size="sm" variant="outline" className="h-6 text-xs w-[80px]" onClick={() => reabrir(prod)}>
+                                  <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
+                                </Button>
+                              )
+                            ) : (
+                              <>
+                                <Button
+                                  size="sm"
+                                  className="h-6 text-[10px] px-1.5 bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40 w-[88px]"
+                                  onClick={() => finalizar(prod)}
+                                  disabled={!canFinalize}
+                                >
+                                  <CheckCircle2 className="h-3 w-3 mr-0.5" /> Finalizar
+                                </Button>
+                                <Button size="sm" variant="outline" className="h-6 text-xs w-[72px]" onClick={() => openEditar(prod)}>
+                                  <Pencil className="h-3 w-3 mr-1" /> Editar
+                                </Button>
+                                <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 w-[88px]" onClick={() => setDevProd(prod)}>
+                                  Devolução
+                                </Button>
+                                {canManageMap && (
+                                  <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive w-[72px]" onClick={() => excluirProd(prod)}>Excluir</Button>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                       {isOpen && (
