@@ -384,6 +384,9 @@ export function MapFiosTable({ finalizado }: Props) {
                               <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => openEditar(prod)}>
                                 <Pencil className="h-3 w-3 mr-1" /> Editar
                               </Button>
+                              <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => setDevProd(prod)}>
+                                Devolução
+                              </Button>
                               <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" onClick={() => excluirProd(prod)}>Excluir</Button>
                             </>
                           )}
