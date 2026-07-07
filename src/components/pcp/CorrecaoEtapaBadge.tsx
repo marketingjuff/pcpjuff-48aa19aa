@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { CorrecaoEtapa, Pedido } from "@/lib/pedidos";
-import { useProfilesMap } from "@/hooks/use-profiles-map";
+import { resolveNome, useProfilesMap } from "@/hooks/use-profiles-map";
 
 function fmtBR(iso: string): string {
   try {
@@ -17,8 +17,7 @@ export function CorrecaoEtapaBadge({ pedido }: { pedido: Pedido }) {
   const historico: CorrecaoEtapa[] = Array.isArray(pedido.correcoes_etapa)
     ? pedido.correcoes_etapa
     : [];
-  const uids = historico.map((c) => c.usuario_id).filter((x): x is string => !!x);
-  const profiles = useProfilesMap(uids);
+  const profiles = useProfilesMap();
   if (historico.length === 0) return null;
 
   return (
@@ -35,7 +34,7 @@ export function CorrecaoEtapaBadge({ pedido }: { pedido: Pedido }) {
         <div className="font-semibold text-sm">Histórico de correções</div>
         <ol className="space-y-2 list-decimal list-inside">
           {historico.map((c, i) => {
-            const nome = c.usuario_id ? (profiles[c.usuario_id]?.nome || profiles[c.usuario_id]?.email || c.usuario_id.slice(0, 8)) : "—";
+            const nome = resolveNome(profiles, c.usuario_id);
             return (
               <li key={i} className="space-y-0.5">
                 <div>
