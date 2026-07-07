@@ -72,18 +72,6 @@ export function MapFiosTable({ finalizado }: Props) {
     return Array.from(s).sort((a, b) => a.localeCompare(b));
   }, [prodsAll]);
 
-  const prods = useMemo(() => {
-    const notaQ = fNota.trim().toLowerCase();
-    return prodsAll.filter((p) => {
-      if (fData && p.data_pedido !== fData) return false;
-      if (fEmpresa !== "__all__" && p.faturar_para !== fEmpresa) return false;
-      if (fFornecedor !== "__all__" && p.fornecedor !== fFornecedor) return false;
-      if (notaQ && !(p.nota_fiscal ?? "").toLowerCase().includes(notaQ)) return false;
-      if (!finalizado && fStatus !== "__all__" && calcStatusFio(p) !== fStatus) return false;
-      return true;
-    });
-  }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fStatus, finalizado]);
-
   const byProdEntregas = useMemo(() => {
     const m = new Map<string, MapEntregaMalharia[]>();
     for (const e of entregasAll) {
@@ -100,6 +88,32 @@ export function MapFiosTable({ finalizado }: Props) {
     }
     return m;
   }, [progsAll]);
+
+  const prods = useMemo(() => {
+    const notaQ = fNota.trim().toLowerCase();
+    return prodsAll.filter((p) => {
+      if (fData && p.data_pedido !== fData) return false;
+      if (fEmpresa !== "__all__" && p.faturar_para !== fEmpresa) return false;
+      if (fFornecedor !== "__all__" && p.fornecedor !== fFornecedor) return false;
+      if (notaQ) {
+        const nfFio = (p.nota_fiscal ?? "").toLowerCase();
+        const es = byProdEntregas.get(p.id) ?? [];
+        const ps = byProdProgs.get(p.id) ?? [];
+        const hitFio = nfFio.includes(notaQ);
+        const hitMalharia = es.some((e) =>
+          (e.nota_fiscal_1 ?? "").toLowerCase().includes(notaQ) ||
+          (e.nota_cobertura ?? "").toLowerCase().includes(notaQ),
+        );
+        const hitTint = ps.some((pg) =>
+          (pg.nota_fiscal_recebimento ?? "").toLowerCase().includes(notaQ),
+        );
+        if (!hitFio && !hitMalharia && !hitTint) return false;
+      }
+      if (!finalizado && fStatus !== "__all__" && calcStatusFio(p) !== fStatus) return false;
+      return true;
+    });
+  }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fStatus, finalizado, byProdEntregas, byProdProgs]);
+
 
   // Grupos por data_pedido — ascendente; dentro do grupo, numero ascendente
   const grupos = useMemo(() => {
