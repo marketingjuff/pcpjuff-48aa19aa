@@ -33,6 +33,7 @@ import { RefacaoBadge } from "./RefacaoBadge";
 import { SolicitarPecasDialog } from "./SolicitarPecasDialog";
 import { PecasCompletadasPanel } from "./PecasCompletadasPanel";
 import { useColorSettings } from "@/hooks/use-color-settings";
+import { HistoricoPedidoDialog } from "./HistoricoPedidoDialog";
 
 import { calcularEtapaAtual as _calcEtapa } from "@/lib/pedidos";
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
