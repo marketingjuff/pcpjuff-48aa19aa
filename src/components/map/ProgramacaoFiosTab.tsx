@@ -430,6 +430,16 @@ export function MapFiosTable({ finalizado }: Props) {
         producao={editingProd}
         onCreated={invalidateAll}
       />
+
+      {devProd && (
+        <DevolucaoDialog
+          open={!!devProd}
+          onOpenChange={(v) => !v && setDevProd(null)}
+          producao={devProd}
+          programacoes={byProdProgs.get(devProd.id) ?? []}
+          onDone={invalidateAll}
+        />
+      )}
     </div>
   );
 }
