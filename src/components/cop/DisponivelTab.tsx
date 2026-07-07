@@ -185,11 +185,11 @@ export function DisponivelTab() {
                       const presente = prod > 0 || falt > 0 || baix > 0;
                       const temFalta = presente && falt > 0;
                       const color = !presente ? "text-muted-foreground"
-                                  : temFalta ? "text-red-700"
                                   : v < 0 ? "text-red-700"
-                                  : v === 0 ? "text-amber-700"
+                                  : temFalta ? "text-gray-500"
+                                  : v === 0 ? "text-muted-foreground"
                                   : "text-green-700";
-                      const display = !presente ? "—" : v;
+                      const display = (!presente || (v === 0 && !temFalta)) ? "—" : v;
                       return (
                         <td key={t} className="p-0 text-center leading-tight">
                           <button
