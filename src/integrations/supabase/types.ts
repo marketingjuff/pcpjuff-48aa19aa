@@ -461,6 +461,7 @@ export type Database = {
           data_abertura: string | null
           data_entrada: string | null
           id: string
+          larg: number | null
           ne: number | null
           nota_fiscal: string | null
           numero_peca: string | null
@@ -477,6 +478,7 @@ export type Database = {
           data_abertura?: string | null
           data_entrada?: string | null
           id?: string
+          larg?: number | null
           ne?: number | null
           nota_fiscal?: string | null
           numero_peca?: string | null
@@ -493,6 +495,7 @@ export type Database = {
           data_abertura?: string | null
           data_entrada?: string | null
           id?: string
+          larg?: number | null
           ne?: number | null
           nota_fiscal?: string | null
           numero_peca?: string | null

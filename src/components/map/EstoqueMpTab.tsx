@@ -32,6 +32,25 @@ const STATUS_LIST: MapEstoquePecaStatus[] = [
 
 const STATUS_TOTAL: MapEstoquePecaStatus[] = ["Fechada", "Aberta", "Corte"];
 
+function parseLarg(raw: string | null): number | null {
+  if (raw == null) return null;
+  const cleaned = String(raw).replace(/[^\d,.]/g, "");
+  if (!cleaned) return null;
+  if (cleaned.includes(",") || cleaned.includes(".")) {
+    const n = Number(cleaned.replace(",", "."));
+    return Number.isFinite(n) ? n : null;
+  }
+  const digits = cleaned.slice(0, 4);
+  if (digits.length === 1) return Number(digits);
+  const n = Number(`${digits[0]}.${digits.slice(1)}`);
+  return Number.isFinite(n) ? n : null;
+}
+
+function fmtLarg(n: number | null | undefined): string {
+  if (n == null) return "";
+  return Number(n).toFixed(3).replace(".", ",");
+}
+
 export function EstoqueMpTab() {
   const qc = useQueryClient();
   const { data: pecas = [], isLoading } = useEstoquePecas();
@@ -167,6 +186,8 @@ export function EstoqueMpTab() {
       const patch: any = {};
       if (field === "alt_inicial") {
         patch[field] = raw == null || raw === "" ? null : Number(raw);
+      } else if (field === "larg") {
+        patch[field] = parseLarg(raw);
       } else {
         patch[field] = raw;
       }
@@ -326,37 +347,39 @@ export function EstoqueMpTab() {
       <div className="rounded-md border bg-white/70 overflow-x-auto">
         <table className="w-full text-[12.5px] table-fixed">
           <colgroup>
-            <col style={{ width: "4.5%" }} />
-            <col style={{ width: "5.5%" }} />
-            <col style={{ width: "11%" }} />
-            <col style={{ width: "9%" }} />
-            <col style={{ width: "8%" }} />
-            <col style={{ width: "8%" }} />
-            <col style={{ width: "10%" }} />
-            <col style={{ width: "8%" }} />
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "6%" }} />
+            <col style={{ width: "13%" }} />
             <col style={{ width: "7%" }} />
-            <col style={{ width: "22%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "6%" }} />
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "14%" }} />
             <col style={{ width: "7%" }} />
           </colgroup>
           <thead className="bg-muted/40 sticky top-0">
-            <tr className="text-left">
-              <th className="p-1.5 font-medium text-right">NE</th>
-              <th className="p-1.5 font-medium text-right">PROD</th>
-              <th className="p-1.5 font-medium">NF</th>
-              <th className="p-1.5 font-medium">Cor</th>
-              <th className="p-1.5 font-medium">Data entrada</th>
-              <th className="p-1.5 font-medium">Nº peça</th>
-              <th className="p-1.5 font-medium">Status</th>
-              <th className="p-1.5 font-medium">Abertura</th>
-              <th className="p-1.5 font-medium text-right">Alt inicial (m)</th>
-              <th className="p-1.5 font-medium">Cortes</th>
-              <th className="p-1.5 font-medium text-right">Saldo (m)</th>
+            <tr>
+              <th className="p-1 font-medium text-center">NE</th>
+              <th className="p-1 font-medium text-center">PROD</th>
+              <th className="p-1 font-medium text-center">NF</th>
+              <th className="p-1 font-medium text-center">Cor</th>
+              <th className="p-1 font-medium text-center">Data entrada</th>
+              <th className="p-1 font-medium text-center">Nº peça</th>
+              <th className="p-1 font-medium text-center">Status</th>
+              <th className="p-1 font-medium text-center">Abertura</th>
+              <th className="p-1 font-medium text-center">Larg (m)</th>
+              <th className="p-1 font-medium text-center">Alt (m)</th>
+              <th className="p-1 font-medium text-center">Cortes</th>
+              <th className="p-1 font-medium text-center">Saldo (m)</th>
             </tr>
           </thead>
           <tbody>
             {pecasFiltradas.length === 0 ? (
               <tr>
-                <td colSpan={11} className="p-3 text-center text-muted-foreground">
+                <td colSpan={12} className="p-3 text-center text-muted-foreground">
                   Sem peças.
                 </td>
               </tr>
@@ -376,16 +399,16 @@ export function EstoqueMpTab() {
                     key={p.id}
                     className={`border-t ${i % 2 === 1 ? "bg-muted/20" : ""}`}
                   >
-                    <td className="p-1 text-right tabular-nums font-semibold">
-                      {p.ne ?? "—"}
+                    <td className="p-1 text-center tabular-nums font-semibold">
+                      {p.ne != null ? `NE${p.ne}` : "—"}
                     </td>
-                    <td className="p-1 text-right tabular-nums">
-                      {prodNumero ?? "—"}
+                    <td className="p-1 text-center tabular-nums">
+                      {prodNumero != null ? `PROD${prodNumero}` : "—"}
                     </td>
-                    <td className="p-1 truncate" title={p.nota_fiscal ?? ""}>
+                    <td className="p-1 text-center truncate" title={p.nota_fiscal ?? ""}>
                       {p.nota_fiscal ?? "—"}
                     </td>
-                    <td className="p-1">
+                    <td className="p-1 text-center">
                       <span
                         className="inline-block rounded-sm px-1.5 py-0.5 text-[11.5px] font-semibold"
                         style={{ backgroundColor: bg, color: fg }}
@@ -394,11 +417,12 @@ export function EstoqueMpTab() {
                         {corBase(p.cor) || "—"}
                       </span>
                     </td>
-                    <td className="p-1 tabular-nums">{fmtDateBR(p.data_entrada)}</td>
+                    <td className="p-1 text-center tabular-nums">{fmtDateBR(p.data_entrada)}</td>
                     <td className="p-1">
                       <InlineInput
                         value={p.numero_peca}
                         onCommit={(v) => commitField(p, "numero_peca", v)}
+                        className="text-center"
                       />
                     </td>
                     <td className="p-1">
@@ -421,6 +445,15 @@ export function EstoqueMpTab() {
                         type="date"
                         value={p.data_abertura}
                         onCommit={(v) => commitField(p, "data_abertura", v)}
+                        className="text-center"
+                      />
+                    </td>
+                    <td className="p-1">
+                      <InlineInput
+                        value={fmtLarg(p.larg)}
+                        onCommit={(v) => commitField(p, "larg", v)}
+                        placeholder="1,800"
+                        className="text-center"
                       />
                     </td>
                     <td className="p-1">
@@ -430,7 +463,7 @@ export function EstoqueMpTab() {
                         min="0"
                         value={p.alt_inicial}
                         onCommit={(v) => commitField(p, "alt_inicial", v)}
-                        className="text-right"
+                        className="text-center"
                       />
                     </td>
                     <td className="p-1">
@@ -441,7 +474,7 @@ export function EstoqueMpTab() {
                       />
                     </td>
                     <td
-                      className={`p-1 text-right tabular-nums font-semibold ${
+                      className={`p-1 text-center tabular-nums font-semibold ${
                         saldo != null && saldo < 0 ? "text-red-600" : ""
                       }`}
                     >
