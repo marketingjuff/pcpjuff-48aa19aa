@@ -129,7 +129,7 @@ export function PecasFinalizadasTab() {
           <tbody>
             {finalizadas.length === 0 ? (
               <tr>
-                <td colSpan={11} className="p-3 text-center text-muted-foreground">
+                <td colSpan={12} className="p-3 text-center text-muted-foreground">
                   {isLoading ? "Carregando…" : "Nenhuma peça finalizada."}
                 </td>
               </tr>
