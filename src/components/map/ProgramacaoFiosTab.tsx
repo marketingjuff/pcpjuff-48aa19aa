@@ -110,10 +110,15 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
 
   const prods = useMemo(() => {
     const notaQ = fNota.trim().toLowerCase();
+    const prodQ = fProd.trim().toLowerCase().replace(/\s/g, "");
     return prodsAll.filter((p) => {
       if (fData && p.data_pedido !== fData) return false;
       if (fEmpresa !== "__all__" && p.faturar_para !== fEmpresa) return false;
       if (fFornecedor !== "__all__" && p.fornecedor !== fFornecedor) return false;
+      if (prodQ) {
+        const code = prodCode(p.numero).toLowerCase().replace(/\s/g, "");
+        if (!code.includes(prodQ)) return false;
+      }
       if (notaQ) {
         const nfFio = (p.nota_fiscal ?? "").toLowerCase();
         const es = byProdEntregas.get(p.id) ?? [];
@@ -131,7 +136,7 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
       if (!finalizado && fStatus !== "__all__" && calcStatusFio(p) !== fStatus) return false;
       return true;
     });
-  }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fStatus, finalizado, byProdEntregas, byProdProgs]);
+  }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fProd, fStatus, finalizado, byProdEntregas, byProdProgs]);
 
 
   // Grupos por data_pedido — ascendente; dentro do grupo, numero ascendente
@@ -211,9 +216,9 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
   function openEditar(p: MapProducao) { setEditingProd(p); setDlgOpen(true); }
 
   const hasFilters =
-    !!fData || fEmpresa !== "__all__" || fFornecedor !== "__all__" || !!fNota.trim() || fStatus !== "__all__";
+    !!fData || fEmpresa !== "__all__" || fFornecedor !== "__all__" || !!fNota.trim() || !!fProd.trim() || fStatus !== "__all__";
   function limparFiltros() {
-    setFData(""); setFEmpresa("__all__"); setFFornecedor("__all__"); setFNota(""); setFStatus("__all__");
+    setFData(""); setFEmpresa("__all__"); setFFornecedor("__all__"); setFNota(""); setFProd(""); setFStatus("__all__");
   }
 
   return (
