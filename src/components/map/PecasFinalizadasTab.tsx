@@ -8,7 +8,19 @@ import { useEstoquePecas, patchEstoquePeca, fmtDateBR, corBase, type MapEstoqueP
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
 export function PecasFinalizadasTab() {
+  const qc = useQueryClient();
   const { data: pecas = [], isLoading } = useEstoquePecas();
+
+  async function corrigir(p: MapEstoquePeca) {
+    if (!window.confirm(`Devolver a peça NE${p.ne ?? ""} para o estoque? Status voltará para "Aberta".`)) return;
+    try {
+      await patchEstoquePeca(p.id, { status: "Aberta" });
+      qc.invalidateQueries({ queryKey: ["map", "estoque_pecas"] });
+      toast.success("Peça devolvida ao estoque.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao corrigir.");
+    }
+  }
 
   const { data: prodNumeroMap = {} } = useQuery({
     queryKey: ["map", "producoes", "numero-map"],
