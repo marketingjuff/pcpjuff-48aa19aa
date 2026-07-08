@@ -50,6 +50,7 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
   const [fEmpresa, setFEmpresa] = useState<string>("__all__");
   const [fFornecedor, setFFornecedor] = useState<string>("__all__");
   const [fNota, setFNota] = useState<string>("");
+  const [fProd, setFProd] = useState<string>("");
   const [fStatus, setFStatus] = useState<string>("__all__");
 
   // Realtime
