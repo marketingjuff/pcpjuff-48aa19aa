@@ -1,83 +1,81 @@
 
-# Auditoria e histórico de pedidos
+# Histórico / Auditoria em PCP, MAP e COP
 
 ## Objetivo
 
-Nunca mais perder o rastro de um pedido. Toda **criação, alteração e deleção** de um pedido passa a ser gravada automaticamente, com **quem fez, quando, e o que mudou**. No card do pedido aparece um botão **"Histórico"** que abre uma linha do tempo legível.
+Criar 3 novas abas (uma em cada área master): **Histórico PCP**, **Histórico MAP**, **Histórico COP**. Cada aba mostra a linha do tempo de tudo que aconteceu naquela área — quem criou, alterou ou deletou, quando, e o que mudou. Acesso restrito a **admin**.
 
-## O que você vai ganhar
+## Escopo de tabelas auditadas
 
-- Se alguém deletar e recriar um pedido, o log da deleção fica registrado (com quem foi).
-- Se um pedido "voltar" de etapa (ex.: Dados IN → Estamparia → Dados IN), cada troca aparece na linha do tempo com autor e data.
-- Se um campo importante mudar (data de entrega, quantidade, vendedor, layout, status), aparece "Fulano mudou X de A para B em DD/MM HH:MM".
-- Funciona para tudo que já existe: nenhum código de mutação precisa ser alterado, porque a captura é feita no próprio banco via trigger.
+- **PCP**: `pedidos` (já auditada via `pedido_audit_log`, reaproveita).
+- **MAP**: `map_producoes`, `map_tinturaria_programacoes`, `map_malharia_entregas`, `map_estoque_pecas`, `map_devolucoes`.
+- **COP**: `cops`, `oficinas`, `cop_perdas`, `pagamentos_consolidados`.
 
-## Escopo (o que entra e o que fica de fora)
+## Como vai funcionar
 
-**Entra agora:**
-- Tabela `pedidos` (todas as 80 colunas).
-- Registro de INSERT, UPDATE e DELETE.
-- Painel "Histórico" no card do pedido (aba **Dados IN** ou como botão no topo do card).
+### 1. Duas novas tabelas de log (mesmo padrão de `pedido_audit_log`)
 
-**Fica de fora (por enquanto):**
-- Tabelas MAP (`map_producoes`, `map_estoque_pecas` etc.) e COP (`cops`, `oficinas`, `pagamentos_consolidados`). Se quiser depois, é uma expansão barata — mesmo padrão de trigger.
+- `map_audit_log` — colunas: `id`, `tabela` (qual das 5 tabelas MAP), `registro_id` (uuid, sem FK), `identificador` (texto legível: código do fio, oficina, etc.), `acao` (insert/update/delete), `mudancas` (jsonb diff), `linha_completa` (jsonb), `feito_por`, `feito_por_email`, `feito_por_nome`, `feito_em`.
+- `cop_audit_log` — mesma estrutura, para as 4 tabelas COP. `identificador` = número/letra do COP, nome da oficina, etc.
 
-## Como funciona (parte técnica)
+Índices em `tabela`, `registro_id`, `feito_em`. RLS: leitura só para admin.
 
-### 1. Nova tabela `public.pedido_audit_log`
+### 2. Função genérica de log + triggers
 
-Colunas:
-- `pedido_id uuid` (não é FK — precisa sobreviver a DELETE do pedido)
-- `orcamento text`, `pedido_olist text` (snapshot legível mesmo se o pedido for deletado)
-- `acao text` — `insert`, `update`, `delete`
-- `mudancas jsonb` — array `[{ campo, de, para }]` (só campos que realmente mudaram; ignora `updated_at`)
-- `linha_completa jsonb` — snapshot da linha inteira (para deletes e primeira criação)
-- `feito_por uuid` (auth.uid()) + `feito_por_email text` (join com profiles no momento do log)
-- `feito_em timestamptz default now()`
+Uma função `log_generic_change()` SECURITY DEFINER, parametrizada via `TG_ARGV[0]` (nome do log de destino: `map_audit_log` ou `cop_audit_log`) e `TG_ARGV[1]` (nome da coluna a usar como identificador, ex: `codigo`, `numero`, `nome`).
 
-RLS: leitura só para quem tem `has_role(admin)` ou está autenticado com acesso PCP (mesmo critério que já entra em pedidos hoje). Sem insert/update/delete via API — só o trigger escreve.
+Trigger `AFTER INSERT OR UPDATE OR DELETE` em cada uma das 9 tabelas MAP+COP. Cada trigger passa seus 2 argumentos. Ignora `updated_at` no diff. Não grava se nada relevante mudou.
 
-### 2. Trigger `AFTER INSERT/UPDATE/DELETE ON public.pedidos`
+### 3. Server function `getAuditLog`
 
-Função SECURITY DEFINER que:
-- Em INSERT: grava `acao='insert'` + snapshot inicial.
-- Em UPDATE: diffs coluna a coluna (ignorando `updated_at`), grava `acao='update'` com o array `mudancas`. Se nenhum campo relevante mudou, não grava.
-- Em DELETE: grava `acao='delete'` + snapshot final.
-- Captura `auth.uid()` e busca `profiles.email/nome` para armazenar junto (para exibir mesmo se o usuário for removido depois).
+`src/lib/audit-log.functions.ts` (`requireSupabaseAuth` + checagem `has_role('admin')` no handler; retorna 403 se não for admin).
 
-### 3. Server function `getPedidoHistorico`
+Parâmetros:
+- `area`: `'pcp' | 'map' | 'cop'`
+- `busca?`: texto (procura em `identificador`, `orcamento`, `pedido_olist`)
+- `usuarioId?`: uuid
+- `acao?`: `'insert' | 'update' | 'delete'`
+- `dataInicio?`, `dataFim?`: ISO
+- `page`: número (default 1), 200 por página
 
-`src/lib/pedido-historico.functions.ts` — usa `requireSupabaseAuth`, retorna as entradas do log ordenadas por `feito_em desc` para um dado `pedido_id` **ou** um dado `pedido_olist` (para achar histórico de pedidos deletados/recriados com o mesmo Olist).
+Retorna `{ entries, total, page, pageSize: 200 }`. PCP consulta `pedido_audit_log`; MAP/COP consultam suas respectivas tabelas.
 
-### 4. UI — botão "Histórico" no card do pedido
+### 4. Nova aba em cada área master
 
-Novo componente `src/components/pcp/HistoricoPedidoDialog.tsx`:
-- Botão pequeno no topo do card (perto de "Duplicar" / "Deletar").
-- Abre um `Dialog` com uma timeline:
-  - `criado por Wander em 03/07 16:47`
-  - `Wander mudou status_pecas de "incompleto" para "completo" em 04/07 09:12`
-  - `Flávio marcou dtf_executado em 05/07 14:03`
-  - `Juliana deletou o pedido em 06/07 10:20`
-- Mostra também entradas de outros pedidos com o **mesmo `pedido_olist`** (para o caso deletado/recriado, aparece linha "outro registro deste Olist deletado em ...").
+- `src/components/pcp/HistoricoTab.tsx`
+- `src/components/map/HistoricoMapTab.tsx`
+- `src/components/cop/HistoricoCopTab.tsx`
 
-Nomes de campos técnicos são traduzidos para PT-BR via um pequeno dicionário no componente (`dtf_executado` → "DTF executado", `status_pecas` → "Status de peças", etc.).
+Componente compartilhado `src/components/shared/AuditLogView.tsx` que recebe `area` e renderiza:
+- Barra de filtros: campo busca, dropdown usuário (populado via `profiles`), dropdown ação, dois datepickers (início/fim), botão limpar filtros.
+- Timeline paginada (reaproveita visual do `HistoricoPedidoDialog` existente: badge de ação, autor, data/hora, diff campo-a-campo com labels PT-BR).
+- Cada entrada MAP/COP mostra também qual tabela ("Produção", "Tinturaria", "Estoque de peças", "COP", "Oficina", etc.) via mapa de labels.
+- Paginação simples (Anterior/Próximo + "página X de Y").
 
-## Passos de implementação
+Estado dos filtros vive na URL via `validateSearch` (search params) para o admin poder compartilhar link filtrado.
+
+### 5. Registro das abas + gate admin
+
+Nas 3 rotas master (`_authenticated/index.tsx` = PCP, `/map`, `/cop`), adicionar novo `TabsTrigger` **"Histórico"** que só renderiza quando `useIsAdmin()` for `true`. Se um não-admin navegar direto para `?tab=historico`, mostra "Acesso restrito".
+
+## Ordem de implementação
 
 ```text
-1. Migration:
-   - CREATE TABLE public.pedido_audit_log + GRANT + RLS + policies
-   - CREATE FUNCTION public.log_pedido_change() SECURITY DEFINER
-   - CREATE TRIGGER audit_pedidos AFTER INSERT OR UPDATE OR DELETE ON pedidos
-2. Aguardar aprovação da migration e regeneração de types.
-3. Criar src/lib/pedido-historico.functions.ts (getPedidoHistorico com requireSupabaseAuth).
-4. Criar src/components/pcp/HistoricoPedidoDialog.tsx (Dialog + timeline + dicionário de labels).
-5. Adicionar botão "Histórico" no card do pedido (DadosInTab / shared header, junto de Duplicar/Deletar).
-6. Testar: editar um campo, verificar entrada; deletar, verificar entrada; recriar com mesmo Olist, verificar que timeline mostra os dois registros.
+1. Migration: cria map_audit_log + cop_audit_log (com GRANT + RLS admin-only),
+   cria log_generic_change(), cria 9 triggers.
+2. Aguardar aprovação + regen de types.
+3. src/lib/audit-log.functions.ts (getAuditLog paginado com filtros).
+4. src/components/shared/AuditLogView.tsx (filtros + timeline + paginação).
+5. HistoricoTab.tsx em pcp/, map/, cop/ (wrappers com area="pcp|map|cop").
+6. Adicionar TabsTrigger "Histórico" nas 3 rotas master, gated por useIsAdmin.
+7. Testar: editar produção MAP → aparece no Histórico MAP; deletar COP →
+   aparece no Histórico COP; filtro por usuário e período funcionando.
 ```
 
-## Observações importantes
+## Observações
 
-- **Não retroage.** O 22961 atual não vai ganhar histórico do passado — o log só passa a existir a partir do momento em que a migration rodar. É por isso que estou frisando isto: se hoje já houve uma deleção, ela não vai aparecer. Serve para daqui pra frente.
-- Nenhum código existente precisa mudar de comportamento. As telas e mutations continuam iguais.
-- Custo em performance é baixo: uma linha inserida por update. Se quiser, podemos podar entradas com mais de N meses depois.
+- **Não retroage**: só grava dali pra frente. Dados antigos não aparecem.
+- Custo em performance: uma linha inserida por mutação. Índices garantem consulta rápida.
+- MAP/COP não têm campos "orçamento"/"olist" como pedidos; o `identificador` textual (código do fio, nº do COP, nome da oficina) é o que aparece na busca e na timeline.
+- Labels PT-BR dos campos são estendidas no `AuditLogView` cobrindo também colunas MAP/COP (`gramatura`, `qtd_kg`, `oficina_id`, `pagamento_status` etc.).
+- Se depois quiser expor histórico para gestor também, é só afrouxar o gate — a estrutura de dados já está pronta.
