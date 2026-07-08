@@ -195,6 +195,16 @@ export function PecasFinalizadasTab() {
                     <td className="p-1 text-center tabular-nums font-semibold">
                       {somaCortes.toFixed(2)}
                     </td>
+                    <td className="p-1 text-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 px-2 text-[11px]"
+                        onClick={() => corrigir(p)}
+                      >
+                        Corrigir
+                      </Button>
+                    </td>
                   </tr>
                 );
               })
