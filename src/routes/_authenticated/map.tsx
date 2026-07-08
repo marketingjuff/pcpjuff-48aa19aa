@@ -29,6 +29,7 @@ const BASE_TABS = [
   { value: "programacao", label: "Prod. de Tecido" },
   { value: "finalizados", label: "Prod. Finalizados" },
   { value: "estoque", label: "Estoque de MP" },
+  { value: "pecas-finalizadas", label: "Peças Finalizadas" },
   { value: "quebra", label: "Quebra" },
   { value: "devolucoes", label: "Devoluções" },
 ];
