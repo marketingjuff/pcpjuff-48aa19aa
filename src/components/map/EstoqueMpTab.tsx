@@ -54,6 +54,7 @@ function fmtLarg(n: number | null | undefined): string {
 
 export function EstoqueMpTab() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { data: pecas = [], isLoading } = useEstoquePecas();
   // Precisamos das produções não finalizadas + programações para o card "Produção".
   const dataAberta = useMapData(false);
