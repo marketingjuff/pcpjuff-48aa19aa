@@ -276,7 +276,12 @@ export function EstoqueMpTab() {
                 const total = c.Fechada + c.Aberta + c.Corte;
                 const part = totalGeral > 0 ? Math.round((total / totalGeral) * 100) : 0;
                 return (
-                  <tr key={c.cor} className={`border-t ${i % 2 === 1 ? "bg-muted/20" : ""}`}>
+                  <tr
+                    key={c.cor}
+                    className={`border-t ${i % 2 === 1 ? "bg-muted/20" : ""} ${isCru ? "cursor-pointer hover:bg-yellow-100/60" : ""}`}
+                    onClick={isCru ? () => navigate({ to: "/map", search: { tab: "programacao", fioFilter: "nao_programadas" } as any }) : undefined}
+                    title={isCru ? "Ver produções com peças ainda não programadas na tinturaria" : undefined}
+                  >
                     <td className="py-0.5 px-1.5">
                       <span
                         className="block w-full text-center truncate rounded-sm px-1.5 py-0.5 text-[11.5px] font-semibold"
