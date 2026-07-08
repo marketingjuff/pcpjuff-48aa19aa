@@ -80,6 +80,7 @@ export interface MapEstoquePeca {
   status: MapEstoquePecaStatus;
   data_abertura: string | null;
   alt_inicial: number | null;
+  larg: number | null;
   cortes: MapEstoqueCorte[];
   created_at: string;
   updated_at: string;
