@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import {
   useMapData, useKgPorPeca, fmtDateBR, podeFinalizar, prodCode,
-  patchProducao, sumPecasEntregas, sumKgEntregas,
+  patchProducao, sumPecasEntregas, sumKgEntregas, sumPecasProgramadas,
   calcStatusFio, calcStatusMalharia, calcStatusTinturaria,
   useEstoquePecas, syncEstoquePecas,
   type MapProducao, type MapEntregaMalharia, type MapProgramacaoTinturaria,
