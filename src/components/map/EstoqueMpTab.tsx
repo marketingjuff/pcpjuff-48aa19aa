@@ -58,6 +58,7 @@ export function EstoqueMpTab() {
   const dataAberta = useMapData(false);
   const producoesAbertas = dataAberta.producoes.data ?? [];
   const programacoes = dataAberta.programacoes.data ?? [];
+  const entregas = dataAberta.entregas.data ?? [];
 
   // COPs ativos (status ≠ Finalizado) para o popover de cortes.
   const { data: copsAtivos = [] } = useQuery({
@@ -150,8 +151,27 @@ export function EstoqueMpTab() {
       if (pe.status in row) (row as any)[pe.status] += 1;
     }
 
-    return Array.from(map.values()).sort((a, b) => a.cor.localeCompare(b.cor));
-  }, [pecas, programacoes, producoesAbertas]);
+    // CRU: peças entregues pela malharia (produções abertas) ainda não programadas na tinturaria.
+    let cruPendente = 0;
+    for (const p of producoesAbertas as MapProducao[]) {
+      const entreguesProd = (entregas as any[])
+        .filter((e) => e.producao_id === p.id)
+        .reduce((s, e) => s + Number(e.pecas ?? 0), 0);
+      const programadasProd = (programacoes as MapProgramacaoTinturaria[])
+        .filter((pr) => pr.producao_id === p.id)
+        .reduce((s, pr) => s + Number(pr.pecas ?? 0), 0);
+      const pend = entreguesProd - programadasProd;
+      if (pend > 0) cruPendente += pend;
+    }
+    const cruRow = bump("CRU");
+    cruRow.producao += cruPendente;
+
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.cor === "CRU") return -1;
+      if (b.cor === "CRU") return 1;
+      return a.cor.localeCompare(b.cor);
+    });
+  }, [pecas, programacoes, producoesAbertas, entregas]);
 
   // ---------- Filtros ----------
   const [fCor, setFCor] = useState<string>("__todas__");
@@ -247,7 +267,8 @@ export function EstoqueMpTab() {
               </tr>
             ) : (
               cards.map((c, i) => {
-                const bg = corHex(c.cor);
+                const isCru = c.cor === "CRU";
+                const bg = isCru ? "#e8dcc4" : corHex(c.cor);
                 const fg = corTextoSobre(bg);
                 const total = c.Fechada + c.Aberta + c.Corte;
                 const part = totalGeral > 0 ? Math.round((total / totalGeral) * 100) : 0;
