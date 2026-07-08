@@ -21,6 +21,7 @@ export const Route = createFileRoute("/_authenticated/map")({
   validateSearch: (s: Record<string, unknown>) => ({
     tab: typeof s.tab === "string" ? s.tab : undefined,
     prodId: typeof s.prodId === "string" ? s.prodId : undefined,
+    fioFilter: typeof s.fioFilter === "string" ? s.fioFilter : undefined,
   }),
   component: MapHome,
 });
