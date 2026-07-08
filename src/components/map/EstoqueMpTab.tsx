@@ -326,18 +326,22 @@ export function EstoqueMpTab() {
       <div className="rounded-md border bg-white/70 overflow-x-auto">
         <table className="w-full text-[12.5px] table-fixed">
           <colgroup>
-            <col style={{ width: "8%" }} />
-            <col style={{ width: "10%" }} />
-            <col style={{ width: "9%" }} />
-            <col style={{ width: "9%" }} />
+            <col style={{ width: "4.5%" }} />
+            <col style={{ width: "5.5%" }} />
             <col style={{ width: "11%" }} />
             <col style={{ width: "9%" }} />
             <col style={{ width: "8%" }} />
-            <col style={{ width: "28%" }} />
             <col style={{ width: "8%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "7%" }} />
+            <col style={{ width: "22%" }} />
+            <col style={{ width: "7%" }} />
           </colgroup>
           <thead className="bg-muted/40 sticky top-0">
             <tr className="text-left">
+              <th className="p-1.5 font-medium text-right">NE</th>
+              <th className="p-1.5 font-medium text-right">PROD</th>
               <th className="p-1.5 font-medium">NF</th>
               <th className="p-1.5 font-medium">Cor</th>
               <th className="p-1.5 font-medium">Data entrada</th>
