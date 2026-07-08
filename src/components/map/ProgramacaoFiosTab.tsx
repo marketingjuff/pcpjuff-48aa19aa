@@ -27,9 +27,9 @@ import { InlineInput } from "./InlineInput";
 import { DevolucaoDialog } from "./DevolucaoDialog";
 import { useCanAccessMap } from "@/hooks/use-role";
 
-interface Props { finalizado: boolean; focusProdId?: string; }
+interface Props { finalizado: boolean; focusProdId?: string; initialFioFilter?: string; }
 
-export function MapFiosTable({ finalizado, focusProdId }: Props) {
+export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Props) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { producoes, entregas, programacoes, invalidateAll } = useMapData(finalizado);
