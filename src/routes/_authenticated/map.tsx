@@ -120,6 +120,9 @@ function MapHome() {
           <TabsContent value="estoque" forceMount hidden={tab !== "estoque"}>
             <EstoqueMpTab />
           </TabsContent>
+          <TabsContent value="pecas-finalizadas" forceMount hidden={tab !== "pecas-finalizadas"}>
+            <PecasFinalizadasTab />
+          </TabsContent>
           <TabsContent value="quebra" forceMount hidden={tab !== "quebra"}>
             <QuebraTab />
           </TabsContent>
