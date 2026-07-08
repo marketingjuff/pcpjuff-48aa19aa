@@ -349,7 +349,7 @@ export function EstoqueMpTab() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__todos__">Todos os status</SelectItem>
-            {STATUS_LIST.map((s) => (
+            {STATUS_LIST.filter((s) => s !== "100% utilizada").map((s) => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}
           </SelectContent>
