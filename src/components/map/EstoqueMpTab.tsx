@@ -167,6 +167,8 @@ export function EstoqueMpTab() {
       const patch: any = {};
       if (field === "alt_inicial") {
         patch[field] = raw == null || raw === "" ? null : Number(raw);
+      } else if (field === "larg") {
+        patch[field] = parseLarg(raw);
       } else {
         patch[field] = raw;
       }
