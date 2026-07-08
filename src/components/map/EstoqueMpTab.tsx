@@ -155,7 +155,11 @@ export function EstoqueMpTab() {
       .filter((p) =>
         fNF.trim() === "" ? true : (p.nota_fiscal ?? "").toLowerCase().includes(fNF.trim().toLowerCase()),
       )
-      .sort((a, b) => (b.data_entrada ?? "").localeCompare(a.data_entrada ?? ""));
+      .sort((a, b) => {
+        const na = a.ne ?? Number.MAX_SAFE_INTEGER;
+        const nb = b.ne ?? Number.MAX_SAFE_INTEGER;
+        return na - nb;
+      });
   }, [pecas, fCor, fStatus, fNF]);
 
   async function commitField(peca: MapEstoquePeca, field: keyof MapEstoquePeca, raw: string | null) {
