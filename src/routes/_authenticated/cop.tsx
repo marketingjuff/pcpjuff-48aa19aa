@@ -6,7 +6,7 @@ import { LogOut, Settings } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMyRoles, useCanAccessCop, useCanAccessMap } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessCop, useCanAccessMap, useIsAdmin } from "@/hooks/use-role";
 import { CorteTab } from "@/components/cop/CorteTab";
 import { RomaneioTab } from "@/components/cop/RomaneioTab";
 import { DisponivelTab } from "@/components/cop/DisponivelTab";
@@ -15,6 +15,7 @@ import { PagamentoOficinasTab } from "@/components/cop/PagamentoOficinasTab";
 import { PerdasTab } from "@/components/cop/PerdasTab";
 import { DashboardCopTab } from "@/components/cop/DashboardCopTab";
 import { OficinasHojeTab } from "@/components/cop/OficinasHojeTab";
+import { HistoricoCopTab } from "@/components/cop/HistoricoCopTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cop")({
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/cop")({
   component: CopHome,
 });
 
-const TABS = [
+const BASE_TABS = [
   { value: "dashboard", label: "Dashboard COP" },
   { value: "disponivel", label: "Disponível" },
   { value: "falta", label: "Falta por Pedido" },
@@ -41,7 +42,9 @@ function CopHome() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const canAccess = useCanAccessCop();
+  const isAdmin = useIsAdmin();
   const { isLoading } = useMyRoles();
+  const TABS = isAdmin ? [...BASE_TABS, { value: "historico", label: "Histórico COP" }] : BASE_TABS;
   const search = Route.useSearch();
   const [tab, setTabState] = useState(() => {
     if (search.tab) return search.tab;
@@ -139,6 +142,11 @@ function CopHome() {
           <TabsContent value="perdas" forceMount hidden={tab !== "perdas"}>
             <PerdasTab />
           </TabsContent>
+          {isAdmin && (
+            <TabsContent value="historico" forceMount hidden={tab !== "historico"}>
+              <HistoricoCopTab />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
