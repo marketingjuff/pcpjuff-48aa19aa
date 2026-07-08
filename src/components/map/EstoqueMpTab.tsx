@@ -267,7 +267,8 @@ export function EstoqueMpTab() {
               </tr>
             ) : (
               cards.map((c, i) => {
-                const bg = corHex(c.cor);
+                const isCru = c.cor === "CRU";
+                const bg = isCru ? "#e8dcc4" : corHex(c.cor);
                 const fg = corTextoSobre(bg);
                 const total = c.Fechada + c.Aberta + c.Corte;
                 const part = totalGeral > 0 ? Math.round((total / totalGeral) * 100) : 0;
