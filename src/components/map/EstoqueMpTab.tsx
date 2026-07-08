@@ -32,6 +32,25 @@ const STATUS_LIST: MapEstoquePecaStatus[] = [
 
 const STATUS_TOTAL: MapEstoquePecaStatus[] = ["Fechada", "Aberta", "Corte"];
 
+function parseLarg(raw: string | null): number | null {
+  if (raw == null) return null;
+  const cleaned = String(raw).replace(/[^\d,.]/g, "");
+  if (!cleaned) return null;
+  if (cleaned.includes(",") || cleaned.includes(".")) {
+    const n = Number(cleaned.replace(",", "."));
+    return Number.isFinite(n) ? n : null;
+  }
+  const digits = cleaned.slice(0, 4);
+  if (digits.length === 1) return Number(digits);
+  const n = Number(`${digits[0]}.${digits.slice(1)}`);
+  return Number.isFinite(n) ? n : null;
+}
+
+function fmtLarg(n: number | null | undefined): string {
+  if (n == null) return "";
+  return Number(n).toFixed(3).replace(".", ",");
+}
+
 export function EstoqueMpTab() {
   const qc = useQueryClient();
   const { data: pecas = [], isLoading } = useEstoquePecas();
