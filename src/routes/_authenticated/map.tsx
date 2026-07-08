@@ -11,6 +11,7 @@ import { MacroSwitch } from "@/routes/_authenticated/cop";
 import { ProgramacaoFiosTab } from "@/components/map/ProgramacaoFiosTab";
 import { FiosFinalizadosTab } from "@/components/map/FiosFinalizadosTab";
 import { EstoqueMpTab } from "@/components/map/EstoqueMpTab";
+import { PecasFinalizadasTab } from "@/components/map/PecasFinalizadasTab";
 import { QuebraTab } from "@/components/map/QuebraTab";
 import { DevolucoesTab } from "@/components/map/DevolucoesTab";
 import { HistoricoMapTab } from "@/components/map/HistoricoMapTab";
