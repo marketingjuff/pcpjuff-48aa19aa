@@ -295,6 +295,7 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
                 <SelectItem value="__all__">Todos</SelectItem>
                 <SelectItem value="aguardando_faturamento">Aguardando faturamento</SelectItem>
                 <SelectItem value="entregue">Entregue</SelectItem>
+                <SelectItem value="nao_programadas">Peças não programadas</SelectItem>
               </SelectContent>
             </Select>
           </div>
