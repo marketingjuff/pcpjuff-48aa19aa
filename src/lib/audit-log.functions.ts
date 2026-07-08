@@ -9,6 +9,8 @@ export interface AuditLogEntry {
   tabela: string;
   registro_id: string;
   identificador: string | null;
+  orcamento?: string | null;
+  pedido_olist?: string | null;
   acao: "insert" | "update" | "delete";
   mudancas: Array<{ campo: string; de: Json; para: Json }> | null;
   linha_completa: { [k: string]: Json } | null;
