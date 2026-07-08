@@ -133,7 +133,14 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
         );
         if (!hitFio && !hitMalharia && !hitTint) return false;
       }
-      if (!finalizado && fStatus !== "__all__" && calcStatusFio(p) !== fStatus) return false;
+      if (!finalizado && fStatus !== "__all__") {
+        if (fStatus === "nao_programadas") {
+          const es2 = byProdEntregas.get(p.id) ?? [];
+          const ps2 = byProdProgs.get(p.id) ?? [];
+          const pend = sumPecasEntregas(es2) - sumPecasProgramadas(ps2);
+          if (!(pend > 0)) return false;
+        } else if (calcStatusFio(p) !== fStatus) return false;
+      }
       return true;
     });
   }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fProd, fStatus, finalizado, byProdEntregas, byProdProgs]);
