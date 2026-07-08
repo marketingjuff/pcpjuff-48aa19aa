@@ -189,6 +189,7 @@ export function EstoqueMpTab() {
 
   const pecasFiltradas = useMemo(() => {
     return pecas
+      .filter((p) => p.status !== "100% utilizada")
       .filter((p) => (fCor === "__todas__" ? true : corBase(p.cor) === fCor))
       .filter((p) => (fStatus === "__todos__" ? true : p.status === fStatus))
       .filter((p) =>
