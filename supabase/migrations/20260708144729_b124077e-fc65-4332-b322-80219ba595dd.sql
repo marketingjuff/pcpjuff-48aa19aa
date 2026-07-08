@@ -1,0 +1,1 @@
+ALTER TABLE public.map_estoque_pecas ADD COLUMN IF NOT EXISTS larg numeric;
