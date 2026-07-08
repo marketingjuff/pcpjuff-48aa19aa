@@ -62,6 +62,48 @@ export type Database = {
         }
         Relationships: []
       }
+      cop_audit_log: {
+        Row: {
+          acao: string
+          feito_em: string
+          feito_por: string | null
+          feito_por_email: string | null
+          feito_por_nome: string | null
+          id: string
+          identificador: string | null
+          linha_completa: Json | null
+          mudancas: Json | null
+          registro_id: string
+          tabela: string
+        }
+        Insert: {
+          acao: string
+          feito_em?: string
+          feito_por?: string | null
+          feito_por_email?: string | null
+          feito_por_nome?: string | null
+          id?: string
+          identificador?: string | null
+          linha_completa?: Json | null
+          mudancas?: Json | null
+          registro_id: string
+          tabela: string
+        }
+        Update: {
+          acao?: string
+          feito_em?: string
+          feito_por?: string | null
+          feito_por_email?: string | null
+          feito_por_nome?: string | null
+          id?: string
+          identificador?: string | null
+          linha_completa?: Json | null
+          mudancas?: Json | null
+          registro_id?: string
+          tabela?: string
+        }
+        Relationships: []
+      }
       cop_perdas: {
         Row: {
           cop_id: string | null
@@ -288,6 +330,48 @@ export type Database = {
           data?: string
           descricao?: string | null
           id?: string
+        }
+        Relationships: []
+      }
+      map_audit_log: {
+        Row: {
+          acao: string
+          feito_em: string
+          feito_por: string | null
+          feito_por_email: string | null
+          feito_por_nome: string | null
+          id: string
+          identificador: string | null
+          linha_completa: Json | null
+          mudancas: Json | null
+          registro_id: string
+          tabela: string
+        }
+        Insert: {
+          acao: string
+          feito_em?: string
+          feito_por?: string | null
+          feito_por_email?: string | null
+          feito_por_nome?: string | null
+          id?: string
+          identificador?: string | null
+          linha_completa?: Json | null
+          mudancas?: Json | null
+          registro_id: string
+          tabela: string
+        }
+        Update: {
+          acao?: string
+          feito_em?: string
+          feito_por?: string | null
+          feito_por_email?: string | null
+          feito_por_nome?: string | null
+          id?: string
+          identificador?: string | null
+          linha_completa?: Json | null
+          mudancas?: Json | null
+          registro_id?: string
+          tabela?: string
         }
         Relationships: []
       }
