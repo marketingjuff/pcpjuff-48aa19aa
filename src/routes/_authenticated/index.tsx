@@ -20,6 +20,7 @@ import { DashboardTab } from "@/components/pcp/DashboardTab";
 import { FinalizadosTab } from "@/components/pcp/FinalizadosTab";
 import { ExpedicaoTab } from "@/components/pcp/ExpedicaoTab";
 import { RetrabalhoTab } from "@/components/pcp/RetrabalhoTab";
+import { HistoricoTab } from "@/components/pcp/HistoricoTab";
 import { DirtyFormProvider } from "@/components/pcp/dirty-form-context";
 import { fecharEpisodiosResolvidos } from "@/lib/pedidos";
 import { MacroSwitch } from "@/routes/_authenticated/cop";
@@ -162,6 +163,7 @@ function AppHomeInner() {
     ...(canSee("expedicao") ? [{ value: "exp", label: "Expedição" }] : []),
     ...((isManager || canSee("finalizados")) ? [{ value: "fin", label: "Finalizados" }] : []),
     ...(isManager ? [{ value: "retrab", label: "Retrabalho" }] : []),
+    ...(isAdmin ? [{ value: "historico", label: "Histórico PCP" }] : []),
   ];
   const activeTabLabel = tabs.find((t) => t.value === tab)?.label ?? "";
 
@@ -298,6 +300,11 @@ function AppHomeInner() {
           {isManager && (
             <TabsContent value="retrab" forceMount hidden={tab !== "retrab"}>
               <RetrabalhoTab pedidos={pedidos} onSave={(p) => upsert.mutate(p)} />
+            </TabsContent>
+          )}
+          {isAdmin && (
+            <TabsContent value="historico" forceMount hidden={tab !== "historico"}>
+              <HistoricoTab />
             </TabsContent>
           )}
 

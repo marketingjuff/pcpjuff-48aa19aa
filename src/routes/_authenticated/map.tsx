@@ -6,13 +6,14 @@ import { LogOut, Settings } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMyRoles, useCanAccessMap } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessMap, useIsAdmin } from "@/hooks/use-role";
 import { MacroSwitch } from "@/routes/_authenticated/cop";
 import { ProgramacaoFiosTab } from "@/components/map/ProgramacaoFiosTab";
 import { FiosFinalizadosTab } from "@/components/map/FiosFinalizadosTab";
 import { EstoqueMpTab } from "@/components/map/EstoqueMpTab";
 import { QuebraTab } from "@/components/map/QuebraTab";
 import { DevolucoesTab } from "@/components/map/DevolucoesTab";
+import { HistoricoMapTab } from "@/components/map/HistoricoMapTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/map")({
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/map")({
   component: MapHome,
 });
 
-const TABS = [
+const BASE_TABS = [
   { value: "programacao", label: "Prod. de Tecido" },
   { value: "finalizados", label: "Prod. Finalizados" },
   { value: "estoque", label: "Estoque de MP" },
@@ -35,7 +36,9 @@ function MapHome() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const canAccess = useCanAccessMap();
+  const isAdmin = useIsAdmin();
   const { isLoading } = useMyRoles();
+  const TABS = isAdmin ? [...BASE_TABS, { value: "historico", label: "Histórico MAP" }] : BASE_TABS;
   const search = Route.useSearch();
   const [tab, setTabState] = useState(() => {
     if (search.tab) return search.tab;
@@ -121,6 +124,11 @@ function MapHome() {
           <TabsContent value="devolucoes" forceMount hidden={tab !== "devolucoes"}>
             <DevolucoesTab />
           </TabsContent>
+          {isAdmin && (
+            <TabsContent value="historico" forceMount hidden={tab !== "historico"}>
+              <HistoricoMapTab />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
