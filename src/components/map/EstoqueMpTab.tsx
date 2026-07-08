@@ -58,6 +58,21 @@ export function EstoqueMpTab() {
     staleTime: 30_000,
   });
 
+  // Mapa producao_id -> numero (para exibir PROD na tabela de estoque).
+  const { data: prodNumeroMap = {} } = useQuery({
+    queryKey: ["map", "producoes", "numero-map"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("map_producoes")
+        .select("id, numero");
+      if (error) throw error;
+      const m: Record<string, number> = {};
+      for (const r of (data ?? []) as any[]) m[r.id] = r.numero;
+      return m;
+    },
+    staleTime: 30_000,
+  });
+
   // Sync ao montar (idempotente): pega recebimentos históricos já completos.
   useEffect(() => {
     void syncEstoquePecas()
