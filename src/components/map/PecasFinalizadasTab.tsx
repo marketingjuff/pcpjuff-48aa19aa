@@ -99,15 +99,16 @@ export function PecasFinalizadasTab() {
           <colgroup>
             <col style={{ width: "6%" }} />
             <col style={{ width: "7%" }} />
-            <col style={{ width: "12%" }} />
-            <col style={{ width: "8%" }} />
-            <col style={{ width: "9%" }} />
-            <col style={{ width: "9%" }} />
-            <col style={{ width: "8%" }} />
-            <col style={{ width: "6%" }} />
-            <col style={{ width: "6%" }} />
-            <col style={{ width: "22%" }} />
+            <col style={{ width: "11%" }} />
             <col style={{ width: "7%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "6%" }} />
+            <col style={{ width: "6%" }} />
+            <col style={{ width: "19%" }} />
+            <col style={{ width: "6%" }} />
+            <col style={{ width: "8%" }} />
           </colgroup>
           <thead className="bg-muted/40 sticky top-0">
             <tr>
@@ -122,6 +123,7 @@ export function PecasFinalizadasTab() {
               <th className="p-1 font-medium text-center">Alt (m)</th>
               <th className="p-1 font-medium text-center">Cortes</th>
               <th className="p-1 font-medium text-center">Total (m)</th>
+              <th className="p-1 font-medium text-center">Ações</th>
             </tr>
           </thead>
           <tbody>
