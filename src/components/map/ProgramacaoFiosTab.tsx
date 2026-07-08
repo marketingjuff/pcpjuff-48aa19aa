@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import {
   useMapData, useKgPorPeca, fmtDateBR, podeFinalizar, prodCode,
-  patchProducao, sumPecasEntregas, sumKgEntregas,
+  patchProducao, sumPecasEntregas, sumKgEntregas, sumPecasProgramadas,
   calcStatusFio, calcStatusMalharia, calcStatusTinturaria,
   useEstoquePecas, syncEstoquePecas,
   type MapProducao, type MapEntregaMalharia, type MapProgramacaoTinturaria,
@@ -27,9 +27,9 @@ import { InlineInput } from "./InlineInput";
 import { DevolucaoDialog } from "./DevolucaoDialog";
 import { useCanAccessMap } from "@/hooks/use-role";
 
-interface Props { finalizado: boolean; focusProdId?: string; }
+interface Props { finalizado: boolean; focusProdId?: string; initialFioFilter?: string; }
 
-export function MapFiosTable({ finalizado, focusProdId }: Props) {
+export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Props) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { producoes, entregas, programacoes, invalidateAll } = useMapData(finalizado);
@@ -51,7 +51,7 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
   const [fFornecedor, setFFornecedor] = useState<string>("__all__");
   const [fNota, setFNota] = useState<string>("");
   const [fProd, setFProd] = useState<string>("");
-  const [fStatus, setFStatus] = useState<string>("__all__");
+  const [fStatus, setFStatus] = useState<string>(initialFioFilter || "__all__");
 
   // Realtime
   useEffect(() => {
@@ -80,6 +80,16 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
     }, 120);
     return () => window.clearTimeout(t);
   }, [focusProdId, navigate]);
+
+  const fioFilterRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initialFioFilter || fioFilterRef.current === initialFioFilter) return;
+    fioFilterRef.current = initialFioFilter;
+    setFStatus(initialFioFilter);
+    navigate({ to: "/map", search: (prev: any) => ({ ...prev, fioFilter: undefined }), replace: true });
+  }, [initialFioFilter, navigate]);
+
+
 
   const prodsAll = producoes.data ?? [];
   const entregasAll = entregas.data ?? [];
@@ -133,7 +143,14 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
         );
         if (!hitFio && !hitMalharia && !hitTint) return false;
       }
-      if (!finalizado && fStatus !== "__all__" && calcStatusFio(p) !== fStatus) return false;
+      if (!finalizado && fStatus !== "__all__") {
+        if (fStatus === "nao_programadas") {
+          const es2 = byProdEntregas.get(p.id) ?? [];
+          const ps2 = byProdProgs.get(p.id) ?? [];
+          const pend = sumPecasEntregas(es2) - sumPecasProgramadas(ps2);
+          if (!(pend > 0)) return false;
+        } else if (calcStatusFio(p) !== fStatus) return false;
+      }
       return true;
     });
   }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fProd, fStatus, finalizado, byProdEntregas, byProdProgs]);
@@ -288,6 +305,7 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
                 <SelectItem value="__all__">Todos</SelectItem>
                 <SelectItem value="aguardando_faturamento">Aguardando faturamento</SelectItem>
                 <SelectItem value="entregue">Entregue</SelectItem>
+                <SelectItem value="nao_programadas">Peças não programadas</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -595,5 +613,5 @@ function ObservacoesProdBlock({
   );
 }
 
-export function ProgramacaoFiosTab({ prodId }: { prodId?: string } = {}) { return <MapFiosTable finalizado={false} focusProdId={prodId} />; }
+export function ProgramacaoFiosTab({ prodId, fioFilter }: { prodId?: string; fioFilter?: string } = {}) { return <MapFiosTable finalizado={false} focusProdId={prodId} initialFioFilter={fioFilter} />; }
 export function FiosFinalizadosTab() { return <MapFiosTable finalizado={true} />; }

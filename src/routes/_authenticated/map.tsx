@@ -21,6 +21,7 @@ export const Route = createFileRoute("/_authenticated/map")({
   validateSearch: (s: Record<string, unknown>) => ({
     tab: typeof s.tab === "string" ? s.tab : undefined,
     prodId: typeof s.prodId === "string" ? s.prodId : undefined,
+    fioFilter: typeof s.fioFilter === "string" ? s.fioFilter : undefined,
   }),
   component: MapHome,
 });
@@ -112,7 +113,7 @@ function MapHome() {
           </TabsList>
 
           <TabsContent value="programacao" forceMount hidden={tab !== "programacao"}>
-            <ProgramacaoFiosTab prodId={search.prodId} />
+            <ProgramacaoFiosTab prodId={search.prodId} fioFilter={search.fioFilter} />
           </TabsContent>
           <TabsContent value="finalizados" forceMount hidden={tab !== "finalizados"}>
             <FiosFinalizadosTab />
