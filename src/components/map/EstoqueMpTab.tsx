@@ -58,6 +58,21 @@ export function EstoqueMpTab() {
     staleTime: 30_000,
   });
 
+  // Mapa producao_id -> numero (para exibir PROD na tabela de estoque).
+  const { data: prodNumeroMap = {} } = useQuery({
+    queryKey: ["map", "producoes", "numero-map"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("map_producoes")
+        .select("id, numero");
+      if (error) throw error;
+      const m: Record<string, number> = {};
+      for (const r of (data ?? []) as any[]) m[r.id] = r.numero;
+      return m;
+    },
+    staleTime: 30_000,
+  });
+
   // Sync ao montar (idempotente): pega recebimentos históricos já completos.
   useEffect(() => {
     void syncEstoquePecas()
@@ -140,7 +155,11 @@ export function EstoqueMpTab() {
       .filter((p) =>
         fNF.trim() === "" ? true : (p.nota_fiscal ?? "").toLowerCase().includes(fNF.trim().toLowerCase()),
       )
-      .sort((a, b) => (b.data_entrada ?? "").localeCompare(a.data_entrada ?? ""));
+      .sort((a, b) => {
+        const na = a.ne ?? Number.MAX_SAFE_INTEGER;
+        const nb = b.ne ?? Number.MAX_SAFE_INTEGER;
+        return na - nb;
+      });
   }, [pecas, fCor, fStatus, fNF]);
 
   async function commitField(peca: MapEstoquePeca, field: keyof MapEstoquePeca, raw: string | null) {
@@ -307,18 +326,22 @@ export function EstoqueMpTab() {
       <div className="rounded-md border bg-white/70 overflow-x-auto">
         <table className="w-full text-[12.5px] table-fixed">
           <colgroup>
-            <col style={{ width: "8%" }} />
-            <col style={{ width: "10%" }} />
-            <col style={{ width: "9%" }} />
-            <col style={{ width: "9%" }} />
+            <col style={{ width: "4.5%" }} />
+            <col style={{ width: "5.5%" }} />
             <col style={{ width: "11%" }} />
             <col style={{ width: "9%" }} />
             <col style={{ width: "8%" }} />
-            <col style={{ width: "28%" }} />
             <col style={{ width: "8%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "7%" }} />
+            <col style={{ width: "22%" }} />
+            <col style={{ width: "7%" }} />
           </colgroup>
           <thead className="bg-muted/40 sticky top-0">
             <tr className="text-left">
+              <th className="p-1.5 font-medium text-right">NE</th>
+              <th className="p-1.5 font-medium text-right">PROD</th>
               <th className="p-1.5 font-medium">NF</th>
               <th className="p-1.5 font-medium">Cor</th>
               <th className="p-1.5 font-medium">Data entrada</th>
@@ -333,7 +356,7 @@ export function EstoqueMpTab() {
           <tbody>
             {pecasFiltradas.length === 0 ? (
               <tr>
-                <td colSpan={9} className="p-3 text-center text-muted-foreground">
+                <td colSpan={11} className="p-3 text-center text-muted-foreground">
                   Sem peças.
                 </td>
               </tr>
@@ -347,11 +370,18 @@ export function EstoqueMpTab() {
                 );
                 const alt = p.alt_inicial != null ? Number(p.alt_inicial) : null;
                 const saldo = alt != null ? alt - somaCortes : null;
+                const prodNumero = prodNumeroMap[p.producao_id];
                 return (
                   <tr
                     key={p.id}
                     className={`border-t ${i % 2 === 1 ? "bg-muted/20" : ""}`}
                   >
+                    <td className="p-1 text-right tabular-nums font-semibold">
+                      {p.ne ?? "—"}
+                    </td>
+                    <td className="p-1 text-right tabular-nums">
+                      {prodNumero ?? "—"}
+                    </td>
                     <td className="p-1 truncate" title={p.nota_fiscal ?? ""}>
                       {p.nota_fiscal ?? "—"}
                     </td>

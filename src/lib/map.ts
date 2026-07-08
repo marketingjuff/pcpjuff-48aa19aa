@@ -70,6 +70,7 @@ export interface MapEstoqueCorte {
 
 export interface MapEstoquePeca {
   id: string;
+  ne: number | null;
   programacao_id: string;
   producao_id: string;
   nota_fiscal: string | null;
