@@ -275,6 +275,10 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
           <Label className="text-[11px] text-muted-foreground">Nota fiscal</Label>
           <Input className="h-9" placeholder="Contém…" value={fNota} onChange={(e) => setFNota(e.target.value)} />
         </div>
+        <div className="min-w-[120px]">
+          <Label className="text-[11px] text-muted-foreground">PROD</Label>
+          <Input className="h-9" placeholder="Ex: PROD-001" value={fProd} onChange={(e) => setFProd(e.target.value)} />
+        </div>
         {!finalizado && (
           <div className="min-w-[180px]">
             <Label className="text-[11px] text-muted-foreground">Fio</Label>
