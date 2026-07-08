@@ -58,6 +58,7 @@ export function EstoqueMpTab() {
   const dataAberta = useMapData(false);
   const producoesAbertas = dataAberta.producoes.data ?? [];
   const programacoes = dataAberta.programacoes.data ?? [];
+  const entregas = dataAberta.entregas.data ?? [];
 
   // COPs ativos (status ≠ Finalizado) para o popover de cortes.
   const { data: copsAtivos = [] } = useQuery({
