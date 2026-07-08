@@ -461,6 +461,7 @@ export type Database = {
           data_abertura: string | null
           data_entrada: string | null
           id: string
+          ne: number | null
           nota_fiscal: string | null
           numero_peca: string | null
           producao_id: string
@@ -476,6 +477,7 @@ export type Database = {
           data_abertura?: string | null
           data_entrada?: string | null
           id?: string
+          ne?: number | null
           nota_fiscal?: string | null
           numero_peca?: string | null
           producao_id: string
@@ -491,6 +493,7 @@ export type Database = {
           data_abertura?: string | null
           data_entrada?: string | null
           id?: string
+          ne?: number | null
           nota_fiscal?: string | null
           numero_peca?: string | null
           producao_id?: string
