@@ -481,7 +481,7 @@ export function EstoqueMpTab() {
                       <InlineInput
                         value={fmtLarg(p.larg)}
                         onCommit={(v) => commitField(p, "larg", v)}
-                        placeholder="1,800"
+                        placeholder=""
                         className="text-center"
                       />
                     </td>
