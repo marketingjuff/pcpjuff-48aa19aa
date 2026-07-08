@@ -260,7 +260,30 @@ export function AuditLogView({ area }: Props) {
                     {TABELA_LABELS[e.tabela] ?? e.tabela}
                   </Badge>
                 )}
-                {e.identificador && (
+                {area === "pcp" && (() => {
+                  const olist = e.pedido_olist ?? (e.linha_completa?.pedido_olist as string | null | undefined);
+                  const orc = e.orcamento ?? (e.linha_completa?.orcamento as string | null | undefined);
+                  return (
+                    <>
+                      {olist && (
+                        <span className="text-xs font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                          Olist {olist}
+                        </span>
+                      )}
+                      {orc && (
+                        <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                          Orç. {orc}
+                        </span>
+                      )}
+                      {!olist && !orc && (
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                          #{e.registro_id.slice(0, 8)}
+                        </span>
+                      )}
+                    </>
+                  );
+                })()}
+                {area !== "pcp" && e.identificador && (
                   <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
                     {e.identificador}
                   </span>
