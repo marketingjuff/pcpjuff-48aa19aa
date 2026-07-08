@@ -50,6 +50,7 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
   const [fEmpresa, setFEmpresa] = useState<string>("__all__");
   const [fFornecedor, setFFornecedor] = useState<string>("__all__");
   const [fNota, setFNota] = useState<string>("");
+  const [fProd, setFProd] = useState<string>("");
   const [fStatus, setFStatus] = useState<string>("__all__");
 
   // Realtime
@@ -109,10 +110,15 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
 
   const prods = useMemo(() => {
     const notaQ = fNota.trim().toLowerCase();
+    const prodQ = fProd.trim().toLowerCase().replace(/\s/g, "");
     return prodsAll.filter((p) => {
       if (fData && p.data_pedido !== fData) return false;
       if (fEmpresa !== "__all__" && p.faturar_para !== fEmpresa) return false;
       if (fFornecedor !== "__all__" && p.fornecedor !== fFornecedor) return false;
+      if (prodQ) {
+        const code = prodCode(p.numero).toLowerCase().replace(/\s/g, "");
+        if (!code.includes(prodQ)) return false;
+      }
       if (notaQ) {
         const nfFio = (p.nota_fiscal ?? "").toLowerCase();
         const es = byProdEntregas.get(p.id) ?? [];
@@ -130,7 +136,7 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
       if (!finalizado && fStatus !== "__all__" && calcStatusFio(p) !== fStatus) return false;
       return true;
     });
-  }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fStatus, finalizado, byProdEntregas, byProdProgs]);
+  }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fProd, fStatus, finalizado, byProdEntregas, byProdProgs]);
 
 
   // Grupos por data_pedido — ascendente; dentro do grupo, numero ascendente
@@ -210,9 +216,9 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
   function openEditar(p: MapProducao) { setEditingProd(p); setDlgOpen(true); }
 
   const hasFilters =
-    !!fData || fEmpresa !== "__all__" || fFornecedor !== "__all__" || !!fNota.trim() || fStatus !== "__all__";
+    !!fData || fEmpresa !== "__all__" || fFornecedor !== "__all__" || !!fNota.trim() || !!fProd.trim() || fStatus !== "__all__";
   function limparFiltros() {
-    setFData(""); setFEmpresa("__all__"); setFFornecedor("__all__"); setFNota(""); setFStatus("__all__");
+    setFData(""); setFEmpresa("__all__"); setFFornecedor("__all__"); setFNota(""); setFProd(""); setFStatus("__all__");
   }
 
   return (
@@ -268,6 +274,10 @@ export function MapFiosTable({ finalizado, focusProdId }: Props) {
         <div className="min-w-[180px]">
           <Label className="text-[11px] text-muted-foreground">Nota fiscal</Label>
           <Input className="h-9" placeholder="Contém…" value={fNota} onChange={(e) => setFNota(e.target.value)} />
+        </div>
+        <div className="min-w-[120px]">
+          <Label className="text-[11px] text-muted-foreground">PROD</Label>
+          <Input className="h-9" placeholder="Ex: PROD-001" value={fProd} onChange={(e) => setFProd(e.target.value)} />
         </div>
         {!finalizado && (
           <div className="min-w-[180px]">
