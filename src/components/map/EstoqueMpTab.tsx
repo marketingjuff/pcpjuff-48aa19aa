@@ -356,7 +356,7 @@ export function EstoqueMpTab() {
           <tbody>
             {pecasFiltradas.length === 0 ? (
               <tr>
-                <td colSpan={9} className="p-3 text-center text-muted-foreground">
+                <td colSpan={11} className="p-3 text-center text-muted-foreground">
                   Sem peças.
                 </td>
               </tr>
@@ -370,11 +370,18 @@ export function EstoqueMpTab() {
                 );
                 const alt = p.alt_inicial != null ? Number(p.alt_inicial) : null;
                 const saldo = alt != null ? alt - somaCortes : null;
+                const prodNumero = prodNumeroMap[p.producao_id];
                 return (
                   <tr
                     key={p.id}
                     className={`border-t ${i % 2 === 1 ? "bg-muted/20" : ""}`}
                   >
+                    <td className="p-1 text-right tabular-nums font-semibold">
+                      {p.ne ?? "—"}
+                    </td>
+                    <td className="p-1 text-right tabular-nums">
+                      {prodNumero ?? "—"}
+                    </td>
                     <td className="p-1 truncate" title={p.nota_fiscal ?? ""}>
                       {p.nota_fiscal ?? "—"}
                     </td>
