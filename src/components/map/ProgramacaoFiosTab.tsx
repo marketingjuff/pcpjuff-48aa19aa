@@ -81,10 +81,8 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
     return () => window.clearTimeout(t);
   }, [focusProdId, navigate]);
 
-  const fioFilterRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!initialFioFilter || fioFilterRef.current === initialFioFilter) return;
-    fioFilterRef.current = initialFioFilter;
+    if (!initialFioFilter) return;
     setFStatus(initialFioFilter);
     navigate({ to: "/map", search: (prev: any) => ({ ...prev, fioFilter: undefined }), replace: true });
   }, [initialFioFilter, navigate]);
