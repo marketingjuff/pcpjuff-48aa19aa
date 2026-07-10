@@ -58,9 +58,13 @@ function fmtLarg(n: number | null | undefined): string {
 function LargInput({
   value,
   onCommit,
+  inputRef,
+  onEnterMoveNext,
 }: {
   value: number | null | undefined;
   onCommit: (n: number) => void | Promise<void>;
+  inputRef?: React.Ref<HTMLInputElement>;
+  onEnterMoveNext?: () => void;
 }) {
   const displayFromValue = (v: number | null | undefined) =>
     (v == null ? LARG_DEFAULT : Number(v)).toFixed(2).replace(".", ",");
@@ -87,18 +91,23 @@ function LargInput({
 
   return (
     <Input
+      ref={inputRef}
       inputMode="numeric"
       value={v}
       onChange={(e) => handleChange(e.target.value)}
       onBlur={() => { void commit(); }}
       onKeyDown={(e) => {
-        if (e.key === "Enter") { e.preventDefault(); (e.currentTarget as HTMLInputElement).blur(); }
+        if (e.key === "Enter") {
+          e.preventDefault();
+          void commit().then(() => onEnterMoveNext?.());
+        }
         if (e.key === "Escape") { setV(initial); (e.currentTarget as HTMLInputElement).blur(); }
       }}
       className="h-7 text-[12.5px] px-1.5 text-center"
     />
   );
 }
+
 
 export function EstoqueMpTab() {
   const qc = useQueryClient();
