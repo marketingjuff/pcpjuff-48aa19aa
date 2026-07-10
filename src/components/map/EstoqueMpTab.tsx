@@ -523,6 +523,8 @@ export function EstoqueMpTab() {
                         value={p.numero_peca}
                         onCommit={(v) => commitField(p, "numero_peca", v)}
                         className="text-center"
+                        inputRef={setCellRef(p.id, "numero_peca")}
+                        onEnterMoveNext={() => focusNextRow(p.id, "numero_peca")}
                       />
                     </td>
                     <td className="p-1">
@@ -546,12 +548,16 @@ export function EstoqueMpTab() {
                         value={p.data_abertura}
                         onCommit={(v) => commitField(p, "data_abertura", v)}
                         className="text-center"
+                        inputRef={setCellRef(p.id, "data_abertura")}
+                        onEnterMoveNext={() => focusNextRow(p.id, "data_abertura")}
                       />
                     </td>
                     <td className="p-1">
                       <LargInput
                         value={p.larg}
                         onCommit={async (n) => { try { await patchEstoquePeca(p.id, { larg: n }); refresh(); } catch (e: any) { toast.error(e?.message ?? "Falha ao salvar."); } }}
+                        inputRef={setCellRef(p.id, "larg")}
+                        onEnterMoveNext={() => focusNextRow(p.id, "larg")}
                       />
                     </td>
                     <td className="p-1">
@@ -562,8 +568,11 @@ export function EstoqueMpTab() {
                         value={p.alt_inicial}
                         onCommit={(v) => commitField(p, "alt_inicial", v)}
                         className="text-center"
+                        inputRef={setCellRef(p.id, "alt_inicial")}
+                        onEnterMoveNext={() => focusNextRow(p.id, "alt_inicial")}
                       />
                     </td>
+
                     <td className="p-1">
                       <EstoquePecaCortesCell
                         peca={p}
