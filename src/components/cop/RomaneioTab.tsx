@@ -1318,7 +1318,20 @@ function RomaneioPecasTable({
 
                 {i === 0 && (
                   <>
-                    <td className="p-2 font-semibold tabular-nums align-top" rowSpan={span}>{rotuloRomaneio(c, cops)}</td>
+                    <td className="p-2 font-semibold tabular-nums align-top" rowSpan={span}>
+                      <div className="flex flex-col gap-1">
+                        <span>{rotuloRomaneio(c, cops)}</span>
+                        {(c.urgencias?.length ?? 0) > 0 && (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-100 text-red-800 border border-red-300 w-fit"
+                            title={`${c.urgencias.length} pedido(s) de urgência`}
+                          >
+                            <Flame className="h-3 w-3" />
+                            URGÊNCIA{c.urgencias.length > 1 ? ` ×${c.urgencias.length}` : ""}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-2 align-top" rowSpan={span}>{ofiNome}</td>
                     <td className="p-2 align-top" rowSpan={span}>
                       <span className="px-2 py-0.5 rounded text-xs border" style={etapaStyle(c.status)}>{c.status}</span>
@@ -1327,7 +1340,17 @@ function RomaneioPecasTable({
                 )}
                 {g ? (
                   <>
-                    <td className="px-2 py-1 whitespace-nowrap text-xs">{g.modelo}</td>
+                    <td className="px-2 py-1 whitespace-nowrap text-xs">
+                      {(() => {
+                        const urg = linhaUrgente(c.urgencias, g.modelo, g.cor);
+                        return (
+                          <span className="inline-flex items-center gap-1" title={urg ? "Urgência solicitada" : undefined}>
+                            {urg && <Flame className="h-3 w-3 text-red-600" aria-label="Urgência solicitada" />}
+                            {g.modelo}
+                          </span>
+                        );
+                      })()}
+                    </td>
                     <td className="px-2 py-1">
                       {(() => {
                         const hex = corHex(g.cor); const fg = corTextoSobre(hex);
