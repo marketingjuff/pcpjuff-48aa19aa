@@ -252,13 +252,14 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   });
 
   const salvarUrgencia = useMutation({
-    mutationFn: async ({ cop, obs, linhas }: { cop: Cop; obs: string; linhas: CopUrgenciaLinha[] }) => {
+    mutationFn: async ({ cop, obs, linhas, pedidos }: { cop: Cop; obs: string; linhas: CopUrgenciaLinha[]; pedidos: CopUrgenciaPedido[] }) => {
       const { data: ses } = await supabase.auth.getUser();
       const registro: CopUrgencia = {
         em: new Date().toISOString(),
         por: ses.user?.id ?? null,
         observacao: obs,
         linhas,
+        pedidos,
       };
       const proximas = [...(cop.urgencias ?? []), registro];
       const { error } = await supabase
