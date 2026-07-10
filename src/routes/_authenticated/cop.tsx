@@ -144,6 +144,9 @@ function CopHome() {
           <TabsContent value="perdas" forceMount hidden={tab !== "perdas"}>
             <PerdasTab />
           </TabsContent>
+          <TabsContent value="controle-perdas" forceMount hidden={tab !== "controle-perdas"}>
+            <ControlePerdasTab />
+          </TabsContent>
           {isAdmin && (
             <TabsContent value="historico" forceMount hidden={tab !== "historico"}>
               <HistoricoCopTab />
