@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Check, Flame, Pencil } from "lucide-react";
-import type { CopPeca, CopPecaRecebida, CopPerdaLinha, CopUrgenciaLinha } from "@/lib/cop";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Check, Flame, Pencil, Plus, X } from "lucide-react";
+import type { CopPeca, CopPecaRecebida, CopPerdaLinha, CopUrgenciaLinha, CopUrgenciaPedido } from "@/lib/cop";
 import { getRecebida, getPerda, colunasTamanhos } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+import type { PecaSolicitada } from "@/lib/pedidos";
 
 type Props = {
   open: boolean;
@@ -15,7 +19,7 @@ type Props = {
   pecas: CopPeca[];
   recebidas: CopPecaRecebida[];
   perdas: CopPerdaLinha[];
-  onConfirm: (obs: string, linhas: CopUrgenciaLinha[]) => void;
+  onConfirm: (obs: string, linhas: CopUrgenciaLinha[], pedidos: CopUrgenciaPedido[]) => void;
   disabled?: boolean;
 };
 
