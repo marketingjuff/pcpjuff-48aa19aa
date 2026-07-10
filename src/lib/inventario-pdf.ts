@@ -1,5 +1,6 @@
 // Geração do PDF do Inventário — A4 vertical, preto e branco, fluxo contínuo.
 import logoJuff from "@/assets/loguinhojuffpreto.png.asset.json";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface InventarioRow {
   cor: string;
