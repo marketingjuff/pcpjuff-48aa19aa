@@ -472,29 +472,78 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
         </Card>
       )}
 
-      <PagamentoConsolidadoCard />
-
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">COPs elegíveis para pagamento</CardTitle></CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <Label className="text-xs">COP</Label>
+              <Input
+                value={filtroCop}
+                onChange={(e) => setFiltroCop(e.target.value)}
+                placeholder="Buscar nº do COP..."
+                className="h-9 w-[160px]"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Oficina</Label>
+              <Select value={filtroOficina} onValueChange={setFiltroOficina}>
+                <SelectTrigger className="h-9 w-[220px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  {oficinasComRegistros.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Pagamento</Label>
+              <Select value={filtro} onValueChange={setFiltro}>
+                <SelectTrigger className="h-9 w-[180px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos_pagaveis">Todos elegíveis</SelectItem>
+                  <SelectItem value="nao_pago">Não pago</SelectItem>
+                  <SelectItem value="liberado">Liberado</SelectItem>
+                  <SelectItem value="atrasado">Atrasado</SelectItem>
+                  <SelectItem value="pago">Pago</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Linhas</Label>
+              <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                <SelectTrigger className="h-9 w-[100px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="200">200</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="ml-auto text-xs text-muted-foreground">
+              {lista.length} de {listaFiltrada.length} registros
+            </div>
+          </div>
+
           <div className="rounded-md border overflow-x-auto">
             <table className="w-full text-[12.5px] leading-[1.2]">
               <thead className="bg-muted/40 text-xs">
                 <tr>
-                  <th className="p-2 text-left">COP</th>
-                  <th className="p-2 text-left">Oficina</th>
-                  <th className="p-2 text-center">Peças</th>
-                  <th className="p-2 text-left">Status COP</th>
-                  <th className="p-2 text-left">Pagamento</th>
-                  <th className="p-2 text-left">Liberação</th>
-                  <th className="p-2 text-left">Vencimento</th>
-                  <th className="p-2 text-right">Valor</th>
+                  <th className="p-2 text-left cursor-pointer select-none" onClick={() => toggleSort("cop")}>COP<SortIcon k="cop" /></th>
+                  <th className="p-2 text-left cursor-pointer select-none" onClick={() => toggleSort("oficina")}>Oficina<SortIcon k="oficina" /></th>
+                  <th className="p-2 text-center cursor-pointer select-none" onClick={() => toggleSort("pecas")}>Peças<SortIcon k="pecas" /></th>
+                  <th className="p-2 text-left cursor-pointer select-none" onClick={() => toggleSort("pagamento")}>Pagamento<SortIcon k="pagamento" /></th>
+                  <th className="p-2 text-left cursor-pointer select-none" onClick={() => toggleSort("liberacao")}>Liberação<SortIcon k="liberacao" /></th>
+                  <th className="p-2 text-left cursor-pointer select-none" onClick={() => toggleSort("vencimento")}>Vencimento<SortIcon k="vencimento" /></th>
+                  <th className="p-2 text-right cursor-pointer select-none" onClick={() => toggleSort("valor")}>Valor<SortIcon k="valor" /></th>
                   <th className="p-2"></th>
                 </tr>
               </thead>
               <tbody>
                 {lista.length === 0 ? (
-                  <tr><td colSpan={9} className="p-3 text-center text-muted-foreground">Nenhum COP no filtro atual.</td></tr>
+                  <tr><td colSpan={8} className="p-3 text-center text-muted-foreground">Nenhum COP no filtro atual.</td></tr>
                 ) : lista.map((c, i) => {
                   const ofi = oficinas.find((o) => o.id === c.oficina_id) ?? null;
                   const v = calcValor(c, ofi);
@@ -504,11 +553,9 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
                   const zebra = i % 2 === 1;
                   return (
                     <tr key={c.id} className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : zebra ? "bg-muted/80" : ""}`} onClick={() => setSelectedId(c.id)}>
-
                       <td className="p-2 font-semibold tabular-nums">{rotuloCop(c.numero, c.letra, !!c.refacao_perda_origem_id)}</td>
                       <td className="p-2">{ofi?.nome ?? "—"}</td>
                       <td className="p-2 text-center tabular-nums">{totalPecasCop(c.pecas)}</td>
-                      <td className="p-2 text-xs">{c.status}</td>
                       <td className="p-2 text-xs">
                         {c.pagamento_status === "pago" ? <span className="text-green-700">Pago</span>
                           : c.pagamento_status === "liberado" ? (
@@ -541,6 +588,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
           </div>
         </CardContent>
       </Card>
+
 
       <AlertDialog open={confirmApagar} onOpenChange={setConfirmApagar}>
         <AlertDialogContent>
