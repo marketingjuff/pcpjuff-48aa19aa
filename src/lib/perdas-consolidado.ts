@@ -182,6 +182,35 @@ export function usePerdasConsolidadas() {
 
     const out: PerdaConsolidada[] = [];
 
+    // Refeitas por COP: soma perda_qtd de todos refacao_perda_itens em COPs filhos.
+    // Chave: origem_cop_id (fallback: refacao_perda_origem_id do filho) + modelo|cor|tamanho.
+    const refeitasPorCopMCT = new Map<string, number>();
+    for (const filho of cops) {
+      const parentDefault = (filho as any).refacao_perda_origem_id as string | null;
+      if (!parentDefault) continue;
+      const itens = Array.isArray((filho as any).refacao_perda_itens) ? ((filho as any).refacao_perda_itens as any[]) : [];
+      for (const it of itens) {
+        const origemId = (it.origem_cop_id as string | null | undefined) ?? parentDefault;
+        if (!origemId) continue;
+        const pm = it.perda_modelo ?? it.modelo;
+        const pc = it.perda_cor ?? it.cor;
+        const pt = it.perda_tamanho ?? it.tamanho;
+        const pq = Number(it.perda_qtd ?? it.qtd) || 0;
+        if (pq <= 0) continue;
+        const k = `${origemId}|${keyMCT(pm, pc, pt)}`;
+        refeitasPorCopMCT.set(k, (refeitasPorCopMCT.get(k) ?? 0) + pq);
+      }
+    }
+    const consumirRefeita = (copId: string | null | undefined, modelo: string, cor: string, tamanho: string, qtd: number): number => {
+      if (!copId) return qtd;
+      const k = `${copId}|${keyMCT(modelo, cor, tamanho)}`;
+      const disp = refeitasPorCopMCT.get(k) ?? 0;
+      if (disp <= 0) return qtd;
+      const usar = Math.min(disp, qtd);
+      refeitasPorCopMCT.set(k, disp - usar);
+      return qtd - usar;
+    };
+
     // Fonte A: cops.historico_perdas  (fallback: cops.perdas se histórico vazio)
     for (const c of cops) {
       const rotulo = rotuloCop(c.numero, c.letra, !!c.refacao_perda_origem_id);
@@ -191,7 +220,9 @@ export function usePerdasConsolidadas() {
         for (const ev of eventosPerda) {
           const itens = Array.isArray(ev.itens) ? ev.itens : [];
           itens.forEach((it, idx) => {
-            const qtd = Number(it.qtd) || 0;
+            const qtdOrig = Number(it.qtd) || 0;
+            if (qtdOrig <= 0) return;
+            const qtd = consumirRefeita(c.id, it.modelo, it.cor, it.tamanho, qtdOrig);
             if (qtd <= 0) return;
             out.push({
               id: `cop-hist:${c.id}:${ev.em}:${idx}`,
@@ -212,7 +243,9 @@ export function usePerdasConsolidadas() {
       } else if (Array.isArray(c.perdas) && c.perdas.length > 0) {
         // Fallback para dados antigos: usa `cops.perdas` com updated_at.
         c.perdas.forEach((p: any, idx: number) => {
-          const qtd = Number(p.qtd) || 0;
+          const qtdOrig = Number(p.qtd) || 0;
+          if (qtdOrig <= 0) return;
+          const qtd = consumirRefeita(c.id, p.modelo, p.cor, p.tamanho, qtdOrig);
           if (qtd <= 0) return;
           out.push({
             id: `cop-perdafield:${c.id}:${idx}`,
@@ -235,9 +268,11 @@ export function usePerdasConsolidadas() {
     // Fonte B: cop_perdas
     const copsById = new Map(cops.map((c) => [c.id, c] as const));
     for (const r of copPerdas) {
-      const qtd = Number(r.qtd) || 0;
-      if (qtd <= 0) continue;
+      const qtdOrig = Number(r.qtd) || 0;
+      if (qtdOrig <= 0) continue;
       const cop = r.cop_id ? copsById.get(r.cop_id) : null;
+      const qtd = consumirRefeita(r.cop_id ?? null, r.modelo, r.cor, r.tamanho, qtdOrig);
+      if (qtd <= 0) continue;
       const identificacao = cop
         ? rotuloCop(cop.numero, cop.letra, !!cop.refacao_perda_origem_id)
         : (r.etiqueta ?? null);
@@ -257,6 +292,8 @@ export function usePerdasConsolidadas() {
         fonte: { kind: "cop_registro", registroId: r.id },
       });
     }
+
+
 
     // Fonte C: pedidos.refacoes[].pecas_perdidas (com dedução por reclassificação)
     for (const p of pedidos) {
