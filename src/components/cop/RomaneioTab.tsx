@@ -674,74 +674,95 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                 />
               </div>
 
-              {/* Botões */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  {selected.romaneio_enviado_em && (
-                    <Button
-                      variant="outline"
-                      style={btnStyle("baixar_pdf")}
-                      onClick={() => abrirRomaneioParaImpressao(selected, oficina, cops)}
-                    >
-                      <FileDown className="h-4 w-4 mr-1" />
-                      romaneio-{formatCopNumero(numeroBaseCop(selected, cops))}{selected.letra ?? ""}.pdf
-                    </Button>
-                  )}
-                  {podeParticionar && (
-                    <Button
-                      style={btnStyle("particionar")}
-                      onClick={() => setShowParticionar(true)}
-                      title="Particionar por letra"
-                    >
-                      <Split className="h-4 w-4 mr-1" /> Particionar (nova letra {letraNova})
-                    </Button>
-                  )}
-                  {canManageCop && (
-                    <Button
-                      variant="outline"
-                      className="border-orange-400 text-orange-700 hover:bg-orange-50"
-                      onClick={() => corrigirCorte.mutate(selected)}
-                      disabled={corrigirCorte.isPending || emCorrecao}
-                      title="Liberar este COP para edição não-destrutiva no Corte (mantém oficina, datas, recebidas e pagamento)"
-                    >
-                      <Undo2 className="h-4 w-4 mr-1" /> Corrigir corte
-                    </Button>
-                  )}
-                  {canManageCop && (
-                    <Button
-                      className="bg-yellow-400 hover:bg-yellow-500 text-black"
-                      onClick={() => setShowPerda(true)}
-                      disabled={!selected.pecas?.length}
-                      title="Registrar peças perdidas neste romaneio"
-                    >
-                      <AlertTriangle className="h-4 w-4 mr-1" /> Registrar perda
-                    </Button>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button style={btnStyle("atualizar")} onClick={handleAtualizar} disabled={salvar.isPending}>
-                    Salvar
-                  </Button>
+              {/* Botões — linha única, largura/altura uniformes, cores 100% via btnStyle */}
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                {selected.romaneio_enviado_em && (
                   <Button
-                    style={btnStyle("enviar_oficina")}
-                    onClick={handleEnviarOficina}
-                    disabled={salvar.isPending || (selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio")}
-                    title={(selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio") ? "Romaneio já foi enviado" : "Enviar para a oficina"}
+                    style={btnStyle("baixar_pdf")}
+                    onClick={() => abrirRomaneioParaImpressao(selected, oficina, cops)}
+                    className="h-10 w-[185px] justify-center truncate"
                   >
-                    <Send className="h-4 w-4 mr-1" /> Enviar para Oficina
+                    <FileDown className="h-4 w-4 mr-1" />
+                    <span className="truncate">romaneio-{formatCopNumero(numeroBaseCop(selected, cops))}{selected.letra ?? ""}.pdf</span>
                   </Button>
+                )}
+                {podeParticionar && (
                   <Button
-                    style={btnStyle("entrega_romaneio")}
-                    onClick={() => setShowEntrega(true)}
-                    disabled={salvar.isPending
-                      || (selected.status !== "Na Oficina (Costura)"
-                          && selected.status !== "Romaneio Parcial"
-                          && selected.status !== "Romaneio Completo")}
+                    style={btnStyle("particionar")}
+                    onClick={() => setShowParticionar(true)}
+                    title="Particionar por letra"
+                    className="h-10 w-[185px] justify-center truncate"
                   >
-                    <PackageOpen className="h-4 w-4 mr-1" /> Entrega de Romaneio
+                    <Split className="h-4 w-4 mr-1" />
+                    <span className="truncate">Particionar ({letraNova})</span>
                   </Button>
-                </div>
+                )}
+                {canManageCop && (
+                  <Button
+                    style={btnStyle("corrigir_corte")}
+                    onClick={() => corrigirCorte.mutate(selected)}
+                    disabled={corrigirCorte.isPending || emCorrecao}
+                    title="Liberar este COP para edição não-destrutiva no Corte (mantém oficina, datas, recebidas e pagamento)"
+                    className="h-10 w-[185px] justify-center truncate border"
+                  >
+                    <Undo2 className="h-4 w-4 mr-1" />
+                    <span className="truncate">Corrigir corte</span>
+                  </Button>
+                )}
+                {canManageCop && (
+                  <Button
+                    style={btnStyle("registrar_perda")}
+                    onClick={() => setShowPerda(true)}
+                    disabled={!selected.pecas?.length}
+                    title="Registrar peças perdidas neste romaneio"
+                    className="h-10 w-[185px] justify-center truncate"
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    <span className="truncate">Registrar perda</span>
+                  </Button>
+                )}
+                {canManageCop && (selected.status === "Na Oficina (Costura)" || selected.status === "Romaneio Parcial") && (
+                  <Button
+                    style={btnStyle("pedir_urgencia")}
+                    onClick={() => setShowUrgencia(true)}
+                    disabled={salvarUrgencia.isPending || !selected.pecas?.length}
+                    title="Registrar pedido de urgência à oficina"
+                    className="h-10 w-[185px] justify-center truncate"
+                  >
+                    <Flame className="h-4 w-4 mr-1" />
+                    <span className="truncate">Pedir Urgência</span>
+                  </Button>
+                )}
+                <Button
+                  style={btnStyle("atualizar")}
+                  onClick={handleAtualizar}
+                  disabled={salvar.isPending}
+                  className="h-10 w-[185px] justify-center truncate"
+                >
+                  <span className="truncate">Salvar</span>
+                </Button>
+                <Button
+                  style={btnStyle("enviar_oficina")}
+                  onClick={handleEnviarOficina}
+                  disabled={salvar.isPending || (selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio")}
+                  title={(selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio") ? "Romaneio já foi enviado" : "Enviar para a oficina"}
+                  className="h-10 w-[185px] justify-center truncate"
+                >
+                  <Send className="h-4 w-4 mr-1" />
+                  <span className="truncate">Enviar para Oficina</span>
+                </Button>
+                <Button
+                  style={btnStyle("entrega_romaneio")}
+                  onClick={() => setShowEntrega(true)}
+                  disabled={salvar.isPending
+                    || (selected.status !== "Na Oficina (Costura)"
+                        && selected.status !== "Romaneio Parcial"
+                        && selected.status !== "Romaneio Completo")}
+                  className="h-10 w-[185px] justify-center truncate"
+                >
+                  <PackageOpen className="h-4 w-4 mr-1" />
+                  <span className="truncate">Entrega de Romaneio</span>
+                </Button>
               </div>
               </fieldset>
             </CardContent>
