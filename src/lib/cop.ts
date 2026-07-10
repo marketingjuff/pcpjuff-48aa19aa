@@ -122,7 +122,23 @@ export type CopUrgenciaLinha = {
   tamanhos?: { tamanho: string; qtd: number }[];
 };
 
+/** Item salvo em cops.refacao_perda_itens: o que foi refeito e a perda original. */
+export type CopRefacaoPerdaItem = {
+  modelo: string;
+  cor: string;
+  tamanho: string;
+  qtd: number;
+  motivo?: string | null;
+  origem_cop_id?: string | null;
+  // Perda original (pode ser diferente da refação quando tamanho/modelo mudam)
+  perda_modelo: string;
+  perda_cor: string;
+  perda_tamanho: string;
+  perda_qtd: number;
+};
+
 /** Pedido/orçamento vinculado ao pedido de urgência (informativo). */
+
 export type CopUrgenciaPedido = {
   pedidoId: string;
   orcamento: string | null;
