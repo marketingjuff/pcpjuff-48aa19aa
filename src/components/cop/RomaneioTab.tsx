@@ -604,9 +604,32 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                           {grupos.map((g, i) => {
                             const hex = corHex(g.cor); const fg = corTextoSobre(hex);
                             const byTam = new Map(g.tamanhos.map((t) => [t.tamanho, t.qtd]));
+                            const urgente = linhaUrgente(selected.urgencias, g.modelo, g.cor);
+                            const qtdLinha = g.tamanhos.reduce((s, t) => s + (Number(t.qtd) || 0), 0);
+                            const recLinha = g.tamanhos.reduce(
+                              (s, t) => s + getRecebida(recebidas, g.modelo, g.cor, t.tamanho),
+                              0,
+                            );
+                            const perdaLinhaTot = g.tamanhos.reduce(
+                              (s, t) => s + getPerda(selected.perdas ?? [], g.modelo, g.cor, t.tamanho),
+                              0,
+                            );
+                            const linhaCompleta = qtdLinha > 0 && (recLinha + perdaLinhaTot) >= qtdLinha;
                             return (
                               <tr key={i} className="border-t">
-                                <td className="p-2">{g.modelo}</td>
+                                <td className="p-2">
+                                  <span className="inline-flex items-center gap-1">
+                                    {urgente && (
+                                      <Flame
+                                        className={`h-3.5 w-3.5 ${linhaCompleta ? "text-muted-foreground" : "text-red-600"}`}
+                                        aria-label="Urgência solicitada"
+                                      >
+                                        <title>Urgência solicitada</title>
+                                      </Flame>
+                                    )}
+                                    {g.modelo}
+                                  </span>
+                                </td>
                                 <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
                                 {cols.map((tam) => {
                                   const qtd = byTam.get(tam) ?? 0;
