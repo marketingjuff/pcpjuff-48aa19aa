@@ -54,8 +54,10 @@ export function RefazerPerdaDialog({ open, onOpenChange, cops, onConfirm }: Prop
   const [parcialEdit, setParcialEdit] = useState<string | null>(null);
   const [parcialVal, setParcialVal] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  // Overrides do "virou": por chave (copId|modelo|cor|tamanho da PERDA)
+  const [overrides, setOverrides] = useState<Map<string, { modelo: string; cor: string; tamanho: string }>>(new Map());
 
-  useEffect(() => { if (open) { setSel(new Map()); setParcialEdit(null); } }, [open]);
+  useEffect(() => { if (open) { setSel(new Map()); setParcialEdit(null); setOverrides(new Map()); } }, [open]);
 
   const totais = useMemo(() => {
     let max = 0, selTotal = 0;
@@ -81,17 +83,48 @@ export function RefazerPerdaDialog({ open, onOpenChange, cops, onConfirm }: Prop
     });
   }
 
+  function getOverride(k: string, def: { modelo: string; cor: string; tamanho: string }) {
+    return overrides.get(k) ?? def;
+  }
+  function setOverride(k: string, patch: Partial<{ modelo: string; cor: string; tamanho: string }>) {
+    setOverrides((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(k) ?? { modelo: "", cor: "", tamanho: "" };
+      next.set(k, { ...cur, ...patch });
+      return next;
+    });
+  }
+
+  // Lista de itens selecionados (para o painel "o que virou")
+  const selecionadosLista = useMemo(() => {
+    type Item = { key: string; copId: string; copRotulo: string; perda: { modelo: string; cor: string; tamanho: string }; qtd: number };
+    const out: Item[] = [];
+    for (const c of cops) {
+      const rot = `${formatCopNumero(c.cop.numero)}${c.cop.letra ?? ""}`;
+      for (const p of c.perdasRestantes) {
+        const k = key(c.cop.id, p.modelo, p.cor, p.tamanho);
+        const q = sel.get(k) ?? 0;
+        if (q > 0) out.push({ key: k, copId: c.cop.id, copRotulo: rot, perda: { modelo: p.modelo, cor: p.cor, tamanho: p.tamanho }, qtd: q });
+      }
+    }
+    return out;
+  }, [cops, sel]);
+
   async function handleConfirm() {
     const selecoes: Array<{ cop: Cop; itens: CopRefacaoPerdaItem[] }> = [];
     for (const c of cops) {
       const itens: CopRefacaoPerdaItem[] = [];
       for (const p of c.perdasRestantes) {
+        const k = key(c.cop.id, p.modelo, p.cor, p.tamanho);
         const q = get(c.cop.id, p.modelo, p.cor, p.tamanho);
-        if (q > 0) itens.push({
-          modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: q, motivo: p.motivo ?? null,
-          origem_cop_id: c.cop.id,
-          perda_modelo: p.modelo, perda_cor: p.cor, perda_tamanho: p.tamanho, perda_qtd: q,
-        });
+        if (q > 0) {
+          const ov = getOverride(k, { modelo: p.modelo, cor: p.cor, tamanho: p.tamanho });
+          itens.push({
+            modelo: ov.modelo, cor: ov.cor, tamanho: ov.tamanho, qtd: q, motivo: p.motivo ?? null,
+            origem_cop_id: c.cop.id,
+            perda_modelo: p.modelo, perda_cor: p.cor, perda_tamanho: p.tamanho, perda_qtd: q,
+          });
+        }
       }
       if (itens.length) selecoes.push({ cop: c.cop, itens });
     }
@@ -103,6 +136,7 @@ export function RefazerPerdaDialog({ open, onOpenChange, cops, onConfirm }: Prop
       onOpenChange(false);
     } finally { setSaving(false); }
   }
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
