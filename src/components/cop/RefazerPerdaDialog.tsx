@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, Pencil } from "lucide-react";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import type { Cop, CopPerdaLinha } from "@/lib/cop";
+import type { Cop, CopPerdaLinha, CopRefacaoPerdaItem } from "@/lib/cop";
 import { colunasTamanhos, formatCopNumero } from "@/lib/cop";
 
 export type RefazerCopInput = {
@@ -14,16 +14,18 @@ export type RefazerCopInput = {
   perdasRestantes: CopPerdaLinha[]; // já deduzidas de refações anteriores
 };
 
-type Selecionadas = Map<string, number>; // key = copId|modelo|cor|tamanho
-
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   cops: RefazerCopInput[];
   onConfirm: (
-    selecoes: Array<{ cop: Cop; itens: CopPerdaLinha[] }>,
+    selecoes: Array<{ cop: Cop; itens: CopRefacaoPerdaItem[] }>,
   ) => void | Promise<void>;
 }
+
+type Selecionadas = Map<string, number>; // key = copId|modelo|cor|tamanho
+
+
 
 type LinhaAgrupada = {
   modelo: string;
@@ -76,15 +78,20 @@ export function RefazerPerdaDialog({ open, onOpenChange, cops, onConfirm }: Prop
   }
 
   async function handleConfirm() {
-    const selecoes: Array<{ cop: Cop; itens: CopPerdaLinha[] }> = [];
+    const selecoes: Array<{ cop: Cop; itens: CopRefacaoPerdaItem[] }> = [];
     for (const c of cops) {
-      const itens: CopPerdaLinha[] = [];
+      const itens: CopRefacaoPerdaItem[] = [];
       for (const p of c.perdasRestantes) {
         const q = get(c.cop.id, p.modelo, p.cor, p.tamanho);
-        if (q > 0) itens.push({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: q, motivo: p.motivo ?? null });
+        if (q > 0) itens.push({
+          modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: q, motivo: p.motivo ?? null,
+          origem_cop_id: c.cop.id,
+          perda_modelo: p.modelo, perda_cor: p.cor, perda_tamanho: p.tamanho, perda_qtd: q,
+        });
       }
       if (itens.length) selecoes.push({ cop: c.cop, itens });
     }
+
     if (!selecoes.length) return;
     setSaving(true);
     try {
