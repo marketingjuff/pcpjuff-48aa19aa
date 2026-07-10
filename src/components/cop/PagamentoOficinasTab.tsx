@@ -257,7 +257,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
           <CardHeader className="pb-2">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <CardTitle className="text-base flex flex-wrap items-center gap-2">
-                COP {rotuloCop(selected.numero, selected.letra)} ·{" "}
+                COP {rotuloCop(selected.numero, selected.letra, !!selected.refacao_perda_origem_id)} ·{" "}
                 <span className="font-normal text-sm">{selectedOfi?.nome ?? "—"}</span>
                 {selected.letra && <span className="ml-2 text-xs text-amber-700">(Pagamento parcial — letra {selected.letra})</span>}
                 {atrasado && (
@@ -447,7 +447,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
                   return (
                     <tr key={c.id} className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : zebra ? "bg-muted/80" : ""}`} onClick={() => setSelectedId(c.id)}>
 
-                      <td className="p-2 font-semibold tabular-nums">{rotuloCop(c.numero, c.letra)}</td>
+                      <td className="p-2 font-semibold tabular-nums">{rotuloCop(c.numero, c.letra, !!c.refacao_perda_origem_id)}</td>
                       <td className="p-2">{ofi?.nome ?? "—"}</td>
                       <td className="p-2 text-center tabular-nums">{totalPecasCop(c.pecas)}</td>
                       <td className="p-2 text-xs">{c.status}</td>

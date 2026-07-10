@@ -17,7 +17,8 @@ import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopStatus, type Oficina,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, subtrairPecas,
-  calcularStatusCorte, getRecebida, rotuloCop, numeroBaseCop, colunasTamanhos,
+  calcularStatusCorte, getRecebida, rotuloCop, rotuloCopObj, numeroBaseCop, colunasTamanhos,
+
 } from "@/lib/cop";
 
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
@@ -400,7 +401,8 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
               <div>
                 <div className="text-xs uppercase text-muted-foreground tracking-wider">COP</div>
                 <div className="text-3xl sm:text-5xl font-bold tabular-nums">
-                  {rotuloCop(numeroBaseCop(selected, cops), selected.letra)}
+                  {rotuloCopObj(selected, cops)}
+
                   {par && (
                     <span className="ml-3 text-sm font-normal text-muted-foreground">
                       (
@@ -770,7 +772,8 @@ function PecasTable({
                 {i === 0 && (
                   <>
                     <td className="p-2 font-semibold tabular-nums align-top" rowSpan={span}>
-                      {rotuloCop(numeroBaseCop(c, cops), c.letra)}
+                      {rotuloCopObj(c, cops)}
+
                       {c.cop_pai_id && <span className="ml-1 text-[10px] text-muted-foreground">(filho)</span>}
                     </td>
                     <td className="p-2 align-top" rowSpan={span}>{ofiNome}</td>

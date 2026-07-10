@@ -190,7 +190,7 @@ export function PagamentoConsolidadoCard() {
                                 }}
                               />
                             </td>
-                            <td className="p-2 font-semibold tabular-nums">{rotuloCop(c.numero, c.letra)}</td>
+                            <td className="p-2 font-semibold tabular-nums">{rotuloCop(c.numero, c.letra, !!c.refacao_perda_origem_id)}</td>
                             <td className="p-2 tabular-nums">{fmtDate(c.pagamento_liberado_em)}</td>
                             <td className="p-2">
                               {atras ? (
@@ -254,7 +254,7 @@ export function PagamentoConsolidadoCard() {
                 <ul className="list-disc pl-5 max-h-40 overflow-auto">
                   {selecionadosArr.map((c) => (
                     <li key={c.id} className="tabular-nums">
-                      COP {rotuloCop(c.numero, c.letra)} — {fmtMoney(Number(c.pagamento_valor_calculado ?? 0))}
+                      COP {rotuloCop(c.numero, c.letra, !!c.refacao_perda_origem_id)} — {fmtMoney(Number(c.pagamento_valor_calculado ?? 0))}
                     </li>
                   ))}
                 </ul>
