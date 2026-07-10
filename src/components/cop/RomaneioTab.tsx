@@ -618,14 +618,12 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                             return (
                               <tr key={i} className="border-t">
                                 <td className="p-2">
-                                  <span className="inline-flex items-center gap-1">
+                                  <span className="inline-flex items-center gap-1" title={urgente ? "Urgência solicitada" : undefined}>
                                     {urgente && (
                                       <Flame
                                         className={`h-3.5 w-3.5 ${linhaCompleta ? "text-muted-foreground" : "text-red-600"}`}
                                         aria-label="Urgência solicitada"
-                                      >
-                                        <title>Urgência solicitada</title>
-                                      </Flame>
+                                      />
                                     )}
                                     {g.modelo}
                                   </span>
