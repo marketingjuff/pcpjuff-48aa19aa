@@ -338,7 +338,7 @@ export function EstoqueMpTab() {
         <Button
           size="sm"
           variant="outline"
-          onClick={() => abrirInventarioParaImpressao(inventarioRows)}
+          onClick={async () => { await abrirInventarioParaImpressao(inventarioRows); }}
           disabled={inventarioRows.length === 0}
         >
           <Printer className="h-4 w-4 mr-1.5" />
