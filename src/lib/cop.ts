@@ -104,12 +104,16 @@ export type Cop = {
   historico_perdas: HistoricoPerda[];
   perdas: CopPerdaLinha[];
   urgencias: CopUrgencia[];
+  // Refação de perda
+  refacao_perda_origem_id: string | null;
+  refacao_perda_itens: CopPerdaLinha[];
   corte_em_correcao: boolean;
   created_at: string;
   updated_at: string;
   created_by: string | null;
   updated_by: string | null;
 };
+
 
 /** Linha (modelo+cor) marcada como urgente em uma cobrança. Opcionalmente com tamanhos parciais. */
 export type CopUrgenciaLinha = {
