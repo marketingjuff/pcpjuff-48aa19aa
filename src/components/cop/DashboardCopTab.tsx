@@ -101,6 +101,60 @@ export function DashboardCopTab() {
       .slice(0, 10);
   }, [pedidos]);
 
+  type LinhaConsol = { modelo: string; cor: string; todos: boolean; tamanhos: Map<string, number> };
+  type CopUrg = { cop: Cop; ultimaEm: string; qtdPedidos: number; linhas: LinhaConsol[] };
+
+  const romaneiosComUrgencia = useMemo<CopUrg[]>(() => {
+    const tamIdx = (t: string) => {
+      const i = (REFACAO_TAMANHOS as readonly string[]).indexOf(t);
+      return i === -1 ? 999 : i;
+    };
+    const ativos = cops.filter((c) => c.status !== "Finalizado" && (c.urgencias?.length ?? 0) > 0);
+    const out: CopUrg[] = ativos.map((c) => {
+      const urgs = (c.urgencias ?? []) as CopUrgencia[];
+      let ultimaEm = "";
+      for (const u of urgs) if (u.em && u.em > ultimaEm) ultimaEm = u.em;
+      const mapa = new Map<string, LinhaConsol>();
+      for (const u of urgs) {
+        for (const l of u.linhas ?? []) {
+          const modelo = String(l.modelo).toUpperCase();
+          const cor = String(l.cor).toUpperCase();
+          const k = `${modelo}|${cor}`;
+          let linha = mapa.get(k);
+          if (!linha) { linha = { modelo, cor, todos: false, tamanhos: new Map() }; mapa.set(k, linha); }
+          if (!l.tamanhos || l.tamanhos.length === 0) {
+            linha.todos = true;
+          } else {
+            for (const t of l.tamanhos) {
+              const tam = String(t.tamanho);
+              const qtd = Number(t.qtd) || 0;
+              if (qtd > 0) linha.tamanhos.set(tam, (linha.tamanhos.get(tam) ?? 0) + qtd);
+            }
+          }
+        }
+      }
+      const linhas = Array.from(mapa.values()).sort((a, b) =>
+        a.modelo.localeCompare(b.modelo) || a.cor.localeCompare(b.cor),
+      );
+      // ordena tamanhos de cada linha
+      for (const l of linhas) {
+        const entries = Array.from(l.tamanhos.entries()).sort((a, b) => tamIdx(a[0]) - tamIdx(b[0]));
+        l.tamanhos = new Map(entries);
+      }
+      return { cop: c, ultimaEm, qtdPedidos: urgs.length, linhas };
+    });
+    out.sort((a, b) => (a.ultimaEm > b.ultimaEm ? -1 : a.ultimaEm < b.ultimaEm ? 1 : 0));
+    return out;
+  }, [cops]);
+
+  const formatDDMM = (iso: string) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "—";
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold tracking-tight">Dashboard COP</h2>
