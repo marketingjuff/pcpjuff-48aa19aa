@@ -106,6 +106,11 @@ export async function abrirInventarioParaImpressao(rows: InventarioRow[]) {
     </tr>
   </thead>
   <tbody>${body}</tbody>
+  <tfoot>
+    <tr>
+      <td colspan="9">Inventário gerado em ${esc(dataStr)} por ${esc(gerador)}</td>
+    </tr>
+  </tfoot>
 </table>
 <script>setTimeout(()=>{ try { window.print(); } catch(e){} }, 350);</script>
 </body></html>`;
