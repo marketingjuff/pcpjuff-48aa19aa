@@ -111,8 +111,12 @@ export type Cop = {
   updated_by: string | null;
 };
 
-/** Linha (modelo+cor) marcada como urgente em uma cobrança. */
-export type CopUrgenciaLinha = { modelo: string; cor: string };
+/** Linha (modelo+cor) marcada como urgente em uma cobrança. Opcionalmente com tamanhos parciais. */
+export type CopUrgenciaLinha = {
+  modelo: string;
+  cor: string;
+  tamanhos?: { tamanho: string; qtd: number }[];
+};
 
 /** Registro de um pedido de urgência à oficina. Imutável após criado. */
 export type CopUrgencia = {
