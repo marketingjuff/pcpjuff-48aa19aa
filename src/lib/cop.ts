@@ -106,7 +106,8 @@ export type Cop = {
   urgencias: CopUrgencia[];
   // Refação de perda
   refacao_perda_origem_id: string | null;
-  refacao_perda_itens: CopPerdaLinha[];
+  refacao_perda_itens: CopRefacaoPerdaItem[];
+
   corte_em_correcao: boolean;
   created_at: string;
   updated_at: string;
