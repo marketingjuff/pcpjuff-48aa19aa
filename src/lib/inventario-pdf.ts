@@ -23,9 +23,12 @@ function hojeBR(): string {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
-export function abrirInventarioParaImpressao(rows: InventarioRow[]) {
+export async function abrirInventarioParaImpressao(rows: InventarioRow[]) {
   const dataStr = hojeBR();
   const titulo = `inventario-${dataStr.replace(/\//g, "-")}`;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const gerador = user?.email ?? user?.user_metadata?.name ?? "usuário desconhecido";
 
   const body = rows.map((r) => `
     <tr>
