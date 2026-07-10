@@ -72,7 +72,15 @@ export function isPagamentoAtrasado(cop: Cop, feriados: Set<string>): boolean {
 const STATUS_ELEGIVEIS = ["Romaneio Completo", "Aguardando Pagamento", "Finalizado"];
 
 export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab }: { selectedId?: string | null; onSelect?: (id: string | null) => void; onChangeTab?: (tab: string) => void } = {}) {
-  const setSelectedId = (id: string | null) => onSelect?.(id);
+  const topRef = useRef<HTMLDivElement | null>(null);
+  const setSelectedId = (id: string | null) => {
+    onSelect?.(id);
+    if (id && typeof window !== "undefined") {
+      requestAnimationFrame(() => {
+        topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  };
   const qc = useQueryClient();
   const { btnStyle } = useCopColorSettings();
   const isAdmin = useIsAdmin();
