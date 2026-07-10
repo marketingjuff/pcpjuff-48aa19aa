@@ -528,7 +528,7 @@ export function EstoqueMpTab() {
                     <td className="p-1">
                       <LargInput
                         value={p.larg}
-                        onCommit={(n) => patchEstoquePeca(p.id, { larg: n }).then(refresh).catch((e: any) => toast.error(e?.message ?? "Falha ao salvar."))}
+                        onCommit={async (n) => { try { await patchEstoquePeca(p.id, { larg: n }); refresh(); } catch (e: any) { toast.error(e?.message ?? "Falha ao salvar."); } }}
                       />
                     </td>
                     <td className="p-1">
