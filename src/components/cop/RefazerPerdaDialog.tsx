@@ -4,8 +4,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, Pencil } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Check, Pencil, ArrowRight } from "lucide-react";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import type { Cop, CopPerdaLinha, CopRefacaoPerdaItem } from "@/lib/cop";
 import { colunasTamanhos, formatCopNumero } from "@/lib/cop";
 
@@ -50,8 +54,10 @@ export function RefazerPerdaDialog({ open, onOpenChange, cops, onConfirm }: Prop
   const [parcialEdit, setParcialEdit] = useState<string | null>(null);
   const [parcialVal, setParcialVal] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  // Overrides do "virou": por chave (copId|modelo|cor|tamanho da PERDA)
+  const [overrides, setOverrides] = useState<Map<string, { modelo: string; cor: string; tamanho: string }>>(new Map());
 
-  useEffect(() => { if (open) { setSel(new Map()); setParcialEdit(null); } }, [open]);
+  useEffect(() => { if (open) { setSel(new Map()); setParcialEdit(null); setOverrides(new Map()); } }, [open]);
 
   const totais = useMemo(() => {
     let max = 0, selTotal = 0;
@@ -77,17 +83,48 @@ export function RefazerPerdaDialog({ open, onOpenChange, cops, onConfirm }: Prop
     });
   }
 
+  function getOverride(k: string, def: { modelo: string; cor: string; tamanho: string }) {
+    return overrides.get(k) ?? def;
+  }
+  function setOverride(k: string, patch: Partial<{ modelo: string; cor: string; tamanho: string }>) {
+    setOverrides((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(k) ?? { modelo: "", cor: "", tamanho: "" };
+      next.set(k, { ...cur, ...patch });
+      return next;
+    });
+  }
+
+  // Lista de itens selecionados (para o painel "o que virou")
+  const selecionadosLista = useMemo(() => {
+    type Item = { key: string; copId: string; copRotulo: string; perda: { modelo: string; cor: string; tamanho: string }; qtd: number };
+    const out: Item[] = [];
+    for (const c of cops) {
+      const rot = `${formatCopNumero(c.cop.numero)}${c.cop.letra ?? ""}`;
+      for (const p of c.perdasRestantes) {
+        const k = key(c.cop.id, p.modelo, p.cor, p.tamanho);
+        const q = sel.get(k) ?? 0;
+        if (q > 0) out.push({ key: k, copId: c.cop.id, copRotulo: rot, perda: { modelo: p.modelo, cor: p.cor, tamanho: p.tamanho }, qtd: q });
+      }
+    }
+    return out;
+  }, [cops, sel]);
+
   async function handleConfirm() {
     const selecoes: Array<{ cop: Cop; itens: CopRefacaoPerdaItem[] }> = [];
     for (const c of cops) {
       const itens: CopRefacaoPerdaItem[] = [];
       for (const p of c.perdasRestantes) {
+        const k = key(c.cop.id, p.modelo, p.cor, p.tamanho);
         const q = get(c.cop.id, p.modelo, p.cor, p.tamanho);
-        if (q > 0) itens.push({
-          modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: q, motivo: p.motivo ?? null,
-          origem_cop_id: c.cop.id,
-          perda_modelo: p.modelo, perda_cor: p.cor, perda_tamanho: p.tamanho, perda_qtd: q,
-        });
+        if (q > 0) {
+          const ov = getOverride(k, { modelo: p.modelo, cor: p.cor, tamanho: p.tamanho });
+          itens.push({
+            modelo: ov.modelo, cor: ov.cor, tamanho: ov.tamanho, qtd: q, motivo: p.motivo ?? null,
+            origem_cop_id: c.cop.id,
+            perda_modelo: p.modelo, perda_cor: p.cor, perda_tamanho: p.tamanho, perda_qtd: q,
+          });
+        }
       }
       if (itens.length) selecoes.push({ cop: c.cop, itens });
     }
@@ -99,6 +136,7 @@ export function RefazerPerdaDialog({ open, onOpenChange, cops, onConfirm }: Prop
       onOpenChange(false);
     } finally { setSaving(false); }
   }
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -220,10 +258,82 @@ export function RefazerPerdaDialog({ open, onOpenChange, cops, onConfirm }: Prop
           )}
         </div>
 
+        {selecionadosLista.length > 0 && (
+          <div className="rounded-md border">
+            <div className="px-3 py-1.5 bg-muted/40 text-xs font-semibold border-b">
+              O que a perda virou <span className="text-muted-foreground font-normal">(edite modelo, cor ou tamanho se a peça foi salva como outra)</span>
+            </div>
+            <div className="max-h-[28vh] overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/20 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-2 py-1 text-left">COP origem</th>
+                    <th className="px-2 py-1 text-left">Perda original</th>
+                    <th className="px-2 py-1 text-center w-6"></th>
+                    <th className="px-2 py-1 text-left">Modelo (virou)</th>
+                    <th className="px-2 py-1 text-left">Cor (virou)</th>
+                    <th className="px-2 py-1 text-left">Tam. (virou)</th>
+                    <th className="px-2 py-1 text-right">Qtd</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selecionadosLista.map((it) => {
+                    const ov = getOverride(it.key, it.perda);
+                    const hexP = corHex(it.perda.cor); const fgP = corTextoSobre(hexP);
+                    const hexN = corHex(ov.cor); const fgN = corTextoSobre(hexN);
+                    return (
+                      <tr key={it.key} className="border-t align-middle">
+                        <td className="px-2 py-1 text-xs">COP {it.copRotulo}</td>
+                        <td className="px-2 py-1">
+                          <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground">
+                            <span>{it.perda.modelo}</span>
+                            <span className="inline-block px-1.5 py-0 rounded text-[10px] font-bold" style={{ backgroundColor: hexP, color: fgP }}>{it.perda.cor}</span>
+                            <span>{it.perda.tamanho}</span>
+                          </div>
+                        </td>
+                        <td className="px-1 py-1 text-center text-muted-foreground"><ArrowRight className="h-3.5 w-3.5 inline" /></td>
+                        <td className="px-2 py-1">
+                          <Select value={ov.modelo} onValueChange={(v) => setOverride(it.key, { modelo: v })}>
+                            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>{REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-2 py-1">
+                          <Select value={ov.cor} onValueChange={(v) => setOverride(it.key, { cor: v })}>
+                            <SelectTrigger className="h-7 text-xs">
+                              <SelectValue>
+                                <span className="inline-block px-1.5 py-0 rounded text-[10px] font-bold" style={{ backgroundColor: hexN, color: fgN }}>{ov.cor}</span>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {REFACAO_CORES.map((c) => {
+                                const fg = corTextoSobre(c.hex);
+                                return <SelectItem key={c.nome} value={c.nome} style={{ backgroundColor: c.hex, color: fg }}>{c.nome}</SelectItem>;
+                              })}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-2 py-1">
+                          <Select value={ov.tamanho} onValueChange={(v) => setOverride(it.key, { tamanho: v })}>
+                            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>{REFACAO_TAMANHOS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-2 py-1 text-right tabular-nums">{it.qtd}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">Máximo disponível: <b className="tabular-nums">{totais.max}</b></span>
           <span>Selecionadas: <b className="tabular-nums text-green-700">{totais.selTotal}</b></span>
         </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
           <Button onClick={handleConfirm} disabled={saving || totais.selTotal === 0}>Criar COP de refação</Button>

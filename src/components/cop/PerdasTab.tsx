@@ -393,7 +393,7 @@ export function PerdasTab() {
                             )}
                           </td>
                         )}
-                        <td className="p-2 font-mono align-top">{first ? `${formatCopNumero(cop.numero)}${cop.letra ?? ""}` : ""}</td>
+                        <td className="p-2 font-semibold tabular-nums align-top">{first ? `${formatCopNumero(cop.numero)}${cop.letra ?? ""}` : ""}</td>
                         <td className="p-2 align-top">{first ? (cop.oficina_id ? (ofiNome.get(cop.oficina_id) ?? "—") : "—") : ""}</td>
                         <td className="p-2">{linha.modelo}</td>
                         <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{linha.cor}</span></td>
@@ -461,7 +461,7 @@ export function PerdasTab() {
                             <div className="flex flex-col gap-0.5">
                               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Perda original</span>
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-mono text-xs">COP {origemRotulo}</span>
+                                <span className="text-xs font-semibold tabular-nums">COP {origemRotulo}</span>
                               </div>
                               <div className="flex items-center gap-1.5 flex-wrap text-xs">
                                 <span className="font-medium">{linha.perda_modelo ?? linha.modelo}</span>
@@ -484,7 +484,7 @@ export function PerdasTab() {
                             <div className="flex flex-col gap-0.5">
                               <span className="text-[10px] uppercase tracking-wider text-emerald-700 font-semibold">Refeito</span>
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-mono text-xs">COP {novoRotulo}</span>
+                                <span className="text-xs font-semibold tabular-nums">COP {novoRotulo}</span>
                                 {isMudou && <span className="text-[10px] text-amber-700">(alterado)</span>}
                               </div>
                               <div className="flex items-center gap-1.5 flex-wrap text-xs">
