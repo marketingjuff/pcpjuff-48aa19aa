@@ -30,8 +30,6 @@ type LinhaFalta = {
   grupos: GrupoFalta[];
   faltaTotal: number;
   ancora: string | null;
-  limite: string | null;
-  inicioEstamparia: string | null;
 };
 
 function fmtBR(d: string | null | undefined): string {
@@ -110,9 +108,7 @@ export function FaltaPorPedidoTab() {
       const grupos = Array.from(mapa.values());
       const faltaTotal = grupos.reduce((s, g) => s + g.faltaTotal, 0);
       const ancora = dataUrgencia(p);
-      const limite = ancora ? addDiasUteis(ancora, -2) : null;
-      const inicioEstamparia = (p as any).inicio_estamparia ?? ancora ?? null;
-      arr.push({ pedido: p, grupos, faltaTotal, ancora, limite, inicioEstamparia });
+      arr.push({ pedido: p, grupos, faltaTotal, ancora });
     }
     arr.sort((a, b) => {
       const da = a.ancora ?? "9999-12-31";
@@ -257,7 +253,6 @@ export function FaltaPorPedidoTab() {
         <div className="rounded-md border overflow-x-auto">
           <table className="text-[12.5px] leading-[1.2]" style={{ borderCollapse: "collapse", tableLayout: "fixed", minWidth: "100%" }}>
             <colgroup>
-              <col style={{ width: 72 }} />
               <col style={{ width: 210 }} />
               <col style={{ width: 100 }} />
               <col style={{ width: 70 }} />
@@ -269,7 +264,6 @@ export function FaltaPorPedidoTab() {
             </colgroup>
             <thead className="bg-muted/40 text-xs">
               <tr>
-                <th className="px-1 py-2 text-left whitespace-nowrap">Início Est.</th>
                 <th className="px-1 py-2 text-left whitespace-nowrap">Orçamento</th>
                 <th className="px-1 py-2 text-left whitespace-nowrap">Modelo</th>
                 <th className="px-1 py-2 text-left whitespace-nowrap">Cor</th>
@@ -286,9 +280,28 @@ export function FaltaPorPedidoTab() {
                 const atrasadoGrp = !!(grp.ancora && addDiasUteis(grp.ancora, -2) < hoje);
                 return (
                   <Fragment key={grp.key}>
+                    <tr key={`sub:${grp.key}`} className="border-t bg-muted/60 font-semibold leading-tight">
+                      <td className="px-1 py-1.5 text-left" colSpan={3}>
+                        <button
+                          onClick={() => toggle(grp.key)}
+                          className="inline-flex items-center gap-1 text-foreground hover:text-primary text-xs"
+                        >
+                          {isExp ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          <span className={atrasadoGrp ? "text-red-700" : ""}>
+                            {fmtBR(grp.ancora)} - Total - {grp.linhas.length} Pedidos
+                          </span>
+                        </button>
+                      </td>
+                      {tamanhosColunas.map((t) => (
+                        <td key={t} className="px-1 py-1.5 text-center tabular-nums text-amber-700 text-xs">
+                          {grp.subtotais[t] ? `-${grp.subtotais[t]}` : "–"}
+                        </td>
+                      ))}
+                      <td className="px-1 py-1.5 text-right tabular-nums text-amber-700 text-xs">-{grp.total}</td>
+                      <td className="px-1 py-1.5"> </td>
+                    </tr>
                     {isExp && grp.rows.map((r) => {
                       const hex = corHex(r.grupo.cor); const fg = corTextoSobre(hex);
-                      const atrasado = !!(r.limite && r.limite < hoje);
                       return (
                         <tr
                           key={`${r.pedido.id}|${r.grupo.modelo}|${r.grupo.cor}`}
@@ -296,17 +309,12 @@ export function FaltaPorPedidoTab() {
                           onClick={() => setHistorico(r.pedido)}
                         >
                           {r.primeira ? (
-                            <>
-                              <td className={`px-1 py-1 align-middle whitespace-nowrap text-xs ${atrasado ? "text-red-700 font-semibold" : ""}`} rowSpan={r.rowSpan}>
-                                {fmtBR(r.inicioEstamparia)}
-                              </td>
-                              <td className="px-1 py-1 align-middle break-words text-xs" rowSpan={r.rowSpan}>
-                                <div>{r.pedido.orcamento ?? "—"}</div>
-                                {(r.pedido as any).pedido_olist && (
-                                  <div className="text-[10px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
-                                )}
-                              </td>
-                            </>
+                            <td className="px-1 py-1 align-middle break-words text-xs" rowSpan={r.rowSpan}>
+                              <div>{r.pedido.orcamento ?? "—"}</div>
+                              {(r.pedido as any).pedido_olist && (
+                                <div className="text-[10px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
+                              )}
+                            </td>
                           ) : null}
                           <td className="px-1 py-1 whitespace-nowrap">{r.grupo.modelo}</td>
                           <td className="px-1 py-1">
@@ -340,26 +348,6 @@ export function FaltaPorPedidoTab() {
                         </tr>
                       );
                     })}
-                    <tr key={`sub:${grp.key}`} className="border-t bg-muted/60 font-semibold leading-tight">
-                      <td className="px-1 py-1.5 text-left" colSpan={4}>
-                        <button
-                          onClick={() => toggle(grp.key)}
-                          className="inline-flex items-center gap-1 text-foreground hover:text-primary text-xs"
-                        >
-                          {isExp ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                          <span className={atrasadoGrp ? "text-red-700" : ""}>
-                            Total {fmtBR(grp.ancora)} · {grp.linhas.length} pedidos
-                          </span>
-                        </button>
-                      </td>
-                      {tamanhosColunas.map((t) => (
-                        <td key={t} className="px-1 py-1.5 text-center tabular-nums text-amber-700 text-xs">
-                          {grp.subtotais[t] ? `-${grp.subtotais[t]}` : "–"}
-                        </td>
-                      ))}
-                      <td className="px-1 py-1.5 text-right tabular-nums text-amber-700 text-xs">-{grp.total}</td>
-                      <td className="px-1 py-1.5"> </td>
-                    </tr>
                   </Fragment>
                 );
               })}
