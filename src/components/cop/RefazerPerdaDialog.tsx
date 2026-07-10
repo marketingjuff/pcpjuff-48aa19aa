@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, Pencil } from "lucide-react";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import type { Cop, CopPerdaLinha } from "@/lib/cop";
+import type { Cop, CopPerdaLinha, CopRefacaoPerdaItem } from "@/lib/cop";
 import { colunasTamanhos, formatCopNumero } from "@/lib/cop";
 
 export type RefazerCopInput = {
@@ -14,16 +14,15 @@ export type RefazerCopInput = {
   perdasRestantes: CopPerdaLinha[]; // já deduzidas de refações anteriores
 };
 
-type Selecionadas = Map<string, number>; // key = copId|modelo|cor|tamanho
-
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   cops: RefazerCopInput[];
   onConfirm: (
-    selecoes: Array<{ cop: Cop; itens: CopPerdaLinha[] }>,
+    selecoes: Array<{ cop: Cop; itens: CopRefacaoPerdaItem[] }>,
   ) => void | Promise<void>;
 }
+
 
 type LinhaAgrupada = {
   modelo: string;
