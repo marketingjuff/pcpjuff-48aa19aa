@@ -24,9 +24,59 @@ export function CopConfigPanel() {
     <div className="space-y-6">
       <OficinasCard />
       <MotivosPerdaCard />
+      <DestinosPerdaCard />
       <CoresCopCard />
       <AcessoCard />
     </div>
+  );
+}
+
+/* -------------------- Destinos de Perda -------------------- */
+function DestinosPerdaCard() {
+  const { items } = useAppList("destino_perda");
+  const { add, remove } = useAppListMutations("destino_perda");
+  const [novo, setNovo] = useState("");
+  async function handleAdd() {
+    const v = novo.trim();
+    if (!v) { toast.error("Digite o destino."); return; }
+    try { await add.mutateAsync(v); setNovo(""); toast.success("Destino adicionado."); }
+    catch (e: any) { toast.error(e?.message ?? "Erro ao adicionar."); }
+  }
+  return (
+    <Card>
+      <CardHeader className="pb-2"><CardTitle className="text-base">Destinos de peças perdidas</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex gap-2">
+          <Input
+            placeholder="Ex.: Reciclagem"
+            value={novo}
+            onChange={(e) => setNovo(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAdd(); } }}
+            disabled={add.isPending}
+          />
+          <Button size="sm" onClick={handleAdd} disabled={add.isPending}>
+            <Plus className="h-4 w-4 mr-1" /> Adicionar
+          </Button>
+        </div>
+        <Table>
+          <TableHeader><TableRow><TableHead>Destino</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+          <TableBody>
+            {items.length === 0 ? (
+              <TableRow><TableCell colSpan={2} className="text-muted-foreground">Nenhum destino cadastrado.</TableCell></TableRow>
+            ) : items.map((it) => (
+              <TableRow key={it.id}>
+                <TableCell>{it.nome}</TableCell>
+                <TableCell className="text-right">
+                  <Button size="icon" variant="ghost" onClick={() => remove.mutate(it.id)} title="Remover">
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
 
