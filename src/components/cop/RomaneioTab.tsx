@@ -1084,6 +1084,16 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             onConfirm={(perdas) => salvarPerdas.mutate({ cop: selected, perdas })}
             disabled={salvarPerdas.isPending}
           />
+          <PedirUrgenciaDialog
+            open={showUrgencia}
+            onOpenChange={setShowUrgencia}
+            rotulo={rotuloRomaneio(selected, cops)}
+            pecas={selected.pecas || []}
+            recebidas={recebidas}
+            perdas={(selected.perdas as CopPerdaLinha[]) ?? []}
+            onConfirm={(obs, linhas) => salvarUrgencia.mutate({ cop: selected, obs, linhas })}
+            disabled={salvarUrgencia.isPending}
+          />
         </>
       )}
 
