@@ -19,7 +19,7 @@ import { useCanAccessCop } from "@/hooks/use-role";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
-  type HistoricoRecebimento, type HistoricoPerda, type CopPerdaLinha, type CopUrgencia, type CopUrgenciaLinha,
+  type HistoricoRecebimento, type HistoricoPerda, type CopPerdaLinha, type CopUrgencia, type CopUrgenciaLinha, type CopUrgenciaPedido,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, totalRecebidas,
   todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
   getRecebida, getPerda, colunasTamanhos, mesclarPerdasEmObservacoes, linhaUrgente,
