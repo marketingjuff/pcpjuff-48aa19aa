@@ -54,6 +54,7 @@ function MapHome() {
   const setTab = (t: string) => {
     setTabState(t);
     if (typeof window !== "undefined") window.localStorage.setItem("map:tab", t);
+    navigate({ to: "/map", search: (prev: any) => ({ ...prev, tab: t, fioFilter: undefined }), replace: true });
   };
 
   useEffect(() => {
