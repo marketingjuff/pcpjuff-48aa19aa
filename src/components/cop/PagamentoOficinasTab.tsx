@@ -303,25 +303,12 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={topRef}>
       <h2 className="text-2xl font-bold tracking-tight">Pagamentos</h2>
-      <div className="flex flex-wrap items-center gap-2 justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => qc.invalidateQueries({ queryKey: ["cops"] })} title="Recarregar"><RefreshCw className="h-4 w-4" /></Button>
-          <Label className="text-xs">Status pagamento:</Label>
-          <Select value={filtro} onValueChange={setFiltro}>
-            <SelectTrigger className="h-9 w-[200px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos_pagaveis">Todos elegíveis</SelectItem>
-              <SelectItem value="nao_pago">Não pago</SelectItem>
-              <SelectItem value="liberado">Liberado</SelectItem>
-              <SelectItem value="atrasado">Atrasado</SelectItem>
-              <SelectItem value="pago">Pago</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="text-xs text-muted-foreground">{lista.length} registros</div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="icon" onClick={() => qc.invalidateQueries({ queryKey: ["cops"] })} title="Recarregar"><RefreshCw className="h-4 w-4" /></Button>
       </div>
+
 
       {selected && (
         <Card className="border-primary/30">
