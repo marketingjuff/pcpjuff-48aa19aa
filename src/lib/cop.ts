@@ -103,6 +103,7 @@ export type Cop = {
   historico_recebimentos: HistoricoRecebimento[];
   historico_perdas: HistoricoPerda[];
   perdas: CopPerdaLinha[];
+  urgencias: CopUrgencia[];
   corte_em_correcao: boolean;
   created_at: string;
   updated_at: string;
