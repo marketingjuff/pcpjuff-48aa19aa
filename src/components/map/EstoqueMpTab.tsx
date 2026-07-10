@@ -526,11 +526,9 @@ export function EstoqueMpTab() {
                       />
                     </td>
                     <td className="p-1">
-                      <InlineInput
-                        value={fmtLarg(p.larg)}
-                        onCommit={(v) => commitField(p, "larg", v)}
-                        placeholder=""
-                        className="text-center"
+                      <LargInput
+                        value={p.larg}
+                        onCommit={(n) => patchEstoquePeca(p.id, { larg: n }).then(refresh).catch((e: any) => toast.error(e?.message ?? "Falha ao salvar."))}
                       />
                     </td>
                     <td className="p-1">
