@@ -279,6 +279,13 @@ function CoresCopCard() {
     { key: "mandar_romaneio", label: "Botão Mandar pro Romaneio" },
     { key: "dividir_corte", label: "Botão Divisão de Corte" },
     { key: "voltar", label: "Botão Voltar" },
+    { key: "baixar_pdf",       label: "Botão Baixar PDF (Romaneio)" },
+    { key: "particionar",      label: "Botão Particionar (Romaneio)" },
+    { key: "corrigir_corte",   label: "Botão Corrigir Corte (Romaneio)" },
+    { key: "registrar_perda",  label: "Botão Registrar Perda (Romaneio)" },
+    { key: "pedir_urgencia",   label: "Botão Pedir Urgência (Romaneio)" },
+    { key: "enviar_oficina",   label: "Botão Enviar para Oficina (Romaneio)" },
+    { key: "entrega_romaneio", label: "Botão Entrega de Romaneio (Romaneio)" },
   ];
 
   return (
