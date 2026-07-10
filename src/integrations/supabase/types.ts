@@ -1092,6 +1092,136 @@ export type Database = {
         }
         Relationships: []
       }
+      perdas_manuais: {
+        Row: {
+          berco: string | null
+          cor: string
+          created_at: string
+          data: string
+          destino: string | null
+          id: string
+          modelo: string
+          motivo: string | null
+          observacoes: string | null
+          oficina_id: string | null
+          qtd: number
+          registrado_por: string | null
+          responsavel: string | null
+          tamanho: string
+          updated_at: string
+        }
+        Insert: {
+          berco?: string | null
+          cor: string
+          created_at?: string
+          data?: string
+          destino?: string | null
+          id?: string
+          modelo: string
+          motivo?: string | null
+          observacoes?: string | null
+          oficina_id?: string | null
+          qtd: number
+          registrado_por?: string | null
+          responsavel?: string | null
+          tamanho: string
+          updated_at?: string
+        }
+        Update: {
+          berco?: string | null
+          cor?: string
+          created_at?: string
+          data?: string
+          destino?: string | null
+          id?: string
+          modelo?: string
+          motivo?: string | null
+          observacoes?: string | null
+          oficina_id?: string | null
+          qtd?: number
+          registrado_por?: string | null
+          responsavel?: string | null
+          tamanho?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perdas_manuais_oficina_id_fkey"
+            columns: ["oficina_id"]
+            isOneToOne: false
+            referencedRelation: "oficinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      perdas_reclassificacoes: {
+        Row: {
+          area_erro_original: string | null
+          berco: string | null
+          cor: string
+          created_at: string
+          destino: string | null
+          id: string
+          modelo: string
+          motivo_novo: string
+          motivo_original: string | null
+          observacao: string
+          oficina_id: string | null
+          pedido_id: string
+          qtd: number
+          refacao_data: string
+          refacao_idx: number
+          tamanho: string
+          usuario_id: string | null
+        }
+        Insert: {
+          area_erro_original?: string | null
+          berco?: string | null
+          cor: string
+          created_at?: string
+          destino?: string | null
+          id?: string
+          modelo: string
+          motivo_novo: string
+          motivo_original?: string | null
+          observacao: string
+          oficina_id?: string | null
+          pedido_id: string
+          qtd: number
+          refacao_data: string
+          refacao_idx: number
+          tamanho: string
+          usuario_id?: string | null
+        }
+        Update: {
+          area_erro_original?: string | null
+          berco?: string | null
+          cor?: string
+          created_at?: string
+          destino?: string | null
+          id?: string
+          modelo?: string
+          motivo_novo?: string
+          motivo_original?: string | null
+          observacao?: string
+          oficina_id?: string | null
+          pedido_id?: string
+          qtd?: number
+          refacao_data?: string
+          refacao_idx?: number
+          tamanho?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perdas_reclassificacoes_oficina_id_fkey"
+            columns: ["oficina_id"]
+            isOneToOne: false
+            referencedRelation: "oficinas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
