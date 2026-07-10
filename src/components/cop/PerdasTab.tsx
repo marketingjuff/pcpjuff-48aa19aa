@@ -484,7 +484,7 @@ export function PerdasTab() {
                             <div className="flex flex-col gap-0.5">
                               <span className="text-[10px] uppercase tracking-wider text-emerald-700 font-semibold">Refeito</span>
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-mono text-xs">COP {novoRotulo}</span>
+                                <span className="text-xs font-semibold tabular-nums">COP {novoRotulo}</span>
                                 {isMudou && <span className="text-[10px] text-amber-700">(alterado)</span>}
                               </div>
                               <div className="flex items-center gap-1.5 flex-wrap text-xs">
