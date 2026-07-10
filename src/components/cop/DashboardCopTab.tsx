@@ -213,6 +213,54 @@ export function DashboardCopTab() {
       </div>
 
       <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Romaneios com urgência</CardTitle></CardHeader>
+        <CardContent>
+          {romaneiosComUrgencia.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma urgência ativa.</p>
+          ) : (
+            <ul className="divide-y">
+              {romaneiosComUrgencia.map(({ cop, ultimaEm, qtdPedidos, linhas }) => (
+                <li key={cop.id} className="py-2 space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <Flame className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                    <span className="font-bold tabular-nums">{rotuloRomaneio(cop, cops)}</span>
+                    <span className="text-muted-foreground">· {oficinaNome.get(cop.oficina_id ?? "") ?? "—"}</span>
+                    <span
+                      className="inline-flex items-center rounded bg-red-100 text-red-800 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                      title={`${qtdPedidos} pedido(s) de urgência`}
+                    >
+                      URGÊNCIA{qtdPedidos > 1 ? ` ×${qtdPedidos}` : ""}
+                    </span>
+                    <span className="ml-auto text-muted-foreground tabular-nums">{formatDDMM(ultimaEm)}</span>
+                  </div>
+                  <div className="pl-5 space-y-0.5">
+                    {linhas.map((l, i) => {
+                      const hex = corHex(l.cor); const fg = corTextoSobre(hex);
+                      const tamsTxt = l.todos
+                        ? "todos os tamanhos"
+                        : Array.from(l.tamanhos.entries()).map(([t, q]) => `${t}:${q}`).join(" · ");
+                      return (
+                        <div key={i} className="flex items-center gap-2 text-[12.5px] leading-[1.2] flex-wrap">
+                          <span className="font-bold">{l.modelo}</span>
+                          <span
+                            className="inline-block px-1.5 py-0.5 rounded text-[11px] font-bold"
+                            style={{ backgroundColor: hex, color: fg }}
+                          >
+                            {l.cor}
+                          </span>
+                          <span className="text-muted-foreground tabular-nums">{tamsTxt || "—"}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Pedidos mais urgentes</CardTitle></CardHeader>
         <CardContent>
           {urgentes.length === 0 ? (
