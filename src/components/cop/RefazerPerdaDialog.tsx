@@ -78,15 +78,20 @@ export function RefazerPerdaDialog({ open, onOpenChange, cops, onConfirm }: Prop
   }
 
   async function handleConfirm() {
-    const selecoes: Array<{ cop: Cop; itens: CopPerdaLinha[] }> = [];
+    const selecoes: Array<{ cop: Cop; itens: CopRefacaoPerdaItem[] }> = [];
     for (const c of cops) {
-      const itens: CopPerdaLinha[] = [];
+      const itens: CopRefacaoPerdaItem[] = [];
       for (const p of c.perdasRestantes) {
         const q = get(c.cop.id, p.modelo, p.cor, p.tamanho);
-        if (q > 0) itens.push({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: q, motivo: p.motivo ?? null });
+        if (q > 0) itens.push({
+          modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: q, motivo: p.motivo ?? null,
+          origem_cop_id: c.cop.id,
+          perda_modelo: p.modelo, perda_cor: p.cor, perda_tamanho: p.tamanho, perda_qtd: q,
+        });
       }
       if (itens.length) selecoes.push({ cop: c.cop, itens });
     }
+
     if (!selecoes.length) return;
     setSaving(true);
     try {
