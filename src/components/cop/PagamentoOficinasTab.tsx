@@ -114,17 +114,80 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
 
-  const [filtro, setFiltro] = useState<string>("todos_pagaveis");
-  const lista = useMemo(() => {
+  const [filtro, setFiltro] = useState<string>("liberado");
+  const [filtroCop, setFiltroCop] = useState<string>("");
+  const [filtroOficina, setFiltroOficina] = useState<string>("todas");
+  const [pageSize, setPageSize] = useState<number>(100);
+  type SortKey = "cop" | "oficina" | "pecas" | "pagamento" | "liberacao" | "vencimento" | "valor";
+  const [sortKey, setSortKey] = useState<SortKey>("cop");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const toggleSort = (k: SortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(k); setSortDir("asc"); }
+  };
+  const SortIcon = ({ k }: { k: SortKey }) => {
+    if (sortKey !== k) return <ArrowUpDown className="inline h-3 w-3 ml-1 opacity-40" />;
+    return sortDir === "asc"
+      ? <ArrowUp className="inline h-3 w-3 ml-1" />
+      : <ArrowDown className="inline h-3 w-3 ml-1" />;
+  };
+
+  const listaFiltrada = useMemo(() => {
+    const q = filtroCop.trim().toLowerCase();
     return cops.filter((c) => {
       if (!STATUS_ELEGIVEIS.includes(c.status) && c.pagamento_status === "nao_pago") return false;
-      if (filtro === "nao_pago") return c.pagamento_status === "nao_pago";
-      if (filtro === "liberado") return c.pagamento_status === "liberado";
-      if (filtro === "pago") return c.pagamento_status === "pago";
-      if (filtro === "atrasado") return isPagamentoAtrasado(c, feriados);
+      if (filtro === "nao_pago" && c.pagamento_status !== "nao_pago") return false;
+      if (filtro === "liberado" && c.pagamento_status !== "liberado") return false;
+      if (filtro === "pago" && c.pagamento_status !== "pago") return false;
+      if (filtro === "atrasado" && !isPagamentoAtrasado(c, feriados)) return false;
+      if (filtroOficina !== "todas" && c.oficina_id !== filtroOficina) return false;
+      if (q) {
+        const label = rotuloCop(c.numero, c.letra, !!c.refacao_perda_origem_id).toLowerCase();
+        if (!label.includes(q) && !String(c.numero).includes(q)) return false;
+      }
       return true;
     });
-  }, [cops, filtro, feriados]);
+  }, [cops, filtro, filtroOficina, filtroCop, feriados]);
+
+  const lista = useMemo(() => {
+    const arr = [...listaFiltrada];
+    const dir = sortDir === "asc" ? 1 : -1;
+    const pagRank: Record<string, number> = { nao_pago: 0, liberado: 1, pago: 2 };
+    arr.sort((a, b) => {
+      const ofa = oficinas.find((o) => o.id === a.oficina_id)?.nome ?? "";
+      const ofb = oficinas.find((o) => o.id === b.oficina_id)?.nome ?? "";
+      switch (sortKey) {
+        case "cop": {
+          const d = a.numero - b.numero;
+          return d !== 0 ? d * dir : (a.letra ?? "").localeCompare(b.letra ?? "") * dir;
+        }
+        case "oficina": return ofa.localeCompare(ofb) * dir;
+        case "pecas": return (totalPecasCop(a.pecas) - totalPecasCop(b.pecas)) * dir;
+        case "pagamento": return ((pagRank[a.pagamento_status] ?? -1) - (pagRank[b.pagamento_status] ?? -1)) * dir;
+        case "liberacao": {
+          const av = a.pagamento_liberado_em ? new Date(a.pagamento_liberado_em).getTime() : 0;
+          const bv = b.pagamento_liberado_em ? new Date(b.pagamento_liberado_em).getTime() : 0;
+          return (av - bv) * dir;
+        }
+        case "vencimento": {
+          const av = a.pagamento_liberado_em ? addDiasUteis(new Date(a.pagamento_liberado_em), 5, feriados) : "";
+          const bv = b.pagamento_liberado_em ? addDiasUteis(new Date(b.pagamento_liberado_em), 5, feriados) : "";
+          return av.localeCompare(bv) * dir;
+        }
+        case "valor": {
+          const av = a.pagamento_valor_calculado != null ? Number(a.pagamento_valor_calculado) : calcValor(a, oficinas.find((o) => o.id === a.oficina_id) ?? null);
+          const bv = b.pagamento_valor_calculado != null ? Number(b.pagamento_valor_calculado) : calcValor(b, oficinas.find((o) => o.id === b.oficina_id) ?? null);
+          return (av - bv) * dir;
+        }
+      }
+    });
+    return arr.slice(0, pageSize);
+  }, [listaFiltrada, sortKey, sortDir, oficinas, feriados, pageSize]);
+
+  const oficinasComRegistros = useMemo(() => {
+    const ids = new Set(cops.map((c) => c.oficina_id).filter(Boolean) as string[]);
+    return oficinas.filter((o) => ids.has(o.id)).sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [cops, oficinas]);
 
   const selected = useMemo(() => cops.find((c) => c.id === selectedId) ?? null, [cops, selectedId]);
   const selectedOfi = useMemo(() => oficinas.find((o) => o.id === selected?.oficina_id) ?? null, [oficinas, selected]);
