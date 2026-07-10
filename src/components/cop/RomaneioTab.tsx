@@ -944,22 +944,40 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                                   <tr>
                                     <th className="p-2 text-left">Modelo</th>
                                     <th className="p-2 text-left">Cor</th>
+                                    <th className="p-2 text-left">Tamanhos</th>
+                                    <th className="p-2 text-right">Qtd</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {(selectedHist.linhas ?? []).map((l: CopUrgenciaLinha, idx: number) => {
                                     const hex = corHex(l.cor); const fg = corTextoSobre(hex);
+                                    const tams = l.tamanhos ?? [];
+                                    const totalLinha = tams.reduce((s, t) => s + (t.qtd || 0), 0);
                                     return (
-                                      <tr key={idx} className="border-t">
+                                      <tr key={idx} className="border-t align-top">
                                         <td className="p-2">{l.modelo}</td>
                                         <td className="p-2">
                                           <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{l.cor}</span>
                                         </td>
+                                        <td className="p-2">
+                                          {tams.length === 0 ? (
+                                            <span className="text-muted-foreground">todos</span>
+                                          ) : (
+                                            <div className="flex flex-wrap gap-1">
+                                              {tams.map((t, i) => (
+                                                <span key={i} className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">
+                                                  <b className="mr-1">{t.tamanho}</b>{t.qtd}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </td>
+                                        <td className="p-2 text-right tabular-nums font-semibold">{totalLinha || "—"}</td>
                                       </tr>
                                     );
                                   })}
                                   {(selectedHist.linhas ?? []).length === 0 && (
-                                    <tr><td colSpan={2} className="p-3 text-center text-muted-foreground">Nenhuma linha.</td></tr>
+                                    <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">Nenhuma linha.</td></tr>
                                   )}
                                 </tbody>
                               </table>
