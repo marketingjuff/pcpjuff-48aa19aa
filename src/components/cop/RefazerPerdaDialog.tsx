@@ -23,6 +23,9 @@ interface Props {
   ) => void | Promise<void>;
 }
 
+type Selecionadas = Map<string, number>; // key = copId|modelo|cor|tamanho
+
+
 
 type LinhaAgrupada = {
   modelo: string;
