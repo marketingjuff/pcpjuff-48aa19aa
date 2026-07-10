@@ -289,6 +289,20 @@ export function EstoqueMpTab() {
 
   const totalGeral = useMemo(() => cards.reduce((s, c) => s + c.Fechada + c.Aberta + c.Corte, 0), [cards]);
 
+  // Refs para navegação Enter -> próxima linha.
+  const cellRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const setCellRef = (id: string, field: string) => (el: HTMLInputElement | null) => {
+    cellRefs.current[`${id}-${field}`] = el;
+  };
+  const focusNextRow = (id: string, field: string) => {
+    const idx = pecasFiltradas.findIndex((p) => p.id === id);
+    const next = pecasFiltradas[idx + 1];
+    if (!next) return;
+    const nextEl = cellRefs.current[`${next.id}-${field}`];
+    nextEl?.focus();
+  };
+
+
   return (
     <div className="space-y-3">
       {/* ---------- Resumo por cor (tabela) ---------- */}
