@@ -44,6 +44,9 @@ export const DEFAULT_COP_BOTAO_COLORS: Record<CopBotaoKey, ColorPair> = {
   dar_baixa:        { bg: "#ff8c2f", fg: "#ffffff" },
   liberar_pagamento:{ bg: "#2563eb", fg: "#ffffff" },
   marcar_pago:      { bg: "#15803d", fg: "#ffffff" },
+  corrigir_corte:   { bg: "#ffffff", fg: "#c2410c" },
+  registrar_perda:  { bg: "#facc15", fg: "#111827" },
+  pedir_urgencia:   { bg: "#dc2626", fg: "#ffffff" },
 };
 
 export type CopColorSettings = {
