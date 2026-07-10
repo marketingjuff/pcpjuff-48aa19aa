@@ -35,7 +35,7 @@ function OrigemBadge({ p }: { p: PerdaConsolidada }) {
   return (
     <span className="inline-flex items-center gap-1">
       <Badge variant="secondary">Manual</Badge>
-      {p.reclassificada && <HistoryIcon className="h-3.5 w-3.5 text-amber-700" aria-label="Reclassificada — origem PCP" titleAccess="Reclassificada — origem PCP" />}
+      {p.reclassificada && <span title="Reclassificada — origem PCP"><HistoryIcon className="h-3.5 w-3.5 text-amber-700" aria-label="Reclassificada — origem PCP" /></span>}
     </span>
   );
 }

@@ -16,6 +16,7 @@ import { PerdasTab } from "@/components/cop/PerdasTab";
 import { DashboardCopTab } from "@/components/cop/DashboardCopTab";
 import { OficinasHojeTab } from "@/components/cop/OficinasHojeTab";
 import { HistoricoCopTab } from "@/components/cop/HistoricoCopTab";
+import { ControlePerdasTab } from "@/components/cop/ControlePerdasTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cop")({
@@ -36,6 +37,7 @@ const BASE_TABS = [
   { value: "romaneio", label: "Romaneio" },
   { value: "pagamento", label: "Pagamentos" },
   { value: "perdas", label: "Perdas" },
+  { value: "controle-perdas", label: "Controle de Perdas" },
 ];
 
 function CopHome() {
