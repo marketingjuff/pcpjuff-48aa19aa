@@ -1,4 +1,4 @@
-// Geração do PDF do Inventário — A4 vertical, preto e branco, várias páginas.
+// Geração do PDF do Inventário — A4 vertical, preto e branco, fluxo contínuo.
 import logoJuff from "@/assets/loguinhojuffpreto.png.asset.json";
 
 export interface InventarioRow {
@@ -22,16 +22,10 @@ function hojeBR(): string {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
-const ROWS_PER_PAGE = 22; // linhas altas para escrita à mão
+export function abrirInventarioParaImpressao(rows: InventarioRow[]) {
+  const dataStr = hojeBR();
+  const titulo = `inventario-${dataStr.replace(/\//g, "-")}`;
 
-function chunk<T>(arr: T[], size: number): T[][] {
-  if (arr.length === 0) return [[]];
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
-
-function pageHtml(rows: InventarioRow[], pageIdx: number, totalPages: number, dataStr: string): string {
   const body = rows.map((r) => `
     <tr>
       <td>${esc(r.cor)}</td>
@@ -45,50 +39,6 @@ function pageHtml(rows: InventarioRow[], pageIdx: number, totalPages: number, da
       <td class="hand"></td>
     </tr>
   `).join("");
-  return `
-  <section class="page">
-    <header class="cab">
-      <img src="${esc(logoJuff.url)}" alt="Juff" />
-      <div class="titleblock">
-        <div class="row1">
-          <div class="title">Inventário</div>
-          <div class="pageno">Página ${pageIdx + 1}/${totalPages}</div>
-        </div>
-        <div class="data">${esc(dataStr)}</div>
-      </div>
-    </header>
-    <table class="grid">
-      <colgroup>
-        <col class="uni" /><col class="uni" /><col class="uni" /><col class="uni" />
-        <col class="descanso" />
-        <col class="uni" /><col class="uni" />
-        <col class="corte" />
-        <col class="obs" />
-      </colgroup>
-      <thead>
-        <tr>
-          <th>COR</th>
-          <th>Nº DA PEÇA</th>
-          <th>STATUS</th>
-          <th>DATA DE ENTRADA</th>
-          <th>DESCANSO</th>
-          <th>LARGURA</th>
-          <th>ALTURA</th>
-          <th>CORTE</th>
-          <th>SOBRA/OBS</th>
-        </tr>
-      </thead>
-      <tbody>${body}</tbody>
-    </table>
-  </section>`;
-}
-
-export function abrirInventarioParaImpressao(rows: InventarioRow[]) {
-  const dataStr = hojeBR();
-  const pages = chunk(rows, ROWS_PER_PAGE);
-  const totalPages = pages.length;
-  const titulo = `inventario-${dataStr.replace(/\//g, "-")}`;
-  const paginasHtml = pages.map((p, i) => pageHtml(p, i, totalPages, dataStr)).join("");
 
   const html = `<!doctype html>
 <html lang="pt-br"><head>
@@ -97,18 +47,16 @@ export function abrirInventarioParaImpressao(rows: InventarioRow[]) {
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; color: #000; background: #fff; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  @page { size: A4 portrait; margin: 8mm; }
-  .page { page-break-after: always; break-after: page; }
-  .page:last-child { page-break-after: auto; break-after: auto; }
-  .cab { display: flex; align-items: center; gap: 6mm; border-bottom: 1px solid #000; padding-bottom: 3mm; }
+  @page { size: A4 portrait; margin: 8mm; @top-right { content: "Página " counter(page); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 10pt; color: #000; } }
+  .cab { display: flex; align-items: center; gap: 6mm; border-bottom: 1px solid #000; padding-bottom: 3mm; margin-bottom: 3mm; }
   .cab img { width: 20mm; height: 20mm; object-fit: contain; }
   .titleblock { flex: 1; display: flex; flex-direction: column; gap: 1mm; }
-  .row1 { display: flex; align-items: baseline; justify-content: space-between; gap: 6mm; }
-  .title { font-size: 26pt; font-weight: 700; letter-spacing: 0.5px; }
-  .pageno { font-size: 12pt; font-weight: 600; }
-  .data { font-size: 22pt; font-weight: 700; }
+  .title { font-size: 26pt; font-weight: 700; letter-spacing: 0.5px; line-height: 1; }
+  .data { font-size: 22pt; font-weight: 700; line-height: 1.1; }
   table.grid { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 10pt; }
   table.grid th, table.grid td { border: 1px solid #000; padding: 2mm 1.5mm; text-align: center; overflow: hidden; }
+  table.grid thead { display: table-header-group; }
+  table.grid tr { page-break-inside: avoid; break-inside: avoid; }
   table.grid th { font-weight: 700; font-size: 9pt; background: #fff; }
   table.grid td { height: 10mm; }
   table.grid td.hand { background: #fff; }
@@ -124,7 +72,36 @@ export function abrirInventarioParaImpressao(rows: InventarioRow[]) {
   <button onclick="window.print()" style="padding:4px 10px">Imprimir / Salvar como PDF</button>
   <span style="color:#000;font-size:12px">Use "Salvar como PDF" no diálogo de impressão.</span>
 </div>
-${paginasHtml}
+<header class="cab">
+  <img src="${esc(logoJuff.url)}" alt="Juff" />
+  <div class="titleblock">
+    <div class="title">Inventário</div>
+    <div class="data">${esc(dataStr)}</div>
+  </div>
+</header>
+<table class="grid">
+  <colgroup>
+    <col class="uni" /><col class="uni" /><col class="uni" /><col class="uni" />
+    <col class="descanso" />
+    <col class="uni" /><col class="uni" />
+    <col class="corte" />
+    <col class="obs" />
+  </colgroup>
+  <thead>
+    <tr>
+      <th>COR</th>
+      <th>Nº DA PEÇA</th>
+      <th>STATUS</th>
+      <th>DATA DE ENTRADA</th>
+      <th>DESCANSO</th>
+      <th>LARGURA</th>
+      <th>ALTURA</th>
+      <th>CORTE</th>
+      <th>SOBRA/OBS</th>
+    </tr>
+  </thead>
+  <tbody>${body}</tbody>
+</table>
 <script>setTimeout(()=>{ try { window.print(); } catch(e){} }, 350);</script>
 </body></html>`;
 
