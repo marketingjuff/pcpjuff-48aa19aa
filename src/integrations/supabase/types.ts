@@ -205,6 +205,7 @@ export type Database = {
           status: string
           updated_at: string
           updated_by: string | null
+          urgencias: Json
         }
         Insert: {
           conferencia?: Json
@@ -246,6 +247,7 @@ export type Database = {
           status?: string
           updated_at?: string
           updated_by?: string | null
+          urgencias?: Json
         }
         Update: {
           conferencia?: Json
@@ -287,6 +289,7 @@ export type Database = {
           status?: string
           updated_at?: string
           updated_by?: string | null
+          urgencias?: Json
         }
         Relationships: [
           {
