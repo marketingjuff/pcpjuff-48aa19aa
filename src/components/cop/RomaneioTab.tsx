@@ -88,7 +88,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   const [busca, setBusca] = useState("");
   const [showEntrega, setShowEntrega] = useState(false);
   const [showParticionar, setShowParticionar] = useState(false);
-  const [selectedHist, setSelectedHist] = useState<HistoricoRecebimento | HistoricoPerda | null>(null);
+  const [selectedHist, setSelectedHist] = useState<any | null>(null);
   const [sortKey, setSortKey] = useState<"numero" | "status" | "oficina" | "recebimento">("numero");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const toggleSort = (k: typeof sortKey) => {
