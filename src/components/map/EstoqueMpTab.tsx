@@ -322,7 +322,7 @@ export function EstoqueMpTab() {
         const usado = (p.cortes ?? []).reduce((s, c) => s + Number(c.metros || 0), 0);
         const saldo = p.alt_inicial == null ? null : Number(p.alt_inicial) - usado;
         return {
-          cor: p.cor ?? "",
+          cor: corBase(p.cor),
           numero_peca: p.numero_peca ?? "",
           status: p.status,
           data_entrada: p.data_entrada ? fmtDateBR(p.data_entrada) : "—",
