@@ -100,7 +100,7 @@ export function abrirRomaneioParaImpressao(cop: Cop, oficina: Oficina | null, co
   .via .t2 { font-size: 13pt; color: #000; display: flex; flex-wrap: wrap; gap: 4mm; margin-top: 1mm; }
   table.grid { width: 100%; border-collapse: collapse; font-size: 8pt; table-layout: fixed; }
   table.grid th, table.grid td { border: 1px solid #000; padding: 0.6mm 1mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  table.grid th { text-align: left; font-weight: 600; }
+  table.grid th { text-align: left; font-weight: 900; }
   table.grid td.num, table.grid th.num { text-align: center; }
   table.grid th:nth-child(1), table.grid td:nth-child(1) { width: 22%; }
   table.grid th:nth-child(2), table.grid td:nth-child(2) { width: 14%; }
