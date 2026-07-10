@@ -29,6 +29,21 @@ export function DashboardCopTab() {
       return (data ?? []) as unknown as Pedido[];
     },
   });
+  const { data: oficinas = [] } = useQuery({
+    queryKey: ["oficinas-dash"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("oficinas" as any).select("id, nome");
+      if (error) throw error;
+      return (data ?? []) as unknown as { id: string; nome: string }[];
+    },
+  });
+
+  const oficinaNome = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const o of oficinas) m.set(o.id, o.nome);
+    return m;
+  }, [oficinas]);
+
 
   useEffect(() => {
     const ch = supabase
