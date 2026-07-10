@@ -415,10 +415,25 @@ export function proximaLetra(usadas: (string | null | undefined)[]): string {
   return "Z";
 }
 
-/** Rótulo "0001" ou "0001A" quando há letra. */
-export function rotuloCop(n: number | null | undefined, letra: string | null | undefined): string {
+/** Rótulo "0001" ou "0001A" quando há letra. Adiciona * para refação de perda. */
+export function rotuloCop(
+  n: number | null | undefined,
+  letra: string | null | undefined,
+  refacaoPerda?: boolean | null | undefined,
+): string {
   const base = formatCopNumero(n);
-  return letra ? `${base}${letra.toUpperCase()}` : base;
+  const suffix = letra ? letra.toUpperCase() : "";
+  const asterisco = refacaoPerda ? "*" : "";
+  return `${base}${suffix}${asterisco}`;
+}
+
+/** Rótulo a partir de um objeto COP (resolve número base e adiciona * para refação de perda). */
+export function rotuloCopObj(
+  cop: Pick<Cop, "id" | "numero" | "letra" | "cop_romaneio_pai_id" | "refacao_perda_origem_id">,
+  cops?: Cop[],
+): string {
+  const num = cops && cops.length ? numeroBaseCop(cop, cops) : cop.numero;
+  return rotuloCop(num, cop.letra, !!(cop as any).refacao_perda_origem_id);
 }
 
 /**
@@ -433,9 +448,10 @@ export function numeroBaseCop(cop: Pick<Cop, "id" | "numero" | "cop_romaneio_pai
 }
 
 /** Rótulo do romaneio (ex.: 0001A) resolvendo o número-base via pai. */
-export function rotuloRomaneio(cop: Pick<Cop, "id" | "numero" | "letra" | "cop_romaneio_pai_id">, cops: Cop[]): string {
-  return rotuloCop(numeroBaseCop(cop, cops), cop.letra);
+export function rotuloRomaneio(cop: Pick<Cop, "id" | "numero" | "letra" | "cop_romaneio_pai_id" | "refacao_perda_origem_id">, cops: Cop[]): string {
+  return rotuloCop(numeroBaseCop(cop, cops), cop.letra, !!(cop as any).refacao_perda_origem_id);
 }
+
 
 /**
  * Colunas de tamanhos: SEMPRE inclui as canônicas (REFACAO_TAMANHOS) em ordem
