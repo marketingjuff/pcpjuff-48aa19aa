@@ -837,7 +837,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                     </table>
                   </div>
 
-                  {/* Histórico de chegadas */}
+                  {/* Histórico de chegadas + perdas + urgências */}
                   {(() => {
                     const chegadas = (selected.historico_recebimentos ?? []).map((h) => ({ ...h, _kind: "recebimento" as const }));
                     let perdas = (selected.historico_perdas ?? []).map((h) => ({ ...h, _kind: "perda" as const }));
@@ -853,11 +853,20 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                         _kind: "perda" as const,
                       }];
                     }
-                    const unificado = [...chegadas, ...perdas].sort((a, b) => (a.em < b.em ? 1 : -1));
+                    const urgencias = (selected.urgencias ?? []).map((u) => ({
+                      em: u.em,
+                      tipo: "urgencia" as const,
+                      observacao: u.observacao,
+                      linhas: u.linhas,
+                      total: u.linhas?.length ?? 0,
+                      _kind: "urgencia" as const,
+                    }));
+                    const unificado: any[] = [...chegadas, ...perdas, ...urgencias].sort((a, b) => (a.em < b.em ? 1 : -1));
                     if (unificado.length === 0) return null;
-                    const badge = (h: HistoricoRecebimento | HistoricoPerda) => {
+                    const badge = (h: any) => {
                       if (h.tipo === "completo") return "bg-green-100 text-green-800";
                       if (h.tipo === "parcial") return "bg-amber-100 text-amber-800";
+                      if (h.tipo === "urgencia") return "bg-red-100 text-red-800";
                       return "bg-purple-100 text-purple-800";
                     };
                     return (
@@ -871,14 +880,17 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                               onClick={() => setSelectedHist(h)}
                               title="Clique para ver o detalhe"
                             >
-                              <span>
+                              <span className="min-w-0 flex-1 truncate">
                                 <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] mr-1 ${badge(h)}`}>
                                   {h.tipo}
                                 </span>
                                 {new Date(h.em).toLocaleString("pt-BR")}
                                 {h._kind === "recebimento" && h.letra && <> · letra <b>{h.letra}</b></>}
+                                {h._kind === "urgencia" && h.observacao && (
+                                  <span className="ml-1 text-muted-foreground">— {h.observacao}</span>
+                                )}
                               </span>
-                              <span className={`tabular-nums font-semibold ${h._kind === "perda" ? "text-purple-700" : ""}`}>
+                              <span className={`tabular-nums font-semibold shrink-0 ${h._kind === "perda" ? "text-purple-700" : h._kind === "urgencia" ? "text-red-700" : ""}`}>
                                 {h._kind === "perda" ? "−" : ""}{h.total}
                               </span>
                             </li>
@@ -887,6 +899,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                       </div>
                     );
                   })()}
+
 
                   <Dialog open={!!selectedHist} onOpenChange={(o) => !o && setSelectedHist(null)}>
                     <DialogContent className="max-w-lg">
