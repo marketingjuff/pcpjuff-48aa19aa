@@ -14,8 +14,9 @@ import { Plus, Trash2, RotateCcw, Undo2, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import type { Cop, CopPeca, CopPerdaRegistro, CopPerdaLinha, Oficina } from "@/lib/cop";
+import type { Cop, CopPeca, CopPerdaRegistro, CopPerdaLinha, CopRefacaoPerdaItem, Oficina } from "@/lib/cop";
 import { formatCopNumero, somarPerdas, subtrairPerdas, somarPecas, STATUS_CORTE, rotuloCop, rotuloCopObj } from "@/lib/cop";
+
 import { useIsAdmin, useCanAccessCop } from "@/hooks/use-role";
 import { RefazerPerdaDialog, type RefazerCopInput } from "./RefazerPerdaDialog";
 
@@ -117,7 +118,7 @@ export function PerdasTab() {
   }
 
   const refazerMut = useMutation({
-    mutationFn: async (selecoes: Array<{ cop: Cop; itens: CopPerdaLinha[] }>) => {
+    mutationFn: async (selecoes: Array<{ cop: Cop; itens: CopRefacaoPerdaItem[] }>) => {
       // Consolida itens de todos os COPs de origem em um único conjunto de peças
       let pecasConsolidadas: CopPeca[] = [];
       const origensRotulos: string[] = [];
