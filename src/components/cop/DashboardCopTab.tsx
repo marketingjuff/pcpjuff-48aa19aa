@@ -2,9 +2,11 @@ import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Flame } from "lucide-react";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
-import { COP_STATUS_LIST, totalPecasCop, rotuloCop, type Cop } from "@/lib/cop";
-import type { Pedido } from "@/lib/pedidos";
+import { COP_STATUS_LIST, totalPecasCop, rotuloCop, rotuloRomaneio, type Cop, type CopUrgencia } from "@/lib/cop";
+import { REFACAO_TAMANHOS, type Pedido } from "@/lib/pedidos";
+import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { calcEmProducao, calcFaltantes, calcRecebido, calcPerdas, calcDisponivel, pkKey, dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
 
 export function DashboardCopTab() {
@@ -27,6 +29,21 @@ export function DashboardCopTab() {
       return (data ?? []) as unknown as Pedido[];
     },
   });
+  const { data: oficinas = [] } = useQuery({
+    queryKey: ["oficinas-dash"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("oficinas" as any).select("id, nome");
+      if (error) throw error;
+      return (data ?? []) as unknown as { id: string; nome: string }[];
+    },
+  });
+
+  const oficinaNome = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const o of oficinas) m.set(o.id, o.nome);
+    return m;
+  }, [oficinas]);
+
 
   useEffect(() => {
     const ch = supabase
@@ -84,6 +101,60 @@ export function DashboardCopTab() {
       .slice(0, 10);
   }, [pedidos]);
 
+  type LinhaConsol = { modelo: string; cor: string; todos: boolean; tamanhos: Map<string, number> };
+  type CopUrg = { cop: Cop; ultimaEm: string; qtdPedidos: number; linhas: LinhaConsol[] };
+
+  const romaneiosComUrgencia = useMemo<CopUrg[]>(() => {
+    const tamIdx = (t: string) => {
+      const i = (REFACAO_TAMANHOS as readonly string[]).indexOf(t);
+      return i === -1 ? 999 : i;
+    };
+    const ativos = cops.filter((c) => c.status !== "Finalizado" && (c.urgencias?.length ?? 0) > 0);
+    const out: CopUrg[] = ativos.map((c) => {
+      const urgs = (c.urgencias ?? []) as CopUrgencia[];
+      let ultimaEm = "";
+      for (const u of urgs) if (u.em && u.em > ultimaEm) ultimaEm = u.em;
+      const mapa = new Map<string, LinhaConsol>();
+      for (const u of urgs) {
+        for (const l of u.linhas ?? []) {
+          const modelo = String(l.modelo).toUpperCase();
+          const cor = String(l.cor).toUpperCase();
+          const k = `${modelo}|${cor}`;
+          let linha = mapa.get(k);
+          if (!linha) { linha = { modelo, cor, todos: false, tamanhos: new Map() }; mapa.set(k, linha); }
+          if (!l.tamanhos || l.tamanhos.length === 0) {
+            linha.todos = true;
+          } else {
+            for (const t of l.tamanhos) {
+              const tam = String(t.tamanho);
+              const qtd = Number(t.qtd) || 0;
+              if (qtd > 0) linha.tamanhos.set(tam, (linha.tamanhos.get(tam) ?? 0) + qtd);
+            }
+          }
+        }
+      }
+      const linhas = Array.from(mapa.values()).sort((a, b) =>
+        a.modelo.localeCompare(b.modelo) || a.cor.localeCompare(b.cor),
+      );
+      // ordena tamanhos de cada linha
+      for (const l of linhas) {
+        const entries = Array.from(l.tamanhos.entries()).sort((a, b) => tamIdx(a[0]) - tamIdx(b[0]));
+        l.tamanhos = new Map(entries);
+      }
+      return { cop: c, ultimaEm, qtdPedidos: urgs.length, linhas };
+    });
+    out.sort((a, b) => (a.ultimaEm > b.ultimaEm ? -1 : a.ultimaEm < b.ultimaEm ? 1 : 0));
+    return out;
+  }, [cops]);
+
+  const formatDDMM = (iso: string) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "—";
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold tracking-tight">Dashboard COP</h2>
@@ -140,6 +211,54 @@ export function DashboardCopTab() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Romaneios com urgência</CardTitle></CardHeader>
+        <CardContent>
+          {romaneiosComUrgencia.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma urgência ativa.</p>
+          ) : (
+            <ul className="divide-y">
+              {romaneiosComUrgencia.map(({ cop, ultimaEm, qtdPedidos, linhas }) => (
+                <li key={cop.id} className="py-2 space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <Flame className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                    <span className="font-bold tabular-nums">{rotuloRomaneio(cop, cops)}</span>
+                    <span className="text-muted-foreground">· {oficinaNome.get(cop.oficina_id ?? "") ?? "—"}</span>
+                    <span
+                      className="inline-flex items-center rounded bg-red-100 text-red-800 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                      title={`${qtdPedidos} pedido(s) de urgência`}
+                    >
+                      URGÊNCIA{qtdPedidos > 1 ? ` ×${qtdPedidos}` : ""}
+                    </span>
+                    <span className="ml-auto text-muted-foreground tabular-nums">{formatDDMM(ultimaEm)}</span>
+                  </div>
+                  <div className="pl-5 space-y-0.5">
+                    {linhas.map((l, i) => {
+                      const hex = corHex(l.cor); const fg = corTextoSobre(hex);
+                      const tamsTxt = l.todos
+                        ? "todos os tamanhos"
+                        : Array.from(l.tamanhos.entries()).map(([t, q]) => `${t}:${q}`).join(" · ");
+                      return (
+                        <div key={i} className="flex items-center gap-2 text-[12.5px] leading-[1.2] flex-wrap">
+                          <span className="font-bold">{l.modelo}</span>
+                          <span
+                            className="inline-block px-1.5 py-0.5 rounded text-[11px] font-bold"
+                            style={{ backgroundColor: hex, color: fg }}
+                          >
+                            {l.cor}
+                          </span>
+                          <span className="text-muted-foreground tabular-nums">{tamsTxt || "—"}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Pedidos mais urgentes</CardTitle></CardHeader>
