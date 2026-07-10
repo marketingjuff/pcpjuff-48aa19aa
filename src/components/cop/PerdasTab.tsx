@@ -427,47 +427,79 @@ export function PerdasTab() {
               <table className="w-full text-[12.5px] leading-[1.2]">
                 <thead className="bg-muted/40 text-xs">
                   <tr>
-                    <th className="p-2 text-left">Data</th>
-                    <th className="p-2 text-left">COP novo</th>
-                    <th className="p-2 text-left">Origem(ns)</th>
-                    <th className="p-2 text-left">Modelo</th>
-                    <th className="p-2 text-left">Cor</th>
-                    <th className="p-2 text-center">Tam.</th>
-                    <th className="p-2 text-right">Qtd</th>
-                    <th className="p-2 text-left">Status</th>
-                    {canAccessCop && <th className="p-2"></th>}
+                    <th className="p-2 text-left w-[130px]">Data</th>
+                    <th className="p-2 text-left">Perda original</th>
+                    <th className="p-2 w-10"></th>
+                    <th className="p-2 text-left">Refação</th>
+                    <th className="p-2 text-left w-[130px]">Status</th>
+                    {canAccessCop && <th className="p-2 w-[100px]"></th>}
                   </tr>
                 </thead>
                 <tbody>
                   {refacoes.map((f, gIdx) => {
-                    const its = (((f as any).refacao_perda_itens as any[]) ?? []);
-                    const total = its.reduce((s, x) => s + (x.qtd || 0), 0);
-                    const origens = new Set<string>();
-                    for (const it of its) {
-                      const oid = it.origem_cop_id ?? (f as any).refacao_perda_origem_id;
-                      const orig = copById.get(oid);
-                      if (orig) origens.add(`${formatCopNumero(orig.numero)}${orig.letra ?? ""}`);
-                    }
-                    const rows = its.length > 0 ? its : [{ modelo: "—", cor: "—", tamanho: "—", qtd: 0 }];
+                    const its = (((f as any).refacao_perda_itens as CopRefacaoPerdaItem[]) ?? []);
+                    const rows = its.length > 0 ? its : [{ modelo: "—", cor: "—", tamanho: "—", qtd: 0, perda_modelo: "—", perda_cor: "—", perda_tamanho: "—", perda_qtd: 0 }];
                     return rows.map((linha, i) => {
-                      const hex = corHex(linha.cor); const fg = corTextoSobre(hex);
                       const first = i === 0;
+                      const isMudou = linha.perda_modelo &&
+                        (linha.modelo !== linha.perda_modelo ||
+                          linha.cor !== linha.perda_cor ||
+                          linha.tamanho !== linha.perda_tamanho);
+                      const origemCop = copById.get((linha.origem_cop_id ?? (f as any).refacao_perda_origem_id) as string);
+                      const origemRotulo = origemCop ? `${formatCopNumero(origemCop.numero)}${origemCop.letra ?? ""}` : "—";
+                      const novoRotulo = rotuloCopObj(f);
+                      const corPerda = corHex(linha.perda_cor ?? "");
+                      const fgPerda = corTextoSobre(corPerda);
+                      const corRef = corHex(linha.cor ?? "");
+                      const fgRef = corTextoSobre(corRef);
                       return (
-                        <tr key={`${f.id}-${i}`} className={`border-t ${gIdx % 2 === 1 ? "bg-muted/60" : ""}`}>
-                          <td className="p-2 text-xs align-top">{first ? new Date(f.created_at).toLocaleString("pt-BR") : ""}</td>
-                          <td className="p-2 font-mono align-top">{first ? rotuloCopObj(f) : ""}</td>
-                          <td className="p-2 text-xs align-top">{first ? (Array.from(origens).join(", ") || "—") : ""}</td>
-                          <td className="p-2">{linha.modelo}</td>
-                          <td className="p-2">
-                            {linha.cor && linha.cor !== "—" ? (
-                              <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{linha.cor}</span>
-                            ) : (
-                              "—"
-                            )}
+                        <tr key={`${f.id}-${i}`} className={`border-t align-top ${gIdx % 2 === 1 ? "bg-muted/60" : ""}`}>
+                          <td className="p-2 text-xs align-top">
+                            {first ? new Date(f.created_at).toLocaleString("pt-BR") : ""}
                           </td>
-                          <td className="p-2 text-center">{linha.tamanho}</td>
-                          <td className="p-2 text-right tabular-nums">{linha.qtd || 0}</td>
-                          <td className="p-2 text-xs align-top">{first ? f.status : ""}</td>
+                          <td className="p-2">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Perda original</span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-mono text-xs">COP {origemRotulo}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                                <span className="font-medium">{linha.perda_modelo ?? linha.modelo}</span>
+                                {linha.perda_cor && linha.perda_cor !== "—" ? (
+                                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: corPerda, color: fgPerda }}>{linha.perda_cor}</span>
+                                ) : null}
+                                <span className="text-muted-foreground">{linha.perda_tamanho ?? linha.tamanho}</span>
+                                <span className="tabular-nums font-semibold">{linha.perda_qtd ?? linha.qtd} pç</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-2 align-middle text-center">
+                            {first ? (
+                              <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-muted-foreground">
+                                <ArrowRight className="h-3.5 w-3.5" />
+                              </div>
+                            ) : ""}
+                          </td>
+                          <td className="p-2">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[10px] uppercase tracking-wider text-emerald-700 font-semibold">Refeito</span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-mono text-xs">COP {novoRotulo}</span>
+                                {isMudou && <span className="text-[10px] text-amber-700">(alterado)</span>}
+                              </div>
+                              <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                                <span className="font-medium">{linha.modelo}</span>
+                                {linha.cor && linha.cor !== "—" ? (
+                                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: corRef, color: fgRef }}>{linha.cor}</span>
+                                ) : null}
+                                <span className="text-muted-foreground">{linha.tamanho}</span>
+                                <span className="tabular-nums font-semibold">{linha.qtd || 0} pç</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-2 text-xs align-top">
+                            {first ? f.status : ""}
+                          </td>
                           {canAccessCop && (
                             <td className="p-2 text-right align-top">
                               {first ? (
@@ -495,6 +527,7 @@ export function PerdasTab() {
           </CardContent>
         </Card>
       )}
+
 
 
       <Card>
