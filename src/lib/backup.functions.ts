@@ -92,6 +92,18 @@ export const importBackup = createServerFn({ method: "POST" })
       "pedidos",
       "cops",
       "cop_perdas",
+      "pagamentos_consolidados",
+      "perdas_manuais",
+      "perdas_reclassificacoes",
+      "map_config",
+      "map_estoque_pecas",
+      "map_malharia_entregas",
+      "map_tinturaria_programacoes",
+      "map_producoes",
+      "map_devolucoes",
+      "pedido_audit_log",
+      "cop_audit_log",
+      "map_audit_log",
     ];
     // Ordem de remoção é a inversa.
     const deleteOrder = [...insertOrder].reverse();
