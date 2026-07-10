@@ -51,7 +51,7 @@ export async function abrirInventarioParaImpressao(rows: InventarioRow[]) {
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; color: #000; background: #fff; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  @page { size: A4 portrait; margin: 8mm; @top-right { content: "Página " counter(page); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 10pt; color: #000; } }
+  @page { size: A4 portrait; margin: 8mm; @top-right { content: counter(page) "/" counter(pages); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 10pt; color: #000; } }
   .cab { display: flex; align-items: center; gap: 6mm; border-bottom: 1px solid #000; padding-bottom: 3mm; margin-bottom: 3mm; }
   .cab img { width: 20mm; height: 20mm; object-fit: contain; }
   .titleblock { flex: 1; display: flex; flex-direction: column; gap: 1mm; }
