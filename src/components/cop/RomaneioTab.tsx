@@ -675,15 +675,15 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
               </div>
 
               {/* Botões — linha única, largura/altura uniformes, cores 100% via btnStyle */}
-              <div className="flex flex-wrap items-center gap-2 pt-2">
+              <div className="flex flex-nowrap items-stretch gap-2 pt-2">
                 {selected.romaneio_enviado_em && (
                   <Button
                     style={btnStyle("baixar_pdf")}
                     onClick={() => abrirRomaneioParaImpressao(selected, oficina, cops)}
-                    className="h-10 w-[185px] justify-center truncate"
+                    className="h-12 flex-1 min-w-0 justify-center whitespace-normal leading-tight text-xs font-bold px-2"
                   >
                     <FileDown className="h-4 w-4 mr-1" />
-                    <span className="truncate">romaneio-{formatCopNumero(numeroBaseCop(selected, cops))}{selected.letra ?? ""}.pdf</span>
+                    <span className="block">romaneio-{formatCopNumero(numeroBaseCop(selected, cops))}{selected.letra ?? ""}.pdf</span>
                   </Button>
                 )}
                 {podeParticionar && (
@@ -691,10 +691,10 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                     style={btnStyle("particionar")}
                     onClick={() => setShowParticionar(true)}
                     title="Particionar por letra"
-                    className="h-10 w-[185px] justify-center truncate"
+                    className="h-12 flex-1 min-w-0 justify-center whitespace-normal leading-tight text-xs font-bold px-2"
                   >
                     <Split className="h-4 w-4 mr-1" />
-                    <span className="truncate">Particionar ({letraNova})</span>
+                    <span className="block">Particionar ({letraNova})</span>
                   </Button>
                 )}
                 {canManageCop && (
@@ -703,10 +703,10 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                     onClick={() => corrigirCorte.mutate(selected)}
                     disabled={corrigirCorte.isPending || emCorrecao}
                     title="Liberar este COP para edição não-destrutiva no Corte (mantém oficina, datas, recebidas e pagamento)"
-                    className="h-10 w-[185px] justify-center truncate border"
+                    className="h-12 flex-1 min-w-0 justify-center whitespace-normal leading-tight text-xs font-bold px-2 border"
                   >
                     <Undo2 className="h-4 w-4 mr-1" />
-                    <span className="truncate">Corrigir corte</span>
+                    <span className="block">Corrigir corte</span>
                   </Button>
                 )}
                 {canManageCop && (
@@ -715,10 +715,10 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                     onClick={() => setShowPerda(true)}
                     disabled={!selected.pecas?.length}
                     title="Registrar peças perdidas neste romaneio"
-                    className="h-10 w-[185px] justify-center truncate"
+                    className="h-12 flex-1 min-w-0 justify-center whitespace-normal leading-tight text-xs font-bold px-2"
                   >
                     <AlertTriangle className="h-4 w-4 mr-1" />
-                    <span className="truncate">Registrar perda</span>
+                    <span className="block">Registrar perda</span>
                   </Button>
                 )}
                 {canManageCop && (selected.status === "Na Oficina (Costura)" || selected.status === "Romaneio Parcial") && (
@@ -727,29 +727,29 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                     onClick={() => setShowUrgencia(true)}
                     disabled={salvarUrgencia.isPending || !selected.pecas?.length}
                     title="Registrar pedido de urgência à oficina"
-                    className="h-10 w-[185px] justify-center truncate"
+                    className="h-12 flex-1 min-w-0 justify-center whitespace-normal leading-tight text-xs font-bold px-2"
                   >
                     <Flame className="h-4 w-4 mr-1" />
-                    <span className="truncate">Pedir Urgência</span>
+                    <span className="block">Pedir Urgência</span>
                   </Button>
                 )}
                 <Button
                   style={btnStyle("atualizar")}
                   onClick={handleAtualizar}
                   disabled={salvar.isPending}
-                  className="h-10 w-[185px] justify-center truncate"
+                  className="h-12 flex-1 min-w-0 justify-center whitespace-normal leading-tight text-xs font-bold px-2"
                 >
-                  <span className="truncate">Salvar</span>
+                  <span className="block">Salvar</span>
                 </Button>
                 <Button
                   style={btnStyle("enviar_oficina")}
                   onClick={handleEnviarOficina}
                   disabled={salvar.isPending || (selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio")}
                   title={(selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio") ? "Romaneio já foi enviado" : "Enviar para a oficina"}
-                  className="h-10 w-[185px] justify-center truncate"
+                  className="h-12 flex-1 min-w-0 justify-center whitespace-normal leading-tight text-xs font-bold px-2"
                 >
                   <Send className="h-4 w-4 mr-1" />
-                  <span className="truncate">Enviar para Oficina</span>
+                  <span className="block">Enviar para Oficina</span>
                 </Button>
                 <Button
                   style={btnStyle("entrega_romaneio")}
@@ -758,10 +758,10 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                     || (selected.status !== "Na Oficina (Costura)"
                         && selected.status !== "Romaneio Parcial"
                         && selected.status !== "Romaneio Completo")}
-                  className="h-10 w-[185px] justify-center truncate"
+                  className="h-12 flex-1 min-w-0 justify-center whitespace-normal leading-tight text-xs font-bold px-2"
                 >
                   <PackageOpen className="h-4 w-4 mr-1" />
-                  <span className="truncate">Entrega de Romaneio</span>
+                  <span className="block">Entrega de Romaneio</span>
                 </Button>
               </div>
               </fieldset>
