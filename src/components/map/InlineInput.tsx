@@ -16,9 +16,11 @@ interface Props {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  inputRef?: React.Ref<HTMLInputElement>;
+  onEnterMoveNext?: () => void;
 }
 
-export function InlineInput({ value, onCommit, type = "text", step, min, placeholder, className, disabled }: Props) {
+export function InlineInput({ value, onCommit, type = "text", step, min, placeholder, className, disabled, inputRef, onEnterMoveNext }: Props) {
   const initial = value == null ? "" : String(value);
   const [v, setV] = useState<string>(initial);
   useEffect(() => { setV(initial); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [initial]);
@@ -31,6 +33,7 @@ export function InlineInput({ value, onCommit, type = "text", step, min, placeho
 
   return (
     <Input
+      ref={inputRef}
       type={type}
       step={step}
       min={min}
@@ -40,10 +43,18 @@ export function InlineInput({ value, onCommit, type = "text", step, min, placeho
       onChange={(e) => setV(e.target.value)}
       onBlur={() => { void commit(); }}
       onKeyDown={(e) => {
-        if (e.key === "Enter") { e.preventDefault(); (e.currentTarget as HTMLInputElement).blur(); }
+        if (e.key === "Enter") {
+          e.preventDefault();
+          if (onEnterMoveNext) {
+            void commit().then(onEnterMoveNext);
+          } else {
+            (e.currentTarget as HTMLInputElement).blur();
+          }
+        }
         if (e.key === "Escape") { setV(initial); (e.currentTarget as HTMLInputElement).blur(); }
       }}
       className={cn("h-7 text-[12.5px] px-1.5", className)}
     />
   );
 }
+

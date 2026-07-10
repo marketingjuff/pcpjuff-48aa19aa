@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Input } from "@/components/ui/input";
@@ -58,9 +58,13 @@ function fmtLarg(n: number | null | undefined): string {
 function LargInput({
   value,
   onCommit,
+  inputRef,
+  onEnterMoveNext,
 }: {
   value: number | null | undefined;
   onCommit: (n: number) => void | Promise<void>;
+  inputRef?: React.Ref<HTMLInputElement>;
+  onEnterMoveNext?: () => void;
 }) {
   const displayFromValue = (v: number | null | undefined) =>
     (v == null ? LARG_DEFAULT : Number(v)).toFixed(2).replace(".", ",");
@@ -87,18 +91,23 @@ function LargInput({
 
   return (
     <Input
+      ref={inputRef}
       inputMode="numeric"
       value={v}
       onChange={(e) => handleChange(e.target.value)}
       onBlur={() => { void commit(); }}
       onKeyDown={(e) => {
-        if (e.key === "Enter") { e.preventDefault(); (e.currentTarget as HTMLInputElement).blur(); }
+        if (e.key === "Enter") {
+          e.preventDefault();
+          void commit().then(() => onEnterMoveNext?.());
+        }
         if (e.key === "Escape") { setV(initial); (e.currentTarget as HTMLInputElement).blur(); }
       }}
       className="h-7 text-[12.5px] px-1.5 text-center"
     />
   );
 }
+
 
 export function EstoqueMpTab() {
   const qc = useQueryClient();
@@ -279,6 +288,20 @@ export function EstoqueMpTab() {
   }
 
   const totalGeral = useMemo(() => cards.reduce((s, c) => s + c.Fechada + c.Aberta + c.Corte, 0), [cards]);
+
+  // Refs para navegação Enter -> próxima linha.
+  const cellRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const setCellRef = (id: string, field: string) => (el: HTMLInputElement | null) => {
+    cellRefs.current[`${id}-${field}`] = el;
+  };
+  const focusNextRow = (id: string, field: string) => {
+    const idx = pecasFiltradas.findIndex((p) => p.id === id);
+    const next = pecasFiltradas[idx + 1];
+    if (!next) return;
+    const nextEl = cellRefs.current[`${next.id}-${field}`];
+    nextEl?.focus();
+  };
+
 
   return (
     <div className="space-y-3">
@@ -500,6 +523,8 @@ export function EstoqueMpTab() {
                         value={p.numero_peca}
                         onCommit={(v) => commitField(p, "numero_peca", v)}
                         className="text-center"
+                        inputRef={setCellRef(p.id, "numero_peca")}
+                        onEnterMoveNext={() => focusNextRow(p.id, "numero_peca")}
                       />
                     </td>
                     <td className="p-1">
@@ -523,12 +548,16 @@ export function EstoqueMpTab() {
                         value={p.data_abertura}
                         onCommit={(v) => commitField(p, "data_abertura", v)}
                         className="text-center"
+                        inputRef={setCellRef(p.id, "data_abertura")}
+                        onEnterMoveNext={() => focusNextRow(p.id, "data_abertura")}
                       />
                     </td>
                     <td className="p-1">
                       <LargInput
                         value={p.larg}
                         onCommit={async (n) => { try { await patchEstoquePeca(p.id, { larg: n }); refresh(); } catch (e: any) { toast.error(e?.message ?? "Falha ao salvar."); } }}
+                        inputRef={setCellRef(p.id, "larg")}
+                        onEnterMoveNext={() => focusNextRow(p.id, "larg")}
                       />
                     </td>
                     <td className="p-1">
@@ -539,8 +568,11 @@ export function EstoqueMpTab() {
                         value={p.alt_inicial}
                         onCommit={(v) => commitField(p, "alt_inicial", v)}
                         className="text-center"
+                        inputRef={setCellRef(p.id, "alt_inicial")}
+                        onEnterMoveNext={() => focusNextRow(p.id, "alt_inicial")}
                       />
                     </td>
+
                     <td className="p-1">
                       <EstoquePecaCortesCell
                         peca={p}
