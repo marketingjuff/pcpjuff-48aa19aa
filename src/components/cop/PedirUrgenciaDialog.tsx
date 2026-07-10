@@ -82,7 +82,7 @@ export function PedirUrgenciaDialog({ open, onOpenChange, rotulo, pecas, recebid
         .select("id, orcamento, pedido_olist, pecas_solicitadas")
         .eq("status_pecas", "incompleto");
       if (error) throw error;
-      return (data ?? []) as Array<{
+      return (data ?? []) as unknown as Array<{
         id: string;
         orcamento: string | null;
         pedido_olist: string | null;
