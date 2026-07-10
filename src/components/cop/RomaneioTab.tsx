@@ -251,6 +251,32 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
     onError: (e: any) => toast.error(e.message ?? "Erro ao registrar perdas"),
   });
 
+  const salvarUrgencia = useMutation({
+    mutationFn: async ({ cop, obs, linhas }: { cop: Cop; obs: string; linhas: CopUrgenciaLinha[] }) => {
+      const { data: ses } = await supabase.auth.getUser();
+      const registro: CopUrgencia = {
+        em: new Date().toISOString(),
+        por: ses.user?.id ?? null,
+        observacao: obs,
+        linhas,
+      };
+      const proximas = [...(cop.urgencias ?? []), registro];
+      const { error } = await supabase
+        .from("cops" as any)
+        .update({ urgencias: proximas as any } as any)
+        .eq("id", cop.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cops"] });
+      toast.success("Urgência registrada.");
+      setShowUrgencia(false);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao registrar urgência"),
+  });
+
+
+
 
   function patchDraftToCop(): Partial<Cop> {
     return {
