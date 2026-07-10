@@ -64,6 +64,7 @@ export async function abrirInventarioParaImpressao(rows: InventarioRow[]) {
   table.grid th { font-weight: 700; font-size: 8pt; background: #fff; padding: 1.5mm 0.5mm; white-space: nowrap; }
   table.grid td { height: 10mm; }
   table.grid td.hand { background: #fff; }
+  table.grid tfoot td { border: none; padding: 1.5mm 0 0; font-size: 7pt; color: #333; text-align: left; }
   col.descanso { width: 20mm; }
   col.corte { width: 15mm; }
   col.obs { width: auto; }
