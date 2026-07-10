@@ -519,9 +519,20 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                     )}
                   </div>
                 </div>
-                <span className="px-2 py-1 rounded-md text-xs font-medium border" style={etapaStyle(selected.status)}>
-                  {selected.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  {(selected.urgencias?.length ?? 0) > 0 && (
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-red-100 text-red-800 border border-red-300"
+                      title={`${selected.urgencias.length} pedido(s) de urgência registrado(s)`}
+                    >
+                      <Flame className="h-3.5 w-3.5" />
+                      URGÊNCIA{selected.urgencias.length > 1 ? ` ×${selected.urgencias.length}` : ""}
+                    </span>
+                  )}
+                  <span className="px-2 py-1 rounded-md text-xs font-medium border" style={etapaStyle(selected.status)}>
+                    {selected.status}
+                  </span>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
