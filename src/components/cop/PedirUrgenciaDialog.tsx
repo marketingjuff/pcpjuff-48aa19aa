@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Check, Flame, Pencil } from "lucide-react";
-import type { CopPeca, CopPecaRecebida, CopPerdaLinha, CopUrgenciaLinha } from "@/lib/cop";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Check, Flame, Pencil, Plus, X } from "lucide-react";
+import type { CopPeca, CopPecaRecebida, CopPerdaLinha, CopUrgenciaLinha, CopUrgenciaPedido } from "@/lib/cop";
 import { getRecebida, getPerda, colunasTamanhos } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+import type { PecaSolicitada } from "@/lib/pedidos";
 
 type Props = {
   open: boolean;
@@ -15,7 +19,7 @@ type Props = {
   pecas: CopPeca[];
   recebidas: CopPecaRecebida[];
   perdas: CopPerdaLinha[];
-  onConfirm: (obs: string, linhas: CopUrgenciaLinha[]) => void;
+  onConfirm: (obs: string, linhas: CopUrgenciaLinha[], pedidos: CopUrgenciaPedido[]) => void;
   disabled?: boolean;
 };
 
@@ -51,6 +55,7 @@ export function PedirUrgenciaDialog({ open, onOpenChange, rotulo, pecas, recebid
   const [obs, setObs] = useState("");
   const [parcialEdit, setParcialEdit] = useState<string | null>(null);
   const [parcialVal, setParcialVal] = useState<string>("");
+  const [pedidosSel, setPedidosSel] = useState<CopUrgenciaPedido[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -58,7 +63,69 @@ export function PedirUrgenciaDialog({ open, onOpenChange, rotulo, pecas, recebid
     setObs("");
     setParcialEdit(null);
     setParcialVal("");
+    setPedidosSel([]);
   }, [open]);
+
+  // Modelo|Cor set do romaneio (usado para filtrar pedidos com peças faltantes compatíveis)
+  const modelosCoresRomaneio = useMemo(() => {
+    const s = new Set<string>();
+    for (const p of pecas) s.add(`${String(p.modelo).toUpperCase()}|${String(p.cor).toUpperCase()}`);
+    return s;
+  }, [pecas]);
+
+  const { data: pedidosIncompletos = [] } = useQuery({
+    queryKey: ["pedidos-incompletos-urgencia"],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pedidos" as any)
+        .select("id, orcamento, pedido_olist, pecas_solicitadas")
+        .eq("status_pecas", "incompleto");
+      if (error) throw error;
+      return (data ?? []) as unknown as Array<{
+        id: string;
+        orcamento: string | null;
+        pedido_olist: string | null;
+        pecas_solicitadas: PecaSolicitada[] | null;
+      }>;
+    },
+  });
+
+  type PedidoMatch = {
+    id: string;
+    orcamento: string | null;
+    pedido_olist: string | null;
+    faltas: { modelo: string; cor: string; tamanho: string; falta: number }[];
+  };
+
+  const pedidosDisponiveis: PedidoMatch[] = useMemo(() => {
+    const jaAdd = new Set(pedidosSel.map((p) => p.pedidoId));
+    const out: PedidoMatch[] = [];
+    for (const p of pedidosIncompletos) {
+      if (jaAdd.has(p.id)) continue;
+      const faltas: PedidoMatch["faltas"] = [];
+      for (const ps of p.pecas_solicitadas ?? []) {
+        const falta = Math.max(0, (Number(ps.qtd) || 0) - (Number(ps.qtd_enviada) || 0));
+        if (falta <= 0) continue;
+        const k = `${String(ps.modelo).toUpperCase()}|${String(ps.cor).toUpperCase()}`;
+        if (modelosCoresRomaneio.has(k)) {
+          faltas.push({ modelo: ps.modelo, cor: ps.cor, tamanho: ps.tamanho, falta });
+        }
+      }
+      if (faltas.length > 0) out.push({ id: p.id, orcamento: p.orcamento, pedido_olist: p.pedido_olist, faltas });
+    }
+    out.sort((a, b) => String(a.orcamento ?? "").localeCompare(String(b.orcamento ?? "")));
+    return out;
+  }, [pedidosIncompletos, pedidosSel, modelosCoresRomaneio]);
+
+  function adicionarPedido(pedidoId: string) {
+    const p = pedidosDisponiveis.find((x) => x.id === pedidoId);
+    if (!p) return;
+    setPedidosSel((s) => [...s, { pedidoId: p.id, orcamento: p.orcamento, pedidoOlist: p.pedido_olist }]);
+  }
+  function removerPedido(pedidoId: string) {
+    setPedidosSel((s) => s.filter((p) => p.pedidoId !== pedidoId));
+  }
 
   function key(m: string, c: string, t: string) { return `${m}|${c}|${t}`; }
 
@@ -106,11 +173,11 @@ export function PedirUrgenciaDialog({ open, onOpenChange, rotulo, pecas, recebid
     })
     .filter((x): x is CopUrgenciaLinha => x !== null);
 
-  const podeConfirmar = obs.trim().length > 0 && linhasSelecionadas.length > 0 && !disabled;
+  const podeConfirmar = linhasSelecionadas.length > 0 && !disabled;
 
   function confirmar() {
     if (!podeConfirmar) return;
-    onConfirm(obs.trim().toUpperCase(), linhasSelecionadas);
+    onConfirm(obs.trim().toUpperCase(), linhasSelecionadas, pedidosSel);
   }
 
   return (
@@ -238,10 +305,63 @@ export function PedirUrgenciaDialog({ open, onOpenChange, rotulo, pecas, recebid
           </table>
         </div>
 
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Pedidos solicitando estas peças (informativo)</label>
+          {pedidosSel.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {pedidosSel.map((p) => (
+                <span key={p.pedidoId} className="inline-flex items-center gap-1 rounded border bg-muted/50 px-2 py-0.5 text-xs">
+                  <b>{p.orcamento ?? "—"}</b>
+                  {p.pedidoOlist && <span className="text-muted-foreground">Olist {p.pedidoOlist}</span>}
+                  <button
+                    type="button"
+                    onClick={() => removerPedido(p.pedidoId)}
+                    disabled={disabled}
+                    className="ml-1 text-muted-foreground hover:text-destructive"
+                    title="Remover"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Select
+              value=""
+              onValueChange={(v) => { if (v) adicionarPedido(v); }}
+              disabled={disabled || pedidosDisponiveis.length === 0}
+            >
+              <SelectTrigger className="h-8 w-[380px] text-xs">
+                <div className="flex items-center gap-1">
+                  <Plus className="h-3.5 w-3.5" />
+                  <SelectValue placeholder={pedidosDisponiveis.length === 0 ? "Sem pedidos com faltas compatíveis" : "Adicionar orçamento…"} />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {pedidosDisponiveis.map((p) => (
+                  <SelectItem key={p.id} value={p.id} className="text-xs">
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {p.orcamento ?? "—"}
+                        {p.pedido_olist && <span className="ml-2 text-muted-foreground">Olist {p.pedido_olist}</span>}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {p.faltas.slice(0, 4).map((f) => `${f.modelo}/${f.cor} ${f.tamanho}:${f.falta}`).join(" · ")}
+                        {p.faltas.length > 4 ? ` +${p.faltas.length - 4}` : ""}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div className="space-y-1">
-          <label className="text-sm font-medium">Observação (obrigatória)</label>
+          <label className="text-sm font-medium">Observação (opcional)</label>
           <Textarea
-            rows={3}
+            rows={2}
             value={obs}
             onChange={(e) => setObs(e.target.value)}
             placeholder="EX.: FALEI COM A MIRTA, PROMETEU DIA 15"

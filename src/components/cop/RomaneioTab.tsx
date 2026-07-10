@@ -19,7 +19,7 @@ import { useCanAccessCop } from "@/hooks/use-role";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
-  type HistoricoRecebimento, type HistoricoPerda, type CopPerdaLinha, type CopUrgencia, type CopUrgenciaLinha,
+  type HistoricoRecebimento, type HistoricoPerda, type CopPerdaLinha, type CopUrgencia, type CopUrgenciaLinha, type CopUrgenciaPedido,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, totalRecebidas,
   todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
   getRecebida, getPerda, colunasTamanhos, mesclarPerdasEmObservacoes, linhaUrgente,
@@ -252,13 +252,14 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   });
 
   const salvarUrgencia = useMutation({
-    mutationFn: async ({ cop, obs, linhas }: { cop: Cop; obs: string; linhas: CopUrgenciaLinha[] }) => {
+    mutationFn: async ({ cop, obs, linhas, pedidos }: { cop: Cop; obs: string; linhas: CopUrgenciaLinha[]; pedidos: CopUrgenciaPedido[] }) => {
       const { data: ses } = await supabase.auth.getUser();
       const registro: CopUrgencia = {
         em: new Date().toISOString(),
         por: ses.user?.id ?? null,
         observacao: obs,
         linhas,
+        pedidos,
       };
       const proximas = [...(cop.urgencias ?? []), registro];
       const { error } = await supabase
@@ -936,6 +937,19 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                               {selectedHist.observacao || "—"}
                             </div>
                           </div>
+                          {((selectedHist as any).pedidos?.length ?? 0) > 0 && (
+                            <div>
+                              <div className="text-xs font-semibold mb-1">Pedidos solicitando</div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {((selectedHist as any).pedidos as CopUrgenciaPedido[]).map((p) => (
+                                  <span key={p.pedidoId} className="inline-flex items-center gap-1 rounded border bg-muted/50 px-2 py-0.5 text-xs">
+                                    <b>{p.orcamento ?? "—"}</b>
+                                    {p.pedidoOlist && <span className="text-muted-foreground">Olist {p.pedidoOlist}</span>}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           <div>
                             <div className="text-xs font-semibold mb-1">Linhas cobradas</div>
                             <div className="rounded-md border overflow-hidden">
@@ -1109,7 +1123,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             pecas={selected.pecas || []}
             recebidas={recebidas}
             perdas={(selected.perdas as CopPerdaLinha[]) ?? []}
-            onConfirm={(obs, linhas) => salvarUrgencia.mutate({ cop: selected, obs, linhas })}
+            onConfirm={(obs, linhas, pedidos) => salvarUrgencia.mutate({ cop: selected, obs, linhas, pedidos })}
             disabled={salvarUrgencia.isPending}
           />
         </>
