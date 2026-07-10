@@ -1,58 +1,58 @@
-# Plano — Card "Romaneios com urgência" no Dashboard COP
+# Refazer Perda — recuperar peças perdidas em novo COP
 
-## Arquivo único alterado
-`src/components/cop/DashboardCopTab.tsx`
+## Objetivo
 
-Nenhum outro arquivo é modificado. Sem migrações. Apenas leituras.
+Na aba **Perdas**, ao lado do campo *Motivo* de cada linha em **"Perdas registradas em romaneios"**, adicionar botão **Refazer perda** que abre um popup para selecionar (parcial ou totalmente) as peças perdidas daquele romaneio. Ao confirmar, cria um COP novo automaticamente com essas peças pré-selecionadas em corte, e reduz as perdas do romaneio de origem. Deve haver uma forma de **desfazer** a refação. Precisa ter um botao tb de consolidar perdas onde ao clicar é possivel selecionar os romaneios embaixo para poder consolidar as perdas num unico cop.
 
-## Novos imports (no mesmo arquivo)
-- `rotuloRomaneio`, `linhaUrgente` (na verdade só `rotuloRomaneio`) e tipos `CopUrgencia`, `CopUrgenciaLinha` de `@/lib/cop`.
-- `REFACAO_TAMANHOS` de `@/lib/pedidos`.
-- `corHex`, `corTextoSobre` de `@/components/pcp/PecasPerdidasEditor`.
-- `Flame` de `lucide-react`.
+## Fluxo
 
-## Nova query (leitura)
-- `useQuery(["oficinas-dash"], () => supabase.from("oficinas").select("id, nome"))` — cache padrão, sem realtime.
-- Mapa `oficinaNome: Map<string, string>` derivado com `useMemo`.
+1. Usuário clica em **Refazer perda** na linha da perda (ou no cabeçalho do romaneio agrupado).
+2. Abre `RefazerPerdaDialog` mostrando todas as perdas daquele COP em grid Modelo+Cor × Tamanho, com bolinhas (mesmo padrão de `EntregaRomaneioDialog`): clique no número marca completo, lápis para parcial. Máximo por célula = `qtd perdida` restante.
+3. Ao confirmar:
+  - Cria novo COP com status inicial (Aguardando Risco/Corte, como um COP novo padrão), com as peças selecionadas já inseridas no corte.
+  - Campo observação preenchido com: `"REFAÇÃO DE PERDA - COP {numero-origem}"`.
+  - Registra vínculo `refacao_perda_origem_id` no COP novo.
+  - Registra os itens refeitos em `refacao_perda_itens` (jsonb) no COP novo para permitir desfazer.
+  - Subtrai as quantidades refeitas de `cops.perdas` no COP de origem.
+4. Nova seção **"Refações de perda"** na aba Perdas lista os COPs criados por refação, com botão **Desfazer** disponível enquanto o COP filho ainda não foi cortado/confirmado (status inicial). Desfazer: soma os itens de volta em `cops.perdas` do COP origem e deleta o COP filho.
 
-## Derivação em memória (useMemo)
-A partir do `cops` já carregado:
+## Regras
 
-1. Filtra `c.status !== "Finalizado" && (c.urgencias?.length ?? 0) > 0`.
-2. Para cada cop:
-   - `ultimaEm` = maior `u.em` do array `urgencias`.
-   - `qtdPedidos` = `urgencias.length`.
-   - Consolida linhas: percorre todas as urgências e todas as `linhas`, agrupando por chave `MODELO|COR` (uppercase).
-     - Se qualquer registro da mesma combinação vier sem `tamanhos` (linha inteira), a combinação vira `todos`.
-     - Caso contrário, soma `qtd` por `tamanho` (Map<string, number>).
-3. Ordena a lista de cops por `ultimaEm` desc.
-4. Para cada linha consolidada, ordena tamanhos por `REFACAO_TAMANHOS.indexOf(t)` (desconhecidos vão para o final).
+- Refação é informativa/produtiva; não altera cálculo de pagamento do COP origem.
+- Admin e gestor com área COP podem refazer/desfazer. Operador não vê os botões.
+- Não é possível selecionar mais peças do que ainda restam como perda (após refações anteriores).
+- Desfazer só é permitido enquanto o COP filho está em estado inicial (sem romaneio/corte confirmado); depois disso o botão fica oculto.
 
-## Estrutura visual do card
-`<Card>` em largura total, posicionado **entre** o grid superior (`COPs por status` / `Top urgências`) e o card `Pedidos mais urgentes`.
+## Detalhes técnicos
 
-- `CardHeader`: título `Romaneios com urgência` (`text-base`).
-- `CardContent`:
-  - Vazio → `<p className="text-sm text-muted-foreground">Nenhuma urgência ativa.</p>`.
-  - Preenchido → lista `<ul className="divide-y">`; cada item:
-    - Linha superior (`flex items-center gap-2 text-xs`): `Flame` vermelho + `rotuloRomaneio` em negrito + `· {oficinaNome ?? "—"}` + badge `URGÊNCIA` (fundo `bg-red-100 text-red-800`, com `×N` quando `qtdPedidos > 1`) + data `dd/mm` do último pedido (muted, à direita via `ml-auto`).
-    - Linhas cobradas (`text-[12.5px] leading-[1.2]`): uma linha por combinação modelo+cor:
-      - `MODELO` em negrito
-      - chip da cor (mesmo padrão de `PedirUrgenciaDialog`: `inline-block px-1.5 py-0.5 rounded text-[11px] font-bold` com `backgroundColor: corHex(cor)` e `color: corTextoSobre(...)`)
-      - tamanhos: `P:2 · M:5 · G:1` (ordem `REFACAO_TAMANHOS`) **ou** `todos os tamanhos` quando marcado como total.
+**DB migration (`cops`):**
 
-## Não faz parte do escopo
-- Nenhum toque em `RomaneioTab.tsx`, `PedirUrgenciaDialog.tsx`, `src/lib/*`, componentes de UI.
-- Nenhuma alteração de schema, nenhuma migração, nenhum write no banco.
-- Nenhum novo estado global; puro derivado com `useMemo`.
+- `refacao_perda_origem_id uuid REFERENCES public.cops(id) ON DELETE SET NULL`
+- `refacao_perda_itens jsonb NOT NULL DEFAULT '[]'::jsonb` (array de `{modelo,cor,tamanho,qtd}`)
+- Index em `refacao_perda_origem_id`.
 
-## Critérios de aceite (recap)
-- Card aparece na posição descrita, largura total.
-- Só lista cops não-finalizados com ≥1 urgência, ordenados pelo último `em` desc.
-- Cada item mostra rótulo, oficina, badge `URGÊNCIA` (`×N` quando aplicável) e data dd/mm.
-- Linhas cobradas agrupadas por modelo+cor com chip de cor e tamanhos `P:2 · M:5` ou `todos os tamanhos`.
-- Tamanhos ordenados por `REFACAO_TAMANHOS` importado (sem hardcode).
-- Atualiza em tempo real via canal `cops` já existente — nada novo.
-- Apenas `DashboardCopTab.tsx` é modificado.
+`**src/lib/cop.ts`:**
 
-Aguardando aprovação para implementar.
+- Helpers `subtrairPerdas(perdas, itens)` e `somarPerdas(perdas, itens)` que operam sobre o array `CopPerdaLinha[]` preservando `motivo` e removendo linhas zeradas.
+- Helper `perdasRestantes(cop)` = `perdas - refações já feitas por filhos`.
+
+**Novo componente `src/components/cop/RefazerPerdaDialog.tsx`:**
+
+- Baseado em `EntregaRomaneioDialog` (grid de bolinhas Modelo+Cor × Tamanho).
+- Props: `copOrigem`, perdas restantes, `onConfirm(itens)`.
+
+`**src/components/cop/PerdasTab.tsx`:**
+
+- Agrupa `perdasRomaneios` por COP para mostrar botão **Refazer perda** por romaneio (mais prático que por linha, pois o dialog já mostra todas).
+- Nova seção **Refações de perda** consultando `cops` com `refacao_perda_origem_id not null`, mostrando COP origem, COP filho, itens, status, e botão **Desfazer** condicional.
+
+**Mutations (client-side, transacionais via sequência):**
+
+- `refazerPerda`: `insert cops` novo → `update cops` origem (perdas atualizadas). Se falhar o update, deleta o COP recém-criado.
+- `desfazerRefacao`: `update cops` origem (soma volta) → `delete cops` filho.
+
+## Fora de escopo
+
+- Não mexe em `cop_perdas` (perdas manuais).
+- Não altera PDF do romaneio nem cálculo de pagamento.
+- Não permite editar peças de um COP-refação depois de criado (fluxo normal do COP a partir daí).
