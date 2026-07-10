@@ -1,5 +1,6 @@
 // Geração do PDF do Inventário — A4 vertical, preto e branco, fluxo contínuo.
 import logoJuff from "@/assets/loguinhojuffpreto.png.asset.json";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface InventarioRow {
   cor: string;
@@ -22,9 +23,12 @@ function hojeBR(): string {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
-export function abrirInventarioParaImpressao(rows: InventarioRow[]) {
+export async function abrirInventarioParaImpressao(rows: InventarioRow[]) {
   const dataStr = hojeBR();
   const titulo = `inventario-${dataStr.replace(/\//g, "-")}`;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const gerador = user?.email ?? user?.user_metadata?.name ?? "usuário desconhecido";
 
   const body = rows.map((r) => `
     <tr>
@@ -60,6 +64,7 @@ export function abrirInventarioParaImpressao(rows: InventarioRow[]) {
   table.grid th { font-weight: 700; font-size: 8pt; background: #fff; padding: 1.5mm 0.5mm; white-space: nowrap; }
   table.grid td { height: 10mm; }
   table.grid td.hand { background: #fff; }
+  table.grid tfoot td { border: none; padding: 1.5mm 0 0; font-size: 7pt; color: #333; text-align: left; }
   col.descanso { width: 20mm; }
   col.corte { width: 15mm; }
   col.obs { width: auto; }
@@ -101,6 +106,11 @@ export function abrirInventarioParaImpressao(rows: InventarioRow[]) {
     </tr>
   </thead>
   <tbody>${body}</tbody>
+  <tfoot>
+    <tr>
+      <td colspan="9">Inventário gerado em ${esc(dataStr)} por ${esc(gerador)}</td>
+    </tr>
+  </tfoot>
 </table>
 <script>setTimeout(()=>{ try { window.print(); } catch(e){} }, 350);</script>
 </body></html>`;
