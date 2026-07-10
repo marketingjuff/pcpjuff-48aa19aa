@@ -118,12 +118,20 @@ export type CopUrgenciaLinha = {
   tamanhos?: { tamanho: string; qtd: number }[];
 };
 
+/** Pedido/orçamento vinculado ao pedido de urgência (informativo). */
+export type CopUrgenciaPedido = {
+  pedidoId: string;
+  orcamento: string | null;
+  pedidoOlist: string | null;
+};
+
 /** Registro de um pedido de urgência à oficina. Imutável após criado. */
 export type CopUrgencia = {
   em: string;                    // ISO timestamp
   por: string | null;            // auth user id
-  observacao: string;            // obrigatória
+  observacao: string;            // opcional (pode ser vazia)
   linhas: CopUrgenciaLinha[];    // linhas cobradas (mínimo 1)
+  pedidos?: CopUrgenciaPedido[]; // orçamentos que solicitaram essas peças (informativo)
 };
 
 /** Retorna true se a linha (modelo, cor) foi marcada como urgente em alguma cobrança. */
