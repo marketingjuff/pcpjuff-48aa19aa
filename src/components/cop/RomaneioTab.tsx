@@ -904,20 +904,69 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                   <Dialog open={!!selectedHist} onOpenChange={(o) => !o && setSelectedHist(null)}>
                     <DialogContent className="max-w-lg">
                       <DialogHeader>
-                        <DialogTitle>{selectedHist?.tipo === "perda" ? "Perdas registradas" : "Peças entregues"}</DialogTitle>
+                        <DialogTitle>
+                          {selectedHist?.tipo === "perda"
+                            ? "Perdas registradas"
+                            : selectedHist?.tipo === "urgencia"
+                              ? "Pedido de urgência"
+                              : "Peças entregues"}
+                        </DialogTitle>
                         <DialogDescription>
                           {selectedHist && (
                             <span>
                               {new Date(selectedHist.em).toLocaleString("pt-BR")} — {" "}
-                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] ${selectedHist.tipo === "completo" ? "bg-green-100 text-green-800" : selectedHist.tipo === "parcial" ? "bg-amber-100 text-amber-800" : "bg-purple-100 text-purple-800"}`}>
+                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] ${
+                                selectedHist.tipo === "completo" ? "bg-green-100 text-green-800" :
+                                selectedHist.tipo === "parcial" ? "bg-amber-100 text-amber-800" :
+                                selectedHist.tipo === "urgencia" ? "bg-red-100 text-red-800" :
+                                "bg-purple-100 text-purple-800"
+                              }`}>
                                 {selectedHist.tipo}
                               </span>
-                              {selectedHist.tipo !== "perda" && (selectedHist as HistoricoRecebimento).letra && <> · letra <b>{(selectedHist as HistoricoRecebimento).letra}</b></>}
+                              {selectedHist.tipo !== "perda" && selectedHist.tipo !== "urgencia" && (selectedHist as HistoricoRecebimento).letra && <> · letra <b>{(selectedHist as HistoricoRecebimento).letra}</b></>}
                             </span>
                           )}
                         </DialogDescription>
                       </DialogHeader>
-                      {selectedHist && (
+                      {selectedHist && selectedHist.tipo === "urgencia" ? (
+                        <div className="space-y-3">
+                          <div>
+                            <div className="text-xs font-semibold mb-1">Observação</div>
+                            <div className="rounded-md border bg-muted/20 p-2 text-sm whitespace-pre-wrap">
+                              {selectedHist.observacao || "—"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs font-semibold mb-1">Linhas cobradas</div>
+                            <div className="rounded-md border overflow-hidden">
+                              <table className="w-full text-xs">
+                                <thead className="bg-muted/40">
+                                  <tr>
+                                    <th className="p-2 text-left">Modelo</th>
+                                    <th className="p-2 text-left">Cor</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(selectedHist.linhas ?? []).map((l: CopUrgenciaLinha, idx: number) => {
+                                    const hex = corHex(l.cor); const fg = corTextoSobre(hex);
+                                    return (
+                                      <tr key={idx} className="border-t">
+                                        <td className="p-2">{l.modelo}</td>
+                                        <td className="p-2">
+                                          <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{l.cor}</span>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                  {(selectedHist.linhas ?? []).length === 0 && (
+                                    <tr><td colSpan={2} className="p-3 text-center text-muted-foreground">Nenhuma linha.</td></tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      ) : selectedHist && (
                         <div className="rounded-md border overflow-hidden">
                           <table className="w-full text-xs">
                             <thead className="bg-muted/40">
@@ -954,6 +1003,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                       )}
                     </DialogContent>
                   </Dialog>
+
 
 
                   {(completoTotal || selected.status === "Romaneio Completo") && (
