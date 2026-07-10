@@ -30,8 +30,6 @@ type LinhaFalta = {
   grupos: GrupoFalta[];
   faltaTotal: number;
   ancora: string | null;
-  limite: string | null;
-  inicioEstamparia: string | null;
 };
 
 function fmtBR(d: string | null | undefined): string {
