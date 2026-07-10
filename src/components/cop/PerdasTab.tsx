@@ -438,90 +438,102 @@ export function PerdasTab() {
                 <tbody>
                   {refacoes.map((f, gIdx) => {
                     const its = (((f as any).refacao_perda_itens as CopRefacaoPerdaItem[]) ?? []);
-                    const rows = its.length > 0 ? its : [{ modelo: "—", cor: "—", tamanho: "—", qtd: 0, perda_modelo: "—", perda_cor: "—", perda_tamanho: "—", perda_qtd: 0 }];
-                    return rows.map((linha, i) => {
-                      const first = i === 0;
-                      const isMudou = linha.perda_modelo &&
-                        (linha.modelo !== linha.perda_modelo ||
-                          linha.cor !== linha.perda_cor ||
-                          linha.tamanho !== linha.perda_tamanho);
-                      const origemCop = copById.get((linha.origem_cop_id ?? (f as any).refacao_perda_origem_id) as string);
-                      const origemRotulo = origemCop ? `${formatCopNumero(origemCop.numero)}${origemCop.letra ?? ""}` : "—";
-                      const novoRotulo = rotuloCopObj(f);
-                      const corPerda = corHex(linha.perda_cor ?? "");
-                      const fgPerda = corTextoSobre(corPerda);
-                      const corRef = corHex(linha.cor ?? "");
-                      const fgRef = corTextoSobre(corRef);
-                      return (
-                        <tr key={`${f.id}-${i}`} className={`border-t align-top ${gIdx % 2 === 1 ? "bg-muted/60" : ""}`}>
-                          <td className="p-2 text-xs align-top">
-                            {first ? new Date(f.created_at).toLocaleString("pt-BR") : ""}
-                          </td>
-                          <td className="p-2">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Perda original</span>
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-xs font-semibold tabular-nums">COP {origemRotulo}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                                <span className="font-medium">{linha.perda_modelo ?? linha.modelo}</span>
-                                {linha.perda_cor && linha.perda_cor !== "—" ? (
-                                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: corPerda, color: fgPerda }}>{linha.perda_cor}</span>
-                                ) : null}
-                                <span className="text-muted-foreground">{linha.perda_tamanho ?? linha.tamanho}</span>
-                                <span className="tabular-nums font-semibold">{linha.perda_qtd ?? linha.qtd} pç</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="p-2 align-middle text-center">
-                            {first ? (
-                              <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-muted-foreground">
-                                <ArrowRight className="h-3.5 w-3.5" />
-                              </div>
-                            ) : ""}
-                          </td>
-                          <td className="p-2">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[10px] uppercase tracking-wider text-emerald-700 font-semibold">Refeito</span>
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-xs font-semibold tabular-nums">COP {novoRotulo}</span>
-                                {isMudou && <span className="text-[10px] text-amber-700">(alterado)</span>}
-                              </div>
-                              <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                                <span className="font-medium">{linha.modelo}</span>
-                                {linha.cor && linha.cor !== "—" ? (
-                                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: corRef, color: fgRef }}>{linha.cor}</span>
-                                ) : null}
-                                <span className="text-muted-foreground">{linha.tamanho}</span>
-                                <span className="tabular-nums font-semibold">{linha.qtd || 0} pç</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="p-2 text-xs align-top">
-                            {first ? f.status : ""}
-                          </td>
-                          {canAccessCop && (
-                            <td className="p-2 text-right align-top">
-                              {first ? (
-                                podeDesfazer(f) ? (
-                                  <Button size="sm" variant="ghost" onClick={() => {
-                                    if (confirm(`Desfazer refação do COP ${rotuloCopObj(f)}?\nO COP será excluído e as perdas restauradas.`)) {
-                                      desfazerMut.mutate(f);
-                                    }
-                                  }}>
-                                    <Undo2 className="h-3 w-3 mr-1" /> Desfazer
-                                  </Button>
-                                ) : (
-                                  <span className="text-[10px] text-muted-foreground">—</span>
-                                )
-                              ) : ""}
-                            </td>
-                          )}
-                        </tr>
-                      );
+                    // "Perda original" agrupa pelos campos perda_* (fallback aos itens legados)
+                    const perdaLinhas = its.map((it) => ({
+                      modelo: it.perda_modelo ?? it.modelo,
+                      cor: it.perda_cor ?? it.cor,
+                      tamanho: it.perda_tamanho ?? it.tamanho,
+                      qtd: it.perda_qtd ?? it.qtd,
+                      origem_cop_id: it.origem_cop_id ?? (f as any).refacao_perda_origem_id,
+                    }));
+                    // "Refeito" = peças REAIS do COP filho (fonte da verdade, refletindo edições posteriores)
+                    const refeitoLinhas = (f.pecas ?? []).filter((p) => p && p.qtd > 0);
+                    const novoRotulo = rotuloCopObj(f);
+                    // Origens (podem ser múltiplos em consolidados)
+                    const origensIds = Array.from(new Set(perdaLinhas.map((l) => l.origem_cop_id).filter(Boolean))) as string[];
+                    const origensRotulos = origensIds.map((oid) => {
+                      const c = copById.get(oid);
+                      return c ? `${formatCopNumero(c.numero)}${c.letra ?? ""}` : "—";
                     });
+                    return (
+                      <tr key={f.id} className={`border-t align-top ${gIdx % 2 === 1 ? "bg-muted/60" : ""}`}>
+                        <td className="p-2 text-xs align-top">
+                          {new Date(f.created_at).toLocaleString("pt-BR")}
+                        </td>
+                        <td className="p-2 align-top">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Perda original</span>
+                              <span className="text-xs font-semibold tabular-nums">
+                                COP {origensRotulos.join(", ") || "—"}
+                              </span>
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              {perdaLinhas.length === 0 ? (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              ) : perdaLinhas.map((l, i) => {
+                                const hex = corHex(l.cor); const fg = corTextoSobre(hex);
+                                return (
+                                  <div key={i} className="flex items-center gap-1.5 flex-wrap text-xs">
+                                    <span className="font-medium">{l.modelo}</span>
+                                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: hex, color: fg }}>{l.cor}</span>
+                                    <span className="text-muted-foreground">{l.tamanho}</span>
+                                    <span className="tabular-nums font-semibold">{l.qtd} pç</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-2 align-middle text-center">
+                          <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-muted-foreground">
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </div>
+                        </td>
+                        <td className="p-2 align-top">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] uppercase tracking-wider text-emerald-700 font-semibold">Refeito</span>
+                              <span className="text-xs font-semibold tabular-nums">COP {novoRotulo}</span>
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              {refeitoLinhas.length === 0 ? (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              ) : refeitoLinhas.map((p, i) => {
+                                const hex = corHex(p.cor); const fg = corTextoSobre(hex);
+                                return (
+                                  <div key={i} className="flex items-center gap-1.5 flex-wrap text-xs">
+                                    <span className="font-medium">{p.modelo}</span>
+                                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: hex, color: fg }}>{p.cor}</span>
+                                    <span className="text-muted-foreground">{p.tamanho}</span>
+                                    <span className="tabular-nums font-semibold">{p.qtd} pç</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-2 text-xs align-top">{f.status}</td>
+                        {canAccessCop && (
+                          <td className="p-2 text-right align-top">
+                            {podeDesfazer(f) ? (
+                              <Button size="sm" variant="ghost" onClick={() => {
+                                if (confirm(`Desfazer refação do COP ${rotuloCopObj(f)}?\nO COP será excluído e as perdas restauradas.`)) {
+                                  desfazerMut.mutate(f);
+                                }
+                              }}>
+                                <Undo2 className="h-3 w-3 mr-1" /> Desfazer
+                              </Button>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">—</span>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    );
                   })}
                 </tbody>
+
               </table>
             </div>
           </CardContent>
