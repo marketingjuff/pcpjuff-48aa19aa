@@ -11,6 +11,7 @@ import { MacroSwitch } from "@/routes/_authenticated/cop";
 import { ProgramacaoFiosTab } from "@/components/map/ProgramacaoFiosTab";
 import { FiosFinalizadosTab } from "@/components/map/FiosFinalizadosTab";
 import { EstoqueMpTab } from "@/components/map/EstoqueMpTab";
+import { InventarioTab } from "@/components/map/InventarioTab";
 import { PecasFinalizadasTab } from "@/components/map/PecasFinalizadasTab";
 import { QuebraTab } from "@/components/map/QuebraTab";
 import { DevolucoesTab } from "@/components/map/DevolucoesTab";
@@ -30,6 +31,7 @@ const BASE_TABS = [
   { value: "programacao", label: "Prod. de Tecido" },
   { value: "finalizados", label: "Prod. Finalizados" },
   { value: "estoque", label: "Estoque de MP" },
+  { value: "inventario", label: "Inventário" },
   { value: "pecas-finalizadas", label: "Peças Finalizadas" },
   { value: "quebra", label: "Quebra" },
   { value: "devolucoes", label: "Devoluções" },
@@ -121,6 +123,9 @@ function MapHome() {
           </TabsContent>
           <TabsContent value="estoque" forceMount hidden={tab !== "estoque"}>
             <EstoqueMpTab />
+          </TabsContent>
+          <TabsContent value="inventario" forceMount hidden={tab !== "inventario"}>
+            <InventarioTab />
           </TabsContent>
           <TabsContent value="pecas-finalizadas" forceMount hidden={tab !== "pecas-finalizadas"}>
             <PecasFinalizadasTab />
