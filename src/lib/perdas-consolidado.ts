@@ -101,11 +101,12 @@ export function usePerdasConsolidadas() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("cops")
-        .select("id, numero, letra, refacao_perda_origem_id, perdas, historico_perdas, updated_at, oficina_id");
+        .select("id, numero, letra, refacao_perda_origem_id, refacao_perda_itens, perdas, historico_perdas, updated_at, oficina_id");
       if (error) throw error;
-      return (data ?? []) as Array<Pick<Cop, "id" | "numero" | "letra" | "refacao_perda_origem_id" | "perdas" | "historico_perdas" | "updated_at" | "oficina_id">>;
+      return (data ?? []) as Array<Pick<Cop, "id" | "numero" | "letra" | "refacao_perda_origem_id" | "refacao_perda_itens" | "perdas" | "historico_perdas" | "updated_at" | "oficina_id">>;
     },
   });
+
 
   const qCopPerdas = useQuery({
     queryKey: ["perdas-cons-copperdas"],
