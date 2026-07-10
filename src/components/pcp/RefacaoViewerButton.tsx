@@ -19,6 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { History, Save } from "lucide-react";
 import { PecasPerdidasEditor, pecaLinhaCompleta, somaPecas } from "./PecasPerdidasEditor";
+import { useReclassificacoesDoPedido } from "@/lib/perdas-consolidado";
 
 const ORANGE = "#ff8c2f";
 
@@ -235,6 +236,12 @@ function EpisodioRead({
 
   const totalAtual = somaPecas(Array.isArray(episodio.pecas_perdidas) ? episodio.pecas_perdidas : []);
 
+  const { data: reclassAll = [] } = useReclassificacoesDoPedido(pedido.id);
+  const reclassDoEpisodio = reclassAll.filter(
+    (r) => r.refacao_idx === index || r.refacao_data === episodio.data,
+  );
+  const totalReclass = reclassDoEpisodio.reduce((s, r) => s + (Number(r.qtd) || 0), 0);
+
   return (
     <div className="rounded-md border bg-muted/20 p-3 space-y-3">
       <div className="flex items-center gap-2 text-sm font-medium">
@@ -245,6 +252,12 @@ function EpisodioRead({
           {episodio.aberto ? "Em aberto" : "Encerrado"}
         </Badge>
       </div>
+      {reclassDoEpisodio.length > 0 && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900 flex items-center gap-2">
+          <History className="h-3.5 w-3.5" />
+          Perda reclassificada — ver <span className="font-semibold">Controle de Perdas</span> · {totalReclass} peça(s) · último motivo: {reclassDoEpisodio[reclassDoEpisodio.length - 1].motivo_novo}
+        </div>
+      )}
       <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-sm">
         <Read label="Data" value={fmtDataHoraBR(episodio.data)} />
         <Read label="Responsável" value={responsavel} />
