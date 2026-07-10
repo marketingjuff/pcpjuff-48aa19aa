@@ -305,10 +305,63 @@ export function PedirUrgenciaDialog({ open, onOpenChange, rotulo, pecas, recebid
           </table>
         </div>
 
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Pedidos solicitando estas peças (informativo)</label>
+          {pedidosSel.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {pedidosSel.map((p) => (
+                <span key={p.pedidoId} className="inline-flex items-center gap-1 rounded border bg-muted/50 px-2 py-0.5 text-xs">
+                  <b>{p.orcamento ?? "—"}</b>
+                  {p.pedidoOlist && <span className="text-muted-foreground">Olist {p.pedidoOlist}</span>}
+                  <button
+                    type="button"
+                    onClick={() => removerPedido(p.pedidoId)}
+                    disabled={disabled}
+                    className="ml-1 text-muted-foreground hover:text-destructive"
+                    title="Remover"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Select
+              value=""
+              onValueChange={(v) => { if (v) adicionarPedido(v); }}
+              disabled={disabled || pedidosDisponiveis.length === 0}
+            >
+              <SelectTrigger className="h-8 w-[380px] text-xs">
+                <div className="flex items-center gap-1">
+                  <Plus className="h-3.5 w-3.5" />
+                  <SelectValue placeholder={pedidosDisponiveis.length === 0 ? "Sem pedidos com faltas compatíveis" : "Adicionar orçamento…"} />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {pedidosDisponiveis.map((p) => (
+                  <SelectItem key={p.id} value={p.id} className="text-xs">
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {p.orcamento ?? "—"}
+                        {p.pedido_olist && <span className="ml-2 text-muted-foreground">Olist {p.pedido_olist}</span>}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {p.faltas.slice(0, 4).map((f) => `${f.modelo}/${f.cor} ${f.tamanho}:${f.falta}`).join(" · ")}
+                        {p.faltas.length > 4 ? ` +${p.faltas.length - 4}` : ""}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div className="space-y-1">
-          <label className="text-sm font-medium">Observação (obrigatória)</label>
+          <label className="text-sm font-medium">Observação (opcional)</label>
           <Textarea
-            rows={3}
+            rows={2}
             value={obs}
             onChange={(e) => setObs(e.target.value)}
             placeholder="EX.: FALEI COM A MIRTA, PROMETEU DIA 15"
