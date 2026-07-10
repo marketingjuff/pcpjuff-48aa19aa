@@ -22,6 +22,9 @@ import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { InlineInput } from "./InlineInput";
 import { EstoquePecaCortesCell } from "./EstoquePecaCortesCell";
 import type { Cop } from "@/lib/cop";
+import { Button } from "@/components/ui/button";
+import { Printer } from "lucide-react";
+import { abrirInventarioParaImpressao, type InventarioRow } from "@/lib/inventario-pdf";
 
 const STATUS_LIST: MapEstoquePecaStatus[] = [
   "Fechada",
@@ -303,8 +306,45 @@ export function EstoqueMpTab() {
   };
 
 
+  const inventarioRows: InventarioRow[] = useMemo(() => {
+    const ok = new Set(["Fechada", "Aberta", "Corte"]);
+    const fmtN = (n: number | null | undefined) =>
+      n == null || !Number.isFinite(Number(n)) ? "—" : Number(n).toFixed(2).replace(".", ",");
+    return pecas
+      .filter((p) => ok.has(p.status))
+      .slice()
+      .sort((a, b) => {
+        const c = (a.cor ?? "").localeCompare(b.cor ?? "", "pt-BR");
+        if (c !== 0) return c;
+        return (a.numero_peca ?? "").localeCompare(b.numero_peca ?? "", "pt-BR", { numeric: true });
+      })
+      .map((p) => {
+        const usado = (p.cortes ?? []).reduce((s, c) => s + Number(c.metros || 0), 0);
+        const saldo = p.alt_inicial == null ? null : Number(p.alt_inicial) - usado;
+        return {
+          cor: p.cor ?? "",
+          numero_peca: p.numero_peca ?? "",
+          status: p.status,
+          data_entrada: p.data_entrada ? fmtDateBR(p.data_entrada) : "—",
+          larg: fmtN(p.larg),
+          altura: fmtN(saldo),
+        };
+      });
+  }, [pecas]);
+
   return (
     <div className="space-y-3">
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => abrirInventarioParaImpressao(inventarioRows)}
+          disabled={inventarioRows.length === 0}
+        >
+          <Printer className="h-4 w-4 mr-1.5" />
+          Imprimir Inventário (PDF)
+        </Button>
+      </div>
       {/* ---------- Resumo por cor (tabela) ---------- */}
       <div className="rounded-md border bg-white/70 overflow-x-auto">
         <table className="w-full text-[12.5px] table-fixed">
