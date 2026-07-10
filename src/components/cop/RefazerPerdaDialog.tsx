@@ -258,10 +258,82 @@ export function RefazerPerdaDialog({ open, onOpenChange, cops, onConfirm }: Prop
           )}
         </div>
 
+        {selecionadosLista.length > 0 && (
+          <div className="rounded-md border">
+            <div className="px-3 py-1.5 bg-muted/40 text-xs font-semibold border-b">
+              O que a perda virou <span className="text-muted-foreground font-normal">(edite modelo, cor ou tamanho se a peça foi salva como outra)</span>
+            </div>
+            <div className="max-h-[28vh] overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/20 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-2 py-1 text-left">COP origem</th>
+                    <th className="px-2 py-1 text-left">Perda original</th>
+                    <th className="px-2 py-1 text-center w-6"></th>
+                    <th className="px-2 py-1 text-left">Modelo (virou)</th>
+                    <th className="px-2 py-1 text-left">Cor (virou)</th>
+                    <th className="px-2 py-1 text-left">Tam. (virou)</th>
+                    <th className="px-2 py-1 text-right">Qtd</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selecionadosLista.map((it) => {
+                    const ov = getOverride(it.key, it.perda);
+                    const hexP = corHex(it.perda.cor); const fgP = corTextoSobre(hexP);
+                    const hexN = corHex(ov.cor); const fgN = corTextoSobre(hexN);
+                    return (
+                      <tr key={it.key} className="border-t align-middle">
+                        <td className="px-2 py-1 text-xs">COP {it.copRotulo}</td>
+                        <td className="px-2 py-1">
+                          <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground">
+                            <span>{it.perda.modelo}</span>
+                            <span className="inline-block px-1.5 py-0 rounded text-[10px] font-bold" style={{ backgroundColor: hexP, color: fgP }}>{it.perda.cor}</span>
+                            <span>{it.perda.tamanho}</span>
+                          </div>
+                        </td>
+                        <td className="px-1 py-1 text-center text-muted-foreground"><ArrowRight className="h-3.5 w-3.5 inline" /></td>
+                        <td className="px-2 py-1">
+                          <Select value={ov.modelo} onValueChange={(v) => setOverride(it.key, { modelo: v })}>
+                            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>{REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-2 py-1">
+                          <Select value={ov.cor} onValueChange={(v) => setOverride(it.key, { cor: v })}>
+                            <SelectTrigger className="h-7 text-xs">
+                              <SelectValue>
+                                <span className="inline-block px-1.5 py-0 rounded text-[10px] font-bold" style={{ backgroundColor: hexN, color: fgN }}>{ov.cor}</span>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {REFACAO_CORES.map((c) => {
+                                const fg = corTextoSobre(c.hex);
+                                return <SelectItem key={c.nome} value={c.nome} style={{ backgroundColor: c.hex, color: fg }}>{c.nome}</SelectItem>;
+                              })}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-2 py-1">
+                          <Select value={ov.tamanho} onValueChange={(v) => setOverride(it.key, { tamanho: v })}>
+                            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>{REFACAO_TAMANHOS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-2 py-1 text-right tabular-nums">{it.qtd}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">Máximo disponível: <b className="tabular-nums">{totais.max}</b></span>
           <span>Selecionadas: <b className="tabular-nums text-green-700">{totais.selTotal}</b></span>
         </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
           <Button onClick={handleConfirm} disabled={saving || totais.selTotal === 0}>Criar COP de refação</Button>
