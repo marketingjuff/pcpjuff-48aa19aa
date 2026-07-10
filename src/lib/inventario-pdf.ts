@@ -92,7 +92,7 @@ export function abrirInventarioParaImpressao(rows: InventarioRow[]) {
       <th>COR</th>
       <th>Nº DA PEÇA</th>
       <th>STATUS</th>
-      <th>DATA DE ENTRADA</th>
+      <th>ENTRADA</th>
       <th>DESCANSO</th>
       <th>LARGURA</th>
       <th>ALTURA</th>
