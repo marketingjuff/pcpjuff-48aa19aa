@@ -361,6 +361,39 @@ export function getPerda(perdas: CopPerdaLinha[] | null | undefined, m: string, 
   return f ? Number(f.qtd) || 0 : 0;
 }
 
+/** Soma quantidades em `perdas` (por modelo|cor|tamanho). Preserva motivo original. */
+export function somarPerdas(a: CopPerdaLinha[], b: CopPerdaLinha[]): CopPerdaLinha[] {
+  const map = new Map<string, CopPerdaLinha>();
+  for (const p of a) {
+    if (p.qtd > 0) map.set(`${p.modelo}|${p.cor}|${p.tamanho}`, { ...p });
+  }
+  for (const p of b) {
+    if (!(p.qtd > 0)) continue;
+    const k = `${p.modelo}|${p.cor}|${p.tamanho}`;
+    const cur = map.get(k);
+    if (cur) cur.qtd += p.qtd;
+    else map.set(k, { ...p });
+  }
+  return Array.from(map.values());
+}
+
+/** Subtrai `b` de `perdas`. Preserva motivo. Linhas zeradas removidas. */
+export function subtrairPerdas(a: CopPerdaLinha[], b: CopPerdaLinha[]): CopPerdaLinha[] {
+  const map = new Map<string, CopPerdaLinha>();
+  for (const p of a) {
+    if (p.qtd > 0) map.set(`${p.modelo}|${p.cor}|${p.tamanho}`, { ...p });
+  }
+  for (const p of b) {
+    if (!(p.qtd > 0)) continue;
+    const k = `${p.modelo}|${p.cor}|${p.tamanho}`;
+    const cur = map.get(k);
+    if (!cur) continue;
+    cur.qtd = Math.max(0, cur.qtd - p.qtd);
+    if (cur.qtd === 0) map.delete(k);
+  }
+  return Array.from(map.values());
+}
+
 /** True quando todas as linhas têm (recebido + perdido) ≥ qtd. */
 export function todasCompletas(pecas: CopPeca[], rec: CopPecaRecebida[], perdas: CopPerdaLinha[] = []): boolean {
   if (!pecas?.length) return false;

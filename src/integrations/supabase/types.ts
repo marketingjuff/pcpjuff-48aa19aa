@@ -199,6 +199,8 @@ export type Database = {
           pecas: Json
           pecas_recebidas: Json
           perdas: Json
+          refacao_perda_itens: Json
+          refacao_perda_origem_id: string | null
           romaneio_enviado_em: string | null
           solicitacao_corte: string | null
           solicitacao_risco: string | null
@@ -241,6 +243,8 @@ export type Database = {
           pecas?: Json
           pecas_recebidas?: Json
           perdas?: Json
+          refacao_perda_itens?: Json
+          refacao_perda_origem_id?: string | null
           romaneio_enviado_em?: string | null
           solicitacao_corte?: string | null
           solicitacao_risco?: string | null
@@ -283,6 +287,8 @@ export type Database = {
           pecas?: Json
           pecas_recebidas?: Json
           perdas?: Json
+          refacao_perda_itens?: Json
+          refacao_perda_origem_id?: string | null
           romaneio_enviado_em?: string | null
           solicitacao_corte?: string | null
           solicitacao_risco?: string | null
@@ -311,6 +317,13 @@ export type Database = {
             columns: ["oficina_id"]
             isOneToOne: false
             referencedRelation: "oficinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cops_refacao_perda_origem_id_fkey"
+            columns: ["refacao_perda_origem_id"]
+            isOneToOne: false
+            referencedRelation: "cops"
             referencedColumns: ["id"]
           },
         ]
