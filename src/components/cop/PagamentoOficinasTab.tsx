@@ -612,6 +612,9 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
       </AlertDialog>
 
       <HistoricoPagamentosConsolidados />
+
+      <PagamentoConsolidadoCard />
+
     </div>
   );
 }
