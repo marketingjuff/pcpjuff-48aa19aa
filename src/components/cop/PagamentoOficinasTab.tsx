@@ -402,72 +402,75 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 justify-end">
-              {onChangeTab && (
-                <Button variant="outline" onClick={() => onChangeTab("romaneio")}>
-                  <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao Romaneio
-                </Button>
-              )}
-              {selected.pagamento_status !== "pago" && (
-                <Button variant="outline" onClick={() => salvarObs.mutate()} disabled={salvarObs.isPending}>
-                  Salvar
-                </Button>
-              )}
-              {selected.pagamento_status === "nao_pago" && podeLiberar && (
-                <Button style={btnStyle("liberar_pagamento")} onClick={() => liberar.mutate()} disabled={liberar.isPending || valor <= 0}>
-                  <Check className="h-4 w-4 mr-1" /> Liberar pagamento (Gestor)
-                </Button>
-              )}
-              {selected.pagamento_status === "liberado" && (podeLiberar || isAdmin) && (
-                <Button
-                  variant="outline"
-                  className="border-orange-400 text-orange-700 hover:bg-orange-50"
-                  onClick={() => editarPagamento.mutate()}
-                  disabled={editarPagamento.isPending}
-                  title="Voltar para Romaneio Completo e limpar liberação"
-                >
-                  <Undo2 className="h-4 w-4 mr-1" /> Editar (voltar para Romaneio Completo)
-                </Button>
-              )}
-              {selected.pagamento_status === "liberado" && isAdmin && (
-                <Button style={btnStyle("marcar_pago")} onClick={() => marcar.mutate({ pago: true })} disabled={marcar.isPending}>
-                  <Check className="h-4 w-4 mr-1" /> Marcar como Pago (Admin)
-                </Button>
-              )}
-              {selected.pagamento_status === "pago" && isAdmin && (
-                <Button variant="outline" onClick={() => marcar.mutate({ pago: false })} disabled={marcar.isPending}>
-                  <X className="h-4 w-4 mr-1" /> Reverter para Liberado
-                </Button>
-              )}
-              {isAdmin && selected.pagamento_status !== "nao_pago" && (
-                <Button
-                  variant="outline"
-                  className="border-red-400 text-red-700 hover:bg-red-50"
-                  onClick={() => setConfirmApagar(true)}
-                  title="Apagar pagamento e voltar status para Romaneio Completo"
-                >
-                  <Trash2 className="h-4 w-4 mr-1" /> Apagar pagamento
-                </Button>
-              )}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 justify-between">
+              {(selected.pagamento_liberado_em || selected.pagamento_pago_em) ? (
+                <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
+                  {selected.pagamento_liberado_em && (() => {
+                    const venc = addDiasUteis(new Date(selected.pagamento_liberado_em), 5, feriados);
+                    return (
+                      <span>
+                        Liberado em {new Date(selected.pagamento_liberado_em).toLocaleString("pt-BR")} · valor snapshot {fmtMoney(Number(selected.pagamento_valor_calculado ?? 0))}
+                        {" · "}
+                        <span className={atrasado ? "text-red-600 font-semibold" : ""}>
+                          Vencimento: {new Date(venc + "T00:00:00").toLocaleDateString("pt-BR")}
+                        </span>
+                      </span>
+                    );
+                  })()}
+                  {selected.pagamento_pago_em && <span>· Pago em {new Date(selected.pagamento_pago_em).toLocaleString("pt-BR")}</span>}
+                </div>
+              ) : <div />}
+
+              <div className="flex flex-wrap items-center gap-2 justify-end ml-auto">
+                {onChangeTab && (
+                  <Button variant="outline" onClick={() => onChangeTab("romaneio")}>
+                    <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao Romaneio
+                  </Button>
+                )}
+                {selected.pagamento_status !== "pago" && (
+                  <Button variant="outline" onClick={() => salvarObs.mutate()} disabled={salvarObs.isPending}>
+                    Salvar
+                  </Button>
+                )}
+                {selected.pagamento_status === "nao_pago" && podeLiberar && (
+                  <Button style={btnStyle("liberar_pagamento")} onClick={() => liberar.mutate()} disabled={liberar.isPending || valor <= 0}>
+                    <Check className="h-4 w-4 mr-1" /> Liberar pagamento (Gestor)
+                  </Button>
+                )}
+                {selected.pagamento_status === "liberado" && (podeLiberar || isAdmin) && (
+                  <Button
+                    variant="outline"
+                    className="border-orange-400 text-orange-700 hover:bg-orange-50"
+                    onClick={() => editarPagamento.mutate()}
+                    disabled={editarPagamento.isPending}
+                    title="Voltar para Romaneio Completo e limpar liberação"
+                  >
+                    <Undo2 className="h-4 w-4 mr-1" /> Editar (voltar para Romaneio Completo)
+                  </Button>
+                )}
+                {selected.pagamento_status === "liberado" && isAdmin && (
+                  <Button style={btnStyle("marcar_pago")} onClick={() => marcar.mutate({ pago: true })} disabled={marcar.isPending}>
+                    <Check className="h-4 w-4 mr-1" /> Marcar como Pago (Admin)
+                  </Button>
+                )}
+                {selected.pagamento_status === "pago" && isAdmin && (
+                  <Button variant="outline" onClick={() => marcar.mutate({ pago: false })} disabled={marcar.isPending}>
+                    <X className="h-4 w-4 mr-1" /> Reverter para Liberado
+                  </Button>
+                )}
+                {isAdmin && selected.pagamento_status !== "nao_pago" && (
+                  <Button
+                    variant="outline"
+                    className="border-red-400 text-red-700 hover:bg-red-50"
+                    onClick={() => setConfirmApagar(true)}
+                    title="Apagar pagamento e voltar status para Romaneio Completo"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" /> Apagar pagamento
+                  </Button>
+                )}
+              </div>
             </div>
 
-            {(selected.pagamento_liberado_em || selected.pagamento_pago_em) && (
-              <div className="text-xs text-muted-foreground">
-                {selected.pagamento_liberado_em && (() => {
-                  const venc = addDiasUteis(new Date(selected.pagamento_liberado_em), 5, feriados);
-                  return (
-                    <div>
-                      Liberado em {new Date(selected.pagamento_liberado_em).toLocaleString("pt-BR")} · valor snapshot {fmtMoney(Number(selected.pagamento_valor_calculado ?? 0))}
-                      {" · "}
-                      <span className={atrasado ? "text-red-600 font-semibold" : ""}>
-                        Vencimento: {new Date(venc + "T00:00:00").toLocaleDateString("pt-BR")}
-                      </span>
-                    </div>
-                  );
-                })()}
-                {selected.pagamento_pago_em && <div>Pago em {new Date(selected.pagamento_pago_em).toLocaleString("pt-BR")}</div>}
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
