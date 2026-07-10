@@ -50,6 +50,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   const { etapaStyle, btnStyle } = useCopColorSettings();
   const canManageCop = useCanAccessCop();
   const [showPerda, setShowPerda] = useState(false);
+  const [showUrgencia, setShowUrgencia] = useState(false);
 
   const { data: cops = [], isLoading } = useQuery({
 
