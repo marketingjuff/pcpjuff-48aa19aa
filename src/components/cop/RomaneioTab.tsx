@@ -1110,7 +1110,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             pecas={selected.pecas || []}
             recebidas={recebidas}
             perdas={(selected.perdas as CopPerdaLinha[]) ?? []}
-            onConfirm={(obs, linhas) => salvarUrgencia.mutate({ cop: selected, obs, linhas })}
+            onConfirm={(obs, linhas, pedidos) => salvarUrgencia.mutate({ cop: selected, obs, linhas, pedidos })}
             disabled={salvarUrgencia.isPending}
           />
         </>
