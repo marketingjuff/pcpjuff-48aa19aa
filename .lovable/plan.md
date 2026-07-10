@@ -1,81 +1,75 @@
 
-# Histórico / Auditoria em PCP, MAP e COP
+# Plano — Urgência no Romaneio + Uniformização de Botões
 
-## Objetivo
+Executo exatamente o escopo do prompt, respeitando o PLAN-GATE e as regras invioláveis de banco (somente `ADD COLUMN IF NOT EXISTS`, sem `DROP`/`ALTER TYPE`/mudança de RLS).
 
-Criar 3 novas abas (uma em cada área master): **Histórico PCP**, **Histórico MAP**, **Histórico COP**. Cada aba mostra a linha do tempo de tudo que aconteceu naquela área — quem criou, alterou ou deletou, quando, e o que mudou. Acesso restrito a **admin**.
+## Parte A — Pedido de Urgência (registro auditável)
 
-## Escopo de tabelas auditadas
-
-- **PCP**: `pedidos` (já auditada via `pedido_audit_log`, reaproveita).
-- **MAP**: `map_producoes`, `map_tinturaria_programacoes`, `map_malharia_entregas`, `map_estoque_pecas`, `map_devolucoes`.
-- **COP**: `cops`, `oficinas`, `cop_perdas`, `pagamentos_consolidados`.
-
-## Como vai funcionar
-
-### 1. Duas novas tabelas de log (mesmo padrão de `pedido_audit_log`)
-
-- `map_audit_log` — colunas: `id`, `tabela` (qual das 5 tabelas MAP), `registro_id` (uuid, sem FK), `identificador` (texto legível: código do fio, oficina, etc.), `acao` (insert/update/delete), `mudancas` (jsonb diff), `linha_completa` (jsonb), `feito_por`, `feito_por_email`, `feito_por_nome`, `feito_em`.
-- `cop_audit_log` — mesma estrutura, para as 4 tabelas COP. `identificador` = número/letra do COP, nome da oficina, etc.
-
-Índices em `tabela`, `registro_id`, `feito_em`. RLS: leitura só para admin.
-
-### 2. Função genérica de log + triggers
-
-Uma função `log_generic_change()` SECURITY DEFINER, parametrizada via `TG_ARGV[0]` (nome do log de destino: `map_audit_log` ou `cop_audit_log`) e `TG_ARGV[1]` (nome da coluna a usar como identificador, ex: `codigo`, `numero`, `nome`).
-
-Trigger `AFTER INSERT OR UPDATE OR DELETE` em cada uma das 9 tabelas MAP+COP. Cada trigger passa seus 2 argumentos. Ignora `updated_at` no diff. Não grava se nada relevante mudou.
-
-### 3. Server function `getAuditLog`
-
-`src/lib/audit-log.functions.ts` (`requireSupabaseAuth` + checagem `has_role('admin')` no handler; retorna 403 se não for admin).
-
-Parâmetros:
-- `area`: `'pcp' | 'map' | 'cop'`
-- `busca?`: texto (procura em `identificador`, `orcamento`, `pedido_olist`)
-- `usuarioId?`: uuid
-- `acao?`: `'insert' | 'update' | 'delete'`
-- `dataInicio?`, `dataFim?`: ISO
-- `page`: número (default 1), 200 por página
-
-Retorna `{ entries, total, page, pageSize: 200 }`. PCP consulta `pedido_audit_log`; MAP/COP consultam suas respectivas tabelas.
-
-### 4. Nova aba em cada área master
-
-- `src/components/pcp/HistoricoTab.tsx`
-- `src/components/map/HistoricoMapTab.tsx`
-- `src/components/cop/HistoricoCopTab.tsx`
-
-Componente compartilhado `src/components/shared/AuditLogView.tsx` que recebe `area` e renderiza:
-- Barra de filtros: campo busca, dropdown usuário (populado via `profiles`), dropdown ação, dois datepickers (início/fim), botão limpar filtros.
-- Timeline paginada (reaproveita visual do `HistoricoPedidoDialog` existente: badge de ação, autor, data/hora, diff campo-a-campo com labels PT-BR).
-- Cada entrada MAP/COP mostra também qual tabela ("Produção", "Tinturaria", "Estoque de peças", "COP", "Oficina", etc.) via mapa de labels.
-- Paginação simples (Anterior/Próximo + "página X de Y").
-
-Estado dos filtros vive na URL via `validateSearch` (search params) para o admin poder compartilhar link filtrado.
-
-### 5. Registro das abas + gate admin
-
-Nas 3 rotas master (`_authenticated/index.tsx` = PCP, `/map`, `/cop`), adicionar novo `TabsTrigger` **"Histórico"** que só renderiza quando `useIsAdmin()` for `true`. Se um não-admin navegar direto para `?tab=historico`, mostra "Acesso restrito".
-
-## Ordem de implementação
-
-```text
-1. Migration: cria map_audit_log + cop_audit_log (com GRANT + RLS admin-only),
-   cria log_generic_change(), cria 9 triggers.
-2. Aguardar aprovação + regen de types.
-3. src/lib/audit-log.functions.ts (getAuditLog paginado com filtros).
-4. src/components/shared/AuditLogView.tsx (filtros + timeline + paginação).
-5. HistoricoTab.tsx em pcp/, map/, cop/ (wrappers com area="pcp|map|cop").
-6. Adicionar TabsTrigger "Histórico" nas 3 rotas master, gated por useIsAdmin.
-7. Testar: editar produção MAP → aparece no Histórico MAP; deletar COP →
-   aparece no Histórico COP; filtro por usuário e período funcionando.
+### A1. Migração (aditiva)
+Novo arquivo `supabase/migrations/<timestamp>_cops_urgencias.sql`:
+```sql
+ALTER TABLE public.cops
+  ADD COLUMN IF NOT EXISTS urgencias jsonb NOT NULL DEFAULT '[]'::jsonb;
 ```
+Nada além disso. Sem índices, triggers, policies ou grants novos.
 
-## Observações
+### A2. Tipos em `src/lib/cop.ts` (só adições)
+- `CopUrgenciaLinha = { modelo; cor }`
+- `CopUrgencia = { em; por; observacao; linhas }`
+- Campo `urgencias: CopUrgencia[]` no tipo `Cop`
+- Helper `linhaUrgente(urgencias, modelo, cor): boolean`
 
-- **Não retroage**: só grava dali pra frente. Dados antigos não aparecem.
-- Custo em performance: uma linha inserida por mutação. Índices garantem consulta rápida.
-- MAP/COP não têm campos "orçamento"/"olist" como pedidos; o `identificador` textual (código do fio, nº do COP, nome da oficina) é o que aparece na busca e na timeline.
-- Labels PT-BR dos campos são estendidas no `AuditLogView` cobrindo também colunas MAP/COP (`gramatura`, `qtd_kg`, `oficina_id`, `pagamento_status` etc.).
-- Se depois quiser expor histórico para gestor também, é só afrouxar o gate — a estrutura de dados já está pronta.
+### A3. Novo `src/components/cop/PedirUrgenciaDialog.tsx`
+Segue padrão visual do `RegistrarPerdaDialog`:
+- Lista linhas modelo+cor do romaneio (agrupadas com a mesma função já usada na grade); checkbox por linha; linhas 100% recebidas ficam desabilitadas com nota "completa".
+- Textarea `uppercase` de observação, obrigatória.
+- Botão confirmar desabilitado se observação vazia ou nenhuma linha marcada.
+- Ao confirmar: `append` no array `urgencias` (imutável, nunca sobrescreve) e update apenas de `urgencias` (+ `updated_at`/`updated_by` seguindo o padrão do arquivo). Invalida `["cops"]`.
+
+### A4. Indicadores em `RomaneioTab.tsx`
+- Ícone `Flame` vermelho `h-3.5 w-3.5 text-red-600` ao lado do modelo nas linhas urgentes da grade "Peças do Romaneio (do Corte)"; esmaece (`text-muted-foreground`) quando aquela linha já está 100% recebida.
+- Badge `URGÊNCIA` (ou `URGÊNCIA ×N`) `bg-red-100 text-red-800 border border-red-300` no cabeçalho do editor perto do status.
+- Mesmo badge compacto na coluna Romaneio da listagem + `Flame` vermelho nas linhas modelo+cor urgentes. Ordenação/filtros da listagem **não** mudam.
+- Feed de "Histórico" existente ganha os registros de urgência (badge vermelho `urgência`), ordenado por data, com Dialog de detalhe somente leitura listando linhas e observação completa.
+
+## Parte B — Uniformização dos botões do Romaneio
+
+### B1. `src/hooks/use-cop-color-settings.ts`
+- Adiciona chaves `corrigir_corte`, `registrar_perda`, `pedir_urgencia` em `CopBotaoKey` e `DEFAULT_COP_BOTAO_COLORS` com os defaults do prompt.
+- Corrige o loop de `mergeSettings` para iterar `Object.keys(DEFAULT_COP_BOTAO_COLORS)` em vez da lista hardcoded (bug fix aditivo; cores já salvas continuam preservadas).
+
+### B2. Rodapé do editor do romaneio em `RomaneioTab.tsx`
+Todos os botões em uma linha só: `flex flex-wrap items-center gap-2`, sem divisão esquerda/direita, na ordem:
+1. `romaneio-XXXX.pdf` (condicional atual)
+2. `Particionar` (condicional atual)
+3. `Corrigir corte` (`canManageCop`, condicional atual)
+4. `Registrar perda` (`canManageCop`, condicional atual)
+5. `Pedir Urgência` — **novo**, ícone `Flame`, visível quando `canManageCop` e status ∈ {`Na Oficina (Costura)`, `Romaneio Parcial`}
+6. `Salvar`
+7. `Enviar para Oficina`
+8. `Entrega de Romaneio`
+
+Padrão uniforme: `h-10 w-[185px] justify-center truncate`, ícone `h-4 w-4 mr-1`, cor 100% via `style={btnStyle(key)}`. **Removo todas as classes de cor hardcoded** (`border-orange-400`, `bg-yellow-400`, etc.). Estados `disabled`/`title` de cada botão permanecem idênticos aos atuais.
+
+### B3. `src/components/cop/CopConfigPanel.tsx`
+Acrescento ao array `BOTOES` as 7 entradas listadas no prompt (`baixar_pdf`, `particionar`, `corrigir_corte`, `registrar_perda`, `pedir_urgencia`, `enviar_oficina`, `entrega_romaneio`) com os labels indicados. Nada é removido/renomeado.
+
+## Arquivos alterados (escopo estrito)
+- `supabase/migrations/<novo>.sql` (A1)
+- `src/lib/cop.ts` (A2, só adições)
+- `src/components/cop/PedirUrgenciaDialog.tsx` (novo, A3)
+- `src/components/cop/RomaneioTab.tsx` (A4 + B2)
+- `src/hooks/use-cop-color-settings.ts` (B1)
+- `src/components/cop/CopConfigPanel.tsx` (B3)
+
+Não toco em: `src/lib/cop-saldos.ts`, `src/lib/pedidos.ts`, PCP, MAP, PDF do romaneio, lógica de recebimento/perdas/pagamento/particionamento.
+
+## O que NÃO faço
+- Não mudo status, datas, previsões, ordenação, filtros.
+- Não envio notificação/e-mail/WhatsApp.
+- Não crio tabela nova nem altero RLS.
+- Não altero o PDF do romaneio.
+- Não altero comportamento/condições dos botões existentes — só a aparência.
+
+## Perguntas antes de codar
+Nenhuma — o prompt é exaustivo. Só sigo após sua aprovação explícita.

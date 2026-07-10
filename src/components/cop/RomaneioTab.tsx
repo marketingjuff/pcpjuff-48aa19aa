@@ -13,16 +13,16 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react";
+import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2, AlertTriangle, ArrowUp, ArrowDown, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { useCanAccessCop } from "@/hooks/use-role";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
-  type HistoricoRecebimento, type HistoricoPerda, type CopPerdaLinha,
+  type HistoricoRecebimento, type HistoricoPerda, type CopPerdaLinha, type CopUrgencia, type CopUrgenciaLinha,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, totalRecebidas,
   todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
-  getRecebida, getPerda, colunasTamanhos, mesclarPerdasEmObservacoes,
+  getRecebida, getPerda, colunasTamanhos, mesclarPerdasEmObservacoes, linhaUrgente,
 } from "@/lib/cop";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
@@ -30,6 +30,7 @@ import { abrirRomaneioParaImpressao } from "@/lib/romaneio-pdf";
 import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
 import { ParticionarRomaneioDialog } from "./ParticionarRomaneioDialog";
 import { RegistrarPerdaDialog } from "./RegistrarPerdaDialog";
+import { PedirUrgenciaDialog } from "./PedirUrgenciaDialog";
 import { cargaPorOficina } from "@/lib/cop-oficinas";
 
 function agruparPorModeloCor(pecas: CopPeca[]): { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] }[] {
@@ -49,6 +50,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   const { etapaStyle, btnStyle } = useCopColorSettings();
   const canManageCop = useCanAccessCop();
   const [showPerda, setShowPerda] = useState(false);
+  const [showUrgencia, setShowUrgencia] = useState(false);
 
   const { data: cops = [], isLoading } = useQuery({
 
@@ -86,7 +88,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   const [busca, setBusca] = useState("");
   const [showEntrega, setShowEntrega] = useState(false);
   const [showParticionar, setShowParticionar] = useState(false);
-  const [selectedHist, setSelectedHist] = useState<HistoricoRecebimento | HistoricoPerda | null>(null);
+  const [selectedHist, setSelectedHist] = useState<any | null>(null);
   const [sortKey, setSortKey] = useState<"numero" | "status" | "oficina" | "recebimento">("numero");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const toggleSort = (k: typeof sortKey) => {
@@ -248,6 +250,32 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao registrar perdas"),
   });
+
+  const salvarUrgencia = useMutation({
+    mutationFn: async ({ cop, obs, linhas }: { cop: Cop; obs: string; linhas: CopUrgenciaLinha[] }) => {
+      const { data: ses } = await supabase.auth.getUser();
+      const registro: CopUrgencia = {
+        em: new Date().toISOString(),
+        por: ses.user?.id ?? null,
+        observacao: obs,
+        linhas,
+      };
+      const proximas = [...(cop.urgencias ?? []), registro];
+      const { error } = await supabase
+        .from("cops" as any)
+        .update({ urgencias: proximas as any } as any)
+        .eq("id", cop.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cops"] });
+      toast.success("Urgência registrada.");
+      setShowUrgencia(false);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao registrar urgência"),
+  });
+
+
 
 
   function patchDraftToCop(): Partial<Cop> {
@@ -491,9 +519,20 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                     )}
                   </div>
                 </div>
-                <span className="px-2 py-1 rounded-md text-xs font-medium border" style={etapaStyle(selected.status)}>
-                  {selected.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  {(selected.urgencias?.length ?? 0) > 0 && (
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-red-100 text-red-800 border border-red-300"
+                      title={`${selected.urgencias.length} pedido(s) de urgência registrado(s)`}
+                    >
+                      <Flame className="h-3.5 w-3.5" />
+                      URGÊNCIA{selected.urgencias.length > 1 ? ` ×${selected.urgencias.length}` : ""}
+                    </span>
+                  )}
+                  <span className="px-2 py-1 rounded-md text-xs font-medium border" style={etapaStyle(selected.status)}>
+                    {selected.status}
+                  </span>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -565,9 +604,30 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                           {grupos.map((g, i) => {
                             const hex = corHex(g.cor); const fg = corTextoSobre(hex);
                             const byTam = new Map(g.tamanhos.map((t) => [t.tamanho, t.qtd]));
+                            const urgente = linhaUrgente(selected.urgencias, g.modelo, g.cor);
+                            const qtdLinha = g.tamanhos.reduce((s, t) => s + (Number(t.qtd) || 0), 0);
+                            const recLinha = g.tamanhos.reduce(
+                              (s, t) => s + getRecebida(recebidas, g.modelo, g.cor, t.tamanho),
+                              0,
+                            );
+                            const perdaLinhaTot = g.tamanhos.reduce(
+                              (s, t) => s + getPerda(selected.perdas ?? [], g.modelo, g.cor, t.tamanho),
+                              0,
+                            );
+                            const linhaCompleta = qtdLinha > 0 && (recLinha + perdaLinhaTot) >= qtdLinha;
                             return (
                               <tr key={i} className="border-t">
-                                <td className="p-2">{g.modelo}</td>
+                                <td className="p-2">
+                                  <span className="inline-flex items-center gap-1" title={urgente ? "Urgência solicitada" : undefined}>
+                                    {urgente && (
+                                      <Flame
+                                        className={`h-3.5 w-3.5 ${linhaCompleta ? "text-muted-foreground" : "text-red-600"}`}
+                                        aria-label="Urgência solicitada"
+                                      />
+                                    )}
+                                    {g.modelo}
+                                  </span>
+                                </td>
                                 <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span></td>
                                 {cols.map((tam) => {
                                   const qtd = byTam.get(tam) ?? 0;
@@ -614,74 +674,95 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                 />
               </div>
 
-              {/* Botões */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  {selected.romaneio_enviado_em && (
-                    <Button
-                      variant="outline"
-                      style={btnStyle("baixar_pdf")}
-                      onClick={() => abrirRomaneioParaImpressao(selected, oficina, cops)}
-                    >
-                      <FileDown className="h-4 w-4 mr-1" />
-                      romaneio-{formatCopNumero(numeroBaseCop(selected, cops))}{selected.letra ?? ""}.pdf
-                    </Button>
-                  )}
-                  {podeParticionar && (
-                    <Button
-                      style={btnStyle("particionar")}
-                      onClick={() => setShowParticionar(true)}
-                      title="Particionar por letra"
-                    >
-                      <Split className="h-4 w-4 mr-1" /> Particionar (nova letra {letraNova})
-                    </Button>
-                  )}
-                  {canManageCop && (
-                    <Button
-                      variant="outline"
-                      className="border-orange-400 text-orange-700 hover:bg-orange-50"
-                      onClick={() => corrigirCorte.mutate(selected)}
-                      disabled={corrigirCorte.isPending || emCorrecao}
-                      title="Liberar este COP para edição não-destrutiva no Corte (mantém oficina, datas, recebidas e pagamento)"
-                    >
-                      <Undo2 className="h-4 w-4 mr-1" /> Corrigir corte
-                    </Button>
-                  )}
-                  {canManageCop && (
-                    <Button
-                      className="bg-yellow-400 hover:bg-yellow-500 text-black"
-                      onClick={() => setShowPerda(true)}
-                      disabled={!selected.pecas?.length}
-                      title="Registrar peças perdidas neste romaneio"
-                    >
-                      <AlertTriangle className="h-4 w-4 mr-1" /> Registrar perda
-                    </Button>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button style={btnStyle("atualizar")} onClick={handleAtualizar} disabled={salvar.isPending}>
-                    Salvar
-                  </Button>
+              {/* Botões — linha única, largura/altura uniformes, cores 100% via btnStyle */}
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                {selected.romaneio_enviado_em && (
                   <Button
-                    style={btnStyle("enviar_oficina")}
-                    onClick={handleEnviarOficina}
-                    disabled={salvar.isPending || (selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio")}
-                    title={(selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio") ? "Romaneio já foi enviado" : "Enviar para a oficina"}
+                    style={btnStyle("baixar_pdf")}
+                    onClick={() => abrirRomaneioParaImpressao(selected, oficina, cops)}
+                    className="h-10 w-[185px] justify-center truncate"
                   >
-                    <Send className="h-4 w-4 mr-1" /> Enviar para Oficina
+                    <FileDown className="h-4 w-4 mr-1" />
+                    <span className="truncate">romaneio-{formatCopNumero(numeroBaseCop(selected, cops))}{selected.letra ?? ""}.pdf</span>
                   </Button>
+                )}
+                {podeParticionar && (
                   <Button
-                    style={btnStyle("entrega_romaneio")}
-                    onClick={() => setShowEntrega(true)}
-                    disabled={salvar.isPending
-                      || (selected.status !== "Na Oficina (Costura)"
-                          && selected.status !== "Romaneio Parcial"
-                          && selected.status !== "Romaneio Completo")}
+                    style={btnStyle("particionar")}
+                    onClick={() => setShowParticionar(true)}
+                    title="Particionar por letra"
+                    className="h-10 w-[185px] justify-center truncate"
                   >
-                    <PackageOpen className="h-4 w-4 mr-1" /> Entrega de Romaneio
+                    <Split className="h-4 w-4 mr-1" />
+                    <span className="truncate">Particionar ({letraNova})</span>
                   </Button>
-                </div>
+                )}
+                {canManageCop && (
+                  <Button
+                    style={btnStyle("corrigir_corte")}
+                    onClick={() => corrigirCorte.mutate(selected)}
+                    disabled={corrigirCorte.isPending || emCorrecao}
+                    title="Liberar este COP para edição não-destrutiva no Corte (mantém oficina, datas, recebidas e pagamento)"
+                    className="h-10 w-[185px] justify-center truncate border"
+                  >
+                    <Undo2 className="h-4 w-4 mr-1" />
+                    <span className="truncate">Corrigir corte</span>
+                  </Button>
+                )}
+                {canManageCop && (
+                  <Button
+                    style={btnStyle("registrar_perda")}
+                    onClick={() => setShowPerda(true)}
+                    disabled={!selected.pecas?.length}
+                    title="Registrar peças perdidas neste romaneio"
+                    className="h-10 w-[185px] justify-center truncate"
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    <span className="truncate">Registrar perda</span>
+                  </Button>
+                )}
+                {canManageCop && (selected.status === "Na Oficina (Costura)" || selected.status === "Romaneio Parcial") && (
+                  <Button
+                    style={btnStyle("pedir_urgencia")}
+                    onClick={() => setShowUrgencia(true)}
+                    disabled={salvarUrgencia.isPending || !selected.pecas?.length}
+                    title="Registrar pedido de urgência à oficina"
+                    className="h-10 w-[185px] justify-center truncate"
+                  >
+                    <Flame className="h-4 w-4 mr-1" />
+                    <span className="truncate">Pedir Urgência</span>
+                  </Button>
+                )}
+                <Button
+                  style={btnStyle("atualizar")}
+                  onClick={handleAtualizar}
+                  disabled={salvar.isPending}
+                  className="h-10 w-[185px] justify-center truncate"
+                >
+                  <span className="truncate">Salvar</span>
+                </Button>
+                <Button
+                  style={btnStyle("enviar_oficina")}
+                  onClick={handleEnviarOficina}
+                  disabled={salvar.isPending || (selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio")}
+                  title={(selected.status !== "Aguardando Oficina" && selected.status !== "Aguardando Romaneio") ? "Romaneio já foi enviado" : "Enviar para a oficina"}
+                  className="h-10 w-[185px] justify-center truncate"
+                >
+                  <Send className="h-4 w-4 mr-1" />
+                  <span className="truncate">Enviar para Oficina</span>
+                </Button>
+                <Button
+                  style={btnStyle("entrega_romaneio")}
+                  onClick={() => setShowEntrega(true)}
+                  disabled={salvar.isPending
+                    || (selected.status !== "Na Oficina (Costura)"
+                        && selected.status !== "Romaneio Parcial"
+                        && selected.status !== "Romaneio Completo")}
+                  className="h-10 w-[185px] justify-center truncate"
+                >
+                  <PackageOpen className="h-4 w-4 mr-1" />
+                  <span className="truncate">Entrega de Romaneio</span>
+                </Button>
               </div>
               </fieldset>
             </CardContent>
@@ -756,7 +837,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                     </table>
                   </div>
 
-                  {/* Histórico de chegadas */}
+                  {/* Histórico de chegadas + perdas + urgências */}
                   {(() => {
                     const chegadas = (selected.historico_recebimentos ?? []).map((h) => ({ ...h, _kind: "recebimento" as const }));
                     let perdas = (selected.historico_perdas ?? []).map((h) => ({ ...h, _kind: "perda" as const }));
@@ -772,11 +853,20 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                         _kind: "perda" as const,
                       }];
                     }
-                    const unificado = [...chegadas, ...perdas].sort((a, b) => (a.em < b.em ? 1 : -1));
+                    const urgencias = (selected.urgencias ?? []).map((u) => ({
+                      em: u.em,
+                      tipo: "urgencia" as const,
+                      observacao: u.observacao,
+                      linhas: u.linhas,
+                      total: u.linhas?.length ?? 0,
+                      _kind: "urgencia" as const,
+                    }));
+                    const unificado: any[] = [...chegadas, ...perdas, ...urgencias].sort((a, b) => (a.em < b.em ? 1 : -1));
                     if (unificado.length === 0) return null;
-                    const badge = (h: HistoricoRecebimento | HistoricoPerda) => {
+                    const badge = (h: any) => {
                       if (h.tipo === "completo") return "bg-green-100 text-green-800";
                       if (h.tipo === "parcial") return "bg-amber-100 text-amber-800";
+                      if (h.tipo === "urgencia") return "bg-red-100 text-red-800";
                       return "bg-purple-100 text-purple-800";
                     };
                     return (
@@ -790,14 +880,17 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                               onClick={() => setSelectedHist(h)}
                               title="Clique para ver o detalhe"
                             >
-                              <span>
+                              <span className="min-w-0 flex-1 truncate">
                                 <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] mr-1 ${badge(h)}`}>
                                   {h.tipo}
                                 </span>
                                 {new Date(h.em).toLocaleString("pt-BR")}
                                 {h._kind === "recebimento" && h.letra && <> · letra <b>{h.letra}</b></>}
+                                {h._kind === "urgencia" && h.observacao && (
+                                  <span className="ml-1 text-muted-foreground">— {h.observacao}</span>
+                                )}
                               </span>
-                              <span className={`tabular-nums font-semibold ${h._kind === "perda" ? "text-purple-700" : ""}`}>
+                              <span className={`tabular-nums font-semibold shrink-0 ${h._kind === "perda" ? "text-purple-700" : h._kind === "urgencia" ? "text-red-700" : ""}`}>
                                 {h._kind === "perda" ? "−" : ""}{h.total}
                               </span>
                             </li>
@@ -807,23 +900,73 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                     );
                   })()}
 
+
                   <Dialog open={!!selectedHist} onOpenChange={(o) => !o && setSelectedHist(null)}>
                     <DialogContent className="max-w-lg">
                       <DialogHeader>
-                        <DialogTitle>{selectedHist?.tipo === "perda" ? "Perdas registradas" : "Peças entregues"}</DialogTitle>
+                        <DialogTitle>
+                          {selectedHist?.tipo === "perda"
+                            ? "Perdas registradas"
+                            : selectedHist?.tipo === "urgencia"
+                              ? "Pedido de urgência"
+                              : "Peças entregues"}
+                        </DialogTitle>
                         <DialogDescription>
                           {selectedHist && (
                             <span>
                               {new Date(selectedHist.em).toLocaleString("pt-BR")} — {" "}
-                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] ${selectedHist.tipo === "completo" ? "bg-green-100 text-green-800" : selectedHist.tipo === "parcial" ? "bg-amber-100 text-amber-800" : "bg-purple-100 text-purple-800"}`}>
+                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] ${
+                                selectedHist.tipo === "completo" ? "bg-green-100 text-green-800" :
+                                selectedHist.tipo === "parcial" ? "bg-amber-100 text-amber-800" :
+                                selectedHist.tipo === "urgencia" ? "bg-red-100 text-red-800" :
+                                "bg-purple-100 text-purple-800"
+                              }`}>
                                 {selectedHist.tipo}
                               </span>
-                              {selectedHist.tipo !== "perda" && (selectedHist as HistoricoRecebimento).letra && <> · letra <b>{(selectedHist as HistoricoRecebimento).letra}</b></>}
+                              {selectedHist.tipo !== "perda" && selectedHist.tipo !== "urgencia" && (selectedHist as HistoricoRecebimento).letra && <> · letra <b>{(selectedHist as HistoricoRecebimento).letra}</b></>}
                             </span>
                           )}
                         </DialogDescription>
                       </DialogHeader>
-                      {selectedHist && (
+                      {selectedHist && selectedHist.tipo === "urgencia" ? (
+                        <div className="space-y-3">
+                          <div>
+                            <div className="text-xs font-semibold mb-1">Observação</div>
+                            <div className="rounded-md border bg-muted/20 p-2 text-sm whitespace-pre-wrap">
+                              {selectedHist.observacao || "—"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs font-semibold mb-1">Linhas cobradas</div>
+                            <div className="rounded-md border overflow-hidden">
+                              <table className="w-full text-xs">
+                                <thead className="bg-muted/40">
+                                  <tr>
+                                    <th className="p-2 text-left">Modelo</th>
+                                    <th className="p-2 text-left">Cor</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(selectedHist.linhas ?? []).map((l: CopUrgenciaLinha, idx: number) => {
+                                    const hex = corHex(l.cor); const fg = corTextoSobre(hex);
+                                    return (
+                                      <tr key={idx} className="border-t">
+                                        <td className="p-2">{l.modelo}</td>
+                                        <td className="p-2">
+                                          <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{l.cor}</span>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                  {(selectedHist.linhas ?? []).length === 0 && (
+                                    <tr><td colSpan={2} className="p-3 text-center text-muted-foreground">Nenhuma linha.</td></tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      ) : selectedHist && (
                         <div className="rounded-md border overflow-hidden">
                           <table className="w-full text-xs">
                             <thead className="bg-muted/40">
@@ -860,6 +1003,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                       )}
                     </DialogContent>
                   </Dialog>
+
 
 
                   {(completoTotal || selected.status === "Romaneio Completo") && (
@@ -939,6 +1083,16 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             perdas={(selected.perdas as CopPerdaLinha[]) ?? []}
             onConfirm={(perdas) => salvarPerdas.mutate({ cop: selected, perdas })}
             disabled={salvarPerdas.isPending}
+          />
+          <PedirUrgenciaDialog
+            open={showUrgencia}
+            onOpenChange={setShowUrgencia}
+            rotulo={rotuloRomaneio(selected, cops)}
+            pecas={selected.pecas || []}
+            recebidas={recebidas}
+            perdas={(selected.perdas as CopPerdaLinha[]) ?? []}
+            onConfirm={(obs, linhas) => salvarUrgencia.mutate({ cop: selected, obs, linhas })}
+            disabled={salvarUrgencia.isPending}
           />
         </>
       )}
@@ -1164,7 +1318,20 @@ function RomaneioPecasTable({
 
                 {i === 0 && (
                   <>
-                    <td className="p-2 font-semibold tabular-nums align-top" rowSpan={span}>{rotuloRomaneio(c, cops)}</td>
+                    <td className="p-2 font-semibold tabular-nums align-top" rowSpan={span}>
+                      <div className="flex flex-col gap-1">
+                        <span>{rotuloRomaneio(c, cops)}</span>
+                        {(c.urgencias?.length ?? 0) > 0 && (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-100 text-red-800 border border-red-300 w-fit"
+                            title={`${c.urgencias.length} pedido(s) de urgência`}
+                          >
+                            <Flame className="h-3 w-3" />
+                            URGÊNCIA{c.urgencias.length > 1 ? ` ×${c.urgencias.length}` : ""}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-2 align-top" rowSpan={span}>{ofiNome}</td>
                     <td className="p-2 align-top" rowSpan={span}>
                       <span className="px-2 py-0.5 rounded text-xs border" style={etapaStyle(c.status)}>{c.status}</span>
@@ -1173,7 +1340,17 @@ function RomaneioPecasTable({
                 )}
                 {g ? (
                   <>
-                    <td className="px-2 py-1 whitespace-nowrap text-xs">{g.modelo}</td>
+                    <td className="px-2 py-1 whitespace-nowrap text-xs">
+                      {(() => {
+                        const urg = linhaUrgente(c.urgencias, g.modelo, g.cor);
+                        return (
+                          <span className="inline-flex items-center gap-1" title={urg ? "Urgência solicitada" : undefined}>
+                            {urg && <Flame className="h-3 w-3 text-red-600" aria-label="Urgência solicitada" />}
+                            {g.modelo}
+                          </span>
+                        );
+                      })()}
+                    </td>
                     <td className="px-2 py-1">
                       {(() => {
                         const hex = corHex(g.cor); const fg = corTextoSobre(hex);

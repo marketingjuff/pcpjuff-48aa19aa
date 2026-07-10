@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { CSSProperties } from "react";
 
 export type ColorPair = { fg: string; bg: string };
-export type CopBotaoKey = "atualizar" | "mandar_romaneio" | "dividir_corte" | "voltar" | "enviar_oficina" | "entrega_romaneio" | "particionar" | "baixar_pdf" | "conferir" | "dar_baixa" | "liberar_pagamento" | "marcar_pago";
+export type CopBotaoKey = "atualizar" | "mandar_romaneio" | "dividir_corte" | "voltar" | "enviar_oficina" | "entrega_romaneio" | "particionar" | "baixar_pdf" | "conferir" | "dar_baixa" | "liberar_pagamento" | "marcar_pago" | "corrigir_corte" | "registrar_perda" | "pedir_urgencia";
 
 export const COP_ETAPAS_CONFIGURAVEIS: string[] = [
   "Aguardando Risco",
@@ -44,6 +44,9 @@ export const DEFAULT_COP_BOTAO_COLORS: Record<CopBotaoKey, ColorPair> = {
   dar_baixa:        { bg: "#ff8c2f", fg: "#ffffff" },
   liberar_pagamento:{ bg: "#2563eb", fg: "#ffffff" },
   marcar_pago:      { bg: "#15803d", fg: "#ffffff" },
+  corrigir_corte:   { bg: "#ffffff", fg: "#c2410c" },
+  registrar_perda:  { bg: "#facc15", fg: "#111827" },
+  pedir_urgencia:   { bg: "#dc2626", fg: "#ffffff" },
 };
 
 export type CopColorSettings = {
@@ -69,7 +72,7 @@ function mergeSettings(raw: any): CopColorSettings {
       }
     }
     if (raw.botoes && typeof raw.botoes === "object") {
-      for (const k of ["atualizar","mandar_romaneio","dividir_corte","voltar","enviar_oficina","entrega_romaneio","particionar","baixar_pdf","conferir"] as CopBotaoKey[]) {
+      for (const k of Object.keys(DEFAULT_COP_BOTAO_COLORS) as CopBotaoKey[]) {
         const v = raw.botoes[k];
         if (v && typeof v.bg === "string" && typeof v.fg === "string") botoes[k] = { bg: v.bg, fg: v.fg };
       }

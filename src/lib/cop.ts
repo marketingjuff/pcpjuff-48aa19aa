@@ -103,12 +103,41 @@ export type Cop = {
   historico_recebimentos: HistoricoRecebimento[];
   historico_perdas: HistoricoPerda[];
   perdas: CopPerdaLinha[];
+  urgencias: CopUrgencia[];
   corte_em_correcao: boolean;
   created_at: string;
   updated_at: string;
   created_by: string | null;
   updated_by: string | null;
 };
+
+/** Linha (modelo+cor) marcada como urgente em uma cobrança. */
+export type CopUrgenciaLinha = { modelo: string; cor: string };
+
+/** Registro de um pedido de urgência à oficina. Imutável após criado. */
+export type CopUrgencia = {
+  em: string;                    // ISO timestamp
+  por: string | null;            // auth user id
+  observacao: string;            // obrigatória
+  linhas: CopUrgenciaLinha[];    // linhas cobradas (mínimo 1)
+};
+
+/** Retorna true se a linha (modelo, cor) foi marcada como urgente em alguma cobrança. */
+export function linhaUrgente(
+  urgencias: CopUrgencia[] | null | undefined,
+  modelo: string,
+  cor: string,
+): boolean {
+  if (!urgencias || urgencias.length === 0) return false;
+  const m = String(modelo).toUpperCase();
+  const c = String(cor).toUpperCase();
+  for (const u of urgencias) {
+    for (const l of u.linhas ?? []) {
+      if (String(l.modelo).toUpperCase() === m && String(l.cor).toUpperCase() === c) return true;
+    }
+  }
+  return false;
+}
 
 /** Item de detalhe salvo no jsonb `pagamentos_consolidados.detalhes`. */
 export type PagamentoConsolidadoDetalhe = {
