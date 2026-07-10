@@ -675,7 +675,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
               </div>
 
               {/* Botões — linha única, largura/altura uniformes, cores 100% via btnStyle */}
-              <div className="flex flex-wrap items-center gap-2 pt-2">
+              <div className="flex flex-nowrap items-stretch gap-2 pt-2">
                 {selected.romaneio_enviado_em && (
                   <Button
                     style={btnStyle("baixar_pdf")}
