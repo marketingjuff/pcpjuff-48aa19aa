@@ -937,6 +937,19 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                               {selectedHist.observacao || "—"}
                             </div>
                           </div>
+                          {((selectedHist as any).pedidos?.length ?? 0) > 0 && (
+                            <div>
+                              <div className="text-xs font-semibold mb-1">Pedidos solicitando</div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {((selectedHist as any).pedidos as CopUrgenciaPedido[]).map((p) => (
+                                  <span key={p.pedidoId} className="inline-flex items-center gap-1 rounded border bg-muted/50 px-2 py-0.5 text-xs">
+                                    <b>{p.orcamento ?? "—"}</b>
+                                    {p.pedidoOlist && <span className="text-muted-foreground">Olist {p.pedidoOlist}</span>}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           <div>
                             <div className="text-xs font-semibold mb-1">Linhas cobradas</div>
                             <div className="rounded-md border overflow-hidden">
