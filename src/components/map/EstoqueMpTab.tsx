@@ -33,23 +33,71 @@ const STATUS_LIST: MapEstoquePecaStatus[] = [
 
 const STATUS_TOTAL: MapEstoquePecaStatus[] = ["Fechada", "Aberta", "Corte"];
 
+const LARG_DEFAULT = 1.8;
+
+/** Normaliza qualquer entrada para o formato X,XX (1 dígito antes, 2 depois).
+ *  Ex: "18,0" | "180" | "1,8" | "1.80" -> 1.80
+ *      "17" | "170" | "17,0" -> 1.70
+ */
 function parseLarg(raw: string | null): number | null {
   if (raw == null) return null;
-  const cleaned = String(raw).replace(/[^\d,.]/g, "");
-  if (!cleaned) return null;
-  if (cleaned.includes(",") || cleaned.includes(".")) {
-    const n = Number(cleaned.replace(",", "."));
-    return Number.isFinite(n) ? n : null;
-  }
-  const digits = cleaned.slice(0, 4);
-  if (digits.length === 1) return Number(digits);
-  const n = Number(`${digits[0]}.${digits.slice(1)}`);
+  const digits = String(raw).replace(/\D/g, "");
+  if (!digits) return null;
+  const first = digits[0];
+  const rest = digits.slice(1, 3).padEnd(2, "0");
+  const n = Number(`${first}.${rest}`);
   return Number.isFinite(n) ? n : null;
 }
 
 function fmtLarg(n: number | null | undefined): string {
-  if (n == null) return "";
-  return Number(n).toFixed(3).replace(".", ",");
+  const v = n == null ? LARG_DEFAULT : Number(n);
+  return v.toFixed(2).replace(".", ",");
+}
+
+/** Input próprio para largura: default 1,80, formato X,XX, auto-normalização. */
+function LargInput({
+  value,
+  onCommit,
+}: {
+  value: number | null | undefined;
+  onCommit: (n: number) => void | Promise<void>;
+}) {
+  const displayFromValue = (v: number | null | undefined) =>
+    (v == null ? LARG_DEFAULT : Number(v)).toFixed(2).replace(".", ",");
+  const initial = displayFromValue(value);
+  const [v, setV] = useState<string>(initial);
+  useEffect(() => { setV(initial); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [initial]);
+
+  function handleChange(input: string) {
+    // Mantém somente dígitos, no máximo 3.
+    const digits = input.replace(/\D/g, "").slice(0, 3);
+    if (!digits) { setV(""); return; }
+    if (digits.length === 1) setV(digits);
+    else setV(`${digits[0]},${digits.slice(1)}`);
+  }
+
+  async function commit() {
+    const parsed = parseLarg(v);
+    const next = parsed ?? LARG_DEFAULT;
+    const formatted = next.toFixed(2).replace(".", ",");
+    setV(formatted);
+    if (Math.abs(next - (value == null ? LARG_DEFAULT : Number(value))) < 1e-9 && value != null) return;
+    await onCommit(next);
+  }
+
+  return (
+    <Input
+      inputMode="numeric"
+      value={v}
+      onChange={(e) => handleChange(e.target.value)}
+      onBlur={() => { void commit(); }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") { e.preventDefault(); (e.currentTarget as HTMLInputElement).blur(); }
+        if (e.key === "Escape") { setV(initial); (e.currentTarget as HTMLInputElement).blur(); }
+      }}
+      className="h-7 text-[12.5px] px-1.5 text-center"
+    />
+  );
 }
 
 export function EstoqueMpTab() {
