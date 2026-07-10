@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import type { Cop, CopPeca, CopPerdaRegistro, CopPerdaLinha, Oficina } from "@/lib/cop";
-import { formatCopNumero, somarPerdas, subtrairPerdas, somarPecas, STATUS_CORTE } from "@/lib/cop";
+import { formatCopNumero, somarPerdas, subtrairPerdas, somarPecas, STATUS_CORTE, rotuloCop, rotuloCopObj } from "@/lib/cop";
 import { useIsAdmin, useCanAccessCop } from "@/hooks/use-role";
 import { RefazerPerdaDialog, type RefazerCopInput } from "./RefazerPerdaDialog";
 
