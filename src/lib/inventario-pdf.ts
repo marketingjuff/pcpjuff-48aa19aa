@@ -57,7 +57,7 @@ export function abrirInventarioParaImpressao(rows: InventarioRow[]) {
   table.grid th, table.grid td { border: 1px solid #000; padding: 2mm 1.5mm; text-align: center; overflow: hidden; }
   table.grid thead { display: table-header-group; }
   table.grid tr { page-break-inside: avoid; break-inside: avoid; }
-  table.grid th { font-weight: 700; font-size: 9pt; background: #fff; }
+  table.grid th { font-weight: 700; font-size: 8pt; background: #fff; padding: 1.5mm 0.5mm; white-space: nowrap; }
   table.grid td { height: 10mm; }
   table.grid td.hand { background: #fff; }
   col.descanso { width: 20mm; }
