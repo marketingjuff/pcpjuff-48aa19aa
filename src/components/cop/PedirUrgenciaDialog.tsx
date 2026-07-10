@@ -55,6 +55,7 @@ export function PedirUrgenciaDialog({ open, onOpenChange, rotulo, pecas, recebid
   const [obs, setObs] = useState("");
   const [parcialEdit, setParcialEdit] = useState<string | null>(null);
   const [parcialVal, setParcialVal] = useState<string>("");
+  const [pedidosSel, setPedidosSel] = useState<CopUrgenciaPedido[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -62,7 +63,69 @@ export function PedirUrgenciaDialog({ open, onOpenChange, rotulo, pecas, recebid
     setObs("");
     setParcialEdit(null);
     setParcialVal("");
+    setPedidosSel([]);
   }, [open]);
+
+  // Modelo|Cor set do romaneio (usado para filtrar pedidos com peças faltantes compatíveis)
+  const modelosCoresRomaneio = useMemo(() => {
+    const s = new Set<string>();
+    for (const p of pecas) s.add(`${String(p.modelo).toUpperCase()}|${String(p.cor).toUpperCase()}`);
+    return s;
+  }, [pecas]);
+
+  const { data: pedidosIncompletos = [] } = useQuery({
+    queryKey: ["pedidos-incompletos-urgencia"],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pedidos" as any)
+        .select("id, orcamento, pedido_olist, pecas_solicitadas")
+        .eq("status_pecas", "incompleto");
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        orcamento: string | null;
+        pedido_olist: string | null;
+        pecas_solicitadas: PecaSolicitada[] | null;
+      }>;
+    },
+  });
+
+  type PedidoMatch = {
+    id: string;
+    orcamento: string | null;
+    pedido_olist: string | null;
+    faltas: { modelo: string; cor: string; tamanho: string; falta: number }[];
+  };
+
+  const pedidosDisponiveis: PedidoMatch[] = useMemo(() => {
+    const jaAdd = new Set(pedidosSel.map((p) => p.pedidoId));
+    const out: PedidoMatch[] = [];
+    for (const p of pedidosIncompletos) {
+      if (jaAdd.has(p.id)) continue;
+      const faltas: PedidoMatch["faltas"] = [];
+      for (const ps of p.pecas_solicitadas ?? []) {
+        const falta = Math.max(0, (Number(ps.qtd) || 0) - (Number(ps.qtd_enviada) || 0));
+        if (falta <= 0) continue;
+        const k = `${String(ps.modelo).toUpperCase()}|${String(ps.cor).toUpperCase()}`;
+        if (modelosCoresRomaneio.has(k)) {
+          faltas.push({ modelo: ps.modelo, cor: ps.cor, tamanho: ps.tamanho, falta });
+        }
+      }
+      if (faltas.length > 0) out.push({ id: p.id, orcamento: p.orcamento, pedido_olist: p.pedido_olist, faltas });
+    }
+    out.sort((a, b) => String(a.orcamento ?? "").localeCompare(String(b.orcamento ?? "")));
+    return out;
+  }, [pedidosIncompletos, pedidosSel, modelosCoresRomaneio]);
+
+  function adicionarPedido(pedidoId: string) {
+    const p = pedidosDisponiveis.find((x) => x.id === pedidoId);
+    if (!p) return;
+    setPedidosSel((s) => [...s, { pedidoId: p.id, orcamento: p.orcamento, pedidoOlist: p.pedido_olist }]);
+  }
+  function removerPedido(pedidoId: string) {
+    setPedidosSel((s) => s.filter((p) => p.pedidoId !== pedidoId));
+  }
 
   function key(m: string, c: string, t: string) { return `${m}|${c}|${t}`; }
 
@@ -110,11 +173,11 @@ export function PedirUrgenciaDialog({ open, onOpenChange, rotulo, pecas, recebid
     })
     .filter((x): x is CopUrgenciaLinha => x !== null);
 
-  const podeConfirmar = obs.trim().length > 0 && linhasSelecionadas.length > 0 && !disabled;
+  const podeConfirmar = linhasSelecionadas.length > 0 && !disabled;
 
   function confirmar() {
     if (!podeConfirmar) return;
-    onConfirm(obs.trim().toUpperCase(), linhasSelecionadas);
+    onConfirm(obs.trim().toUpperCase(), linhasSelecionadas, pedidosSel);
   }
 
   return (
