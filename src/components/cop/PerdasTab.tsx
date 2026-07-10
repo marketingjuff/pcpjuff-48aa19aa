@@ -429,13 +429,16 @@ export function PerdasTab() {
                     <th className="p-2 text-left">Data</th>
                     <th className="p-2 text-left">COP novo</th>
                     <th className="p-2 text-left">Origem(ns)</th>
-                    <th className="p-2 text-right">Peças</th>
+                    <th className="p-2 text-left">Modelo</th>
+                    <th className="p-2 text-left">Cor</th>
+                    <th className="p-2 text-center">Tam.</th>
+                    <th className="p-2 text-right">Qtd</th>
                     <th className="p-2 text-left">Status</th>
                     {canAccessCop && <th className="p-2"></th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {refacoes.map((f, i) => {
+                  {refacoes.map((f, gIdx) => {
                     const its = (((f as any).refacao_perda_itens as any[]) ?? []);
                     const total = its.reduce((s, x) => s + (x.qtd || 0), 0);
                     const origens = new Set<string>();
@@ -444,31 +447,46 @@ export function PerdasTab() {
                       const orig = copById.get(oid);
                       if (orig) origens.add(`${formatCopNumero(orig.numero)}${orig.letra ?? ""}`);
                     }
-                    return (
-                      <tr key={f.id} className={`border-t ${i % 2 === 1 ? "bg-muted/60" : ""}`}>
-                        <td className="p-2 text-xs">{new Date(f.created_at).toLocaleString("pt-BR")}</td>
-                        <td className="p-2 font-mono">{rotuloCopObj(f)}</td>
-                        <td className="p-2 text-xs">{Array.from(origens).join(", ") || "—"}</td>
-                        <td className="p-2 text-right tabular-nums">{total}</td>
-                        <td className="p-2 text-xs">{f.status}</td>
-                        {canAccessCop && (
-                          <td className="p-2 text-right">
-                            {podeDesfazer(f) ? (
-                              <Button size="sm" variant="ghost" onClick={() => {
-                                if (confirm(`Desfazer refação do COP ${rotuloCopObj(f)}?\nO COP será excluído e as perdas restauradas.`)) {
-                                  desfazerMut.mutate(f);
-                                }
-                              }}>
-
-                                <Undo2 className="h-3 w-3 mr-1" /> Desfazer
-                              </Button>
+                    const rows = its.length > 0 ? its : [{ modelo: "—", cor: "—", tamanho: "—", qtd: 0 }];
+                    return rows.map((linha, i) => {
+                      const hex = corHex(linha.cor); const fg = corTextoSobre(hex);
+                      const first = i === 0;
+                      return (
+                        <tr key={`${f.id}-${i}`} className={`border-t ${gIdx % 2 === 1 ? "bg-muted/60" : ""}`}>
+                          <td className="p-2 text-xs align-top">{first ? new Date(f.created_at).toLocaleString("pt-BR") : ""}</td>
+                          <td className="p-2 font-mono align-top">{first ? rotuloCopObj(f) : ""}</td>
+                          <td className="p-2 text-xs align-top">{first ? (Array.from(origens).join(", ") || "—") : ""}</td>
+                          <td className="p-2">{linha.modelo}</td>
+                          <td className="p-2">
+                            {linha.cor && linha.cor !== "—" ? (
+                              <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{linha.cor}</span>
                             ) : (
-                              <span className="text-[10px] text-muted-foreground">—</span>
+                              "—"
                             )}
                           </td>
-                        )}
-                      </tr>
-                    );
+                          <td className="p-2 text-center">{linha.tamanho}</td>
+                          <td className="p-2 text-right tabular-nums">{linha.qtd || 0}</td>
+                          <td className="p-2 text-xs align-top">{first ? f.status : ""}</td>
+                          {canAccessCop && (
+                            <td className="p-2 text-right align-top">
+                              {first ? (
+                                podeDesfazer(f) ? (
+                                  <Button size="sm" variant="ghost" onClick={() => {
+                                    if (confirm(`Desfazer refação do COP ${rotuloCopObj(f)}?\nO COP será excluído e as perdas restauradas.`)) {
+                                      desfazerMut.mutate(f);
+                                    }
+                                  }}>
+                                    <Undo2 className="h-3 w-3 mr-1" /> Desfazer
+                                  </Button>
+                                ) : (
+                                  <span className="text-[10px] text-muted-foreground">—</span>
+                                )
+                              ) : ""}
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    });
                   })}
                 </tbody>
               </table>
@@ -476,6 +494,7 @@ export function PerdasTab() {
           </CardContent>
         </Card>
       )}
+
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Histórico de perdas</CardTitle></CardHeader>
