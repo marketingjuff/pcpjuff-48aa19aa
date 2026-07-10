@@ -461,7 +461,7 @@ export function PerdasTab() {
                             <div className="flex flex-col gap-0.5">
                               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Perda original</span>
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-mono text-xs">COP {origemRotulo}</span>
+                                <span className="text-xs font-semibold tabular-nums">COP {origemRotulo}</span>
                               </div>
                               <div className="flex items-center gap-1.5 flex-wrap text-xs">
                                 <span className="font-medium">{linha.perda_modelo ?? linha.modelo}</span>
