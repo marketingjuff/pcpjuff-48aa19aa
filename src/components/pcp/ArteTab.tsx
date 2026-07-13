@@ -148,6 +148,28 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   }
   useRegisterSave(handleSave, active);
 
+  const restauradosArte = selected ? restaurarEtapaDoHistorico(selected, "arte") : null;
+  const podeAproveitarArte =
+    !!selected &&
+    !readOnly &&
+    !!episodioAberto(selected) &&
+    restauradosArte !== null;
+
+  function aproveitarHistoricoArte() {
+    if (!selected || !restauradosArte) return;
+    const hoje = new Date();
+    const dd = String(hoje.getDate()).padStart(2, "0");
+    const mm = String(hoje.getMonth() + 1).padStart(2, "0");
+    const nota = `Aproveitado do histórico em ${dd}/${mm}/${hoje.getFullYear()}`;
+    const obsPrev = (form.arte_observacao ?? selected.arte_observacao ?? "").toString();
+    const obsNova = obsPrev.includes(nota) ? obsPrev : (obsPrev ? `${obsPrev}\n${nota}` : nota);
+    onSave({
+      id: selected.id,
+      ...restauradosArte,
+      arte_observacao: obsNova,
+    } as any);
+  }
+
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
     await baixarLayoutPDF(path);
