@@ -340,6 +340,11 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 {!readOnly && (
                   <div className="flex justify-start gap-2 flex-wrap">
                     <UpdateButton onClick={handleSave} disabled={saving}>Salvar Arte</UpdateButton>
+                    {podeAproveitarArte && (
+                      <Button variant="secondary" size="sm" onClick={aproveitarHistoricoArte} disabled={saving} title="Restaurar dados da Arte da última execução antes da refação">
+                        <FastForward className="h-4 w-4 mr-1" /> Já realizado
+                      </Button>
+                    )}
                     <RefacaoViewerButton pedido={selected} />
                   </div>
                 )}
