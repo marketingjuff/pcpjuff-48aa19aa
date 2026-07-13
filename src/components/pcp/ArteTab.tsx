@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Save, Download, AlertTriangle, FilterX } from "lucide-react";
+import { Save, Download, AlertTriangle, FilterX, FastForward } from "lucide-react";
 import { toast } from "sonner";
 import { useHasRole } from "@/hooks/use-role";
 
@@ -33,6 +33,8 @@ import { RefacaoBadge } from "./RefacaoBadge";
 import { CorrecaoEtapaBadge } from "./CorrecaoEtapaBadge";
 import { CorrigirEtapaButton } from "./CorrigirEtapaButton";
 import { isReadOnly } from "./edicao-policy";
+import { restaurarEtapaDoHistorico } from "./refacao-helpers";
+import { episodioAberto } from "@/lib/pedidos";
 
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
@@ -145,6 +147,28 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
     });
   }
   useRegisterSave(handleSave, active);
+
+  const restauradosArte = selected ? restaurarEtapaDoHistorico(selected, "arte") : null;
+  const podeAproveitarArte =
+    !!selected &&
+    !readOnly &&
+    !!episodioAberto(selected) &&
+    restauradosArte !== null;
+
+  function aproveitarHistoricoArte() {
+    if (!selected || !restauradosArte) return;
+    const hoje = new Date();
+    const dd = String(hoje.getDate()).padStart(2, "0");
+    const mm = String(hoje.getMonth() + 1).padStart(2, "0");
+    const nota = `Aproveitado do histórico em ${dd}/${mm}/${hoje.getFullYear()}`;
+    const obsPrev = (form.arte_observacao ?? selected.arte_observacao ?? "").toString();
+    const obsNova = obsPrev.includes(nota) ? obsPrev : (obsPrev ? `${obsPrev}\n${nota}` : nota);
+    onSave({
+      id: selected.id,
+      ...restauradosArte,
+      arte_observacao: obsNova,
+    } as any);
+  }
 
   async function baixarLayout(path: string) {
     const { baixarLayoutPDF } = await import("./shared");
@@ -338,6 +362,11 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 {!readOnly && (
                   <div className="flex justify-start gap-2 flex-wrap">
                     <UpdateButton onClick={handleSave} disabled={saving}>Salvar Arte</UpdateButton>
+                    {podeAproveitarArte && (
+                      <Button variant="secondary" size="sm" onClick={aproveitarHistoricoArte} disabled={saving} title="Restaurar dados da Arte da última execução antes da refação">
+                        <FastForward className="h-4 w-4 mr-1" /> Já realizado
+                      </Button>
+                    )}
                     <RefacaoViewerButton pedido={selected} />
                   </div>
                 )}

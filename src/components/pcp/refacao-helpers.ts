@@ -265,13 +265,20 @@ export function camposAlimparAposInputProducao(pedido: Pedido): Record<string, a
  */
 export function restaurarEtapaDoHistorico(
   pedido: Pedido,
-  etapa: "dtf" | "silk",
+  etapa: "dtf" | "silk" | "arte",
 ): Record<string, any> | null {
   const aberto = episodioAberto(pedido);
   if (!aberto) return null;
   const campos = (aberto.retrato as any)?.campos_apagados as Record<string, any> | undefined;
   if (!campos) return null;
-  const chaves = etapa === "dtf" ? Object.keys(WIPE_DTF) : Object.keys(WIPE_SILK);
+  let chaves: string[];
+  if (etapa === "dtf") chaves = Object.keys(WIPE_DTF);
+  else if (etapa === "silk") chaves = Object.keys(WIPE_SILK);
+  else chaves = [
+    ...Object.keys(WIPE_ARTE_COMUM),
+    ...Object.keys(WIPE_ARTE_DTF),
+    ...Object.keys(WIPE_ARTE_SILK),
+  ];
   const out: Record<string, any> = {};
   let temAlgum = false;
   for (const k of chaves) {
