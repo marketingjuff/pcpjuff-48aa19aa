@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Save, Download, AlertTriangle, FilterX } from "lucide-react";
+import { Save, Download, AlertTriangle, FilterX, FastForward } from "lucide-react";
 import { toast } from "sonner";
 import { useHasRole } from "@/hooks/use-role";
 
@@ -33,6 +33,8 @@ import { RefacaoBadge } from "./RefacaoBadge";
 import { CorrecaoEtapaBadge } from "./CorrecaoEtapaBadge";
 import { CorrigirEtapaButton } from "./CorrigirEtapaButton";
 import { isReadOnly } from "./edicao-policy";
+import { restaurarEtapaDoHistorico } from "./refacao-helpers";
+import { episodioAberto } from "@/lib/pedidos";
 
 import { useDirtyTracker, useRegisterSave, useDirtyForm } from "./dirty-form-context";
 import { formatDateBR } from "@/lib/format";
