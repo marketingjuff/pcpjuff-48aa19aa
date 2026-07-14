@@ -8,55 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, ChevronLeft, ChevronRight, X } from "lucide-react";
 
-type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
-
-// Labels PT-BR de campos (cobre pedidos + tabelas MAP/COP)
-const LABELS: Record<string, string> = {
-  // pedidos
-  pedido_olist: "Pedido Olist", orcamento: "Orçamento", vendedor: "Vendedor",
-  tipo_estampa: "Tipo de estampa", status_pecas: "Status de peças", status_arte: "Status de arte",
-  qtd: "Quantidade", frete: "Frete", uf_entrega: "UF entrega", data_entrega: "Data de entrega",
-  entrada_pedido: "Entrada do pedido", inicio_estamparia: "Início estamparia",
-  termino_estamparia: "Término estamparia", saida_juff: "Saída Juff",
-  dtf_executado: "DTF executado", silk_feito: "Silk feito", embalado: "Embalado",
-  layout_url: "Layout", finalizado_em: "Finalizado em", reaberto: "Reaberto",
-  // map
-  numero: "Número", data_pedido: "Data do pedido", faturar_para: "Faturar para",
-  fornecedor: "Fornecedor", kg_solicitados: "Kg solicitados", nota_fiscal: "Nota fiscal",
-  data_faturamento: "Data faturamento", data_pagamento: "Data pagamento", status: "Status",
-  malharia: "Malharia", quebra_conciliada: "Quebra conciliada", finalizado: "Finalizado",
-  status_malharia: "Status malharia", tinturaria: "Tinturaria", data_programacao: "Data programação",
-  pecas: "Peças", cor: "Cor", kg_enviados: "Kg enviados", kg_recebidos: "Kg recebidos",
-  pecas_recebidas: "Peças recebidas", data_recebimento: "Data recebimento",
-  nota_fiscal_1: "NF 1", nota_fiscal_2: "NF 2", nota_cobertura: "Nota cobertura",
-  kg: "Kg", programacao_id: "Programação ID", producao_id: "Produção ID",
-  numero_peca: "Nº peça", data_entrada: "Data entrada", data_abertura: "Data abertura",
-  alt_inicial: "Alt. inicial", cortes: "Cortes", faturado_para: "Faturado para",
-  data_devolucao: "Data devolução", obs: "Observação", observacoes: "Observações",
-  // cop
-  solicitacao_risco: "Solicitação risco", execucao_risco: "Execução risco",
-  solicitacao_corte: "Solicitação corte", execucao_corte: "Execução corte",
-  observacoes_corte: "Obs. corte", cop_pai_id: "COP pai", corte_dividido: "Corte dividido",
-  oficina_id: "Oficina", data_saida_oficina: "Saída oficina", num_fretes: "Nº fretes",
-  romaneio_enviado_em: "Romaneio enviado em", letra: "Letra",
-  conferido_em: "Conferido em", conferencia: "Conferência",
-  pagamento_status: "Status pagamento", pagamento_liberado_em: "Pgto liberado em",
-  pagamento_pago_em: "Pgto pago em", pagamento_valor_calculado: "Valor pgto",
-  perdas: "Perdas", observacoes_pagamento: "Obs. pagamento",
-  historico_recebimentos: "Hist. recebimentos", corte_em_correcao: "Corte em correção",
-  pagamento_consolidado_id: "Pgto consolidado",
-  // oficinas
-  nome: "Nome", cnpj_cpf: "CNPJ/CPF", endereco: "Endereço", cep: "CEP",
-  valor_frete: "Valor frete", valores_por_modelo: "Valores por modelo",
-  cnpj: "CNPJ", cpf: "CPF", telefone: "Telefone",
-  // cop_perdas
-  etiqueta: "Etiqueta", modelo: "Modelo", tamanho: "Tamanho", motivo: "Motivo",
-  registrado_por: "Registrado por",
-  // pagamentos_consolidados
-  detalhes: "Detalhes", valor_total: "Valor total", observacao: "Observação",
-  pago_por: "Pago por", pago_em: "Pago em",
-};
-const label = (c: string) => LABELS[c] ?? c;
+import { labelCampo, formatValor } from "@/lib/audit-labels";
 
 const TABELA_LABELS: Record<string, string> = {
   pedidos: "Pedido",
@@ -70,23 +22,6 @@ const TABELA_LABELS: Record<string, string> = {
   cop_perdas: "Perda COP",
   pagamentos_consolidados: "Pgto consolidado",
 };
-
-function fmtVal(v: Json): string {
-  if (v === null || v === undefined) return "—";
-  if (typeof v === "boolean") return v ? "sim" : "não";
-  if (typeof v === "string") {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
-      const [y, m, d] = v.split("-"); return `${d}/${m}/${y}`;
-    }
-    if (v.length > 80) return v.slice(0, 80) + "…";
-    return v || "—";
-  }
-  if (typeof v === "number") return String(v);
-  try {
-    const s = JSON.stringify(v);
-    return s.length > 100 ? s.slice(0, 100) + "…" : s;
-  } catch { return String(v); }
-}
 
 function fmtDateTime(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
@@ -293,14 +228,18 @@ export function AuditLogView({ area }: Props) {
               </div>
               {e.acao === "update" && e.mudancas && e.mudancas.length > 0 && (
                 <ul className="mt-1.5 space-y-0.5 text-xs">
-                  {e.mudancas.map((m, i) => (
-                    <li key={i} className="text-muted-foreground">
-                      <span className="text-foreground font-medium">{label(m.campo)}</span>{": "}
-                      <span className="line-through opacity-70">{fmtVal(m.de)}</span>
-                      {" → "}
-                      <span className="text-foreground">{fmtVal(m.para)}</span>
-                    </li>
-                  ))}
+                  {e.mudancas.map((m, i) => {
+                    const de = formatValor(m.campo, m.de as any);
+                    const para = formatValor(m.campo, m.para as any);
+                    return (
+                      <li key={i} className="text-muted-foreground">
+                        <span className="text-foreground font-medium">{labelCampo(m.campo)}</span>{": "}
+                        <span className="line-through opacity-70" title={de.titulo}>{de.texto}</span>
+                        {" → "}
+                        <span className="text-foreground" title={para.titulo}>{para.texto}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </li>

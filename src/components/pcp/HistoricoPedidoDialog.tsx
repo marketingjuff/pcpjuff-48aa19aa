@@ -9,106 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { History, Loader2 } from "lucide-react";
 
-type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
-
-// Dicionário PT-BR dos campos principais
-const LABELS: Record<string, string> = {
-  pedido_olist: "Pedido Olist",
-  orcamento: "Orçamento",
-  vendedor: "Vendedor",
-  tipo_estampa: "Tipo de estampa",
-  status_pecas: "Status de peças",
-  status_arte: "Status de arte",
-  qtd: "Quantidade",
-  frete: "Frete",
-  uf_entrega: "UF de entrega",
-  data_entrega: "Data de entrega",
-  entrada_pedido: "Entrada do pedido",
-  inicio_estamparia: "Início estamparia",
-  termino_estamparia: "Término estamparia",
-  saida_juff: "Saída Juff",
-  data_saida_juff: "Data saída Juff",
-  acabamento_data: "Acabamento (data)",
-  arte_data: "Arte (data)",
-  dtf_data_executada: "DTF executado (data)",
-  silk_data_executada: "Silk executado (data)",
-  dtf_estampado: "DTF estampado",
-  dtf_impresso: "DTF impresso",
-  dtf_executado: "DTF executado",
-  dtf_cortado: "DTF cortado",
-  silk_feito: "Silk feito",
-  fotolito_impresso: "Fotolito impresso",
-  fotolito_executado: "Fotolito executado",
-  tela_gravada: "Tela gravada",
-  embalado: "Embalado",
-  necessita_vetorizacao: "Necessita vetorização",
-  vetorizacao_executada: "Vetorização executada",
-  quem_bateu_dtf: "Quem bateu DTF",
-  quem_bateu_silk: "Quem bateu Silk",
-  responsavel_acabamento: "Responsável acabamento",
-  layout_url: "Layout",
-  finalizado_em: "Finalizado em",
-  tempo_producao: "Tempo de produção",
-  tempo_frete: "Tempo de frete",
-  responsavel_conferencia: "Responsável conferência",
-  forma_pagamento: "Forma de pagamento",
-  nf_emitida: "NF emitida",
-  expedicao_entrou_em: "Entrou na expedição",
-  exp_cobranca_pagamento: "Exp. cobrança pgto",
-  exp_pagamento: "Exp. pagamento",
-  exp_etiqueta: "Exp. etiqueta",
-  exp_frete_solicitado: "Exp. frete solicitado",
-  exp_despachado: "Exp. despachado",
-  exp_despachado_em: "Exp. despachado em",
-  exp_observacoes: "Exp. observações",
-  reaberto: "Reaberto",
-  data_entrega_proposta: "Data entrega proposta",
-  dtf_cortado_data: "DTF cortado (data)",
-  vetorizacao_dtf: "Vetorização DTF",
-  vetorizacao_silk: "Vetorização Silk",
-  dias_secagem: "Dias de secagem",
-  inicio_acabamento: "Início acabamento",
-  termino_acabamento: "Término acabamento",
-  n_batidas_dtf: "Nº batidas DTF",
-  n_batidas_silk: "Nº batidas Silk",
-  quem_cortou_dtf: "Quem cortou DTF",
-  quem_revelou_tela: "Quem revelou tela",
-  dtf_pessoas_qtd: "DTF pessoas (qtd)",
-  refacoes: "Refações",
-  acabamento_observacao: "Acabamento observação",
-  arte_observacao: "Arte observação",
-  dtf_observacao: "DTF observação",
-  silk_observacao: "Silk observação",
-  observacoes_pedido: "Observações do pedido",
-  obs_vendedor: "Obs. vendedor",
-  historico_data_entrega: "Histórico data entrega",
-  pecas_solicitadas: "Peças solicitadas",
-  pecas_completadas_log: "Peças completadas (log)",
-  arte_warning: "Arte warning",
-  correcoes_etapa: "Correções de etapa",
-  pecas_lisas: "Peças lisas",
-};
-
-function label(campo: string) { return LABELS[campo] ?? campo; }
-
-function fmtVal(v: Json): string {
-  if (v === null || v === undefined) return "—";
-  if (typeof v === "boolean") return v ? "sim" : "não";
-  if (typeof v === "string") {
-    // ISO date yyyy-mm-dd
-    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
-      const [y, m, d] = v.split("-");
-      return `${d}/${m}/${y}`;
-    }
-    if (v.length > 60) return v.slice(0, 60) + "…";
-    return v || "—";
-  }
-  if (typeof v === "number") return String(v);
-  try {
-    const s = JSON.stringify(v);
-    return s.length > 80 ? s.slice(0, 80) + "…" : s;
-  } catch { return String(v); }
-}
+import { labelCampo, formatValor } from "@/lib/audit-labels";
 
 function fmtDateTime(iso: string): string {
   const d = new Date(iso);
@@ -196,14 +97,18 @@ export function HistoricoPedidoDialog({ pedidoId, pedidoOlist }: Props) {
                 </div>
                 {e.acao === "update" && e.mudancas && e.mudancas.length > 0 && (
                   <ul className="mt-1.5 space-y-0.5 text-xs">
-                    {e.mudancas.map((m, i) => (
-                      <li key={i} className="text-muted-foreground">
-                        <span className="text-foreground font-medium">{label(m.campo)}</span>{": "}
-                        <span className="line-through opacity-70">{fmtVal(m.de)}</span>
-                        {" → "}
-                        <span className="text-foreground">{fmtVal(m.para)}</span>
-                      </li>
-                    ))}
+                    {e.mudancas.map((m, i) => {
+                      const de = formatValor(m.campo, m.de as any);
+                      const para = formatValor(m.campo, m.para as any);
+                      return (
+                        <li key={i} className="text-muted-foreground">
+                          <span className="text-foreground font-medium">{labelCampo(m.campo)}</span>{": "}
+                          <span className="line-through opacity-70" title={de.titulo}>{de.texto}</span>
+                          {" → "}
+                          <span className="text-foreground" title={para.titulo}>{para.texto}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
                 {e.acao === "insert" && (
