@@ -229,7 +229,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             <EtapaTopoBanner pedido={selected} tab="arte" />
 
             {/* Parte de cima — somente leitura */}
-            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
               <ReadOnlyField label="Vendedor" value={selected.vendedor} />
