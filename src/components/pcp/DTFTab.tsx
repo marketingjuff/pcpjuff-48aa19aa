@@ -220,6 +220,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
               <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
                 <ReadOnlyField label="Orçamento" value={selected.orcamento} />
+                <ReadOnlyField label="Vendedor" value={selected.vendedor} />
                 <ReadOnlyField label="QTD" value={selected.qtd} />
                 <ReadOnlyField label="Status de Peças" value={selected.status_pecas} />
               </div>
