@@ -1,58 +1,77 @@
-# Refazer Perda — recuperar peças perdidas em novo COP
 
-## Objetivo
+# Deixar todos os históricos legíveis para leigos
 
-Na aba **Perdas**, ao lado do campo *Motivo* de cada linha em **"Perdas registradas em romaneios"**, adicionar botão **Refazer perda** que abre um popup para selecionar (parcial ou totalmente) as peças perdidas daquele romaneio. Ao confirmar, cria um COP novo automaticamente com essas peças pré-selecionadas em corte, e reduz as perdas do romaneio de origem. Deve haver uma forma de **desfazer** a refação. Precisa ter um botao tb de consolidar perdas onde ao clicar é possivel selecionar os romaneios embaixo para poder consolidar as perdas num unico cop.
+Hoje o histórico mostra o nome cru do campo (ex.: `arte_warning: sim → não`), o que é técnico. Vou trocar por rótulos e valores em português claro, aplicando o mesmo tratamento em **todos** os históricos do sistema (Histórico do Pedido, aba Histórico PCP, aba Histórico MAP, aba Histórico COP).
 
-## Fluxo
+## O que muda visualmente
 
-1. Usuário clica em **Refazer perda** na linha da perda (ou no cabeçalho do romaneio agrupado).
-2. Abre `RefazerPerdaDialog` mostrando todas as perdas daquele COP em grid Modelo+Cor × Tamanho, com bolinhas (mesmo padrão de `EntregaRomaneioDialog`): clique no número marca completo, lápis para parcial. Máximo por célula = `qtd perdida` restante.
-3. Ao confirmar:
-  - Cria novo COP com status inicial (Aguardando Risco/Corte, como um COP novo padrão), com as peças selecionadas já inseridas no corte.
-  - Campo observação preenchido com: `"REFAÇÃO DE PERDA - COP {numero-origem}"`.
-  - Registra vínculo `refacao_perda_origem_id` no COP novo.
-  - Registra os itens refeitos em `refacao_perda_itens` (jsonb) no COP novo para permitir desfazer.
-  - Subtrai as quantidades refeitas de `cops.perdas` no COP de origem.
-4. Nova seção **"Refações de perda"** na aba Perdas lista os COPs criados por refação, com botão **Desfazer** disponível enquanto o COP filho ainda não foi cortado/confirmado (status inicial). Desfazer: soma os itens de volta em `cops.perdas` do COP origem e deleta o COP filho.
+Exemplo do print:
+- **Antes:** `arte_warning: sim → não`
+- **Depois:** `Alerta de atenção na arte: Ativo → Removido`
 
-## Regras
+Outros exemplos:
+- `dtf_estampado: null → Sim` → **DTF estampado: Pendente → Concluído**
+- `embalado: Não → Sim` → **Embalado: Pendente → Concluído**
+- `tipo_estampa: DTF → DTF + Silk` → **Tipo de estampa: DTF → DTF + Silk** (já legível, mantém)
+- `refacoes: […]` → **Refações: (lista atualizada)** (evita despejar JSON)
+- `pecas_completadas_log: […]` → **Log de peças concluídas: (atualizado)**
+- `historico_recebimentos: […]` → **Recebimentos: (atualizado)**
+- `cortes: […]` → **Cortes: (atualizado)**
+- `layout_url: "https://…"` → **Layout: (link atualizado)**
+- `finalizado_em: null → 2026-07-13T…` → **Finalizado em: — → 13/07/2026 17:24**
 
-- Refação é informativa/produtiva; não altera cálculo de pagamento do COP origem.
-- Admin e gestor com área COP podem refazer/desfazer. Operador não vê os botões.
-- Não é possível selecionar mais peças do que ainda restam como perda (após refações anteriores).
-- Desfazer só é permitido enquanto o COP filho está em estado inicial (sem romaneio/corte confirmado); depois disso o botão fica oculto.
+## Como faço
 
-## Detalhes técnicos
+1. **Criar `src/lib/audit-labels.ts`** — módulo único com:
+   - `labelCampo(campo)` — dicionário PT-BR unificado cobrindo todos os campos de `pedidos`, `cops`, `cop_perdas`, `map_*`, `oficinas`, `pagamentos_consolidados`. Inclui os já existentes + humanização dos técnicos:
+     - `arte_warning` → "Alerta de atenção na arte"
+     - `necessita_vetorizacao` → "Precisa vetorizar"
+     - `exp_cobranca_pagamento` → "Cobrança do pagamento (Expedição)"
+     - `exp_pagamento`, `exp_etiqueta`, `exp_frete_solicitado`, `exp_despachado` → "Pagamento confirmado", "Etiqueta emitida", "Frete solicitado", "Pedido despachado"
+     - `quem_bateu_dtf`/`silk` → "Quem estampou DTF/Silk"
+     - `quem_cortou_dtf` → "Quem cortou o DTF"
+     - `quem_revelou_tela` → "Quem revelou a tela"
+     - `n_batidas_dtf/silk` → "Nº de batidas de DTF/Silk"
+     - `dtf_pessoas_qtd` → "Nº de pessoas no DTF"
+     - `pecas_completadas_log` → "Registro de peças concluídas"
+     - `historico_data_entrega` → "Alterações na data de entrega"
+     - `corte_em_correcao` → "Corte em correção"
+     - `pagamento_consolidado_id` → "Pagamento consolidado (vínculo)"
+     - `refacao_perda_origem_id` → "Refação de perda (origem)"
+     - `refacao_perda_itens` → "Peças refeitas"
+     - `alt_inicial` → "Altura inicial (m)"
+     - `kg_solicitados/enviados/recebidos` → "Kg solicitados / enviados / recebidos"
+     - etc.
+   - `formatValor(campo, valor)` — formatador contextual:
+     - **Booleanos genéricos** (`sim/true` / `não/false`) → "Sim" / "Não".
+     - **Campos "alerta/warning"** (`arte_warning`) → "Ativo" / "Removido".
+     - **Campos de execução binária** (`embalado`, `dtf_estampado`, `dtf_impresso`, `dtf_cortado`, `silk_feito`, `fotolito_impresso`, `fotolito_executado`, `tela_gravada`, `vetorizacao_executada`, `vetorizacao_dtf`, `vetorizacao_silk`, `dtf_executado`) → `Sim` vira "Concluído", `Não/null` viram "Pendente".
+     - **`corte_em_correcao`, `corte_dividido`, `reaberto`, `finalizado`, `quebra_conciliada`** → "Sim" / "Não" (já legível, mas via mapa).
+     - **`pagamento_status`** → dicionário: `aguardando` → "Aguardando", `liberado` → "Liberado para pagamento", `pago` → "Pago".
+     - **`status_pecas`, `status_arte`, `status`, `status_malharia`, `tipo_estampa`** → passa direto (já são enums legíveis em PT-BR).
+     - **`motivo`** (cop_perdas) → passa direto.
+     - **Datas ISO `yyyy-mm-dd`** → `dd/mm/yyyy`.
+     - **Timestamps ISO** (contêm `T`) → `dd/mm/yyyy hh:mm`.
+     - **UUIDs de campos `*_id`, `feito_por`, `oficina_id`, etc.** → "referência atualizada" (não faz sentido mostrar UUID para leigo). Manter apenas quando já resolvido (nome).
+     - **Arrays / objetos** (jsonb: `cortes`, `refacoes`, `pecas_completadas_log`, `historico_recebimentos`, `perdas`, `pecas_solicitadas`, `pecas_lisas`, `detalhes`, `valores_por_modelo`, `historico_data_entrega`, `correcoes_etapa`) → substitui o JSON cru por `"(lista atualizada)"` ou `"(N itens)"`.
+     - **Strings longas** (>60 chars, ex.: `layout_url`, `observacoes`, `obs`, `arte_observacao`, `dtf_observacao`, `silk_observacao`, `acabamento_observacao`, `exp_observacoes`) → mostrar `"(texto atualizado)"` em vez de trecho truncado, com hover/title contendo o texto completo (via `title` HTML).
+     - **Números** → mantém, com sufixo quando aplicável (`kg_*` → "12 kg", `alt_inicial` → "3,50 m", `valor_frete`/`valor_total` → "R$ 12,50").
+     - **`null` / vazio** → "—".
 
-**DB migration (`cops`):**
+2. **Refatorar `src/components/shared/AuditLogView.tsx`** — remover o `LABELS` e `fmtVal` locais e usar `labelCampo` + `formatValor` do novo módulo. Passar `campo` para o formatador de cada mudança. Renderizar strings longas com `title` para tooltip.
 
-- `refacao_perda_origem_id uuid REFERENCES public.cops(id) ON DELETE SET NULL`
-- `refacao_perda_itens jsonb NOT NULL DEFAULT '[]'::jsonb` (array de `{modelo,cor,tamanho,qtd}`)
-- Index em `refacao_perda_origem_id`.
+3. **Refatorar `src/components/pcp/HistoricoPedidoDialog.tsx`** — mesma coisa: remover `LABELS`/`fmtVal` locais e usar o módulo compartilhado.
 
-`**src/lib/cop.ts`:**
+4. **Nada mais muda** — banco, RLS, server functions, gravação de auditoria, filtros: tudo permanece igual. Só a camada de apresentação.
 
-- Helpers `subtrairPerdas(perdas, itens)` e `somarPerdas(perdas, itens)` que operam sobre o array `CopPerdaLinha[]` preservando `motivo` e removendo linhas zeradas.
-- Helper `perdasRestantes(cop)` = `perdas - refações já feitas por filhos`.
+## Onde aparece
 
-**Novo componente `src/components/cop/RefazerPerdaDialog.tsx`:**
+- Aba **Histórico** dentro de PCP, MAP e COP (usam `AuditLogView`).
+- Botão **Histórico** no dialog do pedido em PCP (`HistoricoPedidoDialog`).
 
-- Baseado em `EntregaRomaneioDialog` (grid de bolinhas Modelo+Cor × Tamanho).
-- Props: `copOrigem`, perdas restantes, `onConfirm(itens)`.
+Ambos passam a puxar rótulos e valores do mesmo módulo, então a padronização vale para todos os históricos do sistema de uma vez.
 
-`**src/components/cop/PerdasTab.tsx`:**
+## Fora do escopo
 
-- Agrupa `perdasRomaneios` por COP para mostrar botão **Refazer perda** por romaneio (mais prático que por linha, pois o dialog já mostra todas).
-- Nova seção **Refações de perda** consultando `cops` com `refacao_perda_origem_id not null`, mostrando COP origem, COP filho, itens, status, e botão **Desfazer** condicional.
-
-**Mutations (client-side, transacionais via sequência):**
-
-- `refazerPerda`: `insert cops` novo → `update cops` origem (perdas atualizadas). Se falhar o update, deleta o COP recém-criado.
-- `desfazerRefacao`: `update cops` origem (soma volta) → `delete cops` filho.
-
-## Fora de escopo
-
-- Não mexe em `cop_perdas` (perdas manuais).
-- Não altera PDF do romaneio nem cálculo de pagamento.
-- Não permite editar peças de um COP-refação depois de criado (fluxo normal do COP a partir daí).
+- Não altero o que é gravado no `audit_log` (schema/gatilhos).
+- Não escondo campos técnicos; se algum campo ainda ficar cru é adicionar rótulo depois — o fallback continua sendo o nome do campo, para não perder informação.
