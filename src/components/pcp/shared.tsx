@@ -130,12 +130,20 @@ export const FinalizarButton = forwardRef<HTMLButtonElement, ButtonProps & { ico
 FinalizarButton.displayName = "FinalizarButton";
 
 /** Título grande "Orçamento Comercial" reutilizado no topo de todas as abas de pedido. */
-export function OrcamentoTitle({ orcamento }: { orcamento: string | null | undefined }) {
+export function OrcamentoTitle({ orcamento, vendedor }: { orcamento: string | null | undefined; vendedor?: string | null | undefined }) {
   return (
     <Card className="border-primary/30">
       <CardContent className="py-2">
-        <div className="text-xs uppercase text-muted-foreground tracking-wider">Orçamento Comercial</div>
-        <div className="text-2xl sm:text-4xl font-bold tabular-nums truncate">{orcamento || "—"}</div>
+        <div className="flex items-baseline justify-between gap-4 flex-wrap">
+          <div className="min-w-0">
+            <div className="text-xs uppercase text-muted-foreground tracking-wider">Orçamento Comercial</div>
+            <div className="text-2xl sm:text-4xl font-bold tabular-nums truncate">{orcamento || "—"}</div>
+          </div>
+          <div className="min-w-0 text-right">
+            <div className="text-xs uppercase text-muted-foreground tracking-wider">Vendedor</div>
+            <div className="text-lg sm:text-2xl font-semibold truncate">{vendedor || "—"}</div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
