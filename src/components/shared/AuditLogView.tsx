@@ -10,6 +10,19 @@ import { Loader2, ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import { labelCampo, formatValor } from "@/lib/audit-labels";
 
+const TABELA_LABELS: Record<string, string> = {
+  pedidos: "Pedido",
+  map_producoes: "Produção",
+  map_tinturaria_programacoes: "Tinturaria",
+  map_malharia_entregas: "Malharia",
+  map_estoque_pecas: "Estoque peça",
+  map_devolucoes: "Devolução",
+  cops: "COP",
+  oficinas: "Oficina",
+  cop_perdas: "Perda COP",
+  pagamentos_consolidados: "Pgto consolidado",
+};
+
 function fmtDateTime(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
@@ -215,14 +228,18 @@ export function AuditLogView({ area }: Props) {
               </div>
               {e.acao === "update" && e.mudancas && e.mudancas.length > 0 && (
                 <ul className="mt-1.5 space-y-0.5 text-xs">
-                  {e.mudancas.map((m, i) => (
-                    <li key={i} className="text-muted-foreground">
-                      <span className="text-foreground font-medium">{label(m.campo)}</span>{": "}
-                      <span className="line-through opacity-70">{fmtVal(m.de)}</span>
-                      {" → "}
-                      <span className="text-foreground">{fmtVal(m.para)}</span>
-                    </li>
-                  ))}
+                  {e.mudancas.map((m, i) => {
+                    const de = formatValor(m.campo, m.de as any);
+                    const para = formatValor(m.campo, m.para as any);
+                    return (
+                      <li key={i} className="text-muted-foreground">
+                        <span className="text-foreground font-medium">{labelCampo(m.campo)}</span>{": "}
+                        <span className="line-through opacity-70" title={de.titulo}>{de.texto}</span>
+                        {" → "}
+                        <span className="text-foreground" title={para.titulo}>{para.texto}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </li>
