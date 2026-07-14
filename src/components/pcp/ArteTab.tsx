@@ -222,7 +222,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
     <div className="space-y-3">
       {selected ? (
         <>
-        <OrcamentoTitle orcamento={selected.orcamento} vendedor={selected.vendedor} />
+        <OrcamentoTitle orcamento={selected.orcamento} />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2"><CardTitle>Arte — {selected.pedido_olist}</CardTitle><div className="flex items-center gap-2"><RefacaoBadge pedido={selected} /><CorrecaoEtapaBadge pedido={selected} /></div></CardHeader>
           <CardContent className="space-y-3">
