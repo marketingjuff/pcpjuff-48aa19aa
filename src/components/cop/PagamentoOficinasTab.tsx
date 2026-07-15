@@ -48,6 +48,13 @@ function calcQtdPagavelPorModeloCor(cop: Cop): Map<string, number> {
   return out;
 }
 
+/** Total de peças pagáveis (recebidas) do COP — o mesmo total usado no cálculo do pagamento. */
+function totalPecasPagaveis(cop: Cop): number {
+  let t = 0;
+  for (const q of calcQtdPagavelPorModeloCor(cop).values()) t += q;
+  return t;
+}
+
 function calcValor(cop: Cop, oficina: Oficina | null): number {
   if (!oficina) return 0;
   const grupos = calcQtdPagavelPorModeloCor(cop);
@@ -161,7 +168,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
           return d !== 0 ? d * dir : (a.letra ?? "").localeCompare(b.letra ?? "") * dir;
         }
         case "oficina": return ofa.localeCompare(ofb) * dir;
-        case "pecas": return (totalPecasCop(a.pecas) - totalPecasCop(b.pecas)) * dir;
+        case "pecas": return (totalPecasPagaveis(a) - totalPecasPagaveis(b)) * dir;
         case "pagamento": return ((pagRank[a.pagamento_status] ?? -1) - (pagRank[b.pagamento_status] ?? -1)) * dir;
         case "liberacao": {
           const av = a.pagamento_liberado_em ? new Date(a.pagamento_liberado_em).getTime() : 0;
@@ -569,7 +576,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
                     <tr key={c.id} className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : zebra ? "bg-muted/80" : ""}`} onClick={() => setSelectedId(c.id)}>
                       <td className="p-2 font-semibold tabular-nums">{rotuloCop(c.numero, c.letra, !!c.refacao_perda_origem_id)}</td>
                       <td className="p-2">{ofi?.nome ?? "—"}</td>
-                      <td className="p-2 text-center tabular-nums">{totalPecasCop(c.pecas)}</td>
+                      <td className="p-2 text-center tabular-nums">{totalPecasPagaveis(c)}</td>
                       <td className="p-2 text-xs">
                         {c.pagamento_status === "pago" ? <span className="text-green-700">Pago</span>
                           : c.pagamento_status === "liberado" ? (
