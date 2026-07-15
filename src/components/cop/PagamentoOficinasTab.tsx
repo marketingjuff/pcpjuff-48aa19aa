@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import type { Cop, CopPeca, Oficina } from "@/lib/cop";
+import { cmpModeloCor } from "@/lib/pedidos";
 import {
   rotuloCop, formatCopNumero, totalPecasCop, getRecebida,
 } from "@/lib/cop";
