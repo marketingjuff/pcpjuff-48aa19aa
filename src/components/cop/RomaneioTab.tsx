@@ -1096,6 +1096,16 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             pecas={selected.pecas || []}
             recebidas={recebidas}
             perdas={(selected.perdas as CopPerdaLinha[]) ?? []}
+            refacoes={cops
+              .filter((f) => (f as any).refacao_perda_origem_id != null)
+              .flatMap((f) => (((f as any).refacao_perda_itens as any[]) ?? [])
+                .filter((it) => (it.origem_cop_id ?? (f as any).refacao_perda_origem_id) === selected.id)
+                .map((it) => ({
+                  modelo: it.perda_modelo ?? it.modelo,
+                  cor: it.perda_cor ?? it.cor,
+                  tamanho: it.perda_tamanho ?? it.tamanho,
+                  qtd: Number(it.perda_qtd ?? it.qtd) || 0,
+                } as CopPerdaLinha)))}
             onConfirm={handleEntregaConfirm}
           />
           <ParticionarRomaneioDialog
