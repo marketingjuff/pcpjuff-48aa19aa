@@ -3,6 +3,7 @@
 import logoJuff from "@/assets/loguinhojuffpreto.png.asset.json";
 import type { Cop, CopPeca, Oficina } from "@/lib/cop";
 import { rotuloCop, totalPecasCop, numeroBaseCop, colunasTamanhos } from "@/lib/cop";
+import { cmpModeloCor } from "@/lib/pedidos";
 
 function esc(s: string | number | null | undefined): string {
   if (s === null || s === undefined) return "";
