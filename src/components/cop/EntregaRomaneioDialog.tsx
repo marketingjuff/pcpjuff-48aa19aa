@@ -197,7 +197,7 @@ export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, pe
         </div>
 
         <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Total a receber: <b className="tabular-nums">{total}</b>{totalPerdas > 0 ? <> · <span className="text-amber-700">{totalPerdas} descontadas por perda</span></> : null}</span>
+          <span className="text-muted-foreground">Total a receber: <b className="tabular-nums">{total}</b>{totalPerdas > 0 ? <> · <span className="text-amber-700">{totalPerdas} descontadas por perda</span></> : null}{totalRefacoes > 0 ? <> · <span className="text-amber-700">{totalRefacoes} em conserto (COP novo)</span></> : null}</span>
           <span>
             Recebido: <b className="tabular-nums text-green-700">{recebidoTotal}</b> ·
             Pendente: <b className={`tabular-nums ${total - recebidoTotal > 0 ? "text-amber-700" : "text-muted-foreground"}`}> {total - recebidoTotal}</b>
