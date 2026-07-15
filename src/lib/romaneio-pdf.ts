@@ -33,9 +33,7 @@ function agruparModeloCor(pecas: CopPeca[]): { linhas: Linha[]; colunas: string[
   const presentes = new Set<string>();
   for (const l of map.values()) for (const t of Object.keys(l.qtds)) presentes.add(t);
   const colunas = colunasTamanhos(presentes);
-  const linhas = Array.from(map.values()).sort((a, b) =>
-    a.modelo.localeCompare(b.modelo) || a.cor.localeCompare(b.cor),
-  );
+  const linhas = Array.from(map.values());
   return { linhas, colunas };
 }
 
