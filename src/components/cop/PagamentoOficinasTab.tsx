@@ -219,6 +219,8 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
     return arr;
   }, [selected, selectedOfi]);
 
+  const totalPecasPagas = useMemo(() => grupos.reduce((s, g) => s + g.qtd, 0), [grupos]);
+
   const salvarObs = useMutation({
     mutationFn: async () => {
       if (!selected) return;
