@@ -416,14 +416,35 @@ export function subtrairPerdas(a: CopPerdaLinha[], b: CopPerdaLinha[]): CopPerda
 }
 
 /** True quando todas as linhas têm (recebido + perdido) ≥ qtd. */
-export function todasCompletas(pecas: CopPeca[], rec: CopPecaRecebida[], perdas: CopPerdaLinha[] = []): boolean {
+export function todasCompletas(pecas: CopPeca[], rec: CopPecaRecebida[], perdas: CopPerdaLinha[] = [], refacoes: CopPerdaLinha[] = []): boolean {
   if (!pecas?.length) return false;
   for (const p of pecas) {
     const recebido = getRecebida(rec, p.modelo, p.cor, p.tamanho);
     const perdido = getPerda(perdas, p.modelo, p.cor, p.tamanho);
-    if (recebido + perdido < p.qtd) return false;
+    const emConserto = getPerda(refacoes, p.modelo, p.cor, p.tamanho);
+    if (recebido + perdido + emConserto < p.qtd) return false;
   }
   return true;
+}
+
+/** Retorna as peças enviadas para refação/conserto em novos COPs (filhos) de um COP. */
+export function refacoesDoCop(cops: Cop[], copId: string): CopPerdaLinha[] {
+  const out: CopPerdaLinha[] = [];
+  for (const f of cops) {
+    if (!(f as any).refacao_perda_origem_id) continue;
+    const itens = ((f as any).refacao_perda_itens as any[]) ?? [];
+    for (const it of itens) {
+      const origem = it.origem_cop_id ?? (f as any).refacao_perda_origem_id;
+      if (origem !== copId) continue;
+      out.push({
+        modelo: it.perda_modelo ?? it.modelo,
+        cor: it.perda_cor ?? it.cor,
+        tamanho: it.perda_tamanho ?? it.tamanho,
+        qtd: Number(it.perda_qtd ?? it.qtd) || 0,
+      });
+    }
+  }
+  return out;
 }
 
 /** Próxima letra livre dado um conjunto de letras já usadas (A,B,C,...). */

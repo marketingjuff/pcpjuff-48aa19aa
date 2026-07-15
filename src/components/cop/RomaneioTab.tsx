@@ -22,7 +22,7 @@ import {
   type HistoricoRecebimento, type HistoricoPerda, type CopPerdaLinha, type CopUrgencia, type CopUrgenciaLinha, type CopUrgenciaPedido,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, totalRecebidas,
   todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
-  getRecebida, getPerda, colunasTamanhos, mesclarPerdasEmObservacoes, linhaUrgente,
+  getRecebida, getPerda, colunasTamanhos, mesclarPerdasEmObservacoes, linhaUrgente, refacoesDoCop,
 } from "@/lib/cop";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
@@ -221,7 +221,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
 
       // Recalcular status considerando perdas como "entregue" para completude.
       const rec = cop.pecas_recebidas ?? [];
-      const completo = todasCompletas(cop.pecas || [], rec, perdas);
+      const completo = todasCompletas(cop.pecas || [], rec, perdas, refacoesDoCop(cops, cop.id));
       const algumRecOuPerda =
         (rec.some((r) => r.qtd_recebida > 0)) ||
         (perdas.some((p) => p.qtd > 0));
@@ -311,7 +311,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
 
   async function handleEntregaConfirm(rec: CopPecaRecebida[]) {
     if (!selected) return;
-    const completo = todasCompletas(selected.pecas || [], rec, selected.perdas ?? []);
+    const completo = todasCompletas(selected.pecas || [], rec, selected.perdas ?? [], refacoesDoCop(cops, selected.id));
     const algum = rec.some((r) => r.qtd_recebida > 0);
     const novoStatus: CopStatus =
       completo ? "Romaneio Completo" : algum ? "Romaneio Parcial" : "Na Oficina (Costura)";
@@ -414,7 +414,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
     if (!selected) return;
     const rec = selected.pecas_recebidas ?? [];
     const perdas = selected.perdas ?? [];
-    const completo = selected.status === "Romaneio Completo" || todasCompletas(selected.pecas || [], rec, perdas);
+    const completo = selected.status === "Romaneio Completo" || todasCompletas(selected.pecas || [], rec, perdas, refacoesDoCop(cops, selected.id));
     if (!completo) return;
     const { data: ses } = await supabase.auth.getUser();
     await salvar.mutateAsync({
@@ -777,8 +777,9 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             <CardContent className="space-y-3 text-sm">
               {(() => {
                 const perdasArr = selected.perdas ?? [];
-                const completoTotal = todasCompletas(selected.pecas || [], recebidas, perdasArr);
-                const totalPerda = perdasArr.reduce((s, p) => s + (Number(p.qtd) || 0), 0);
+                const refacoesArr = refacoesDoCop(cops, selected.id);
+                const completoTotal = todasCompletas(selected.pecas || [], recebidas, perdasArr, refacoesArr);
+                const totalPerda = perdasArr.reduce((s, p) => s + (Number(p.qtd) || 0), 0) + refacoesArr.reduce((s, p) => s + (Number(p.qtd) || 0), 0);
                 const completoViaPerda = completoTotal && totalPerda > 0 && totalRecebidas(recebidas) < totalPecasCop(selected.pecas);
                 const jaCompleto = selected.status === "Romaneio Completo" || selected.status === "Aguardando Pagamento" || selected.status === "Finalizado";
                 const mostrarPainel = jaCompleto || selected.status === "Romaneio Parcial" || completoTotal || selected.conferido_em;
