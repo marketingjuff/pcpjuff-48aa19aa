@@ -6,26 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, Pencil } from "lucide-react";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import type { CopPeca, CopPecaRecebida } from "@/lib/cop";
-import { getRecebida, setRecebida, colunasTamanhos } from "@/lib/cop";
+import type { CopPeca, CopPecaRecebida, CopPerdaLinha } from "@/lib/cop";
+import { getRecebida, setRecebida, colunasTamanhos, getPerda } from "@/lib/cop";
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   pecas: CopPeca[];
   recebidas: CopPecaRecebida[];
+  perdas?: CopPerdaLinha[];
   onConfirm: (next: CopPecaRecebida[]) => void | Promise<void>;
 }
 
-type LinhaAgrupada = { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number }[] };
+type LinhaAgrupada = { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number; perda: number }[] };
 
-function agruparPecas(pecas: CopPeca[]): LinhaAgrupada[] {
+function agruparPecas(pecas: CopPeca[], perdas: CopPerdaLinha[]): LinhaAgrupada[] {
   const map = new Map<string, LinhaAgrupada>();
   for (const p of pecas) {
     const k = `${p.modelo}|${p.cor}`;
     let g = map.get(k);
     if (!g) { g = { modelo: p.modelo, cor: p.cor, tamanhos: [] }; map.set(k, g); }
-    g.tamanhos.push({ tamanho: p.tamanho, qtd: p.qtd });
+    const perda = getPerda(perdas, p.modelo, p.cor, p.tamanho);
+    g.tamanhos.push({ tamanho: p.tamanho, qtd: p.qtd, perda });
   }
   return Array.from(map.values());
 }
