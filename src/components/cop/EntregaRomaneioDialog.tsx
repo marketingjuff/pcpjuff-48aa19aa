@@ -32,7 +32,7 @@ function agruparPecas(pecas: CopPeca[], perdas: CopPerdaLinha[]): LinhaAgrupada[
   return Array.from(map.values());
 }
 
-export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, onConfirm }: Props) {
+export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, perdas = [], onConfirm }: Props) {
   const [rec, setRec] = useState<CopPecaRecebida[]>([]);
   const [parcialEdit, setParcialEdit] = useState<string | null>(null); // key
   const [parcialVal, setParcialVal] = useState<string>("");
@@ -40,9 +40,10 @@ export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, on
 
   useEffect(() => { if (open) setRec(recebidas ?? []); }, [open, recebidas]);
 
-  const grupos = useMemo(() => agruparPecas(pecas), [pecas]);
+  const grupos = useMemo(() => agruparPecas(pecas, perdas), [pecas, perdas]);
 
-  const total = useMemo(() => pecas.reduce((s, p) => s + p.qtd, 0), [pecas]);
+  const totalPerdas = useMemo(() => (perdas ?? []).reduce((s, p) => s + Number(p.qtd || 0), 0), [perdas]);
+  const total = useMemo(() => pecas.reduce((s, p) => s + p.qtd, 0) - totalPerdas, [pecas, totalPerdas]);
   const recebidoTotal = useMemo(() => rec.reduce((s, r) => s + r.qtd_recebida, 0), [rec]);
 
   function key(m: string, c: string, t: string) { return `${m}|${c}|${t}`; }
