@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Flame } from "lucide-react";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { COP_STATUS_LIST, totalPecasCop, rotuloCop, rotuloRomaneio, type Cop, type CopUrgencia } from "@/lib/cop";
-import { REFACAO_TAMANHOS, type Pedido } from "@/lib/pedidos";
+import { REFACAO_TAMANHOS, cmpModeloCor, type Pedido } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { calcEmProducao, calcFaltantes, calcRecebido, calcPerdas, calcDisponivel, pkKey, dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
 
@@ -133,9 +133,7 @@ export function DashboardCopTab() {
           }
         }
       }
-      const linhas = Array.from(mapa.values()).sort((a, b) =>
-        a.modelo.localeCompare(b.modelo) || a.cor.localeCompare(b.cor),
-      );
+      const linhas = Array.from(mapa.values()).sort(cmpModeloCor);
       // ordena tamanhos de cada linha
       for (const l of linhas) {
         const entries = Array.from(l.tamanhos.entries()).sort((a, b) => tamIdx(a[0]) - tamIdx(b[0]));

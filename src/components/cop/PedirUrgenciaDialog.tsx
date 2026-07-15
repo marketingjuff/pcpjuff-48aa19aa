@@ -10,7 +10,7 @@ import { Check, Flame, Pencil, Plus, X } from "lucide-react";
 import type { CopPeca, CopPecaRecebida, CopPerdaLinha, CopUrgenciaLinha, CopUrgenciaPedido } from "@/lib/cop";
 import { getRecebida, getPerda, colunasTamanhos } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import type { PecaSolicitada } from "@/lib/pedidos";
+import { cmpModeloCor, type PecaSolicitada } from "@/lib/pedidos";
 
 type Props = {
   open: boolean;
@@ -43,7 +43,7 @@ function agruparPorModeloCor(
     g.tamanhos.push({ tamanho: p.tamanho, total, recebida: rec, perda: per, pendente: pend });
     g.pendenteTotal += pend;
   }
-  return Array.from(map.values()).sort((a, b) => a.modelo.localeCompare(b.modelo) || a.cor.localeCompare(b.cor));
+  return Array.from(map.values()).sort(cmpModeloCor);
 }
 
 export function PedirUrgenciaDialog({ open, onOpenChange, rotulo, pecas, recebidas, perdas, onConfirm, disabled }: Props) {

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import type { Cop, CopPeca, Oficina } from "@/lib/cop";
+import { cmpModeloCor } from "@/lib/pedidos";
 import {
   rotuloCop, formatCopNumero, totalPecasCop, getRecebida,
 } from "@/lib/cop";
@@ -222,7 +223,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
       const valUn = Number((selectedOfi?.valores_por_modelo ?? {})[modelo] ?? 0);
       arr.push({ modelo, cor, qtd: q, valUn, subtotal: valUn * q });
     }
-    arr.sort((a, b) => a.modelo.localeCompare(b.modelo) || a.cor.localeCompare(b.cor));
+    arr.sort(cmpModeloCor);
     return arr;
   }, [selected, selectedOfi]);
 

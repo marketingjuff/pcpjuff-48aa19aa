@@ -69,6 +69,25 @@ export const REFACAO_CORES: { nome: string; hex: string }[] = [
   { nome: "vermelho",       hex: "#c12b3d" },
 ];
 
+// Ordem "de corte" — usada em toda a UI/PDFs para ordenar modelo/cor
+// conforme definido pelo setor de corte, e não alfabeticamente.
+const _MODELO_ORD = new Map<string, number>(REFACAO_MODELOS.map((m, i) => [m, i]));
+const _COR_ORD = new Map<string, number>(REFACAO_CORES.map((c, i) => [c.nome, i]));
+
+function _cmpOrd(a: string, b: string, idx: Map<string, number>): number {
+  const ia = idx.get(a); const ib = idx.get(b);
+  if (ia !== undefined && ib !== undefined) return ia - ib;
+  if (ia !== undefined) return -1;
+  if (ib !== undefined) return 1;
+  return a.localeCompare(b, "pt-BR");
+}
+
+export function cmpModelo(a: string, b: string): number { return _cmpOrd(a, b, _MODELO_ORD); }
+export function cmpCor(a: string, b: string): number { return _cmpOrd(a, b, _COR_ORD); }
+export function cmpModeloCor<T extends { modelo: string; cor: string }>(a: T, b: T): number {
+  return cmpModelo(a.modelo, b.modelo) || cmpCor(a.cor, b.cor);
+}
+
 export type RefacaoEpisodio = {
   etapa_origem: string;
   etapa_destino: "dados" | "arte" | "dtf" | "silk" | "acabamento";
