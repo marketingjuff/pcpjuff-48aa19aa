@@ -43,7 +43,7 @@ function agruparPorModeloCor(
     g.tamanhos.push({ tamanho: p.tamanho, total, recebida: rec, perda: per, pendente: pend });
     g.pendenteTotal += pend;
   }
-  return Array.from(map.values()).sort((a, b) => a.modelo.localeCompare(b.modelo) || a.cor.localeCompare(b.cor));
+  return Array.from(map.values()).sort(cmpModeloCor);
 }
 
 export function PedirUrgenciaDialog({ open, onOpenChange, rotulo, pecas, recebidas, perdas, onConfirm, disabled }: Props) {
