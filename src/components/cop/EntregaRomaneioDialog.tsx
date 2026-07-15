@@ -101,9 +101,9 @@ export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, pe
                     const hex = corHex(g.cor);
                     const fg = corTextoSobre(hex);
                     const entregueLinha = g.tamanhos.reduce((s, t) => s + getRecebida(rec, g.modelo, g.cor, t.tamanho), 0);
-                    const totalLinha = g.tamanhos.reduce((s, t) => s + t.qtd, 0);
+                    const totalLinha = g.tamanhos.reduce((s, t) => s + Math.max(0, t.qtd - t.perda), 0);
                     const pend = totalLinha - entregueLinha;
-                    const byTam = new Map(g.tamanhos.map((t) => [t.tamanho, t.qtd]));
+                    const byTam = new Map(g.tamanhos.map((t) => [t.tamanho, { qtd: Math.max(0, t.qtd - t.perda), perda: t.perda, orig: t.qtd }]));
                     return (
                       <tr key={`${g.modelo}|${g.cor}`} className="border-t align-middle leading-tight">
                         <td className="px-2 py-1 font-medium">{g.modelo}</td>
@@ -111,7 +111,9 @@ export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, pe
                           <span className="inline-block px-1.5 py-0 rounded text-[10px] font-bold" style={{ backgroundColor: hex, color: fg }}>{g.cor}</span>
                         </td>
                         {cols.map((tam) => {
-                          const qtd = byTam.get(tam) ?? 0;
+                          const cell = byTam.get(tam);
+                          const qtd = cell?.qtd ?? 0;
+                          const perda = cell?.perda ?? 0;
                           if (!qtd) {
                             return (
                               <td key={tam} className="px-1 py-1 text-center">
