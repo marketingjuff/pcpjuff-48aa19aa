@@ -15,7 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import type { Cop, CopPeca, Oficina, CopPerdaLinha } from "@/lib/cop";
+import type { Cop, CopPeca, Oficina } from "@/lib/cop";
 import {
   rotuloCop, formatCopNumero, totalPecasCop, getRecebida,
 } from "@/lib/cop";
