@@ -335,6 +335,12 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Peças a pagar</span>
+              <span className="text-xs text-muted-foreground">
+                Total de peças: <span className="font-semibold tabular-nums">{totalPecasPagas}</span>
+              </span>
+            </div>
             <div className="rounded-md border overflow-x-auto">
               <table className="w-full text-[12.5px] leading-[1.2]">
                 <thead className="bg-muted/40 text-xs">
@@ -364,6 +370,10 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
                   })}
                 </tbody>
                 <tfoot className="bg-muted/30">
+                  <tr>
+                    <td colSpan={4} className="p-2 text-right"><b>Total de peças</b></td>
+                    <td className="p-2 text-right tabular-nums"><b>{totalPecasPagas}</b></td>
+                  </tr>
                   <tr>
                     <td colSpan={3} className="p-2 text-right">
                       <span className="inline-flex items-center gap-2 justify-end">
