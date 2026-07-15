@@ -175,7 +175,7 @@ export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, pe
                                     <Pencil className="h-3 w-3" />
                                   </button>
                                 )}
-                                <div className="text-[9px] tabular-nums text-muted-foreground">{r}/{qtd}{perda > 0 ? ` · ${perda} perda` : ""}</div>
+                                <div className="text-[9px] tabular-nums text-muted-foreground">{r}/{qtd}{perda > 0 ? ` · ${perda} perda` : ""}{refacao > 0 ? ` · ${refacao} conserto` : ""}</div>
                               </div>
                             </td>
                           );
