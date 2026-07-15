@@ -221,7 +221,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
 
       // Recalcular status considerando perdas como "entregue" para completude.
       const rec = cop.pecas_recebidas ?? [];
-      const completo = todasCompletas(cop.pecas || [], rec, perdas);
+      const completo = todasCompletas(cop.pecas || [], rec, perdas, refacoesDoCop(cops, cop.id));
       const algumRecOuPerda =
         (rec.some((r) => r.qtd_recebida > 0)) ||
         (perdas.some((p) => p.qtd > 0));
