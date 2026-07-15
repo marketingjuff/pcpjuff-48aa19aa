@@ -10,7 +10,7 @@ import { Check, Flame, Pencil, Plus, X } from "lucide-react";
 import type { CopPeca, CopPecaRecebida, CopPerdaLinha, CopUrgenciaLinha, CopUrgenciaPedido } from "@/lib/cop";
 import { getRecebida, getPerda, colunasTamanhos } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import type { PecaSolicitada } from "@/lib/pedidos";
+import { cmpModeloCor, type PecaSolicitada } from "@/lib/pedidos";
 
 type Props = {
   open: boolean;
