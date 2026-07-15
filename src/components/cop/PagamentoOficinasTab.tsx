@@ -576,7 +576,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
                     <tr key={c.id} className={`border-t cursor-pointer hover:bg-accent/40 ${c.id === selectedId ? "bg-accent/50" : zebra ? "bg-muted/80" : ""}`} onClick={() => setSelectedId(c.id)}>
                       <td className="p-2 font-semibold tabular-nums">{rotuloCop(c.numero, c.letra, !!c.refacao_perda_origem_id)}</td>
                       <td className="p-2">{ofi?.nome ?? "—"}</td>
-                      <td className="p-2 text-center tabular-nums">{totalPecasCop(c.pecas)}</td>
+                      <td className="p-2 text-center tabular-nums">{totalPecasPagaveis(c)}</td>
                       <td className="p-2 text-xs">
                         {c.pagamento_status === "pago" ? <span className="text-green-700">Pago</span>
                           : c.pagamento_status === "liberado" ? (
