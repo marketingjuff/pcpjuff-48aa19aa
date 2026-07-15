@@ -168,7 +168,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
           return d !== 0 ? d * dir : (a.letra ?? "").localeCompare(b.letra ?? "") * dir;
         }
         case "oficina": return ofa.localeCompare(ofb) * dir;
-        case "pecas": return (totalPecasCop(a.pecas) - totalPecasCop(b.pecas)) * dir;
+        case "pecas": return (totalPecasPagaveis(a) - totalPecasPagaveis(b)) * dir;
         case "pagamento": return ((pagRank[a.pagamento_status] ?? -1) - (pagRank[b.pagamento_status] ?? -1)) * dir;
         case "liberacao": {
           const av = a.pagamento_liberado_em ? new Date(a.pagamento_liberado_em).getTime() : 0;
