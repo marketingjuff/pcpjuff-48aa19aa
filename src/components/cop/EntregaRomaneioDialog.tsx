@@ -15,24 +15,26 @@ interface Props {
   pecas: CopPeca[];
   recebidas: CopPecaRecebida[];
   perdas?: CopPerdaLinha[];
+  refacoes?: CopPerdaLinha[];
   onConfirm: (next: CopPecaRecebida[]) => void | Promise<void>;
 }
 
-type LinhaAgrupada = { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number; perda: number }[] };
+type LinhaAgrupada = { modelo: string; cor: string; tamanhos: { tamanho: string; qtd: number; perda: number; refacao: number }[] };
 
-function agruparPecas(pecas: CopPeca[], perdas: CopPerdaLinha[]): LinhaAgrupada[] {
+function agruparPecas(pecas: CopPeca[], perdas: CopPerdaLinha[], refacoes: CopPerdaLinha[]): LinhaAgrupada[] {
   const map = new Map<string, LinhaAgrupada>();
   for (const p of pecas) {
     const k = `${p.modelo}|${p.cor}`;
     let g = map.get(k);
     if (!g) { g = { modelo: p.modelo, cor: p.cor, tamanhos: [] }; map.set(k, g); }
     const perda = getPerda(perdas, p.modelo, p.cor, p.tamanho);
-    g.tamanhos.push({ tamanho: p.tamanho, qtd: p.qtd, perda });
+    const refacao = getPerda(refacoes, p.modelo, p.cor, p.tamanho);
+    g.tamanhos.push({ tamanho: p.tamanho, qtd: p.qtd, perda, refacao });
   }
   return Array.from(map.values());
 }
 
-export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, perdas = [], onConfirm }: Props) {
+export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, perdas = [], refacoes = [], onConfirm }: Props) {
   const [rec, setRec] = useState<CopPecaRecebida[]>([]);
   const [parcialEdit, setParcialEdit] = useState<string | null>(null); // key
   const [parcialVal, setParcialVal] = useState<string>("");
@@ -40,10 +42,12 @@ export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, pe
 
   useEffect(() => { if (open) setRec(recebidas ?? []); }, [open, recebidas]);
 
-  const grupos = useMemo(() => agruparPecas(pecas, perdas), [pecas, perdas]);
+  const grupos = useMemo(() => agruparPecas(pecas, perdas, refacoes), [pecas, perdas, refacoes]);
 
   const totalPerdas = useMemo(() => (perdas ?? []).reduce((s, p) => s + Number(p.qtd || 0), 0), [perdas]);
-  const total = useMemo(() => pecas.reduce((s, p) => s + p.qtd, 0) - totalPerdas, [pecas, totalPerdas]);
+  const totalRefacoes = useMemo(() => (refacoes ?? []).reduce((s, p) => s + Number(p.qtd || 0), 0), [refacoes]);
+  const totalDescontado = totalPerdas + totalRefacoes;
+  const total = useMemo(() => pecas.reduce((s, p) => s + p.qtd, 0) - totalDescontado, [pecas, totalDescontado]);
   const recebidoTotal = useMemo(() => rec.reduce((s, r) => s + r.qtd_recebida, 0), [rec]);
 
   function key(m: string, c: string, t: string) { return `${m}|${c}|${t}`; }
