@@ -133,9 +133,7 @@ export function DashboardCopTab() {
           }
         }
       }
-      const linhas = Array.from(mapa.values()).sort((a, b) =>
-        a.modelo.localeCompare(b.modelo) || a.cor.localeCompare(b.cor),
-      );
+      const linhas = Array.from(mapa.values()).sort(cmpModeloCor);
       // ordena tamanhos de cada linha
       for (const l of linhas) {
         const entries = Array.from(l.tamanhos.entries()).sort((a, b) => tamIdx(a[0]) - tamIdx(b[0]));
