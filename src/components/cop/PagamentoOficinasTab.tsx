@@ -48,6 +48,13 @@ function calcQtdPagavelPorModeloCor(cop: Cop): Map<string, number> {
   return out;
 }
 
+/** Total de peças pagáveis (recebidas) do COP — o mesmo total usado no cálculo do pagamento. */
+function totalPecasPagaveis(cop: Cop): number {
+  let t = 0;
+  for (const q of calcQtdPagavelPorModeloCor(cop).values()) t += q;
+  return t;
+}
+
 function calcValor(cop: Cop, oficina: Oficina | null): number {
   if (!oficina) return 0;
   const grupos = calcQtdPagavelPorModeloCor(cop);
