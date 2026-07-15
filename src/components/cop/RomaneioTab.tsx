@@ -777,8 +777,9 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             <CardContent className="space-y-3 text-sm">
               {(() => {
                 const perdasArr = selected.perdas ?? [];
-                const completoTotal = todasCompletas(selected.pecas || [], recebidas, perdasArr);
-                const totalPerda = perdasArr.reduce((s, p) => s + (Number(p.qtd) || 0), 0);
+                const refacoesArr = refacoesDoCop(cops, selected.id);
+                const completoTotal = todasCompletas(selected.pecas || [], recebidas, perdasArr, refacoesArr);
+                const totalPerda = perdasArr.reduce((s, p) => s + (Number(p.qtd) || 0), 0) + refacoesArr.reduce((s, p) => s + (Number(p.qtd) || 0), 0);
                 const completoViaPerda = completoTotal && totalPerda > 0 && totalRecebidas(recebidas) < totalPecasCop(selected.pecas);
                 const jaCompleto = selected.status === "Romaneio Completo" || selected.status === "Aguardando Pagamento" || selected.status === "Finalizado";
                 const mostrarPainel = jaCompleto || selected.status === "Romaneio Parcial" || completoTotal || selected.conferido_em;
