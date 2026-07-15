@@ -34,7 +34,7 @@ function agruparModeloCor(pecas: CopPeca[]): { linhas: Linha[]; colunas: string[
   const presentes = new Set<string>();
   for (const l of map.values()) for (const t of Object.keys(l.qtds)) presentes.add(t);
   const colunas = colunasTamanhos(presentes);
-  const linhas = Array.from(map.values());
+  const linhas = Array.from(map.values()).sort(cmpModeloCor);
   return { linhas, colunas };
 }
 
