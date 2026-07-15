@@ -1095,6 +1095,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             onOpenChange={setShowEntrega}
             pecas={selected.pecas || []}
             recebidas={recebidas}
+            perdas={(selected.perdas as CopPerdaLinha[]) ?? []}
             onConfirm={handleEntregaConfirm}
           />
           <ParticionarRomaneioDialog
