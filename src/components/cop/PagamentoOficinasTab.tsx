@@ -31,20 +31,19 @@ function fmtMoney(n: number) {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-/** Soma por (modelo, cor) das quantidades pagáveis = Σ_tamanho max(0, recebido − perda). */
+/** Soma por (modelo, cor) das quantidades pagáveis = Σ_tamanho (recebido).
+ *  Perdas e peças em conserto NÃO entram — o pagamento cobre apenas o que a
+ *  oficina efetivamente entregou (pecas_recebidas). Peças perdidas/em conserto
+ *  são pagas separadamente no COP de refação. */
 function calcQtdPagavelPorModeloCor(cop: Cop): Map<string, number> {
   const out = new Map<string, number>();
-  const perdas = (cop.perdas as CopPerdaLinha[]) ?? [];
   const recv = cop.pecas_recebidas ?? [];
   const linhas = (cop.pecas ?? []) as CopPeca[];
   for (const p of linhas) {
     const r = getRecebida(recv, p.modelo, p.cor, p.tamanho);
-    const pl = perdas.find((x) => x.modelo === p.modelo && x.cor === p.cor && x.tamanho === p.tamanho);
-    const perd = Number(pl?.qtd ?? 0);
-    const q = Math.max(0, r - perd);
-    if (q <= 0) continue;
+    if (r <= 0) continue;
     const k = `${p.modelo}|${p.cor}`;
-    out.set(k, (out.get(k) ?? 0) + q);
+    out.set(k, (out.get(k) ?? 0) + r);
   }
   return out;
 }
