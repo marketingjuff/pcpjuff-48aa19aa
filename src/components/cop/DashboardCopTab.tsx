@@ -269,16 +269,16 @@ export function DashboardCopTab() {
               <thead className="text-xs text-muted-foreground"><tr>
                 <th className="text-left p-1">Orçamento</th>
                 <th className="text-left p-1">Pedido Olist</th>
-                <th className="text-left p-1">Início estamp./acab.</th>
                 <th className="text-left p-1">Limite (-2 d.ú.)</th>
+                <th className="text-left p-1">Início estamp./acab.</th>
               </tr></thead>
               <tbody>
                 {urgentes.map(({ p, ancora }) => (
                   <tr key={p.id} className="border-t">
                     <td className="p-1 font-mono">{p.orcamento ?? "—"}</td>
                     <td className="p-1 font-mono">{(p as any).pedido_olist ?? "—"}</td>
-                    <td className="p-1 tabular-nums whitespace-nowrap">{formatDateBR(ancora) || "—"}</td>
                     <td className="p-1 tabular-nums whitespace-nowrap">{ancora ? formatDateBR(addDiasUteis(ancora, -2)) : "—"}</td>
+                    <td className="p-1 tabular-nums whitespace-nowrap">{formatDateBR(ancora) || "—"}</td>
                   </tr>
                 ))}
               </tbody>
