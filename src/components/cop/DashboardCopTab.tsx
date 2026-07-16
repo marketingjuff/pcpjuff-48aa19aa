@@ -277,8 +277,8 @@ export function DashboardCopTab() {
                   <tr key={p.id} className="border-t">
                     <td className="p-1 font-mono">{p.orcamento ?? "—"}</td>
                     <td className="p-1 font-mono">{(p as any).pedido_olist ?? "—"}</td>
-                    <td className="p-1">{ancora ?? "—"}</td>
-                    <td className="p-1">{ancora ? addDiasUteis(ancora, -2) : "—"}</td>
+                    <td className="p-1 tabular-nums whitespace-nowrap">{formatDateBR(ancora) || "—"}</td>
+                    <td className="p-1 tabular-nums whitespace-nowrap">{ancora ? formatDateBR(addDiasUteis(ancora, -2)) : "—"}</td>
                   </tr>
                 ))}
               </tbody>
