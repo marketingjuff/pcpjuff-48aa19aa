@@ -66,18 +66,13 @@ export function PerdasTab() {
     type Entry = { cop: Cop; original: CopPerdaLinha[]; restantes: CopPerdaLinha[] };
     const out: Entry[] = [];
     for (const c of cops) {
-      const originais = ((c.perdas as CopPerdaLinha[]) ?? []).filter((l) => l && l.qtd > 0);
-      if (!originais.length) continue;
-      // Contabiliza refações já criadas a partir deste COP
-      const filhosItens: CopPerdaLinha[] = [];
-      for (const f of cops) {
-        if ((f as any).refacao_perda_origem_id === c.id) {
-          const its = ((f as any).refacao_perda_itens as CopPerdaLinha[]) ?? [];
-          for (const it of its) if (it && it.qtd > 0) filhosItens.push(it);
-        }
-      }
-      const restantes = subtrairPerdas(originais, filhosItens);
-      out.push({ cop: c, original: originais, restantes });
+      // `cop.perdas` já é o saldo restante: ao criar uma refação, os itens
+      // enviados são subtraídos via `subtrairPerdas` no update do COP de origem.
+      // Portanto NÃO subtraia novamente os `refacao_perda_itens` dos filhos,
+      // senão o restante fica duplamente descontado (vira 0 indevidamente).
+      const restantes = ((c.perdas as CopPerdaLinha[]) ?? []).filter((l) => l && l.qtd > 0);
+      if (!restantes.length) continue;
+      out.push({ cop: c, original: restantes, restantes });
     }
     return out;
   }, [cops]);
