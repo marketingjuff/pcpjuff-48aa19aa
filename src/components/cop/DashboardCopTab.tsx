@@ -8,6 +8,7 @@ import { COP_STATUS_LIST, totalPecasCop, rotuloCop, rotuloRomaneio, type Cop, ty
 import { REFACAO_TAMANHOS, cmpModeloCor, type Pedido } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { calcEmProducao, calcFaltantes, calcRecebido, calcPerdas, calcDisponivel, pkKey, dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
+import { formatDateBR } from "@/lib/format";
 
 export function DashboardCopTab() {
   const qc = useQueryClient();
