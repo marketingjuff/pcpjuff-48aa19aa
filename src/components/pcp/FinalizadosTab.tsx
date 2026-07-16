@@ -169,7 +169,21 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <FileText className="h-4 w-4" /> Histórico — {historico.pedido_olist}
               </div>
-              <Button size="sm" variant="ghost" onClick={() => setHistorico(null)}>Fechar</Button>
+              <div className="flex items-center gap-2">
+                {historico.layout_url && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      const { baixarLayoutPDF } = await import("./shared");
+                      await baixarLayoutPDF(historico.layout_url!);
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-1" /> Baixar layout
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" onClick={() => setHistorico(null)}>Fechar</Button>
+              </div>
             </div>
             <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
               <ReadOnlyField label="Pedido" value={historico.pedido_olist} />
