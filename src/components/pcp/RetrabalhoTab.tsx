@@ -417,7 +417,7 @@ function EpisodioCard({
 
       <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-sm pt-2 border-t">
         <ReadField label="Identificado por" value={episodio.area_identificou ?? "—"} />
-        <ReadField label="Erro da produção" value={typeof episodio.erro_producao === "boolean" ? (episodio.erro_producao ? "Sim" : "Não") : "—"} />
+        <ReadField label="Erro de produção da Estamparia" value={typeof episodio.erro_producao === "boolean" ? (episodio.erro_producao ? "Sim" : "Não") : "—"} />
         {episodio.erro_producao && (
           <>
             <ReadField label="Área que errou" value={episodio.area_erro ?? "—"} />
