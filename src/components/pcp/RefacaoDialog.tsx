@@ -23,6 +23,8 @@ export type RefacaoFormPayload = {
   erro_producao?: boolean;
   area_erro?: string;
   problema?: string;
+  falta_adesivos?: boolean;
+  qtd_falta_adesivos?: number;
 };
 
 interface Props {
