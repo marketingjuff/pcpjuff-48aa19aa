@@ -53,6 +53,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
   const [pecasPerdidas, setPecasPerdidas] = useState<PecaPerdida[]>([]);
   const [houvePerdaAdesivos, setHouvePerdaAdesivos] = useState<"sim" | "nao" | "">("");
   const [perdaAdesivos, setPerdaAdesivos] = useState<string>("");
+  const [houveFaltaAdesivos, setHouveFaltaAdesivos] = useState<"sim" | "nao" | "">("");
+  const [faltaAdesivos, setFaltaAdesivos] = useState<string>("");
   const [motivo, setMotivo] = useState<string>("");
   const [areaIdentificou, setAreaIdentificou] = useState<string>("");
   const [erroProd, setErroProd] = useState<"sim" | "nao" | "">("");
