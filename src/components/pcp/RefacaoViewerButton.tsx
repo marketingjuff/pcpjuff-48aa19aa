@@ -266,6 +266,9 @@ function EpisodioRead({
         {mostraAdesivos && (
           <Read label="Adesivos perdidos" value={(episodio.perda_adesivos ?? 0) > 0 ? `Sim — ${episodio.perda_adesivos}` : "Não"} />
         )}
+        {mostraAdesivos && (
+          <Read label="Faltou adesivo?" value={(episodio.qtd_falta_adesivos ?? 0) > 0 ? `Sim — ${episodio.qtd_falta_adesivos}` : "Não"} />
+        )}
       </div>
 
       <div className="pt-2 border-t">
