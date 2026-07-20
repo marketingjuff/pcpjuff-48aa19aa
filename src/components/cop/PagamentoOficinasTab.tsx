@@ -286,6 +286,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
   });
 
   const [confirmApagar, setConfirmApagar] = useState(false);
+  const [confirmVoltar, setConfirmVoltar] = useState(false);
   const apagarPagamento = useMutation({
     mutationFn: async () => {
       if (!selected) return;
@@ -309,6 +310,33 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
       qc.invalidateQueries({ queryKey: ["cops"] });
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao apagar."),
+  });
+
+  /** Reabre o COP no fluxo de Romaneio: volta o status para "Na Oficina (Costura)"
+   *  (mantendo pecas_recebidas, perdas e conferência), zera qualquer liberação
+   *  de pagamento pendente e leva o usuário para a aba Romaneio para corrigir. */
+  const voltarParaRomaneio = useMutation({
+    mutationFn: async () => {
+      if (!selected) return;
+      const patch: any = {
+        status: "Na Oficina (Costura)",
+        pagamento_status: "nao_pago",
+        pagamento_liberado_em: null,
+        pagamento_liberado_por: null,
+        pagamento_pago_em: null,
+        pagamento_pago_por: null,
+        pagamento_valor_calculado: null,
+      };
+      const { error } = await supabase.from("cops" as any).update(patch).eq("id", selected.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("COP reaberto no Romaneio para correção.");
+      setConfirmVoltar(false);
+      qc.invalidateQueries({ queryKey: ["cops"] });
+      if (onChangeTab) onChangeTab("romaneio");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao voltar para o Romaneio."),
   });
 
   return (
