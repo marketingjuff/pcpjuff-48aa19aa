@@ -136,6 +136,8 @@ export async function montarRefacoesAposRefazer(
     erro_producao: payload.erro_producao,
     area_erro: payload.area_erro,
     problema: payload.problema,
+    falta_adesivos: payload.falta_adesivos,
+    qtd_falta_adesivos: payload.qtd_falta_adesivos,
   };
   return { refacoes: [...refsAtuais, novo] };
 }
