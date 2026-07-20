@@ -125,6 +125,7 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
       }
     }
     let nPerdaAdesivos = 0;
+    let nFaltaAdesivos = 0;
     if (mostraAdesivos) {
       if (houvePerdaAdesivos === "") {
         setErr("Informe se houve perda de adesivos.");
@@ -134,6 +135,21 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
         nPerdaAdesivos = Number(perdaAdesivos);
         if (!Number.isFinite(nPerdaAdesivos) || nPerdaAdesivos < 1) {
           setErr("Informe quantos adesivos foram perdidos.");
+          return;
+        }
+      }
+      if (houveFaltaAdesivos === "") {
+        setErr("Informe se faltou adesivo.");
+        return;
+      }
+      if (houveFaltaAdesivos === "sim") {
+        nFaltaAdesivos = Number(faltaAdesivos);
+        if (!Number.isFinite(nFaltaAdesivos) || nFaltaAdesivos < 1) {
+          setErr("Informe quantos adesivos faltaram.");
+          return;
+        }
+        if (destino !== "arte") {
+          setErr("Faltou adesivo — refação deve ser feita para a Arte. Ajuste no seletor 'Refazer para...'.");
           return;
         }
       }
@@ -148,6 +164,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
       erro_producao: erroProd === "sim",
       area_erro: erroProd === "sim" ? areaErro : undefined,
       problema: erroProd === "sim" ? problema : undefined,
+      falta_adesivos: mostraAdesivos ? houveFaltaAdesivos === "sim" : undefined,
+      qtd_falta_adesivos: mostraAdesivos && houveFaltaAdesivos === "sim" ? nFaltaAdesivos : undefined,
     });
   }
 
