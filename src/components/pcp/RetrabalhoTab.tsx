@@ -387,6 +387,16 @@ function EpisodioCard({
             }
           />
         )}
+        {mostraAdesivos && (
+          <ReadField
+            label="Faltou adesivo?"
+            value={
+              (episodio.qtd_falta_adesivos ?? 0) > 0
+                ? `Sim — ${episodio.qtd_falta_adesivos}`
+                : "Não"
+            }
+          />
+        )}
         {episodio.etapa_destino === "dados" && (
           <ReadField
             label="Peças extras pedidas"
