@@ -286,6 +286,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
   });
 
   const [confirmApagar, setConfirmApagar] = useState(false);
+  const [confirmVoltar, setConfirmVoltar] = useState(false);
   const apagarPagamento = useMutation({
     mutationFn: async () => {
       if (!selected) return;
@@ -309,6 +310,33 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
       qc.invalidateQueries({ queryKey: ["cops"] });
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao apagar."),
+  });
+
+  /** Reabre o COP no fluxo de Romaneio: volta o status para "Na Oficina (Costura)"
+   *  (mantendo pecas_recebidas, perdas e conferência), zera qualquer liberação
+   *  de pagamento pendente e leva o usuário para a aba Romaneio para corrigir. */
+  const voltarParaRomaneio = useMutation({
+    mutationFn: async () => {
+      if (!selected) return;
+      const patch: any = {
+        status: "Na Oficina (Costura)",
+        pagamento_status: "nao_pago",
+        pagamento_liberado_em: null,
+        pagamento_liberado_por: null,
+        pagamento_pago_em: null,
+        pagamento_pago_por: null,
+        pagamento_valor_calculado: null,
+      };
+      const { error } = await supabase.from("cops" as any).update(patch).eq("id", selected.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("COP reaberto no Romaneio para correção.");
+      setConfirmVoltar(false);
+      qc.invalidateQueries({ queryKey: ["cops"] });
+      if (onChangeTab) onChangeTab("romaneio");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao voltar para o Romaneio."),
   });
 
   return (
@@ -441,8 +469,13 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
               ) : <div />}
 
               <div className="flex flex-wrap items-center gap-2 justify-end ml-auto">
-                {onChangeTab && (
-                  <Button variant="outline" onClick={() => onChangeTab("romaneio")}>
+                {onChangeTab && (selected.pagamento_status !== "pago" || isAdmin) && (
+                  <Button
+                    variant="outline"
+                    className="border-amber-400 text-amber-800 hover:bg-amber-50"
+                    onClick={() => setConfirmVoltar(true)}
+                    title="Reabrir este COP no Romaneio para corrigir peças / recebimento"
+                  >
                     <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao Romaneio
                   </Button>
                 )}
@@ -628,6 +661,27 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
               onClick={(e) => { e.preventDefault(); apagarPagamento.mutate(); }}
             >
               {apagarPagamento.isPending ? "Apagando..." : "Apagar pagamento"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmVoltar} onOpenChange={setConfirmVoltar}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Voltar este COP para o Romaneio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O status voltará para "Na Oficina (Costura)" para que você possa corrigir o recebimento (adicionar peças, ajustar quantidades, registrar perdas). As peças já recebidas, perdas e conferência são preservadas. Qualquer liberação de pagamento atual será desfeita — depois de corrigido, o COP precisará ser liberado novamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={voltarParaRomaneio.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-600 hover:bg-amber-700"
+              disabled={voltarParaRomaneio.isPending}
+              onClick={(e) => { e.preventDefault(); voltarParaRomaneio.mutate(); }}
+            >
+              {voltarParaRomaneio.isPending ? "Voltando..." : "Voltar ao Romaneio"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
