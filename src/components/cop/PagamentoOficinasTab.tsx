@@ -469,8 +469,13 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
               ) : <div />}
 
               <div className="flex flex-wrap items-center gap-2 justify-end ml-auto">
-                {onChangeTab && (
-                  <Button variant="outline" onClick={() => onChangeTab("romaneio")}>
+                {onChangeTab && (selected.pagamento_status !== "pago" || isAdmin) && (
+                  <Button
+                    variant="outline"
+                    className="border-amber-400 text-amber-800 hover:bg-amber-50"
+                    onClick={() => setConfirmVoltar(true)}
+                    title="Reabrir este COP no Romaneio para corrigir peças / recebimento"
+                  >
                     <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao Romaneio
                   </Button>
                 )}
