@@ -111,6 +111,9 @@ export type RefacaoEpisodio = {
   erro_producao?: boolean;
   area_erro?: string;
   problema?: string;
+  // --- Falta de adesivo (independente de perda) ---
+  falta_adesivos?: boolean;
+  qtd_falta_adesivos?: number;
 };
 
 export type CorrecaoEtapa = {
