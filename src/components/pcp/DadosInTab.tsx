@@ -262,7 +262,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     }
     // Validação das datas de produção (janela e ordem do fluxo)
     {
-      const inicioAcabEfetivo = isLisa ? (form.inicio_acabamento ?? null) : (form.inicio_acabamento ?? inicioAcabamentoCalc ?? null);
+      const inicioAcabEfetivo = isLisa ? (form.inicio_acabamento ?? null) : (inicioAcabamentoCalc ?? form.inicio_acabamento ?? null);
       const datasParaValidar: { key: string; label: string; value: string | null | undefined }[] = isLisa
         ? [
             { key: "inicio_acabamento", label: "Início de Acabamento", value: form.inicio_acabamento },
