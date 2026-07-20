@@ -666,6 +666,27 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={confirmVoltar} onOpenChange={setConfirmVoltar}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Voltar este COP para o Romaneio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O status voltará para "Na Oficina (Costura)" para que você possa corrigir o recebimento (adicionar peças, ajustar quantidades, registrar perdas). As peças já recebidas, perdas e conferência são preservadas. Qualquer liberação de pagamento atual será desfeita — depois de corrigido, o COP precisará ser liberado novamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={voltarParaRomaneio.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-600 hover:bg-amber-700"
+              disabled={voltarParaRomaneio.isPending}
+              onClick={(e) => { e.preventDefault(); voltarParaRomaneio.mutate(); }}
+            >
+              {voltarParaRomaneio.isPending ? "Voltando..." : "Voltar ao Romaneio"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <HistoricoPagamentosConsolidados />
 
       <PagamentoConsolidadoCard />
