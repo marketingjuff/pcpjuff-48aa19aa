@@ -197,7 +197,7 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
             </div>
 
             <div className="space-y-1">
-              <Label>Houve erro da produção? *</Label>
+              <Label>Houve erro de produção da Estamparia (Arte, DTF, Silk ou Acabamento)? *</Label>
               <div className="flex gap-2">
                 <Button type="button" size="sm" variant={erroProd === "sim" ? "default" : "outline"} onClick={() => setErroProd("sim")}>Sim</Button>
                 <Button type="button" size="sm" variant={erroProd === "nao" ? "default" : "outline"} onClick={() => { setErroProd("nao"); setAreaErro(""); setProblema(""); }}>Não</Button>
