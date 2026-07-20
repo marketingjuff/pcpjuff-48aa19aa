@@ -69,6 +69,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
       setPecasPerdidas([]);
       setHouvePerdaAdesivos("");
       setPerdaAdesivos("");
+      setHouveFaltaAdesivos("");
+      setFaltaAdesivos("");
       setMotivo("");
       setAreaIdentificou("");
       setErroProd("");
