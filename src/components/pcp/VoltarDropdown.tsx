@@ -77,7 +77,8 @@ export function VoltarDropdown({ destinos, pedido, onVoltar, disabled }: Props) 
         tipoEstampa={pedido?.tipo_estampa}
         onConfirm={(payload) => {
           setDialogOpen(false);
-          onVoltar(sel, payload);
+          const dest = payload.falta_adesivos ? "arte" : sel;
+          onVoltar(dest, payload);
         }}
       />
     </>
