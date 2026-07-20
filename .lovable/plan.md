@@ -1,77 +1,89 @@
+# Refação: rótulo "Erro de Produção da Estamparia" + nova pergunta "Faltou adesivo?"
 
-# Deixar todos os históricos legíveis para leigos
+Sem migration. Campos novos vivem apenas dentro do JSONB do episódio de refação.
 
-Hoje o histórico mostra o nome cru do campo (ex.: `arte_warning: sim → não`), o que é técnico. Vou trocar por rótulos e valores em português claro, aplicando o mesmo tratamento em **todos** os históricos do sistema (Histórico do Pedido, aba Histórico PCP, aba Histórico MAP, aba Histórico COP).
+## Arquivos tocados
 
-## O que muda visualmente
+1. `src/components/pcp/RefacaoDialog.tsx`
+2. `src/components/pcp/VoltarDropdown.tsx` (forçar destino = Arte quando faltou adesivo)
+3. `src/lib/pedidos.ts` (só o type `RefacaoEpisodio`)
+4. `src/components/pcp/refacao-helpers.ts` (só a montagem do episódio novo)
+5. `src/components/pcp/RetrabalhoTab.tsx` (só leitura/exibição)
+6. `src/components/pcp/RefacaoViewerButton.tsx` (só leitura/exibição)
 
-Exemplo do print:
-- **Antes:** `arte_warning: sim → não`
-- **Depois:** `Alerta de atenção na arte: Ativo → Removido`
+Nenhum arquivo do COP será tocado.
 
-Outros exemplos:
-- `dtf_estampado: null → Sim` → **DTF estampado: Pendente → Concluído**
-- `embalado: Não → Sim` → **Embalado: Pendente → Concluído**
-- `tipo_estampa: DTF → DTF + Silk` → **Tipo de estampa: DTF → DTF + Silk** (já legível, mantém)
-- `refacoes: […]` → **Refações: (lista atualizada)** (evita despejar JSON)
-- `pecas_completadas_log: […]` → **Log de peças concluídas: (atualizado)**
-- `historico_recebimentos: […]` → **Recebimentos: (atualizado)**
-- `cortes: […]` → **Cortes: (atualizado)**
-- `layout_url: "https://…"` → **Layout: (link atualizado)**
-- `finalizado_em: null → 2026-07-13T…` → **Finalizado em: — → 13/07/2026 17:24**
+## Mudanças
 
-## Como faço
+### 1. `RefacaoDialog.tsx`
 
-1. **Criar `src/lib/audit-labels.ts`** — módulo único com:
-   - `labelCampo(campo)` — dicionário PT-BR unificado cobrindo todos os campos de `pedidos`, `cops`, `cop_perdas`, `map_*`, `oficinas`, `pagamentos_consolidados`. Inclui os já existentes + humanização dos técnicos:
-     - `arte_warning` → "Alerta de atenção na arte"
-     - `necessita_vetorizacao` → "Precisa vetorizar"
-     - `exp_cobranca_pagamento` → "Cobrança do pagamento (Expedição)"
-     - `exp_pagamento`, `exp_etiqueta`, `exp_frete_solicitado`, `exp_despachado` → "Pagamento confirmado", "Etiqueta emitida", "Frete solicitado", "Pedido despachado"
-     - `quem_bateu_dtf`/`silk` → "Quem estampou DTF/Silk"
-     - `quem_cortou_dtf` → "Quem cortou o DTF"
-     - `quem_revelou_tela` → "Quem revelou a tela"
-     - `n_batidas_dtf/silk` → "Nº de batidas de DTF/Silk"
-     - `dtf_pessoas_qtd` → "Nº de pessoas no DTF"
-     - `pecas_completadas_log` → "Registro de peças concluídas"
-     - `historico_data_entrega` → "Alterações na data de entrega"
-     - `corte_em_correcao` → "Corte em correção"
-     - `pagamento_consolidado_id` → "Pagamento consolidado (vínculo)"
-     - `refacao_perda_origem_id` → "Refação de perda (origem)"
-     - `refacao_perda_itens` → "Peças refeitas"
-     - `alt_inicial` → "Altura inicial (m)"
-     - `kg_solicitados/enviados/recebidos` → "Kg solicitados / enviados / recebidos"
-     - etc.
-   - `formatValor(campo, valor)` — formatador contextual:
-     - **Booleanos genéricos** (`sim/true` / `não/false`) → "Sim" / "Não".
-     - **Campos "alerta/warning"** (`arte_warning`) → "Ativo" / "Removido".
-     - **Campos de execução binária** (`embalado`, `dtf_estampado`, `dtf_impresso`, `dtf_cortado`, `silk_feito`, `fotolito_impresso`, `fotolito_executado`, `tela_gravada`, `vetorizacao_executada`, `vetorizacao_dtf`, `vetorizacao_silk`, `dtf_executado`) → `Sim` vira "Concluído", `Não/null` viram "Pendente".
-     - **`corte_em_correcao`, `corte_dividido`, `reaberto`, `finalizado`, `quebra_conciliada`** → "Sim" / "Não" (já legível, mas via mapa).
-     - **`pagamento_status`** → dicionário: `aguardando` → "Aguardando", `liberado` → "Liberado para pagamento", `pago` → "Pago".
-     - **`status_pecas`, `status_arte`, `status`, `status_malharia`, `tipo_estampa`** → passa direto (já são enums legíveis em PT-BR).
-     - **`motivo`** (cop_perdas) → passa direto.
-     - **Datas ISO `yyyy-mm-dd`** → `dd/mm/yyyy`.
-     - **Timestamps ISO** (contêm `T`) → `dd/mm/yyyy hh:mm`.
-     - **UUIDs de campos `*_id`, `feito_por`, `oficina_id`, etc.** → "referência atualizada" (não faz sentido mostrar UUID para leigo). Manter apenas quando já resolvido (nome).
-     - **Arrays / objetos** (jsonb: `cortes`, `refacoes`, `pecas_completadas_log`, `historico_recebimentos`, `perdas`, `pecas_solicitadas`, `pecas_lisas`, `detalhes`, `valores_por_modelo`, `historico_data_entrega`, `correcoes_etapa`) → substitui o JSON cru por `"(lista atualizada)"` ou `"(N itens)"`.
-     - **Strings longas** (>60 chars, ex.: `layout_url`, `observacoes`, `obs`, `arte_observacao`, `dtf_observacao`, `silk_observacao`, `acabamento_observacao`, `exp_observacoes`) → mostrar `"(texto atualizado)"` em vez de trecho truncado, com hover/title contendo o texto completo (via `title` HTML).
-     - **Números** → mantém, com sufixo quando aplicável (`kg_*` → "12 kg", `alt_inicial` → "3,50 m", `valor_frete`/`valor_total` → "R$ 12,50").
-     - **`null` / vazio** → "—".
+**Renomear label:**
+- De: `Houve erro da produção? *`
+- Para: `Houve erro de produção da Estamparia (Arte, DTF, Silk ou Acabamento)? *`
 
-2. **Refatorar `src/components/shared/AuditLogView.tsx`** — remover o `LABELS` e `fmtVal` locais e usar `labelCampo` + `formatValor` do novo módulo. Passar `campo` para o formatador de cada mudança. Renderizar strings longas com `title` para tooltip.
+Lógica de `erroProd` e opções de "Qual área errou?" permanecem iguais.
 
-3. **Refatorar `src/components/pcp/HistoricoPedidoDialog.tsx`** — mesma coisa: remover `LABELS`/`fmtVal` locais e usar o módulo compartilhado.
+**Nova pergunta independente "Faltou adesivo?"** — dentro do bloco `mostraAdesivos`. Independente de "Houve perda de adesivos?".
 
-4. **Nada mais muda** — banco, RLS, server functions, gravação de auditoria, filtros: tudo permanece igual. Só a camada de apresentação.
+Novos estados:
+```ts
+const [houveFaltaAdesivos, setHouveFaltaAdesivos] = useState<"sim" | "nao" | "">("");
+const [faltaAdesivos, setFaltaAdesivos] = useState<string>("");
+```
+Resetados no `useEffect` de abertura.
 
-## Onde aparece
+Layout: segunda linha no mesmo grid `grid-cols-2 gap-2`, mesmo padrão visual (Sim/Não + input condicional "Quantos adesivos faltaram?", `min=1`).
 
-- Aba **Histórico** dentro de PCP, MAP e COP (usam `AuditLogView`).
-- Botão **Histórico** no dialog do pedido em PCP (`HistoricoPedidoDialog`).
+**Regra de destino obrigatório (nova):** se `houveFaltaAdesivos === "sim"`, o destino da refação deve ser forçado para **Arte**. Implementação:
+- O dialog recebe `destino` via props (já recebe hoje). Adicionar prop `onForcarDestinoArte?: () => void`.
+- Assim que o usuário marca "Faltou adesivo? = Sim", exibir uma nota destacada abaixo do campo: *"Faltou adesivo obriga refazer a partir da Arte — o destino será ajustado automaticamente."*
+- Na validação `confirmar()`, se `houveFaltaAdesivos === "sim"` e o `destino` recebido não for `"arte"`, bloquear com erro: *"Faltou adesivo — refação deve ser feita para a Arte. Ajuste no seletor 'Refazer para...'."*
 
-Ambos passam a puxar rótulos e valores do mesmo módulo, então a padronização vale para todos os históricos do sistema de uma vez.
+**Ajuste em `VoltarDropdown.tsx`:** passar callback ao `RefacaoDialog` e, quando o dialog sinalizar "faltou adesivo = sim", trocar `sel` para `"arte"` automaticamente antes do `onVoltar`. Alternativa simples e usada: no `onConfirm`, se `payload.falta_adesivos === true`, sobrescrever o destino chamado para `"arte"`:
+```ts
+onConfirm={(payload) => {
+  setDialogOpen(false);
+  const dest = payload.falta_adesivos ? "arte" : sel;
+  onVoltar(dest, payload);
+}}
+```
+Só o `VoltarDropdown` é tocado — nada de mudar `refacao-helpers` além dos campos novos.
 
-## Fora do escopo
+Validação em `confirmar()` (dentro do `if (mostraAdesivos)`):
+- `houveFaltaAdesivos === ""` → "Informe se faltou adesivo."
+- `houveFaltaAdesivos === "sim"` + qtd inválida (`< 1`) → "Informe quantos adesivos faltaram."
 
-- Não altero o que é gravado no `audit_log` (schema/gatilhos).
-- Não escondo campos técnicos; se algum campo ainda ficar cru é adicionar rótulo depois — o fallback continua sendo o nome do campo, para não perder informação.
+Payload — adicionar ao `RefacaoFormPayload` e ao `onConfirm`:
+```ts
+falta_adesivos?: boolean;
+qtd_falta_adesivos?: number;
+```
+**Nunca** somados a `perda_adesivos`.
+
+### 2. `src/lib/pedidos.ts`
+
+No `type RefacaoEpisodio`, junto dos campos opcionais existentes:
+```ts
+falta_adesivos?: boolean;
+qtd_falta_adesivos?: number;
+```
+
+### 3. `src/components/pcp/refacao-helpers.ts`
+
+Na criação do `novo: RefacaoEpisodio` em `montarRefacoesAposRefazer`, copiar os dois campos do payload junto de `area_identificou`/`erro_producao`/`area_erro`/`problema`. Nenhuma outra alteração — o destino já é passado por fora (`VoltarDropdown` força para `"arte"`).
+
+### 4. `RetrabalhoTab.tsx` e `RefacaoViewerButton.tsx`
+
+- Renomear leitura de `"Erro da produção"` → `"Erro de produção da Estamparia"`. Valor exibido igual.
+- Adicionar campo logo abaixo de "Adesivos perdidos":
+  - label: `"Faltou adesivo?"`
+  - valor: `(episodio.qtd_falta_adesivos ?? 0) > 0 ? \`Sim — ${episodio.qtd_falta_adesivos}\` : "Não"`
+- **Não alterar** `totalPerdaAdesivos` — segue somando apenas `perda_adesivos`.
+
+## Garantias
+
+- Sem `ALTER TABLE` / `CREATE TABLE`.
+- `qtd_falta_adesivos` jamais entra em contabilização de perda de adesivos.
+- "Faltou adesivo = Sim" força o destino da refação para **Arte** (via `VoltarDropdown` + validação no dialog).
+- Nenhum arquivo do COP é tocado.
+- Validações obrigatórias para as duas perguntas de adesivo quando `mostraAdesivos`.

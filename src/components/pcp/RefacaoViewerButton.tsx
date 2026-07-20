@@ -266,6 +266,9 @@ function EpisodioRead({
         {mostraAdesivos && (
           <Read label="Adesivos perdidos" value={(episodio.perda_adesivos ?? 0) > 0 ? `Sim — ${episodio.perda_adesivos}` : "Não"} />
         )}
+        {mostraAdesivos && (
+          <Read label="Faltou adesivo?" value={(episodio.qtd_falta_adesivos ?? 0) > 0 ? `Sim — ${episodio.qtd_falta_adesivos}` : "Não"} />
+        )}
       </div>
 
       <div className="pt-2 border-t">
@@ -294,7 +297,7 @@ function EpisodioRead({
 
       <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-sm pt-2 border-t">
         <Read label="Identificado por" value={episodio.area_identificou ?? "—"} />
-        <Read label="Erro da produção" value={typeof episodio.erro_producao === "boolean" ? (episodio.erro_producao ? "Sim" : "Não") : "—"} />
+        <Read label="Erro de produção da Estamparia" value={typeof episodio.erro_producao === "boolean" ? (episodio.erro_producao ? "Sim" : "Não") : "—"} />
         {episodio.erro_producao && (
           <>
             <Read label="Área que errou" value={episodio.area_erro ?? "—"} />

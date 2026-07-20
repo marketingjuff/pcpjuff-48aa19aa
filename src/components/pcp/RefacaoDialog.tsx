@@ -23,6 +23,8 @@ export type RefacaoFormPayload = {
   erro_producao?: boolean;
   area_erro?: string;
   problema?: string;
+  falta_adesivos?: boolean;
+  qtd_falta_adesivos?: number;
 };
 
 interface Props {
@@ -44,13 +46,15 @@ function kindForArea(area: string): AppListKind | null {
   }
 }
 
-export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, onConfirm }: Props) {
+export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoEstampa, onConfirm }: Props) {
   const mostraAdesivos = tipoIncluiDTF(tipoEstampa);
   const [pecasRefazer, setPecasRefazer] = useState<string>("");
   const [houvePerdaPecas, setHouvePerdaPecas] = useState<"sim" | "nao" | "">("");
   const [pecasPerdidas, setPecasPerdidas] = useState<PecaPerdida[]>([]);
   const [houvePerdaAdesivos, setHouvePerdaAdesivos] = useState<"sim" | "nao" | "">("");
   const [perdaAdesivos, setPerdaAdesivos] = useState<string>("");
+  const [houveFaltaAdesivos, setHouveFaltaAdesivos] = useState<"sim" | "nao" | "">("");
+  const [faltaAdesivos, setFaltaAdesivos] = useState<string>("");
   const [motivo, setMotivo] = useState<string>("");
   const [areaIdentificou, setAreaIdentificou] = useState<string>("");
   const [erroProd, setErroProd] = useState<"sim" | "nao" | "">("");
@@ -65,6 +69,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
       setPecasPerdidas([]);
       setHouvePerdaAdesivos("");
       setPerdaAdesivos("");
+      setHouveFaltaAdesivos("");
+      setFaltaAdesivos("");
       setMotivo("");
       setAreaIdentificou("");
       setErroProd("");
@@ -119,6 +125,7 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
       }
     }
     let nPerdaAdesivos = 0;
+    let nFaltaAdesivos = 0;
     if (mostraAdesivos) {
       if (houvePerdaAdesivos === "") {
         setErr("Informe se houve perda de adesivos.");
@@ -128,6 +135,21 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
         nPerdaAdesivos = Number(perdaAdesivos);
         if (!Number.isFinite(nPerdaAdesivos) || nPerdaAdesivos < 1) {
           setErr("Informe quantos adesivos foram perdidos.");
+          return;
+        }
+      }
+      if (houveFaltaAdesivos === "") {
+        setErr("Informe se faltou adesivo.");
+        return;
+      }
+      if (houveFaltaAdesivos === "sim") {
+        nFaltaAdesivos = Number(faltaAdesivos);
+        if (!Number.isFinite(nFaltaAdesivos) || nFaltaAdesivos < 1) {
+          setErr("Informe quantos adesivos faltaram.");
+          return;
+        }
+        if (destino !== "arte") {
+          setErr("Faltou adesivo — refação deve ser feita para a Arte. Ajuste no seletor 'Refazer para...'.");
           return;
         }
       }
@@ -142,6 +164,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
       erro_producao: erroProd === "sim",
       area_erro: erroProd === "sim" ? areaErro : undefined,
       problema: erroProd === "sim" ? problema : undefined,
+      falta_adesivos: mostraAdesivos ? houveFaltaAdesivos === "sim" : undefined,
+      qtd_falta_adesivos: mostraAdesivos && houveFaltaAdesivos === "sim" ? nFaltaAdesivos : undefined,
     });
   }
 
@@ -173,7 +197,7 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
             </div>
 
             <div className="space-y-1">
-              <Label>Houve erro da produção? *</Label>
+              <Label>Houve erro de produção da Estamparia (Arte, DTF, Silk ou Acabamento)? *</Label>
               <div className="flex gap-2">
                 <Button type="button" size="sm" variant={erroProd === "sim" ? "default" : "outline"} onClick={() => setErroProd("sim")}>Sim</Button>
                 <Button type="button" size="sm" variant={erroProd === "nao" ? "default" : "outline"} onClick={() => { setErroProd("nao"); setAreaErro(""); setProblema(""); }}>Não</Button>
@@ -237,23 +261,50 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, o
           </div>
 
           {mostraAdesivos && (
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label>Houve perda de adesivos? *</Label>
-                <div className="flex gap-2">
-                  <Button type="button" size="sm" variant={houvePerdaAdesivos === "sim" ? "default" : "outline"} onClick={() => setHouvePerdaAdesivos("sim")}>Sim</Button>
-                  <Button type="button" size="sm" variant={houvePerdaAdesivos === "nao" ? "default" : "outline"} onClick={() => { setHouvePerdaAdesivos("nao"); setPerdaAdesivos(""); }}>Não</Button>
-                </div>
-              </div>
-              {houvePerdaAdesivos === "sim" && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label>Quantos adesivos perdidos? *</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={perdaAdesivos}
-                    onChange={(e) => setPerdaAdesivos(e.target.value)}
-                  />
+                  <Label>Houve perda de adesivos? *</Label>
+                  <div className="flex gap-2">
+                    <Button type="button" size="sm" variant={houvePerdaAdesivos === "sim" ? "default" : "outline"} onClick={() => setHouvePerdaAdesivos("sim")}>Sim</Button>
+                    <Button type="button" size="sm" variant={houvePerdaAdesivos === "nao" ? "default" : "outline"} onClick={() => { setHouvePerdaAdesivos("nao"); setPerdaAdesivos(""); }}>Não</Button>
+                  </div>
+                </div>
+                {houvePerdaAdesivos === "sim" && (
+                  <div className="space-y-1">
+                    <Label>Quantos adesivos perdidos? *</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={perdaAdesivos}
+                      onChange={(e) => setPerdaAdesivos(e.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label>Faltou adesivo? *</Label>
+                  <div className="flex gap-2">
+                    <Button type="button" size="sm" variant={houveFaltaAdesivos === "sim" ? "default" : "outline"} onClick={() => setHouveFaltaAdesivos("sim")}>Sim</Button>
+                    <Button type="button" size="sm" variant={houveFaltaAdesivos === "nao" ? "default" : "outline"} onClick={() => { setHouveFaltaAdesivos("nao"); setFaltaAdesivos(""); }}>Não</Button>
+                  </div>
+                </div>
+                {houveFaltaAdesivos === "sim" && (
+                  <div className="space-y-1">
+                    <Label>Quantos adesivos faltaram? *</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={faltaAdesivos}
+                      onChange={(e) => setFaltaAdesivos(e.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
+              {houveFaltaAdesivos === "sim" && (
+                <div className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded px-2 py-1.5">
+                  Faltou adesivo obriga refazer a partir da <strong>Arte</strong>. Selecione "Refazer para Arte" antes de confirmar.
                 </div>
               )}
             </div>
