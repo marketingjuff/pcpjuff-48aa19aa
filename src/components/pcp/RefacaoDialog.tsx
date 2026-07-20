@@ -46,7 +46,7 @@ function kindForArea(area: string): AppListKind | null {
   }
 }
 
-export function RefacaoDialog({ open, onOpenChange, destinoLabel, tipoEstampa, onConfirm }: Props) {
+export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoEstampa, onConfirm }: Props) {
   const mostraAdesivos = tipoIncluiDTF(tipoEstampa);
   const [pecasRefazer, setPecasRefazer] = useState<string>("");
   const [houvePerdaPecas, setHouvePerdaPecas] = useState<"sim" | "nao" | "">("");
