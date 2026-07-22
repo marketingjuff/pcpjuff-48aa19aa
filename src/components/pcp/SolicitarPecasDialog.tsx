@@ -164,9 +164,6 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
     setGrupos((arr) => arr.filter((_, idx) => idx !== i));
   }
 
-  const excedeVendedor =
-    typeof limite === "number" && limite > 0 && (undefined as any);
-
   async function handleSave() {
     if (typeof limite === "number" && limite > 0) {
       let sol = 0;
