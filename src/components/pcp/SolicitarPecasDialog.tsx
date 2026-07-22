@@ -375,18 +375,19 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
               </AlertDialogContent>
             </AlertDialog>
           )}
-          {readOnly && !editMode && (
+          {!editMode && (
             <Button
               type="button"
               variant="outline"
               className="border-amber-500 text-amber-700 hover:bg-amber-50 mr-auto"
               onClick={() => setEditMode(true)}
-              title="Corrigir solicitação (somente gestores)"
+              title="Liberar edição de todos os campos"
             >
               <Pencil className="h-4 w-4 mr-1" />
               Corrigir solicitação
             </Button>
           )}
+
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {effectiveReadOnly ? "Fechar" : "Cancelar"}
           </Button>
