@@ -165,6 +165,11 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
   }
 
   async function handleSave() {
+    if (typeof limite === "number" && limite > 0) {
+      let sol = 0;
+      for (const g of grupos) for (const tam of REFACAO_TAMANHOS) sol += Number(g.qtd[tam]) || 0;
+      if (sol > limite) return;
+    }
     setSaving(true);
     try {
       await onSave(desagrupar(grupos));
@@ -329,9 +334,18 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
             {typeof limite === "number" && limite > 0 && (
               <span>
                 Qtd do vendedor:{" "}
-                <span className="font-semibold tabular-nums text-foreground">
+                <span
+                  className={`font-semibold tabular-nums ${
+                    totals.sol > limite ? "text-red-600" : "text-foreground"
+                  }`}
+                >
                   {totals.sol}/{limite}
                 </span>
+                {totals.sol > limite && (
+                  <span className="ml-2 text-red-600">
+                    Total ({totals.sol}) ultrapassa a qtd do vendedor ({limite}).
+                  </span>
+                )}
               </span>
             )}
           </div>
@@ -395,7 +409,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
             <Button
               type="button"
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || (typeof limite === "number" && limite > 0 && totals.sol > limite)}
             >
               {saving ? "Salvando..." : "Salvar"}
             </Button>
