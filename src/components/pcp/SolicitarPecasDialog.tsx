@@ -271,7 +271,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
 
                 {REFACAO_TAMANHOS.map((tam) => {
                   const q = Number(g.qtd[tam]) || 0;
-                  const e = Math.min(q, Number(g.qtd_enviada[tam]) || 0);
+                  const e = Number(g.qtd_enviada[tam]) || 0;
                   return (
                     <div key={tam} className="flex flex-col items-center">
                       <label className="md:hidden text-[10px] text-muted-foreground font-medium">{tam}</label>
@@ -284,14 +284,15 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
                         disabled={effectiveReadOnly}
                         onChange={(ev) => setQtd(i, tam, Number(ev.target.value) || 0)}
                       />
-                      {q > 0 && (
-                        <span className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+                      {(q > 0 || e > 0) && (
+                        <span className={`text-[10px] mt-0.5 tabular-nums ${e > q ? "text-amber-600 font-semibold" : "text-muted-foreground"}`}>
                           {e}/{q}
                         </span>
                       )}
                     </div>
                   );
                 })}
+
 
                 <div className="flex flex-wrap gap-1 justify-center text-[11px]">
                   <span className="px-1.5 py-0.5 rounded bg-violet-100 text-violet-800 border border-violet-200">Sol. {sol}</span>
