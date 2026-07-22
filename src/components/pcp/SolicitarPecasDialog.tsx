@@ -128,15 +128,11 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
   function setQtd(i: number, tam: string, n: number) {
     setGrupos((arr) => arr.map((g, idx) => {
       if (idx !== i) return g;
-      let valor = Math.max(0, n);
-      if (typeof limite === "number" && limite > 0) {
-        const outros = totalAtual(arr, i, tam);
-        const max = Math.max(0, limite - outros);
-        if (valor > max) valor = max;
-      }
+      const valor = Math.max(0, n);
       return { ...g, qtd: { ...g.qtd, [tam]: valor } };
     }));
   }
+
   function adicionar() {
     setGrupos((arr) => [...arr, novoGrupo()]);
   }
