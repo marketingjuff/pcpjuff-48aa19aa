@@ -335,6 +335,9 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
               </span>
             )}
           </div>
+        </div>
+
+
 
 
         <DialogFooter className="gap-2 sm:gap-2">
