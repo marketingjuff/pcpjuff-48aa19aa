@@ -222,8 +222,9 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
             for (const tam of REFACAO_TAMANHOS) {
               const q = Number(g.qtd[tam]) || 0;
               sol += q;
-              env += Math.min(q, Number(g.qtd_enviada[tam]) || 0);
+              env += Number(g.qtd_enviada[tam]) || 0;
             }
+
             const pend = Math.max(0, sol - env);
             const tudoEnviado = sol > 0 && env >= sol;
             return (
