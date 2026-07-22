@@ -164,7 +164,15 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
     setGrupos((arr) => arr.filter((_, idx) => idx !== i));
   }
 
+  const excedeVendedor =
+    typeof limite === "number" && limite > 0 && (undefined as any);
+
   async function handleSave() {
+    if (typeof limite === "number" && limite > 0) {
+      let sol = 0;
+      for (const g of grupos) for (const tam of REFACAO_TAMANHOS) sol += Number(g.qtd[tam]) || 0;
+      if (sol > limite) return;
+    }
     setSaving(true);
     try {
       await onSave(desagrupar(grupos));
