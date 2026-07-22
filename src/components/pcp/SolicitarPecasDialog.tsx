@@ -115,12 +115,13 @@ function desagrupar(grupos: GrupoLinha[]): PecaSolicitada[] {
         cor: g.cor,
         tamanho: tam,
         qtd: q,
-        qtd_enviada: Math.min(q, Number(g.qtd_enviada[tam]) || 0),
+        qtd_enviada: Number(g.qtd_enviada[tam]) || 0,
       });
     }
   }
   return out;
 }
+
 
 export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletadasLog, onSave, readOnly = false, limite, onLiberarCompleto }: Props) {
   const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value, pecasCompletadasLog));
