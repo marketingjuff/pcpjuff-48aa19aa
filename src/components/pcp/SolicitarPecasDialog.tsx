@@ -179,11 +179,12 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
     for (const g of grupos) {
       for (const tam of REFACAO_TAMANHOS) {
         sol += Number(g.qtd[tam]) || 0;
-        env += Math.min(Number(g.qtd[tam]) || 0, Number(g.qtd_enviada[tam]) || 0);
+        env += Number(g.qtd_enviada[tam]) || 0;
       }
     }
     return { sol, env, pend: Math.max(0, sol - env) };
   }, [grupos]);
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
