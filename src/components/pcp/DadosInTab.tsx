@@ -716,7 +716,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   {temSolicitacao && (
                     <span className="ml-2 text-xs opacity-90">
                       ({pecasSolicitadas.reduce((a, l) => a + (Number(l.qtd_enviada) || 0), 0)}/
-                      {pecasSolicitadas.reduce((a, l) => a + (Number(l.qtd) || 0), 0)})
+                      {Number(form.qtd ?? selected?.qtd ?? 0) || 0})
                     </span>
                   )}
                 </Button>
