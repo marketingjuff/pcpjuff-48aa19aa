@@ -328,19 +328,14 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
             <span>Pendente: <span className="font-semibold tabular-nums text-foreground">{totals.pend}</span></span>
             {typeof limite === "number" && limite > 0 && (
               <span>
-                Limite do vendedor:{" "}
-                <span className={`font-semibold tabular-nums ${totals.sol > limite ? "text-red-600" : "text-foreground"}`}>
+                Qtd do vendedor:{" "}
+                <span className="font-semibold tabular-nums text-foreground">
                   {totals.sol}/{limite}
                 </span>
               </span>
             )}
           </div>
-          {typeof limite === "number" && limite > 0 && totals.sol > limite && (
-            <div className="text-[12px] text-red-600 font-medium">
-              O total solicitado ({totals.sol}) ultrapassa a quantidade do vendedor ({limite}).
-            </div>
-          )}
-        </div>
+
 
         <DialogFooter className="gap-2 sm:gap-2">
           {!effectiveReadOnly && onLiberarCompleto && totals.pend > 0 && (
