@@ -75,11 +75,34 @@ function agrupar(value: PecaSolicitada[], log?: LogPecaCompletada[] | null): Gru
     }
     const tam = p.tamanho || "—";
     g.qtd[tam] = (g.qtd[tam] || 0) + (Number(p.qtd) || 0);
-    const enviadoReal = enviadosLog.get(keyOf(p));
-    g.qtd_enviada[tam] = (g.qtd_enviada[tam] || 0) + Math.max(Number(p.qtd_enviada) || 0, enviadoReal ?? 0);
+  }
+  // Preencher enviadas SEMPRE pelo log real (não cap pelo solicitado)
+  if (Array.isArray(log)) {
+    for (const item of log) {
+      const qtd = Number(item?.qtd) || 0;
+      if (qtd <= 0) continue;
+      const key = `${item.modelo}|${item.cor}`;
+      let g = map.get(key);
+      if (!g) {
+        g = { modelo: item.modelo, cor: item.cor, qtd: {}, qtd_enviada: {} };
+        map.set(key, g);
+      }
+      const tam = item.tamanho || "—";
+      g.qtd_enviada[tam] = (g.qtd_enviada[tam] || 0) + qtd;
+    }
+  } else {
+    // fallback: usa qtd_enviada salvo
+    for (const p of value ?? []) {
+      const key = `${p.modelo}|${p.cor}`;
+      const g = map.get(key);
+      if (!g) continue;
+      const tam = p.tamanho || "—";
+      g.qtd_enviada[tam] = (g.qtd_enviada[tam] || 0) + (Number(p.qtd_enviada) || 0);
+    }
   }
   return Array.from(map.values());
 }
+
 
 function desagrupar(grupos: GrupoLinha[]): PecaSolicitada[] {
   const out: PecaSolicitada[] = [];
