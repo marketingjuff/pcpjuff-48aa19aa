@@ -715,7 +715,9 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   {tudoEnviado ? "Pedido Completo" : "Solicitar Peças"}
                   {temSolicitacao && (
                     <span className="ml-2 text-xs opacity-90">
-                      ({pecasSolicitadas.reduce((a, l) => a + (Number(l.qtd_enviada) || 0), 0)}/
+                      ({(Array.isArray(selected?.pecas_completadas_log)
+                        ? (selected!.pecas_completadas_log as any[]).reduce((a, l) => a + (Number(l?.qtd) || 0), 0)
+                        : pecasSolicitadas.reduce((a, l) => a + (Number(l.qtd_enviada) || 0), 0))}/
                       {Number(form.qtd ?? selected?.qtd ?? 0) || 0})
                     </span>
                   )}
