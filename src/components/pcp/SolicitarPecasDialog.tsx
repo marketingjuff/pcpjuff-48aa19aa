@@ -75,11 +75,34 @@ function agrupar(value: PecaSolicitada[], log?: LogPecaCompletada[] | null): Gru
     }
     const tam = p.tamanho || "—";
     g.qtd[tam] = (g.qtd[tam] || 0) + (Number(p.qtd) || 0);
-    const enviadoReal = enviadosLog.get(keyOf(p));
-    g.qtd_enviada[tam] = (g.qtd_enviada[tam] || 0) + Math.max(Number(p.qtd_enviada) || 0, enviadoReal ?? 0);
+  }
+  // Preencher enviadas SEMPRE pelo log real (não cap pelo solicitado)
+  if (Array.isArray(log)) {
+    for (const item of log) {
+      const qtd = Number(item?.qtd) || 0;
+      if (qtd <= 0) continue;
+      const key = `${item.modelo}|${item.cor}`;
+      let g = map.get(key);
+      if (!g) {
+        g = { modelo: item.modelo, cor: item.cor, qtd: {}, qtd_enviada: {} };
+        map.set(key, g);
+      }
+      const tam = item.tamanho || "—";
+      g.qtd_enviada[tam] = (g.qtd_enviada[tam] || 0) + qtd;
+    }
+  } else {
+    // fallback: usa qtd_enviada salvo
+    for (const p of value ?? []) {
+      const key = `${p.modelo}|${p.cor}`;
+      const g = map.get(key);
+      if (!g) continue;
+      const tam = p.tamanho || "—";
+      g.qtd_enviada[tam] = (g.qtd_enviada[tam] || 0) + (Number(p.qtd_enviada) || 0);
+    }
   }
   return Array.from(map.values());
 }
+
 
 function desagrupar(grupos: GrupoLinha[]): PecaSolicitada[] {
   const out: PecaSolicitada[] = [];
@@ -92,12 +115,13 @@ function desagrupar(grupos: GrupoLinha[]): PecaSolicitada[] {
         cor: g.cor,
         tamanho: tam,
         qtd: q,
-        qtd_enviada: Math.min(q, Number(g.qtd_enviada[tam]) || 0),
+        qtd_enviada: Number(g.qtd_enviada[tam]) || 0,
       });
     }
   }
   return out;
 }
+
 
 export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletadasLog, onSave, readOnly = false, limite, onLiberarCompleto }: Props) {
   const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value, pecasCompletadasLog));
@@ -155,11 +179,12 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
     for (const g of grupos) {
       for (const tam of REFACAO_TAMANHOS) {
         sol += Number(g.qtd[tam]) || 0;
-        env += Math.min(Number(g.qtd[tam]) || 0, Number(g.qtd_enviada[tam]) || 0);
+        env += Number(g.qtd_enviada[tam]) || 0;
       }
     }
     return { sol, env, pend: Math.max(0, sol - env) };
   }, [grupos]);
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -197,8 +222,9 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
             for (const tam of REFACAO_TAMANHOS) {
               const q = Number(g.qtd[tam]) || 0;
               sol += q;
-              env += Math.min(q, Number(g.qtd_enviada[tam]) || 0);
+              env += Number(g.qtd_enviada[tam]) || 0;
             }
+
             const pend = Math.max(0, sol - env);
             const tudoEnviado = sol > 0 && env >= sol;
             return (
@@ -245,7 +271,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
 
                 {REFACAO_TAMANHOS.map((tam) => {
                   const q = Number(g.qtd[tam]) || 0;
-                  const e = Math.min(q, Number(g.qtd_enviada[tam]) || 0);
+                  const e = Number(g.qtd_enviada[tam]) || 0;
                   return (
                     <div key={tam} className="flex flex-col items-center">
                       <label className="md:hidden text-[10px] text-muted-foreground font-medium">{tam}</label>
@@ -258,14 +284,15 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
                         disabled={effectiveReadOnly}
                         onChange={(ev) => setQtd(i, tam, Number(ev.target.value) || 0)}
                       />
-                      {q > 0 && (
-                        <span className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+                      {(q > 0 || e > 0) && (
+                        <span className={`text-[10px] mt-0.5 tabular-nums ${e > q ? "text-amber-600 font-semibold" : "text-muted-foreground"}`}>
                           {e}/{q}
                         </span>
                       )}
                     </div>
                   );
                 })}
+
 
                 <div className="flex flex-wrap gap-1 justify-center text-[11px]">
                   <span className="px-1.5 py-0.5 rounded bg-violet-100 text-violet-800 border border-violet-200">Sol. {sol}</span>
@@ -301,19 +328,17 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
             <span>Pendente: <span className="font-semibold tabular-nums text-foreground">{totals.pend}</span></span>
             {typeof limite === "number" && limite > 0 && (
               <span>
-                Limite do vendedor:{" "}
-                <span className={`font-semibold tabular-nums ${totals.sol > limite ? "text-red-600" : "text-foreground"}`}>
+                Qtd do vendedor:{" "}
+                <span className="font-semibold tabular-nums text-foreground">
                   {totals.sol}/{limite}
                 </span>
               </span>
             )}
           </div>
-          {typeof limite === "number" && limite > 0 && totals.sol > limite && (
-            <div className="text-[12px] text-red-600 font-medium">
-              O total solicitado ({totals.sol}) ultrapassa a quantidade do vendedor ({limite}).
-            </div>
-          )}
         </div>
+
+
+
 
         <DialogFooter className="gap-2 sm:gap-2">
           {!effectiveReadOnly && onLiberarCompleto && totals.pend > 0 && (
@@ -369,7 +394,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
             <Button
               type="button"
               onClick={handleSave}
-              disabled={saving || (typeof limite === "number" && limite > 0 && totals.sol > limite)}
+              disabled={saving}
             >
               {saving ? "Salvando..." : "Salvar"}
             </Button>
