@@ -25,6 +25,7 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   value: PecaSolicitada[];
+  pecasCompletadasLog?: Array<{ modelo: string; cor: string; tamanho: string; qtd: number }> | null;
   onSave: (next: PecaSolicitada[]) => void | Promise<void>;
   readOnly?: boolean;
   /** Quantidade máxima de peças permitida (qtd do vendedor). */
@@ -41,12 +42,30 @@ type GrupoLinha = {
   qtd_enviada: Record<string, number>;
 };
 
+type LogPecaCompletada = { modelo: string; cor: string; tamanho: string; qtd: number };
+
+function keyOf(p: { modelo: string; cor: string; tamanho: string }) {
+  return `${p.modelo}|${p.cor}|${p.tamanho}`;
+}
+
+function enviadosPorLog(log?: LogPecaCompletada[] | null): Map<string, number> {
+  const map = new Map<string, number>();
+  if (!Array.isArray(log)) return map;
+  for (const item of log) {
+    const qtd = Number(item?.qtd) || 0;
+    if (qtd <= 0) continue;
+    map.set(keyOf(item), (map.get(keyOf(item)) ?? 0) + qtd);
+  }
+  return map;
+}
+
 function novoGrupo(): GrupoLinha {
   return { modelo: "", cor: "", qtd: {}, qtd_enviada: {} };
 }
 
-function agrupar(value: PecaSolicitada[]): GrupoLinha[] {
+function agrupar(value: PecaSolicitada[], log?: LogPecaCompletada[] | null): GrupoLinha[] {
   const map = new Map<string, GrupoLinha>();
+  const enviadosLog = enviadosPorLog(log);
   for (const p of value ?? []) {
     const key = `${p.modelo}|${p.cor}`;
     let g = map.get(key);
@@ -56,7 +75,8 @@ function agrupar(value: PecaSolicitada[]): GrupoLinha[] {
     }
     const tam = p.tamanho || "—";
     g.qtd[tam] = (g.qtd[tam] || 0) + (Number(p.qtd) || 0);
-    g.qtd_enviada[tam] = (g.qtd_enviada[tam] || 0) + (Number(p.qtd_enviada) || 0);
+    const enviadoReal = enviadosLog.get(keyOf(p));
+    g.qtd_enviada[tam] = (g.qtd_enviada[tam] || 0) + Math.max(Number(p.qtd_enviada) || 0, enviadoReal ?? 0);
   }
   return Array.from(map.values());
 }
@@ -79,18 +99,18 @@ function desagrupar(grupos: GrupoLinha[]): PecaSolicitada[] {
   return out;
 }
 
-export function SolicitarPecasDialog({ open, onOpenChange, value, onSave, readOnly = false, limite, onLiberarCompleto }: Props) {
-  const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value));
+export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletadasLog, onSave, readOnly = false, limite, onLiberarCompleto }: Props) {
+  const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value, pecasCompletadasLog));
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const effectiveReadOnly = readOnly && !editMode;
 
   useEffect(() => {
     if (open) {
-      setGrupos(agrupar(value));
+      setGrupos(agrupar(value, pecasCompletadasLog));
       setEditMode(false);
     }
-  }, [open, value]);
+  }, [open, value, pecasCompletadasLog]);
 
   function setGrupo(i: number, patch: Partial<GrupoLinha>) {
     setGrupos((arr) => arr.map((g, idx) => (idx === i ? { ...g, ...patch } : g)));
