@@ -726,6 +726,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   open={solicitarOpen}
                   onOpenChange={setSolicitarOpen}
                   value={pecasSolicitadas}
+                  pecasCompletadasLog={selected?.pecas_completadas_log ?? null}
                   onSave={salvarPecasSolicitadas}
                   readOnly={tudoEnviado}
                   limite={Number(form.qtd ?? selected?.qtd ?? 0) || 0}
