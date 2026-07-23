@@ -126,7 +126,6 @@ function desagrupar(grupos: GrupoLinha[]): PecaSolicitada[] {
 export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletadasLog, onSave, readOnly = false, limite, onLiberarCompleto }: Props) {
   const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value, pecasCompletadasLog));
   const [saving, setSaving] = useState(false);
-  const [editMode, setEditMode] = useState(false);
   const [totalSolicitado, setTotalSolicitado] = useState<number>(() => {
     const inicial = agrupar(value, pecasCompletadasLog).reduce((s, g) => {
       for (const t of REFACAO_TAMANHOS) s += Number(g.qtd[t]) || 0;
@@ -135,13 +134,11 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
     if (inicial > 0) return inicial;
     return typeof limite === "number" && limite > 0 ? limite : 0;
   });
-  const effectiveReadOnly = readOnly && !editMode;
 
   useEffect(() => {
     if (open) {
       const g = agrupar(value, pecasCompletadasLog);
       setGrupos(g);
-      setEditMode(false);
       const inicial = g.reduce((s, gr) => {
         for (const t of REFACAO_TAMANHOS) s += Number(gr.qtd[t]) || 0;
         return s;
