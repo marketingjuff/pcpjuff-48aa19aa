@@ -348,24 +348,32 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
           )}
 
           <div className="flex flex-wrap gap-3 pt-2 text-xs text-muted-foreground items-center">
-            <span>Total solicitado: <span className="font-semibold tabular-nums text-foreground">{totals.sol}</span></span>
+            <div className="flex items-center gap-2 px-2 py-1 rounded border bg-violet-50 border-violet-200">
+              <label className="font-medium text-violet-900">Total de peças a solicitar:</label>
+              <Input
+                type="number"
+                min={0}
+                max={typeof limite === "number" && limite > 0 ? limite : undefined}
+                className="h-7 w-24 text-center px-1"
+                value={totalSolicitado || ""}
+                placeholder="0"
+                disabled={effectiveReadOnly}
+                onChange={(ev) => {
+                  const n = Math.max(0, Number(ev.target.value) || 0);
+                  const capped = typeof limite === "number" && limite > 0 ? Math.min(n, limite) : n;
+                  setTotalSolicitado(capped);
+                }}
+              />
+              {typeof limite === "number" && limite > 0 && (
+                <span className="text-violet-900/70">/ {limite} (vendedor)</span>
+              )}
+            </div>
+            <span>Total distribuído: <span className={`font-semibold tabular-nums ${totalSolicitado > 0 && totals.sol > totalSolicitado ? "text-red-600" : "text-foreground"}`}>{totals.sol}{totalSolicitado > 0 ? `/${totalSolicitado}` : ""}</span></span>
             <span>Total enviado: <span className="font-semibold tabular-nums text-foreground">{totals.env}</span></span>
             <span>Pendente: <span className="font-semibold tabular-nums text-foreground">{totals.pend}</span></span>
-            {typeof limite === "number" && limite > 0 && (
-              <span>
-                Qtd do vendedor:{" "}
-                <span
-                  className={`font-semibold tabular-nums ${
-                    totals.sol > limite ? "text-red-600" : "text-foreground"
-                  }`}
-                >
-                  {totals.sol}/{limite}
-                </span>
-                {totals.sol > limite && (
-                  <span className="ml-2 text-red-600">
-                    Total ({totals.sol}) ultrapassa a qtd do vendedor ({limite}).
-                  </span>
-                )}
+            {totalSolicitado > 0 && totals.sol > totalSolicitado && (
+              <span className="text-red-600">
+                Distribuição por tamanho ({totals.sol}) ultrapassa o total solicitado ({totalSolicitado}).
               </span>
             )}
           </div>
