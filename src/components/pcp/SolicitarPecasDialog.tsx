@@ -127,14 +127,30 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
   const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value, pecasCompletadasLog));
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [totalSolicitado, setTotalSolicitado] = useState<number>(() => {
+    const inicial = agrupar(value, pecasCompletadasLog).reduce((s, g) => {
+      for (const t of REFACAO_TAMANHOS) s += Number(g.qtd[t]) || 0;
+      return s;
+    }, 0);
+    if (inicial > 0) return inicial;
+    return typeof limite === "number" && limite > 0 ? limite : 0;
+  });
   const effectiveReadOnly = readOnly && !editMode;
 
   useEffect(() => {
     if (open) {
-      setGrupos(agrupar(value, pecasCompletadasLog));
+      const g = agrupar(value, pecasCompletadasLog);
+      setGrupos(g);
       setEditMode(false);
+      const inicial = g.reduce((s, gr) => {
+        for (const t of REFACAO_TAMANHOS) s += Number(gr.qtd[t]) || 0;
+        return s;
+      }, 0);
+      if (inicial > 0) setTotalSolicitado(inicial);
+      else if (typeof limite === "number" && limite > 0) setTotalSolicitado(limite);
+      else setTotalSolicitado(0);
     }
-  }, [open, value, pecasCompletadasLog]);
+  }, [open, value, pecasCompletadasLog, limite]);
 
   function setGrupo(i: number, patch: Partial<GrupoLinha>) {
     setGrupos((arr) => arr.map((g, idx) => (idx === i ? { ...g, ...patch } : g)));
@@ -153,6 +169,11 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
     setGrupos((arr) => arr.map((g, idx) => {
       if (idx !== i) return g;
       const valor = Math.max(0, n);
+      if (totalSolicitado > 0) {
+        const outros = totalAtual(arr, i, tam);
+        const permitido = Math.max(0, totalSolicitado - outros);
+        return { ...g, qtd: { ...g.qtd, [tam]: Math.min(valor, permitido) } };
+      }
       return { ...g, qtd: { ...g.qtd, [tam]: valor } };
     }));
   }
@@ -165,11 +186,10 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
   }
 
   async function handleSave() {
-    if (typeof limite === "number" && limite > 0) {
-      let sol = 0;
-      for (const g of grupos) for (const tam of REFACAO_TAMANHOS) sol += Number(g.qtd[tam]) || 0;
-      if (sol > limite) return;
-    }
+    if (typeof limite === "number" && limite > 0 && totalSolicitado > limite) return;
+    let sol = 0;
+    for (const g of grupos) for (const tam of REFACAO_TAMANHOS) sol += Number(g.qtd[tam]) || 0;
+    if (totalSolicitado > 0 && sol > totalSolicitado) return;
     setSaving(true);
     try {
       await onSave(desagrupar(grupos));
@@ -328,24 +348,32 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
           )}
 
           <div className="flex flex-wrap gap-3 pt-2 text-xs text-muted-foreground items-center">
-            <span>Total solicitado: <span className="font-semibold tabular-nums text-foreground">{totals.sol}</span></span>
+            <div className="flex items-center gap-2 px-2 py-1 rounded border bg-violet-50 border-violet-200">
+              <label className="font-medium text-violet-900">Total de peças a solicitar:</label>
+              <Input
+                type="number"
+                min={0}
+                max={typeof limite === "number" && limite > 0 ? limite : undefined}
+                className="h-7 w-24 text-center px-1"
+                value={totalSolicitado || ""}
+                placeholder="0"
+                disabled={effectiveReadOnly}
+                onChange={(ev) => {
+                  const n = Math.max(0, Number(ev.target.value) || 0);
+                  const capped = typeof limite === "number" && limite > 0 ? Math.min(n, limite) : n;
+                  setTotalSolicitado(capped);
+                }}
+              />
+              {typeof limite === "number" && limite > 0 && (
+                <span className="text-violet-900/70">/ {limite} (vendedor)</span>
+              )}
+            </div>
+            <span>Total distribuído: <span className={`font-semibold tabular-nums ${totalSolicitado > 0 && totals.sol > totalSolicitado ? "text-red-600" : "text-foreground"}`}>{totals.sol}{totalSolicitado > 0 ? `/${totalSolicitado}` : ""}</span></span>
             <span>Total enviado: <span className="font-semibold tabular-nums text-foreground">{totals.env}</span></span>
             <span>Pendente: <span className="font-semibold tabular-nums text-foreground">{totals.pend}</span></span>
-            {typeof limite === "number" && limite > 0 && (
-              <span>
-                Qtd do vendedor:{" "}
-                <span
-                  className={`font-semibold tabular-nums ${
-                    totals.sol > limite ? "text-red-600" : "text-foreground"
-                  }`}
-                >
-                  {totals.sol}/{limite}
-                </span>
-                {totals.sol > limite && (
-                  <span className="ml-2 text-red-600">
-                    Total ({totals.sol}) ultrapassa a qtd do vendedor ({limite}).
-                  </span>
-                )}
+            {totalSolicitado > 0 && totals.sol > totalSolicitado && (
+              <span className="text-red-600">
+                Distribuição por tamanho ({totals.sol}) ultrapassa o total solicitado ({totalSolicitado}).
               </span>
             )}
           </div>
@@ -409,7 +437,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
             <Button
               type="button"
               onClick={handleSave}
-              disabled={saving || (typeof limite === "number" && limite > 0 && totals.sol > limite)}
+              disabled={saving || (typeof limite === "number" && limite > 0 && totalSolicitado > limite) || (totalSolicitado > 0 && totals.sol > totalSolicitado)}
             >
               {saving ? "Salvando..." : "Salvar"}
             </Button>
