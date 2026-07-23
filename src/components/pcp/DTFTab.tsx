@@ -286,6 +286,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 </FormField>
                 <ObservacoesOutrosSetores pedido={selected} setorAtual="dtf" />
               </div>
+              </fieldset>
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-3 border-t">
                 <div className="flex flex-wrap gap-2 sm:justify-start items-center">
@@ -303,7 +304,6 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                   <RefacaoViewerButton pedido={selected} />
                 </div>
               </div>
-              </fieldset>
               <div className="flex justify-end gap-2 flex-wrap">
                 {canManage && !selected.finalizado_em && dtfCompleto(selected) && (
                   <CorrigirEtapaButton

@@ -273,6 +273,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 </FormField>
                 <ObservacoesOutrosSetores pedido={selected} setorAtual="silk" />
               </div>
+              </fieldset>
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-3 border-t">
                 <div className="flex flex-wrap gap-2 sm:justify-start items-center">
@@ -290,7 +291,6 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                   <RefacaoViewerButton pedido={selected} />
                 </div>
               </div>
-              </fieldset>
               <div className="flex justify-end gap-2 flex-wrap">
                 {canManage && !selected.finalizado_em && silkCompleto(selected) && (
                   <CorrigirEtapaButton
