@@ -186,11 +186,10 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
   }
 
   async function handleSave() {
-    if (typeof limite === "number" && limite > 0) {
-      let sol = 0;
-      for (const g of grupos) for (const tam of REFACAO_TAMANHOS) sol += Number(g.qtd[tam]) || 0;
-      if (sol > limite) return;
-    }
+    if (typeof limite === "number" && limite > 0 && totalSolicitado > limite) return;
+    let sol = 0;
+    for (const g of grupos) for (const tam of REFACAO_TAMANHOS) sol += Number(g.qtd[tam]) || 0;
+    if (totalSolicitado > 0 && sol > totalSolicitado) return;
     setSaving(true);
     try {
       await onSave(desagrupar(grupos));
