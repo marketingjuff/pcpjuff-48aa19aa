@@ -213,11 +213,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
       <DialogContent className="max-w-[1200px] w-[95vw]">
         <DialogHeader>
           <DialogTitle>
-            {effectiveReadOnly
-              ? "Peças solicitadas (somente leitura)"
-              : editMode
-                ? "Corrigir solicitação de peças"
-                : "Solicitar Peças"}
+            {readOnly ? "Peças solicitadas (somente leitura)" : "Solicitar Peças"}
           </DialogTitle>
         </DialogHeader>
 
