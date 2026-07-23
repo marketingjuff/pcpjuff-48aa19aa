@@ -437,7 +437,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
             <Button
               type="button"
               onClick={handleSave}
-              disabled={saving || (typeof limite === "number" && limite > 0 && totals.sol > limite)}
+              disabled={saving || (typeof limite === "number" && limite > 0 && totalSolicitado > limite) || (totalSolicitado > 0 && totals.sol > totalSolicitado)}
             >
               {saving ? "Salvando..." : "Salvar"}
             </Button>
