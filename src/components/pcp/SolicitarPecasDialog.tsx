@@ -299,7 +299,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
                         className="h-8 text-center px-1"
                         value={q || ""}
                         placeholder="0"
-                        disabled={effectiveReadOnly}
+                        disabled={readOnly}
                         onChange={(ev) => setQtd(i, tam, Number(ev.target.value) || 0)}
                       />
                       {(q > 0 || e > 0) && (
