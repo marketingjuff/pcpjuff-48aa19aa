@@ -332,7 +332,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
             );
           })}
 
-          {!effectiveReadOnly && (
+          {!readOnly && (
             <div className="flex justify-start pt-1">
               <Button type="button" size="sm" variant="outline" onClick={adicionar}>
                 <Plus className="h-4 w-4 mr-1" />Adicionar peça
@@ -350,7 +350,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
                 className="h-7 w-24 text-center px-1"
                 value={totalSolicitado || ""}
                 placeholder="0"
-                disabled={effectiveReadOnly}
+                disabled={readOnly}
                 onChange={(ev) => {
                   const n = Math.max(0, Number(ev.target.value) || 0);
                   const capped = typeof limite === "number" && limite > 0 ? Math.min(n, limite) : n;
@@ -372,11 +372,8 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
           </div>
         </div>
 
-
-
-
         <DialogFooter className="gap-2 sm:gap-2">
-          {!effectiveReadOnly && onLiberarCompleto && totals.pend > 0 && (
+          {!readOnly && onLiberarCompleto && totals.pend > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -410,23 +407,11 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
               </AlertDialogContent>
             </AlertDialog>
           )}
-          {!editMode && (
-            <Button
-              type="button"
-              variant="outline"
-              className="border-amber-500 text-amber-700 hover:bg-amber-50 mr-auto"
-              onClick={() => setEditMode(true)}
-              title="Liberar edição de todos os campos"
-            >
-              <Pencil className="h-4 w-4 mr-1" />
-              Corrigir solicitação
-            </Button>
-          )}
 
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            {effectiveReadOnly ? "Fechar" : "Cancelar"}
+            {readOnly ? "Fechar" : "Cancelar"}
           </Button>
-          {!effectiveReadOnly && (
+          {!readOnly && (
             <Button
               type="button"
               onClick={handleSave}
