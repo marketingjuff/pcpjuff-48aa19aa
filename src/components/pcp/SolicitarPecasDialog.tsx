@@ -127,14 +127,30 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
   const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value, pecasCompletadasLog));
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [totalSolicitado, setTotalSolicitado] = useState<number>(() => {
+    const inicial = agrupar(value, pecasCompletadasLog).reduce((s, g) => {
+      for (const t of REFACAO_TAMANHOS) s += Number(g.qtd[t]) || 0;
+      return s;
+    }, 0);
+    if (inicial > 0) return inicial;
+    return typeof limite === "number" && limite > 0 ? limite : 0;
+  });
   const effectiveReadOnly = readOnly && !editMode;
 
   useEffect(() => {
     if (open) {
-      setGrupos(agrupar(value, pecasCompletadasLog));
+      const g = agrupar(value, pecasCompletadasLog);
+      setGrupos(g);
       setEditMode(false);
+      const inicial = g.reduce((s, gr) => {
+        for (const t of REFACAO_TAMANHOS) s += Number(gr.qtd[t]) || 0;
+        return s;
+      }, 0);
+      if (inicial > 0) setTotalSolicitado(inicial);
+      else if (typeof limite === "number" && limite > 0) setTotalSolicitado(limite);
+      else setTotalSolicitado(0);
     }
-  }, [open, value, pecasCompletadasLog]);
+  }, [open, value, pecasCompletadasLog, limite]);
 
   function setGrupo(i: number, patch: Partial<GrupoLinha>) {
     setGrupos((arr) => arr.map((g, idx) => (idx === i ? { ...g, ...patch } : g)));
@@ -153,6 +169,11 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
     setGrupos((arr) => arr.map((g, idx) => {
       if (idx !== i) return g;
       const valor = Math.max(0, n);
+      if (totalSolicitado > 0) {
+        const outros = totalAtual(arr, i, tam);
+        const permitido = Math.max(0, totalSolicitado - outros);
+        return { ...g, qtd: { ...g.qtd, [tam]: Math.min(valor, permitido) } };
+      }
       return { ...g, qtd: { ...g.qtd, [tam]: valor } };
     }));
   }
