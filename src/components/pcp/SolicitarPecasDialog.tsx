@@ -18,7 +18,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, X, CheckCheck, Pencil } from "lucide-react";
+import { Plus, X, CheckCheck } from "lucide-react";
 import { corHex, corTextoSobre } from "./PecasPerdidasEditor";
 
 interface Props {
@@ -126,7 +126,6 @@ function desagrupar(grupos: GrupoLinha[]): PecaSolicitada[] {
 export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletadasLog, onSave, readOnly = false, limite, onLiberarCompleto }: Props) {
   const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value, pecasCompletadasLog));
   const [saving, setSaving] = useState(false);
-  const [editMode, setEditMode] = useState(false);
   const [totalSolicitado, setTotalSolicitado] = useState<number>(() => {
     const inicial = agrupar(value, pecasCompletadasLog).reduce((s, g) => {
       for (const t of REFACAO_TAMANHOS) s += Number(g.qtd[t]) || 0;
@@ -135,13 +134,11 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
     if (inicial > 0) return inicial;
     return typeof limite === "number" && limite > 0 ? limite : 0;
   });
-  const effectiveReadOnly = readOnly && !editMode;
 
   useEffect(() => {
     if (open) {
       const g = agrupar(value, pecasCompletadasLog);
       setGrupos(g);
-      setEditMode(false);
       const inicial = g.reduce((s, gr) => {
         for (const t of REFACAO_TAMANHOS) s += Number(gr.qtd[t]) || 0;
         return s;
@@ -216,11 +213,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
       <DialogContent className="max-w-[1200px] w-[95vw]">
         <DialogHeader>
           <DialogTitle>
-            {effectiveReadOnly
-              ? "Peças solicitadas (somente leitura)"
-              : editMode
-                ? "Corrigir solicitação de peças"
-                : "Solicitar Peças"}
+            {readOnly ? "Peças solicitadas (somente leitura)" : "Solicitar Peças"}
           </DialogTitle>
         </DialogHeader>
 
@@ -260,7 +253,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
               >
                 <div>
                   <label className="md:hidden text-[11px] text-muted-foreground font-medium">Modelo</label>
-                  <Select value={g.modelo} onValueChange={(v) => setGrupo(i, { modelo: v })} disabled={effectiveReadOnly}>
+                  <Select value={g.modelo} onValueChange={(v) => setGrupo(i, { modelo: v })} disabled={readOnly}>
                     <SelectTrigger className="h-8"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
                       {REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
@@ -269,7 +262,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
                 </div>
                 <div>
                   <label className="md:hidden text-[11px] text-muted-foreground font-medium">Cor</label>
-                  <Select value={g.cor} onValueChange={(v) => setGrupo(i, { cor: v })} disabled={effectiveReadOnly}>
+                  <Select value={g.cor} onValueChange={(v) => setGrupo(i, { cor: v })} disabled={readOnly}>
                     <SelectTrigger
                       className="h-8"
                       style={g.cor ? { backgroundColor: hex, color: fg, borderColor: fg === "#ffffff" ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.15)" } : undefined}
@@ -306,7 +299,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
                         className="h-8 text-center px-1"
                         value={q || ""}
                         placeholder="0"
-                        disabled={effectiveReadOnly}
+                        disabled={readOnly}
                         onChange={(ev) => setQtd(i, tam, Number(ev.target.value) || 0)}
                       />
                       {(q > 0 || e > 0) && (
@@ -329,7 +322,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
                 </div>
 
                 <div className="flex justify-end">
-                  {!effectiveReadOnly && (
+                  {!readOnly && (
                     <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => remover(i)} title="Remover">
                       <X className="h-4 w-4" />
                     </Button>
@@ -339,7 +332,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
             );
           })}
 
-          {!effectiveReadOnly && (
+          {!readOnly && (
             <div className="flex justify-start pt-1">
               <Button type="button" size="sm" variant="outline" onClick={adicionar}>
                 <Plus className="h-4 w-4 mr-1" />Adicionar peça
@@ -357,7 +350,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
                 className="h-7 w-24 text-center px-1"
                 value={totalSolicitado || ""}
                 placeholder="0"
-                disabled={effectiveReadOnly}
+                disabled={readOnly}
                 onChange={(ev) => {
                   const n = Math.max(0, Number(ev.target.value) || 0);
                   const capped = typeof limite === "number" && limite > 0 ? Math.min(n, limite) : n;
@@ -379,11 +372,8 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
           </div>
         </div>
 
-
-
-
         <DialogFooter className="gap-2 sm:gap-2">
-          {!effectiveReadOnly && onLiberarCompleto && totals.pend > 0 && (
+          {!readOnly && onLiberarCompleto && totals.pend > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -417,23 +407,11 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
               </AlertDialogContent>
             </AlertDialog>
           )}
-          {!editMode && (
-            <Button
-              type="button"
-              variant="outline"
-              className="border-amber-500 text-amber-700 hover:bg-amber-50 mr-auto"
-              onClick={() => setEditMode(true)}
-              title="Liberar edição de todos os campos"
-            >
-              <Pencil className="h-4 w-4 mr-1" />
-              Corrigir solicitação
-            </Button>
-          )}
 
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            {effectiveReadOnly ? "Fechar" : "Cancelar"}
+            {readOnly ? "Fechar" : "Cancelar"}
           </Button>
-          {!effectiveReadOnly && (
+          {!readOnly && (
             <Button
               type="button"
               onClick={handleSave}
