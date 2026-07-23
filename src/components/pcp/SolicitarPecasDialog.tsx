@@ -18,7 +18,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, X, CheckCheck, Pencil } from "lucide-react";
+import { Plus, X, CheckCheck } from "lucide-react";
 import { corHex, corTextoSobre } from "./PecasPerdidasEditor";
 
 interface Props {
