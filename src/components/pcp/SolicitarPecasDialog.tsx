@@ -253,7 +253,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
               >
                 <div>
                   <label className="md:hidden text-[11px] text-muted-foreground font-medium">Modelo</label>
-                  <Select value={g.modelo} onValueChange={(v) => setGrupo(i, { modelo: v })} disabled={effectiveReadOnly}>
+                  <Select value={g.modelo} onValueChange={(v) => setGrupo(i, { modelo: v })} disabled={readOnly}>
                     <SelectTrigger className="h-8"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
                       {REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
@@ -262,7 +262,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
                 </div>
                 <div>
                   <label className="md:hidden text-[11px] text-muted-foreground font-medium">Cor</label>
-                  <Select value={g.cor} onValueChange={(v) => setGrupo(i, { cor: v })} disabled={effectiveReadOnly}>
+                  <Select value={g.cor} onValueChange={(v) => setGrupo(i, { cor: v })} disabled={readOnly}>
                     <SelectTrigger
                       className="h-8"
                       style={g.cor ? { backgroundColor: hex, color: fg, borderColor: fg === "#ffffff" ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.15)" } : undefined}
