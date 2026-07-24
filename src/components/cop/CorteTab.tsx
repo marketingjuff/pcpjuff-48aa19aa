@@ -740,7 +740,7 @@ function PecasTable({
   }, [lista]);
 
   return (
-    <div className="rounded-md border overflow-x-auto">
+    <div className="rounded-md border overflow-auto max-h-[70vh] tbl-congelada">
       <table className="text-[12.5px] leading-[1.2] w-full" style={{ borderCollapse: "collapse" }}>
         <thead className="bg-muted/40 text-xs">
           <tr>
