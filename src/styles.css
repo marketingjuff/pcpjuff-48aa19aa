@@ -193,12 +193,14 @@
   }
 }
 
-/* Cabeçalho de tabela congelado (linha 1 travada, estilo Google Sheets).
-   Aplicar a classe no <div> que envolve a <table> e que tem overflow/max-height. */
-.tbl-congelada thead th {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background-color: var(--color-muted);
-  box-shadow: inset 0 -1px 0 var(--color-border);
+@layer base {
+  /* Cabeçalho de tabela congelado (linha 1 travada, estilo Google Sheets).
+     Aplicar a classe no <div> que envolve a <table> e que tem overflow + max-height. */
+  .tbl-congelada thead th {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background-color: var(--tbl-congelada-bg, var(--color-muted));
+    box-shadow: inset 0 -1px 0 var(--color-border);
+  }
 }
