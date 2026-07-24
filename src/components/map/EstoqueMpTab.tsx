@@ -500,7 +500,7 @@ export function EstoqueMpTab() {
             <col style={{ width: "14%" }} />
             <col style={{ width: "7%" }} />
           </colgroup>
-          <thead className="bg-muted/40 sticky top-0">
+          <thead className="bg-muted/40">
             <tr>
               <th className="p-1 font-medium text-center">NE</th>
               <th className="p-1 font-medium text-center">PROD</th>
