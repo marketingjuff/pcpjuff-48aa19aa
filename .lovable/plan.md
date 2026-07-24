@@ -1,89 +1,90 @@
-# Refação: rótulo "Erro de Produção da Estamparia" + nova pergunta "Faltou adesivo?"
+# Plano: cabeçalho congelado na tabela de Romaneios (piloto)
 
-Sem migration. Campos novos vivem apenas dentro do JSONB do episódio de refação.
+## Escopo
+- Congelar a linha de cabeçalho da tabela principal de romaneios em `src/components/cop/RomaneioTab.tsx`.
+- Nenhuma outra tabela do sistema será alterada neste piloto.
+- Nenhuma mudança de lógica, cálculo, ordenação, agrupamento, seleção, schema ou banco de dados.
 
-## Arquivos tocados
+## Arquivos que serão tocados
+1. `src/styles.css` (apenas adição no final do arquivo)
+2. `src/components/cop/RomaneioTab.tsx` (apenas uma linha no `return` de `RomaneioPecasTable`)
 
-1. `src/components/pcp/RefacaoDialog.tsx`
-2. `src/components/pcp/VoltarDropdown.tsx` (forçar destino = Arte quando faltou adesivo)
-3. `src/lib/pedidos.ts` (só o type `RefacaoEpisodio`)
-4. `src/components/pcp/refacao-helpers.ts` (só a montagem do episódio novo)
-5. `src/components/pcp/RetrabalhoTab.tsx` (só leitura/exibição)
-6. `src/components/pcp/RefacaoViewerButton.tsx` (só leitura/exibição)
+## Alteração 1 — `src/styles.css`
 
-Nenhum arquivo do COP será tocado.
+### Onde
+- No final do arquivo, após o fechamento do `@layer base` (linha 194 atualmente).
+- Fora de qualquer `@layer`, `@theme`, `@import` ou `@custom-variant`.
 
-## Mudanças
-
-### 1. `RefacaoDialog.tsx`
-
-**Renomear label:**
-- De: `Houve erro da produção? *`
-- Para: `Houve erro de produção da Estamparia (Arte, DTF, Silk ou Acabamento)? *`
-
-Lógica de `erroProd` e opções de "Qual área errou?" permanecem iguais.
-
-**Nova pergunta independente "Faltou adesivo?"** — dentro do bloco `mostraAdesivos`. Independente de "Houve perda de adesivos?".
-
-Novos estados:
-```ts
-const [houveFaltaAdesivos, setHouveFaltaAdesivos] = useState<"sim" | "nao" | "">("");
-const [faltaAdesivos, setFaltaAdesivos] = useState<string>("");
-```
-Resetados no `useEffect` de abertura.
-
-Layout: segunda linha no mesmo grid `grid-cols-2 gap-2`, mesmo padrão visual (Sim/Não + input condicional "Quantos adesivos faltaram?", `min=1`).
-
-**Regra de destino obrigatório (nova):** se `houveFaltaAdesivos === "sim"`, o destino da refação deve ser forçado para **Arte**. Implementação:
-- O dialog recebe `destino` via props (já recebe hoje). Adicionar prop `onForcarDestinoArte?: () => void`.
-- Assim que o usuário marca "Faltou adesivo? = Sim", exibir uma nota destacada abaixo do campo: *"Faltou adesivo obriga refazer a partir da Arte — o destino será ajustado automaticamente."*
-- Na validação `confirmar()`, se `houveFaltaAdesivos === "sim"` e o `destino` recebido não for `"arte"`, bloquear com erro: *"Faltou adesivo — refação deve ser feita para a Arte. Ajuste no seletor 'Refazer para...'."*
-
-**Ajuste em `VoltarDropdown.tsx`:** passar callback ao `RefacaoDialog` e, quando o dialog sinalizar "faltou adesivo = sim", trocar `sel` para `"arte"` automaticamente antes do `onVoltar`. Alternativa simples e usada: no `onConfirm`, se `payload.falta_adesivos === true`, sobrescrever o destino chamado para `"arte"`:
-```ts
-onConfirm={(payload) => {
-  setDialogOpen(false);
-  const dest = payload.falta_adesivos ? "arte" : sel;
-  onVoltar(dest, payload);
-}}
-```
-Só o `VoltarDropdown` é tocado — nada de mudar `refacao-helpers` além dos campos novos.
-
-Validação em `confirmar()` (dentro do `if (mostraAdesivos)`):
-- `houveFaltaAdesivos === ""` → "Informe se faltou adesivo."
-- `houveFaltaAdesivos === "sim"` + qtd inválida (`< 1`) → "Informe quantos adesivos faltaram."
-
-Payload — adicionar ao `RefacaoFormPayload` e ao `onConfirm`:
-```ts
-falta_adesivos?: boolean;
-qtd_falta_adesivos?: number;
-```
-**Nunca** somados a `perda_adesivos`.
-
-### 2. `src/lib/pedidos.ts`
-
-No `type RefacaoEpisodio`, junto dos campos opcionais existentes:
-```ts
-falta_adesivos?: boolean;
-qtd_falta_adesivos?: number;
+### Conteúdo a adicionar
+```css
+/* Cabeçalho de tabela congelado (linha 1 travada, estilo Google Sheets).
+   Aplicar a classe no <div> que envolve a <table> e que tem overflow/max-height. */
+.tbl-congelada thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: var(--color-muted);
+  box-shadow: inset 0 -1px 0 var(--color-border);
+}
 ```
 
-### 3. `src/components/pcp/refacao-helpers.ts`
+### Justificativa das propriedades
+- `position: sticky; top: 0` no `th`: ancorar cada célula do cabeçalho no topo do contêiner de rolagem. Sticky no `thead` é inconsistente entre navegadores.
+- `z-index: 20`: garantir que os cabeçalhos fiquem acima das linhas de dados ao rolar.
+- `background-color: var(--color-muted)`: fundo opaco. Hoje o `thead` usa `bg-muted/40` (translúcido) e as linhas do `tbody` usam `bg-muted/80` no zebrado. Sem fundo opaco, as linhas de dados apareceriam por trás do cabeçalho congelado.
+- `box-shadow: inset 0 -1px 0 var(--color-border)`: substitui a borda inferior que desaparece quando `th` fica sticky em tabela com `borderCollapse: "collapse"`. Mantém a linha divisória sutil.
+- Uso de `var(--color-muted)` e `var(--color-border)`: variáveis já existem no `@theme inline` e funcionam em ambos os temas (claro e escuro).
+- Nenhuma declaração de `overflow` ou `overscroll-behavior`: o overflow vertical fica por conta das classes Tailwind no `div`, e o encadeamento de rolagem permanece padrão (ao chegar ao fim da tabela, a roda do mouse volta a rolar a página).
 
-Na criação do `novo: RefacaoEpisodio` em `montarRefacoesAposRefazer`, copiar os dois campos do payload junto de `area_identificou`/`erro_producao`/`area_erro`/`problema`. Nenhuma outra alteração — o destino já é passado por fora (`VoltarDropdown` força para `"arte"`).
+## Alteração 2 — `src/components/cop/RomaneioTab.tsx`
 
-### 4. `RetrabalhoTab.tsx` e `RefacaoViewerButton.tsx`
+### Onde
+- Dentro do `return` do componente `RomaneioPecasTable` (componente interno no arquivo, que começa por volta da linha 1333).
+- O `div` que envolve a `<table>` com as classes `overflow-x-auto`, `rounded-md`, `border`.
 
-- Renomear leitura de `"Erro da produção"` → `"Erro de produção da Estamparia"`. Valor exibido igual.
-- Adicionar campo logo abaixo de "Adesivos perdidos":
-  - label: `"Faltou adesivo?"`
-  - valor: `(episodio.qtd_falta_adesivos ?? 0) > 0 ? \`Sim — ${episodio.qtd_falta_adesivos}\` : "Não"`
-- **Não alterar** `totalPerdaAdesivos` — segue somando apenas `perda_adesivos`.
+### Mudança
+De:
+```tsx
+<div className="overflow-x-auto rounded-md border">
+  <table ...>
+```
+
+Para:
+```tsx
+<div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-18rem)] rounded-md border tbl-congelada">
+  <table ...>
+```
+
+### Por que essa classe de altura
+- A solução correta e compatível com todos os navegadores para manter o `sticky` do cabeçalho funcionando junto com rolagem horizontal é dar ao contêiner uma **altura máxima com rolagem vertical própria**.
+- Sem isso, o `overflow-x: auto` computa `overflow-y: auto` implicitamente, transformando o `<div>` em um contêiner de rolagem em ambos os eixos. Com a altura natural do contêiner igual à altura total da tabela, o `sticky` do `th` nunca entra em ação porque o contêiner não rola verticalmente.
+- `max-h-[calc(100vh-18rem)]` deixa a tabela ocupar a maior parte da altura da viewport, garantindo espaço para rolagem vertical real dentro do contêiner, sem empurrar a página para além do viewport.
+- O valor `18rem` reserva espaço para o header fixo, abas, filtros e ações acima da tabela, mantendo a tabela visível e utilizável.
+
+### O que NÃO será alterado neste arquivo
+- Estrutura do `<table>`, `<thead>`, `<tbody>`.
+- Componente `SortableTh` e comportamento de ordenação (`toggleSort`).
+- `useMemo` de `tamanhosColunas`, `linhas` ou qualquer lógica de cálculo/ordenação/agrupamento/seleção.
+- Larguras de coluna.
+- Eventos de clique para seleção de linha.
+- Cores, paleta ou tema.
+
+## Validação esperada após implementação
+1. Abrir COP → aba Romaneio com a lista carregada.
+2. Rolar para baixo dentro da tabela: a linha de cabeçalho deve permanecer visível e legível no topo, com fundo opaco e nenhuma linha de dados aparecendo por trás.
+3. Rolar para a direita: as colunas de tamanhos devem continuar rolando normalmente na horizontal, com o cabeçalho acompanhando.
+4. Clicar nos cabeçalhos ordenáveis (Romaneio, Oficina, Status, Recebimento): a ordenação deve continuar funcionando.
+5. Selecionar uma linha: a seleção e o destaque devem continuar funcionando.
+6. Verificar no tema escuro, se aplicável.
+
+## Arquivos protegidos (não serão tocados)
+- `src/lib/cop-saldos.ts`
+- Qualquer outro componente do COP, PCP ou MAP
+- Qualquer arquivo de schema, migration, policy ou query de banco de dados
 
 ## Garantias
-
-- Sem `ALTER TABLE` / `CREATE TABLE`.
-- `qtd_falta_adesivos` jamais entra em contabilização de perda de adesivos.
-- "Faltou adesivo = Sim" força o destino da refação para **Arte** (via `VoltarDropdown` + validação no dialog).
-- Nenhum arquivo do COP é tocado.
-- Validações obrigatórias para as duas perguntas de adesivo quando `mostraAdesivos`.
+- Nenhuma migration de banco de dados.
+- Nenhuma alteração de lógica de negócio.
+- Apenas uma tabela recebe a classe `tbl-congelada` neste piloto.
+- Classes Tailwind adicionadas apenas no `div` envolvente da tabela de romaneios.
+- Classe utilitária CSS adicionada no final de `src/styles.css`, sem reordenar ou modificar as regras existentes.
