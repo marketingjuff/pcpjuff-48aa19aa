@@ -1330,7 +1330,7 @@ function RomaneioPecasTable({
   }
 
   return (
-    <div className="rounded-md border overflow-x-auto">
+    <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-18rem)] rounded-md border tbl-congelada">
       <table className="text-[12.5px] leading-[1.2] w-full" style={{ borderCollapse: "collapse" }}>
         <thead className="bg-muted/40 text-xs">
           <tr>
