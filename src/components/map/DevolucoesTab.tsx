@@ -85,7 +85,7 @@ export function DevolucoesTab() {
         <span className="text-xs text-muted-foreground ml-auto">{linhas.length} devolução(ões)</span>
       </div>
 
-      <div className="overflow-auto rounded-lg border border-border/60 bg-card">
+      <div className="overflow-auto max-h-[70vh] tbl-congelada rounded-lg border border-border/60 bg-card">
         <table className="w-full text-xs">
           <thead className="bg-yellow-100/60 text-left">
             <tr>

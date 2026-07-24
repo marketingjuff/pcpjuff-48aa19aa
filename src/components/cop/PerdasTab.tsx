@@ -350,7 +350,7 @@ export function PerdasTab() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border overflow-x-auto">
+          <div className="rounded-md border overflow-auto max-h-[70vh] tbl-congelada">
             <table className="w-full text-[12.5px] leading-[1.2]">
               <thead className="bg-muted/40 text-xs">
                 <tr>
@@ -418,7 +418,7 @@ export function PerdasTab() {
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Refações de perda</CardTitle></CardHeader>
           <CardContent>
-            <div className="rounded-md border overflow-x-auto">
+            <div className="rounded-md border overflow-auto max-h-[70vh] tbl-congelada">
               <table className="w-full text-[12.5px] leading-[1.2]">
                 <thead className="bg-muted/40 text-xs">
                   <tr>
@@ -540,7 +540,7 @@ export function PerdasTab() {
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Histórico de perdas</CardTitle></CardHeader>
         <CardContent>
-          <div className="rounded-md border overflow-x-auto">
+          <div className="rounded-md border overflow-auto max-h-[70vh] tbl-congelada">
             <table className="w-full text-[12.5px] leading-[1.2]">
               <thead className="bg-muted/40 text-xs">
                 <tr>

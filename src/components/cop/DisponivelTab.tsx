@@ -144,7 +144,7 @@ export function DisponivelTab() {
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Disponível por Modelo · Cor</CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="overflow-auto max-h-[70vh] tbl-congelada">
           <table className="w-full text-[12.5px] leading-[1.2]">
             <thead className="bg-muted/40 text-xs">
               <tr>

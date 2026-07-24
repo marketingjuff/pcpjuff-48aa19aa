@@ -94,7 +94,7 @@ export function PecasFinalizadasTab() {
         </span>
       </div>
 
-      <div className="rounded-md border bg-white/70 overflow-x-auto">
+      <div className="rounded-md border bg-white/70 overflow-auto max-h-[70vh] tbl-congelada">
         <table className="w-full text-[12.5px] table-fixed">
           <colgroup>
             <col style={{ width: "6%" }} />
@@ -110,7 +110,7 @@ export function PecasFinalizadasTab() {
             <col style={{ width: "6%" }} />
             <col style={{ width: "8%" }} />
           </colgroup>
-          <thead className="bg-muted/40 sticky top-0">
+          <thead className="bg-muted/40">
             <tr>
               <th className="p-1 font-medium text-center">NE</th>
               <th className="p-1 font-medium text-center">PROD</th>

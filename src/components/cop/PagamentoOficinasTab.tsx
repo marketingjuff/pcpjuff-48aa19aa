@@ -582,7 +582,7 @@ export function PagamentoOficinasTab({ selectedId = null, onSelect, onChangeTab 
             </div>
           </div>
 
-          <div className="rounded-md border overflow-x-auto">
+          <div className="rounded-md border overflow-auto max-h-[70vh] tbl-congelada">
             <table className="w-full text-[12.5px] leading-[1.2]">
               <thead className="bg-muted/40 text-xs">
                 <tr>

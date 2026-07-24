@@ -64,7 +64,7 @@ export function HistoricoPagamentosConsolidados() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border overflow-x-auto">
+        <div className="rounded-md border overflow-auto max-h-[70vh] tbl-congelada">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs">
               <tr>

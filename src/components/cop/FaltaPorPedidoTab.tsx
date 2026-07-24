@@ -250,7 +250,7 @@ export function FaltaPorPedidoTab() {
       {linhas.length === 0 ? (
         <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhum pedido com peças faltantes.</CardContent></Card>
       ) : (
-        <div className="rounded-md border overflow-x-auto">
+        <div className="rounded-md border overflow-auto max-h-[70vh] tbl-congelada">
           <table className="text-[12.5px] leading-[1.2]" style={{ borderCollapse: "collapse", tableLayout: "fixed", minWidth: "100%" }}>
             <colgroup>
               <col style={{ width: 210 }} />

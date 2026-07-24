@@ -203,7 +203,7 @@ export function ControlePerdasTab() {
           <CardTitle className="text-base">Perdas consolidadas ({filtradas.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto tbl-congelada [&>div]:max-h-[70vh] [&>div]:overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
