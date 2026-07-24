@@ -326,7 +326,7 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
           <div className="bg-yellow-100/70 px-3 py-2 text-[25px] font-semibold leading-tight">
             Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-auto max-h-[70vh] tbl-congelada">
             <table className="w-full min-w-[1240px] text-[12.5px] table-fixed">
               <colgroup>
                 <col style={{ width: "3%" }} />
