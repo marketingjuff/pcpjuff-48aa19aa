@@ -344,7 +344,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </PedidoMobileCard>
             ))}
           </div>
-          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs [&_th]:text-center [&_td]:text-center">
+          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-auto max-h-[70vh] tbl-congelada [--tbl-congelada-bg:var(--color-card)] shadow-xs [&_th]:text-center [&_td]:text-center">
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
                 <tr>
