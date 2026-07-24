@@ -346,7 +346,7 @@ export function EstoqueMpTab() {
         </Button>
       </div>
       {/* ---------- Resumo por cor (tabela) ---------- */}
-      <div className="rounded-md border bg-white/70 overflow-x-auto">
+      <div className="rounded-md border bg-white/70 overflow-auto max-h-[70vh] tbl-congelada">
         <table className="w-full text-[12.5px] table-fixed">
           <colgroup>
             <col style={{ width: "25%" }} />
