@@ -275,7 +275,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
           </div>
 
           {/* Desktop: tabela compacta */}
-          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto shadow-xs" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
+          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-auto max-h-[70vh] tbl-congelada [--tbl-congelada-bg:var(--color-card)] shadow-xs" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
             <Table>
               <TableHeader>
                 <TableRow>
