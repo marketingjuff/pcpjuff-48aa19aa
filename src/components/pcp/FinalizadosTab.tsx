@@ -78,7 +78,7 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
           case "orcamento": return cmpText(a.orcamento, b.orcamento, sort.dir);
           case "vendedor": return cmpText(a.vendedor, b.vendedor, sort.dir);
           case "tipo": return cmpText(a.tipo_estampa, b.tipo_estampa, sort.dir);
-          case "responsavel": return cmpText(resolveNome(profilesMap, a.finalizado_por), resolveNome(profilesMap, b.finalizado_por), sort.dir);
+          case "responsavel": return cmpText(a.responsavel_acabamento, b.responsavel_acabamento, sort.dir);
         }
         return 0;
       });
