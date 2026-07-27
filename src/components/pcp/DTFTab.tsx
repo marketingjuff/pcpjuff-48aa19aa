@@ -1,4 +1,4 @@
-import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc, calcularEtapaAtual } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import { SIM_NAO_PROCESSO, modeloIncluiDTF, visivelEmDTF, tipoIncluiDTF, tipoIncluiSilk, episodioAberto, dtfCompleto } from "@/lib/pedidos";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download, FilterX, FastForward } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_DTF, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, cmpText, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_DTF, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { MultiSelectPeople, parsePeople } from "./MultiSelectPeople";
@@ -48,7 +48,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
   const { isDirty } = useDirtyForm();
   const { names: operadoresDTF } = useAppList("dtf");
   const { feriados } = useFeriados();
-  const sort = useSort<"pedido"|"qtd"|"exec"|"saida"|"entrega"|"iniEst"|"fimEst"|"iniAcab">();
+  const sort = useSort<"pedido"|"qtd"|"exec"|"saida"|"entrega"|"iniEst"|"fimEst"|"iniAcab"|"etapa"|"orcamento"|"vendedor"|"estampa"|"statusPecas"|"pronto"|"estampado">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
@@ -390,15 +390,15 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
                 <tr>
-                  <Th>ETAPA</Th>
+                  <SortableTh label="ETAPA" active={sort.key === "etapa"} onClick={() => sort.toggle("etapa")} />
                   <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
-                  <Th>ORÇAMENTO</Th>
-                  <Th>VENDEDOR</Th>
+                  <SortableTh label="ORÇAMENTO" active={sort.key === "orcamento"} onClick={() => sort.toggle("orcamento")} />
+                  <SortableTh label="VENDEDOR" active={sort.key === "vendedor"} onClick={() => sort.toggle("vendedor")} />
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
-                  <Th>ESTAMPA</Th>
-                  <Th>STATUS DAS PEÇAS</Th>
-                  <Th>DTF PRONTO</Th>
-                  <Th>DTF ESTAMPADO</Th>
+                  <SortableTh label="ESTAMPA" active={sort.key === "estampa"} onClick={() => sort.toggle("estampa")} />
+                  <SortableTh label="STATUS DAS PEÇAS" active={sort.key === "statusPecas"} onClick={() => sort.toggle("statusPecas")} />
+                  <SortableTh label="DTF PRONTO" active={sort.key === "pronto"} onClick={() => sort.toggle("pronto")} />
+                  <SortableTh label="DTF ESTAMPADO" active={sort.key === "estampado"} onClick={() => sort.toggle("estampado")} />
                   <SortableTh label="INÍCIO ESTAMPARIA" active={sort.key === "iniEst"} onClick={() => sort.toggle("iniEst")} />
                   <SortableTh label="TÉRMINO ESTAMPARIA" active={sort.key === "fimEst"} onClick={() => sort.toggle("fimEst")} />
                   <SortableTh label="INÍCIO ACABAMENTO" active={sort.key === "iniAcab"} onClick={() => sort.toggle("iniAcab")} />
@@ -418,6 +418,17 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                         case "iniEst": return cmpDate(a.inicio_estamparia, b.inicio_estamparia, sort.dir);
                         case "fimEst": return cmpDate(a.termino_estamparia, b.termino_estamparia, sort.dir);
                         case "iniAcab": return cmpDate(a.inicio_acabamento, b.inicio_acabamento, sort.dir);
+                        case "etapa": return cmpText(calcularEtapaAtual(a).etapa, calcularEtapaAtual(b).etapa, sort.dir);
+                        case "orcamento": return cmpText(a.orcamento, b.orcamento, sort.dir);
+                        case "vendedor": return cmpText(a.vendedor, b.vendedor, sort.dir);
+                        case "estampa": return cmpText(a.tipo_estampa, b.tipo_estampa, sort.dir);
+                        case "statusPecas": return cmpText(a.status_pecas, b.status_pecas, sort.dir);
+                        case "pronto": {
+                          const pa = a.dtf_impresso === "Sim" && a.dtf_cortado === "Sim" ? "Sim" : "Não";
+                          const pb = b.dtf_impresso === "Sim" && b.dtf_cortado === "Sim" ? "Sim" : "Não";
+                          return cmpText(pa, pb, sort.dir);
+                        }
+                        case "estampado": return cmpText(a.dtf_estampado, b.dtf_estampado, sort.dir);
                       }
                       return 0;
                     });
