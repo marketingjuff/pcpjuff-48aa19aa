@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { EtapaBadgeView, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, matchEtapaFiltro, type SortDir } from "./shared";
+import { EtapaBadgeView, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, cmpText, matchEtapaFiltro, type SortDir } from "./shared";
 
 interface Props {
   pedidos: Pedido[];
@@ -51,7 +51,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const [dataEntrega, setDataEntrega] = useState("");
   
   const [search, setSearch] = useState("");
-  const sort = useSort<"qtd"|"entrada"|"arte"|"inicio"|"termino"|"inicioAcab"|"acabamento"|"exped"|"saida"|"entrega"|"dias">("saida", "asc");
+  const sort = useSort<"qtd"|"entrada"|"arte"|"inicio"|"termino"|"inicioAcab"|"acabamento"|"exped"|"saida"|"entrega"|"dias"|"etapa"|"pedido"|"orcamento"|"vendedor"|"estampa"|"statusPecas"|"frete"|"uf">("saida", "asc");
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
@@ -114,6 +114,21 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
             const db = b.data_entrega ? (diasUteisAteHoje(b.data_entrega, feriados) ?? 9999) : 9999;
             return dir === "asc" ? da - db : db - da;
           }
+          case "etapa": return cmpText(calcularEtapaAtual(a).etapa, calcularEtapaAtual(b).etapa, dir);
+          case "pedido": {
+            const na = Number(a.pedido_olist); const nb = Number(b.pedido_olist);
+            const aBad = !Number.isFinite(na); const bBad = !Number.isFinite(nb);
+            if (aBad && bBad) return 0;
+            if (aBad) return 1;
+            if (bBad) return -1;
+            return dir === "asc" ? na - nb : nb - na;
+          }
+          case "orcamento": return cmpText(a.orcamento, b.orcamento, dir);
+          case "vendedor": return cmpText(a.vendedor, b.vendedor, dir);
+          case "estampa": return cmpText(a.tipo_estampa, b.tipo_estampa, dir);
+          case "statusPecas": return cmpText(a.status_pecas, b.status_pecas, dir);
+          case "frete": return cmpText((a as any).tipo_frete, (b as any).tipo_frete, dir);
+          case "uf": return cmpText(a.uf_entrega, b.uf_entrega, dir);
         }
         return 0;
       });
@@ -279,15 +294,15 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">ETAPA</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">PEDIDO</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">ORÇAMENTO</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">VENDEDOR</TableHead>
+                  <SortHead label="ETAPA" k="etapa" sort={sort} center />
+                  <SortHead label="PEDIDO" k="pedido" sort={sort} center />
+                  <SortHead label="ORÇAMENTO" k="orcamento" sort={sort} center />
+                  <SortHead label="VENDEDOR" k="vendedor" sort={sort} center />
                   <SortHead label="QTD" k="qtd" sort={sort} />
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">ESTAMPA</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">STATUS DAS PEÇAS</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">FRETE</TableHead>
-                  <TableHead className="h-7 px-1.5 text-[11px] font-bold text-center">UF</TableHead>
+                  <SortHead label="ESTAMPA" k="estampa" sort={sort} center />
+                  <SortHead label="STATUS DAS PEÇAS" k="statusPecas" sort={sort} center />
+                  <SortHead label="FRETE" k="frete" sort={sort} center />
+                  <SortHead label="UF" k="uf" sort={sort} center />
                   <SortHead label="ENTRADA" k="entrada" sort={sort} />
                   <SortHead label="ARTE LIMITE" k="arte" sort={sort} />
                   <SortHead label="INÍCIO EST." k="inicio" sort={sort} />

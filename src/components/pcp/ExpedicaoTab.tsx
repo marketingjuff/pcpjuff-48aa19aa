@@ -138,7 +138,8 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   }
 
   // Dashboard
-  const [sortKey, setSortKey] = useState<"pedido" | "saida_juff" | "data_entrega" | null>(null);
+  type ExpSortKey = "pedido" | "saida_juff" | "data_entrega" | "orcamento" | "uf_entrega" | "forma_pagamento" | "pendencias";
+  const [sortKey, setSortKey] = useState<ExpSortKey | null>(null);
   const [sortAsc, setSortAsc] = useState(true);
   const [fPed, setFPed] = useState("");
   const [fOrc, setFOrc] = useState("");
@@ -175,6 +176,12 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
         if (bBad) return -1;
         return sortAsc ? na - nb : nb - na;
       });
+    } else if (sortKey === "pendencias") {
+      list = [...list].sort((a, b) => {
+        const na = pendenciasDoPedido(a).length;
+        const nb = pendenciasDoPedido(b).length;
+        return sortAsc ? na - nb : nb - na;
+      });
     } else if (sortKey) {
       list = [...list].sort((a, b) => {
         const av = (a as any)[sortKey] ?? "";
@@ -187,7 +194,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
     return list;
   }, [pedidos, fEtapa, fPed, fOrc, fUF, fForma, sortKey, sortAsc]);
 
-  function toggleSort(k: "pedido" | "saida_juff" | "data_entrega") {
+  function toggleSort(k: ExpSortKey) {
     if (sortKey !== k) { setSortKey(k); setSortAsc(true); }
     else if (sortAsc) setSortAsc(false);
     else { setSortKey(null); }
@@ -443,7 +450,14 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                       />
                     </th>
                   )}
-                  <Th>PENDÊNCIAS</Th>
+                  <th className={`${TH_RAW_CLASS} cursor-pointer select-none`} onClick={() => toggleSort("pendencias")}>
+                    <span className="inline-flex items-center gap-1">
+                      PENDÊNCIAS
+                      {sortKey === "pendencias"
+                        ? (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)
+                        : <ArrowUpDown className="h-3 w-3 opacity-50" />}
+                    </span>
+                  </th>
                   <th className={`${TH_RAW_CLASS} cursor-pointer select-none`} onClick={() => toggleSort("pedido")}>
                     <span className="inline-flex items-center gap-1">
                       PEDIDO
@@ -452,8 +466,22 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                         : <ArrowUpDown className="h-3 w-3 opacity-50" />}
                     </span>
                   </th>
-                  <Th>ORÇAMENTO</Th>
-                  <Th>UF</Th>
+                  <th className={`${TH_RAW_CLASS} cursor-pointer select-none`} onClick={() => toggleSort("orcamento")}>
+                    <span className="inline-flex items-center gap-1">
+                      ORÇAMENTO
+                      {sortKey === "orcamento"
+                        ? (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)
+                        : <ArrowUpDown className="h-3 w-3 opacity-50" />}
+                    </span>
+                  </th>
+                  <th className={`${TH_RAW_CLASS} cursor-pointer select-none`} onClick={() => toggleSort("uf_entrega")}>
+                    <span className="inline-flex items-center gap-1">
+                      UF
+                      {sortKey === "uf_entrega"
+                        ? (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)
+                        : <ArrowUpDown className="h-3 w-3 opacity-50" />}
+                    </span>
+                  </th>
                   <th className={`${TH_RAW_CLASS} cursor-pointer select-none`} onClick={() => toggleSort("saida_juff")}>
                     <span className="inline-flex items-center gap-1">
                       SAÍDA JUFF
@@ -470,7 +498,14 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                         : <ArrowUpDown className="h-3 w-3 opacity-50" />}
                     </span>
                   </th>
-                  <Th>FORMA DE PAGAMENTO</Th>
+                  <th className={`${TH_RAW_CLASS} cursor-pointer select-none`} onClick={() => toggleSort("forma_pagamento")}>
+                    <span className="inline-flex items-center gap-1">
+                      FORMA DE PAGAMENTO
+                      {sortKey === "forma_pagamento"
+                        ? (sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)
+                        : <ArrowUpDown className="h-3 w-3 opacity-50" />}
+                    </span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

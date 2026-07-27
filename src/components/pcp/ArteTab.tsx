@@ -1,4 +1,4 @@
-import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc, calcularEtapaAtual } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
@@ -24,7 +24,7 @@ import { useHasRole } from "@/hooks/use-role";
 import {
   ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido,
   StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip,
-  useSort, cmpDate, cmpNum, SortableTh, Th, TH_RAW_CLASS, rowAlertBgClass, linhaAtrasoClasse,
+  useSort, cmpDate, cmpNum, cmpText, SortableTh, Th, TH_RAW_CLASS, rowAlertBgClass, linhaAtrasoClasse,
   ETAPA_FILTRO_OPCOES_ARTE, matchEtapaFiltro, UpdateButton, OrcamentoTitle,
 } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
@@ -57,7 +57,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
   const { feriados } = useFeriados();
-  const sort = useSort<"pedido"|"qtd"|"entrada"|"limite"|"iniAcab"|"inicio">();
+  const sort = useSort<"pedido"|"qtd"|"entrada"|"limite"|"iniAcab"|"inicio"|"etapa"|"orcamento"|"vendedor"|"estampa"|"statusPecas"|"statusDtf"|"statusFoto"|"statusArte">();
   const { names: statusArteCustom } = useAppList("status_arte");
   const { names: opCorteDTF } = useAppList("corte_dtf");
 
@@ -211,6 +211,14 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           case "limite": return cmpDate(a.arte_data, b.arte_data, sort.dir);
           case "inicio": return cmpDate(a.inicio_estamparia, b.inicio_estamparia, sort.dir);
           case "iniAcab": return cmpDate(a.inicio_acabamento, b.inicio_acabamento, sort.dir);
+          case "etapa": return cmpText(calcularEtapaAtual(a).etapa, calcularEtapaAtual(b).etapa, sort.dir);
+          case "orcamento": return cmpText(a.orcamento, b.orcamento, sort.dir);
+          case "vendedor": return cmpText(a.vendedor, b.vendedor, sort.dir);
+          case "estampa": return cmpText(a.tipo_estampa, b.tipo_estampa, sort.dir);
+          case "statusPecas": return cmpText(a.status_pecas, b.status_pecas, sort.dir);
+          case "statusDtf": return cmpText(dtfFinalizadoLabel(a), dtfFinalizadoLabel(b), sort.dir);
+          case "statusFoto": return cmpText(fotolitoFinalizadoLabel(a), fotolitoFinalizadoLabel(b), sort.dir);
+          case "statusArte": return cmpText(a.status_arte, b.status_arte, sort.dir);
         }
         return 0;
       });
@@ -507,16 +515,16 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                       <AlertTriangle className={`h-4 w-4 ${fWarning ? "text-yellow-600 fill-yellow-400" : "text-yellow-500"}`} />
                     </div>
                   </th>
-                  <Th>ETAPA</Th>
+                  <SortableTh label="ETAPA" active={sort.key === "etapa"} onClick={() => sort.toggle("etapa")} />
                   <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
-                  <Th>ORÇAMENTO</Th>
-                  <Th>VENDEDOR</Th>
+                  <SortableTh label="ORÇAMENTO" active={sort.key === "orcamento"} onClick={() => sort.toggle("orcamento")} />
+                  <SortableTh label="VENDEDOR" active={sort.key === "vendedor"} onClick={() => sort.toggle("vendedor")} />
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
-                  <Th>ESTAMPA</Th>
-                  <Th>STATUS DAS PEÇAS</Th>
-                  <Th>STATUS DTF</Th>
-                  <Th>STATUS FOTOLITO</Th>
-                  <Th>ANOTAÇÕES</Th>
+                  <SortableTh label="ESTAMPA" active={sort.key === "estampa"} onClick={() => sort.toggle("estampa")} />
+                  <SortableTh label="STATUS DAS PEÇAS" active={sort.key === "statusPecas"} onClick={() => sort.toggle("statusPecas")} />
+                  <SortableTh label="STATUS DTF" active={sort.key === "statusDtf"} onClick={() => sort.toggle("statusDtf")} />
+                  <SortableTh label="STATUS FOTOLITO" active={sort.key === "statusFoto"} onClick={() => sort.toggle("statusFoto")} />
+                  <SortableTh label="ANOTAÇÕES" active={sort.key === "statusArte"} onClick={() => sort.toggle("statusArte")} />
                   <SortableTh label="DATA LIMITE" active={sort.key === "limite"} onClick={() => sort.toggle("limite")} />
                   <SortableTh label="INÍCIO EST." active={sort.key === "inicio"} onClick={() => sort.toggle("inicio")} />
                   <SortableTh label="INÍCIO ACAB." active={sort.key === "iniAcab"} onClick={() => sort.toggle("iniAcab")} />

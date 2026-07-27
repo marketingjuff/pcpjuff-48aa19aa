@@ -1,4 +1,4 @@
-import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc, calcularEtapaAtual } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import { SIM_NAO_PROCESSO, modeloIncluiSilk, visivelEmSilk, tipoIncluiDTF, tipoIncluiSilk, episodioAberto, silkCompleto } from "@/lib/pedidos";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download, FilterX, FastForward } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_SILK, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, cmpText, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_SILK, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { MultiSelectPeople } from "./MultiSelectPeople";
@@ -48,7 +48,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const { names: operadoresSilk } = useAppList("silk");
   const { names: opRevelacao } = useAppList("revelacao_silk");
   const { feriados } = useFeriados();
-  const sort = useSort<"pedido"|"qtd"|"silk"|"saida"|"entrega"|"iniEst"|"fimEst"|"iniAcab">();
+  const sort = useSort<"pedido"|"qtd"|"silk"|"saida"|"entrega"|"iniEst"|"fimEst"|"iniAcab"|"etapa"|"orcamento"|"vendedor"|"estampa"|"statusPecas"|"fotolito"|"tela"|"silkFeito">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
@@ -372,16 +372,16 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
                 <tr>
-                  <Th>ETAPA</Th>
+                  <SortableTh label="ETAPA" active={sort.key === "etapa"} onClick={() => sort.toggle("etapa")} />
                   <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
-                  <Th>ORÇAMENTO</Th>
-                  <Th>VENDEDOR</Th>
+                  <SortableTh label="ORÇAMENTO" active={sort.key === "orcamento"} onClick={() => sort.toggle("orcamento")} />
+                  <SortableTh label="VENDEDOR" active={sort.key === "vendedor"} onClick={() => sort.toggle("vendedor")} />
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
-                  <Th>ESTAMPA</Th>
-                  <Th>STATUS DAS PEÇAS</Th>
-                  <Th>FOTOLITO</Th>
-                  <Th>TELA</Th>
-                  <Th>SILK FEITO</Th>
+                  <SortableTh label="ESTAMPA" active={sort.key === "estampa"} onClick={() => sort.toggle("estampa")} />
+                  <SortableTh label="STATUS DAS PEÇAS" active={sort.key === "statusPecas"} onClick={() => sort.toggle("statusPecas")} />
+                  <SortableTh label="FOTOLITO" active={sort.key === "fotolito"} onClick={() => sort.toggle("fotolito")} />
+                  <SortableTh label="TELA" active={sort.key === "tela"} onClick={() => sort.toggle("tela")} />
+                  <SortableTh label="SILK FEITO" active={sort.key === "silkFeito"} onClick={() => sort.toggle("silkFeito")} />
                   <SortableTh label="INÍCIO ESTAMPARIA" active={sort.key === "iniEst"} onClick={() => sort.toggle("iniEst")} />
                   <SortableTh label="TÉRMINO ESTAMPARIA" active={sort.key === "fimEst"} onClick={() => sort.toggle("fimEst")} />
                   <SortableTh label="INÍCIO ACABAMENTO" active={sort.key === "iniAcab"} onClick={() => sort.toggle("iniAcab")} />
@@ -401,6 +401,14 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                         case "iniEst": return cmpDate(a.inicio_estamparia, b.inicio_estamparia, sort.dir);
                         case "fimEst": return cmpDate(a.termino_estamparia, b.termino_estamparia, sort.dir);
                         case "iniAcab": return cmpDate(a.inicio_acabamento, b.inicio_acabamento, sort.dir);
+                        case "etapa": return cmpText(calcularEtapaAtual(a).etapa, calcularEtapaAtual(b).etapa, sort.dir);
+                        case "orcamento": return cmpText(a.orcamento, b.orcamento, sort.dir);
+                        case "vendedor": return cmpText(a.vendedor, b.vendedor, sort.dir);
+                        case "estampa": return cmpText(a.tipo_estampa, b.tipo_estampa, sort.dir);
+                        case "statusPecas": return cmpText(a.status_pecas, b.status_pecas, sort.dir);
+                        case "fotolito": return cmpText(a.fotolito_impresso, b.fotolito_impresso, sort.dir);
+                        case "tela": return cmpText(a.tela_gravada, b.tela_gravada, sort.dir);
+                        case "silkFeito": return cmpText(a.silk_feito, b.silk_feito, sort.dir);
                       }
                       return 0;
                     });

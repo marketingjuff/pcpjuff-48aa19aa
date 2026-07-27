@@ -17,7 +17,7 @@ import {
 import { RotateCcw, Trash2, FileText, FilterX, Download } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
-import { PedidoMobileCard, Chip, QtdTotal, useSort, cmpDate, cmpNum, SortableTh, Th, ReadOnlyField } from "./shared";
+import { PedidoMobileCard, Chip, QtdTotal, useSort, cmpDate, cmpNum, cmpText, SortableTh, Th, ReadOnlyField } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { useColorSettings } from "@/hooks/use-color-settings";
 import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
@@ -42,7 +42,7 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const sort = useSort<"pedido"|"qtd"|"saida"|"data_saida"|"fin">();
+  const sort = useSort<"pedido"|"qtd"|"saida"|"data_saida"|"fin"|"orcamento"|"vendedor"|"tipo"|"responsavel">();
   const [historico, setHistorico] = useState<Pedido | null>(null);
   const [loteTamanho, setLoteTamanho] = useState<number>(100);
   const [visiveis, setVisiveis] = useState<number>(100);
@@ -75,6 +75,10 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
           case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
           case "data_saida": return cmpDate(a.data_saida_juff, b.data_saida_juff, sort.dir);
           case "fin": return cmpDate(a.finalizado_em?.slice(0,10), b.finalizado_em?.slice(0,10), sort.dir);
+          case "orcamento": return cmpText(a.orcamento, b.orcamento, sort.dir);
+          case "vendedor": return cmpText(a.vendedor, b.vendedor, sort.dir);
+          case "tipo": return cmpText(a.tipo_estampa, b.tipo_estampa, sort.dir);
+          case "responsavel": return cmpText(a.responsavel_acabamento, b.responsavel_acabamento, sort.dir);
         }
         return 0;
       });
@@ -82,7 +86,7 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
       arr.sort((a, b) => (b.finalizado_em ?? "").localeCompare(a.finalizado_em ?? ""));
     }
     return arr;
-  }, [pedidos, search, periodo, de, ate, sort.key, sort.dir]);
+  }, [pedidos, search, periodo, de, ate, sort.key, sort.dir, profilesMap]);
 
 
   const finalizadosVisiveis = useMemo(() => finalizados.slice(0, visiveis), [finalizados, visiveis]);
@@ -352,13 +356,13 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
                   </th>
                 )}
                 <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
-                <Th>ORÇAMENTO</Th>
+                <SortableTh label="ORÇAMENTO" active={sort.key === "orcamento"} onClick={() => sort.toggle("orcamento")} />
                 <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
-                <Th>VENDEDOR</Th>
-                <Th>TIPO</Th>
+                <SortableTh label="VENDEDOR" active={sort.key === "vendedor"} onClick={() => sort.toggle("vendedor")} />
+                <SortableTh label="TIPO" active={sort.key === "tipo"} onClick={() => sort.toggle("tipo")} />
                 <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
                 <SortableTh label="DATA SAÍDA" active={sort.key === "data_saida"} onClick={() => sort.toggle("data_saida")} />
-                <Th>RESPONSÁVEL</Th>
+                <SortableTh label="RESPONSÁVEL" active={sort.key === "responsavel"} onClick={() => sort.toggle("responsavel")} />
                 <SortableTh label="FINALIZADO EM" active={sort.key === "fin"} onClick={() => sort.toggle("fin")} />
                 <Th>{""}</Th>
               </tr>

@@ -1,4 +1,4 @@
-import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc, calcularEtapaAtual } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import { SIM_NAO_PROCESSO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento, acabamentoCompleto } from "@/lib/pedidos";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, Download, FilterX } from "lucide-react";
-import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_ACABAMENTO, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
+import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, cmpText, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_ACABAMENTO, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 
@@ -46,7 +46,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   const { isDirty } = useDirtyForm();
   const { names: responsaveis } = useAppList("acabamento");
   const { feriados } = useFeriados();
-  const sort = useSort<"pedido"|"qtd"|"inicio"|"termino"|"saida">();
+  const sort = useSort<"pedido"|"qtd"|"inicio"|"termino"|"saida"|"etapa"|"orcamento"|"tipo"|"statusPecas"|"dtfEst"|"silkEst">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
@@ -348,14 +348,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
               <thead>
                 <tr>
-                  <Th>ETAPA</Th>
+                  <SortableTh label="ETAPA" active={sort.key === "etapa"} onClick={() => sort.toggle("etapa")} />
                   <SortableTh label="PEDIDO" active={sort.key === "pedido"} onClick={() => sort.toggle("pedido")} />
-                  <Th>ORÇAMENTO</Th>
-                  <Th>TIPO</Th>
+                  <SortableTh label="ORÇAMENTO" active={sort.key === "orcamento"} onClick={() => sort.toggle("orcamento")} />
+                  <SortableTh label="TIPO" active={sort.key === "tipo"} onClick={() => sort.toggle("tipo")} />
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
-                  <Th>STATUS DAS PEÇAS</Th>
-                  <Th>DTF EST.</Th>
-                  <Th>SILK EST.</Th>
+                  <SortableTh label="STATUS DAS PEÇAS" active={sort.key === "statusPecas"} onClick={() => sort.toggle("statusPecas")} />
+                  <SortableTh label="DTF EST." active={sort.key === "dtfEst"} onClick={() => sort.toggle("dtfEst")} />
+                  <SortableTh label="SILK EST." active={sort.key === "silkEst"} onClick={() => sort.toggle("silkEst")} />
                   <SortableTh label="INÍCIO ACAB." active={sort.key === "inicio"} onClick={() => sort.toggle("inicio")} />
                   <SortableTh label="TÉRMINO ACAB." active={sort.key === "termino"} onClick={() => sort.toggle("termino")} />
                   <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
@@ -372,6 +372,12 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                         case "inicio": return cmpDate(a.inicio_acabamento, b.inicio_acabamento, sort.dir);
                         case "termino": return cmpDate(a.termino_acabamento, b.termino_acabamento, sort.dir);
                         case "saida": return cmpDate(a.saida_juff, b.saida_juff, sort.dir);
+                        case "etapa": return cmpText(calcularEtapaAtual(a).etapa, calcularEtapaAtual(b).etapa, sort.dir);
+                        case "orcamento": return cmpText(a.orcamento, b.orcamento, sort.dir);
+                        case "tipo": return cmpText(a.tipo_estampa, b.tipo_estampa, sort.dir);
+                        case "statusPecas": return cmpText(a.status_pecas, b.status_pecas, sort.dir);
+                        case "dtfEst": return cmpText(modeloIncluiDTF(a.tipo_estampa) ? (a.dtf_estampado ?? "") : "N/A", modeloIncluiDTF(b.tipo_estampa) ? (b.dtf_estampado ?? "") : "N/A", sort.dir);
+                        case "silkEst": return cmpText(modeloIncluiSilk(a.tipo_estampa) ? (a.silk_feito ?? "") : "N/A", modeloIncluiSilk(b.tipo_estampa) ? (b.silk_feito ?? "") : "N/A", sort.dir);
                       }
                       return 0;
                     });
