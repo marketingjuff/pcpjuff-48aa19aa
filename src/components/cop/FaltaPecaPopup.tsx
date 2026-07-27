@@ -62,6 +62,30 @@ export function FaltaPecaPopup({ open, onOpenChange, modelo, cor, tamanho, pedid
     return out;
   }, [cops, oficinaMap, modelo, cor, tamanho]);
 
+  // Todos os COPs não finalizados/pagos com essa peça (superconjunto de romaneios)
+  const copsComPeca = useMemo(() => {
+    const out: { cop: Cop; qtd: number; recebido: number; saldo: number; rotulo: string; oficinaNome: string }[] = [];
+    for (const c of cops) {
+      if (c.status === "Finalizado") continue;
+      if ((c as any).pagamento_status === "pago") continue;
+      const qtd = (c.pecas ?? []).filter((p) => p.modelo === modelo && p.cor === cor && p.tamanho === tamanho)
+        .reduce((s, p) => s + (Number(p.qtd) || 0), 0);
+      if (qtd <= 0) continue;
+      const recebido = (c.pecas_recebidas ?? []).filter((p) => p.modelo === modelo && p.cor === cor && p.tamanho === tamanho)
+        .reduce((s, p) => s + (Number(p.qtd_recebida) || 0), 0);
+      out.push({
+        cop: c,
+        qtd,
+        recebido,
+        saldo: qtd - recebido,
+        rotulo: rotuloRomaneio(c, cops),
+        oficinaNome: c.oficina_id ? (oficinaMap.get(c.oficina_id)?.nome ?? "—") : "—",
+      });
+    }
+    out.sort((a, b) => a.rotulo.localeCompare(b.rotulo));
+    return out;
+  }, [cops, oficinaMap, modelo, cor, tamanho]);
+
   // Pedidos com falta dessa peça
   const pedidosLista = useMemo(() => {
     const out: { pedido: Pedido; falta: number; ancora: string | null; etapa: string }[] = [];
@@ -83,7 +107,7 @@ export function FaltaPecaPopup({ open, onOpenChange, modelo, cor, tamanho, pedid
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[960px]">
+      <DialogContent className="max-w-[1280px] w-[95vw]">
         <DialogHeader>
           <DialogTitle>
             {modelo} ·{" "}
@@ -92,8 +116,46 @@ export function FaltaPecaPopup({ open, onOpenChange, modelo, cor, tamanho, pedid
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Esquerda — Romaneios */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* COPs com esta peça (todos os ativos) */}
+          <div className="space-y-2">
+            <div className="text-xs font-semibold text-muted-foreground uppercase">COPs com esta peça ({copsComPeca.length})</div>
+            {copsComPeca.length === 0 ? (
+              <div className="text-sm text-muted-foreground italic">Nenhum COP ativo com essa peça.</div>
+            ) : (
+              <div className="space-y-2 max-h-[55vh] overflow-y-auto pr-1">
+                {copsComPeca.map((r) => (
+                  <a
+                    key={r.cop.id}
+                    href={`/cop?tab=romaneio&copId=${r.cop.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block"
+                  >
+                    <Card className="hover:bg-accent/40 transition-colors cursor-pointer">
+                      <CardContent className="p-3 text-sm space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono font-semibold">{r.rotulo}</span>
+                          <span className="text-xs px-2 py-0.5 rounded bg-muted">{r.cop.status}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">Oficina: <b className="text-foreground">{r.oficinaNome}</b></div>
+                        {r.cop.data_saida_oficina && (
+                          <div className="text-xs text-muted-foreground">Saída: {fmtBR(r.cop.data_saida_oficina)}</div>
+                        )}
+                        <div className="text-xs flex gap-3">
+                          <span>Qtd: <b className="tabular-nums">{r.qtd}</b></span>
+                          <span>Recebido: <b className="tabular-nums">{r.recebido}</b></span>
+                          <span>Saldo: <b className={`tabular-nums ${r.saldo > 0 ? "text-green-700" : "text-muted-foreground"}`}>{r.saldo}</b></span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Romaneios em oficina */}
           <div className="space-y-2">
             <div className="text-xs font-semibold text-muted-foreground uppercase">Romaneios em oficina ({romaneios.length})</div>
             {romaneios.length === 0 ? (
