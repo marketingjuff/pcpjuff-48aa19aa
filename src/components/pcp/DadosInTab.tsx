@@ -399,7 +399,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     if (file.size > 30 * 1024 * 1024) { toast.error("Máx. 30MB."); return; }
     setUploading(true);
     try {
-      const path = `${crypto.randomUUID()}-${file.name}`;
+      const safeName = file.name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9._-]+/g, "_")
+        .replace(/_+/g, "_")
+        .replace(/^_+|_+$/g, "");
+      const path = `${crypto.randomUUID()}-${safeName || "layout.pdf"}`;
       const { error } = await supabase.storage.from("layouts").upload(path, file, { contentType: "application/pdf" });
       if (error) throw error;
       set("layout_url", path);
