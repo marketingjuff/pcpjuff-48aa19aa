@@ -232,7 +232,7 @@ export function DisponivelTab() {
       </Card>
 
       <Dialog open={!!popup} onOpenChange={(o) => !o && setPopup(null)}>
-        <DialogContent className="max-w-[900px]">
+        <DialogContent className="max-w-[1280px] w-[95vw]">
           {popup && (
             <>
               <DialogHeader>
