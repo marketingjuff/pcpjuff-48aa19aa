@@ -1,4 +1,4 @@
-import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc, calcularEtapaAtual, modeloIncluiDTF, modeloIncluiSilk } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc, calcularEtapaAtual } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import { SIM_NAO_PROCESSO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento, acabamentoCompleto } from "@/lib/pedidos";
