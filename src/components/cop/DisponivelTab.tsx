@@ -289,6 +289,62 @@ export function DisponivelTab() {
                         </tbody>
                       </table>
                     </div>
+
+                    {(() => {
+                      const copsItem = cops
+                        .filter((c) => c.status !== "Finalizado" && (c as any).pagamento_status !== "pago")
+                        .map((c) => {
+                          const qtd = (c.pecas ?? [])
+                            .filter((p) => p.modelo === popup.modelo && p.cor === popup.cor && p.tamanho === popup.tamanho)
+                            .reduce((s, p) => s + (Number(p.qtd) || 0), 0);
+                          const rec = (c.pecas_recebidas ?? [])
+                            .filter((p) => p.modelo === popup.modelo && p.cor === popup.cor && p.tamanho === popup.tamanho)
+                            .reduce((s, p) => s + (Number(p.qtd_recebida) || 0), 0);
+                          return { cop: c, qtd, rec };
+                        })
+                        .filter((x) => x.qtd > 0)
+                        .sort((a, b) => rotuloRomaneio(a.cop, cops).localeCompare(rotuloRomaneio(b.cop, cops)));
+                      return (
+                        <div className="mt-3">
+                          <div className="text-xs font-semibold text-muted-foreground uppercase mb-1">COPs com esta peça ({copsItem.length})</div>
+                          <div className="rounded-md border overflow-x-auto max-h-[40vh]">
+                            <table className="w-full text-[12.5px] leading-[1.2]">
+                              <thead className="bg-muted/40 text-xs sticky top-0">
+                                <tr>
+                                  <th className="p-2 text-left">COP</th>
+                                  <th className="p-2 text-left">Status</th>
+                                  <th className="p-2 text-right">Qtd</th>
+                                  <th className="p-2 text-right">Recebido</th>
+                                  <th className="p-2 text-right">Saldo</th>
+                                  <th className="p-2 text-left">Saída</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {copsItem.length === 0 ? (
+                                  <tr><td colSpan={6} className="p-3 text-center text-muted-foreground">Nenhum COP ativo com esta peça.</td></tr>
+                                ) : copsItem.map(({ cop, qtd, rec }) => {
+                                  const saldoCop = qtd - rec;
+                                  return (
+                                    <tr key={cop.id} className="border-t hover:bg-accent/40">
+                                      <td className="p-2 font-mono">
+                                        <a href={`/cop?tab=romaneio&copId=${cop.id}`} target="_blank" rel="noreferrer" className="hover:underline">
+                                          {rotuloRomaneio(cop, cops)}
+                                        </a>
+                                      </td>
+                                      <td className="p-2 text-xs">{cop.status}</td>
+                                      <td className="p-2 text-right tabular-nums">{qtd}</td>
+                                      <td className="p-2 text-right tabular-nums">{rec}</td>
+                                      <td className={`p-2 text-right tabular-nums ${saldoCop > 0 ? "text-green-700" : "text-muted-foreground"}`}>{saldoCop}</td>
+                                      <td className="p-2 text-xs">{cop.data_saida_oficina ? cop.data_saida_oficina.split("-").reverse().join("/") : "—"}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </>
                 );
               })()}
