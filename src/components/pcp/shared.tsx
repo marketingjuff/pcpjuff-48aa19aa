@@ -210,6 +210,13 @@ export function cmpNum(a: number | null | undefined, b: number | null | undefine
   const bv = b == null ? Number.POSITIVE_INFINITY : b;
   return dir === "asc" ? av - bv : bv - av;
 }
+export function cmpText(a: string | null | undefined, b: string | null | undefined, dir: SortDir): number {
+  const av = (a ?? "").toString();
+  const bv = (b ?? "").toString();
+  return dir === "asc"
+    ? av.localeCompare(bv, "pt-BR", { sensitivity: "base", numeric: true })
+    : bv.localeCompare(av, "pt-BR", { sensitivity: "base", numeric: true });
+}
 
 /** <th> com cabeçalho clicável estilizado igual ao Master. */
 export function SortableTh({
