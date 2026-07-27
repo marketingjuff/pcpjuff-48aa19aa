@@ -1,4 +1,4 @@
-import { pedidoAtivoNasAreas, visivelEmDTF, visivelEmSilk, calcularEtapaAtual } from "@/lib/pedidos";
+import { pedidoAtivoNasAreas, visivelEmDTF, visivelEmSilk } from "@/lib/pedidos";
 import { useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
