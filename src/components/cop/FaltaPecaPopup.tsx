@@ -62,6 +62,30 @@ export function FaltaPecaPopup({ open, onOpenChange, modelo, cor, tamanho, pedid
     return out;
   }, [cops, oficinaMap, modelo, cor, tamanho]);
 
+  // Todos os COPs não finalizados/pagos com essa peça (superconjunto de romaneios)
+  const copsComPeca = useMemo(() => {
+    const out: { cop: Cop; qtd: number; recebido: number; saldo: number; rotulo: string; oficinaNome: string }[] = [];
+    for (const c of cops) {
+      if (c.status === "Finalizado") continue;
+      if ((c as any).pagamento_status === "pago") continue;
+      const qtd = (c.pecas ?? []).filter((p) => p.modelo === modelo && p.cor === cor && p.tamanho === tamanho)
+        .reduce((s, p) => s + (Number(p.qtd) || 0), 0);
+      if (qtd <= 0) continue;
+      const recebido = (c.pecas_recebidas ?? []).filter((p) => p.modelo === modelo && p.cor === cor && p.tamanho === tamanho)
+        .reduce((s, p) => s + (Number(p.qtd_recebida) || 0), 0);
+      out.push({
+        cop: c,
+        qtd,
+        recebido,
+        saldo: qtd - recebido,
+        rotulo: rotuloRomaneio(c, cops),
+        oficinaNome: c.oficina_id ? (oficinaMap.get(c.oficina_id)?.nome ?? "—") : "—",
+      });
+    }
+    out.sort((a, b) => a.rotulo.localeCompare(b.rotulo));
+    return out;
+  }, [cops, oficinaMap, modelo, cor, tamanho]);
+
   // Pedidos com falta dessa peça
   const pedidosLista = useMemo(() => {
     const out: { pedido: Pedido; falta: number; ancora: string | null; etapa: string }[] = [];
