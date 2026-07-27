@@ -138,7 +138,8 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   }
 
   // Dashboard
-  const [sortKey, setSortKey] = useState<"pedido" | "saida_juff" | "data_entrega" | null>(null);
+  type ExpSortKey = "pedido" | "saida_juff" | "data_entrega" | "orcamento" | "uf_entrega" | "forma_pagamento" | "pendencias";
+  const [sortKey, setSortKey] = useState<ExpSortKey | null>(null);
   const [sortAsc, setSortAsc] = useState(true);
   const [fPed, setFPed] = useState("");
   const [fOrc, setFOrc] = useState("");
@@ -175,6 +176,12 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
         if (bBad) return -1;
         return sortAsc ? na - nb : nb - na;
       });
+    } else if (sortKey === "pendencias") {
+      list = [...list].sort((a, b) => {
+        const na = pendenciasDoPedido(a).length;
+        const nb = pendenciasDoPedido(b).length;
+        return sortAsc ? na - nb : nb - na;
+      });
     } else if (sortKey) {
       list = [...list].sort((a, b) => {
         const av = (a as any)[sortKey] ?? "";
@@ -187,7 +194,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
     return list;
   }, [pedidos, fEtapa, fPed, fOrc, fUF, fForma, sortKey, sortAsc]);
 
-  function toggleSort(k: "pedido" | "saida_juff" | "data_entrega") {
+  function toggleSort(k: ExpSortKey) {
     if (sortKey !== k) { setSortKey(k); setSortAsc(true); }
     else if (sortAsc) setSortAsc(false);
     else { setSortKey(null); }
