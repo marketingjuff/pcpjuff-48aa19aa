@@ -759,6 +759,7 @@ export type Database = {
           pecas: number | null
           pecas_recebidas: number | null
           producao_id: string
+          retingir_origem_id: string | null
           tinturaria: string
         }
         Insert: {
@@ -774,6 +775,7 @@ export type Database = {
           pecas?: number | null
           pecas_recebidas?: number | null
           producao_id: string
+          retingir_origem_id?: string | null
           tinturaria: string
         }
         Update: {
@@ -789,6 +791,7 @@ export type Database = {
           pecas?: number | null
           pecas_recebidas?: number | null
           producao_id?: string
+          retingir_origem_id?: string | null
           tinturaria?: string
         }
         Relationships: [
