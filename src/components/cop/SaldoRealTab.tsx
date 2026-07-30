@@ -79,13 +79,22 @@ export function SaldoRealTab() {
     return set;
   }, [joke, juff, disponivel]);
 
+  /** Saldo multi-empresa (JOKE+JUFF); negativo é considerado ZERADO. */
+  const multiEmpresa = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const k of chaves) {
+      m.set(k, Math.max(0, (joke.get(k) ?? 0) + (juff.get(k) ?? 0)));
+    }
+    return m;
+  }, [chaves, joke, juff]);
+
   const saldoReal = useMemo(() => {
     const m = new Map<string, number>();
     for (const k of chaves) {
-      m.set(k, (joke.get(k) ?? 0) + (juff.get(k) ?? 0) + (disponivel.get(k) ?? 0));
+      m.set(k, (multiEmpresa.get(k) ?? 0) + (disponivel.get(k) ?? 0));
     }
     return m;
-  }, [chaves, joke, juff, disponivel]);
+  }, [chaves, multiEmpresa, disponivel]);
 
   const cores = useMemo(() => {
     const s = new Set<string>();
@@ -262,7 +271,10 @@ export function SaldoRealTab() {
               <tbody>
                 <tr className="border-b"><td className="py-1">Estoque JOKE</td><td className="py-1 text-right font-semibold tabular-nums">{joke.get(pk) ?? 0}</td></tr>
                 <tr className="border-b"><td className="py-1">Estoque JUFF</td><td className="py-1 text-right font-semibold tabular-nums">{juff.get(pk) ?? 0}</td></tr>
-                <tr className="border-b"><td className="py-1">Saldo Multi-Empresa</td><td className="py-1 text-right font-semibold tabular-nums">{(joke.get(pk) ?? 0) + (juff.get(pk) ?? 0)}</td></tr>
+                <tr className="border-b">
+                  <td className="py-1">Saldo Multi-Empresa {(joke.get(pk) ?? 0) + (juff.get(pk) ?? 0) < 0 && <span className="text-xs text-muted-foreground">(negativo zerado)</span>}</td>
+                  <td className="py-1 text-right font-semibold tabular-nums">{multiEmpresa.get(pk) ?? 0}</td>
+                </tr>
                 <tr className="border-b"><td className="py-1">Saldo Disponível (COP)</td><td className="py-1 text-right font-semibold tabular-nums">{disponivel.get(pk) ?? 0}</td></tr>
                 <tr><td className="py-1 font-bold">Saldo Real</td><td className="py-1 text-right font-bold tabular-nums">{saldoReal.get(pk) ?? 0}</td></tr>
               </tbody>
