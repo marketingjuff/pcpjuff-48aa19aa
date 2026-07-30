@@ -80,6 +80,13 @@ function CopHome() {
     }
   }, [canAccess, isLoading, navigate]);
 
+  // Aplica o escopo do COP também no <body>, para diálogos renderizados em portal.
+  useEffect(() => {
+    document.body.classList.add("cop-scope");
+    return () => document.body.classList.remove("cop-scope");
+  }, []);
+
+
   async function handleLogout() {
     await supabase.auth.signOut();
     qc.clear();
