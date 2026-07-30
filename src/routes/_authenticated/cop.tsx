@@ -33,8 +33,6 @@ export const Route = createFileRoute("/_authenticated/cop")({
 const BASE_TABS = [
   { value: "dashboard", label: "Dashboard COP" },
   { value: "disponivel", label: "Disponível" },
-  { value: "alimentacao-estoque", label: "Alimentação Estoque Real" },
-  { value: "saldo-real", label: "Saldo Real Juff" },
   { value: "falta", label: "Falta por Pedido" },
   { value: "oficinas-hoje", label: "Oficinas Hoje" },
   { value: "corte", label: "Corte" },
@@ -42,6 +40,8 @@ const BASE_TABS = [
   { value: "pagamento", label: "Pagamentos" },
   { value: "perdas", label: "Perdas" },
   { value: "controle-perdas", label: "Controle de Perdas" },
+  { value: "alimentacao-estoque", label: "Alimentação Estoque Real" },
+  { value: "saldo-real", label: "Saldo Real Juff" },
 ];
 
 
