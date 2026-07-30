@@ -185,6 +185,19 @@ export function AlimentacaoEstoqueTab() {
     [produtosNoEstoque, mapPorProduto],
   );
 
+  const pendentesInfo = useMemo(() => {
+    return pendentes.map((p) => {
+      const linhasItens = itens.filter((i) => i.produto_olist === p);
+      const empresas = Array.from(new Set(linhasItens.map((i) => i.empresa))).sort();
+      const qtd = linhasItens.reduce((a, i) => a + (i.qtd ?? 0), 0);
+      const linhas = linhasUltimo[p] ?? [];
+      return { produto: p, empresas, combos: linhasItens.length, qtd, linhas };
+    });
+  }, [pendentes, itens, linhasUltimo]);
+
+  const fmtLinhas = (l: number[]) =>
+    l.length === 0 ? "—" : l.slice(0, 6).join(", ") + (l.length > 6 ? ` … (+${l.length - 6})` : "");
+
   const previa = useMemo(() => {
     const q = busca.trim().toLowerCase();
     return itens
