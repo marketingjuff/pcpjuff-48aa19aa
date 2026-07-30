@@ -272,17 +272,8 @@ export function FaltaPorPedidoTab() {
           </div>
           <div className="flex items-center gap-1.5">
             <Label className="text-xs whitespace-nowrap">Cor:</Label>
-            <Select value={corFiltro} onValueChange={setCorFiltro}>
-              <SelectTrigger className="h-9 w-[150px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                {REFACAO_CORES.map((c) => (
-                  <SelectItem key={c.nome} value={c.nome}>{c.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CorSelect value={corFiltro} onChange={setCorFiltro} allValue="todas" allLabel="Todas" className="h-9 w-[150px]" />
+
           </div>
           {(modeloFiltro !== "todos" || corFiltro !== "todas" || busca) && (
             <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => { setBusca(""); setModeloFiltro("todos"); setCorFiltro("todas"); }}>
