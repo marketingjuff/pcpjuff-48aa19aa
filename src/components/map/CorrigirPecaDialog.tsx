@@ -49,8 +49,10 @@ export function CorrigirPecaDialog({ open, onOpenChange, peca, onDone }: Props) 
       // Retingir move 1 peça (e kg proporcionais) da linha de tinturaria
       // original para uma linha da cor nova no bloco Tinturaria do PROD.
       let novaProgramacaoId: string | null = null;
+      let retingir: Awaited<ReturnType<typeof retingirProgramacao>> | null = null;
       if (tipo === "retingir" && peca.programacao_id && corNova) {
-        novaProgramacaoId = await retingirProgramacao(peca.programacao_id, corNova);
+        retingir = await retingirProgramacao(peca.programacao_id, corNova);
+        novaProgramacaoId = retingir.destino_id;
       }
 
       const evento: HistoricoCorrecaoEvento = {
@@ -58,7 +60,14 @@ export function CorrigirPecaDialog({ open, onOpenChange, peca, onDone }: Props) 
         em: new Date().toISOString(),
         correcao: tipo,
         ...(tipo === "retingir"
-          ? { cor_nova: corNova, programacao_origem_id: peca.programacao_id ?? null }
+          ? {
+              cor_nova: corNova,
+              programacao_origem_id: peca.programacao_id ?? null,
+              programacao_destino_id: retingir?.destino_id ?? null,
+              destino_criada: retingir?.destino_criada,
+              delta_kg_enviados: retingir?.delta_kg_enviados,
+              origem_snapshot: retingir?.origem_snapshot ?? null,
+            }
           : {}),
       };
       const historico = [...(Array.isArray(peca.historico_correcoes) ? peca.historico_correcoes : []), evento];
