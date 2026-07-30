@@ -43,9 +43,12 @@ export function SaldoRealTab() {
       .channel("saldo-real")
       .on("postgres_changes", { event: "*", schema: "public", table: "cops" }, () => qc.invalidateQueries({ queryKey: ["cops"] }))
       .on("postgres_changes", { event: "*", schema: "public", table: "pedidos" }, () => qc.invalidateQueries({ queryKey: ["pedidos-cop-saldos"] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "olist_produto_map" }, () => qc.invalidateQueries({ queryKey: ["estoque-olist"] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "estoque_olist_snapshots" }, () => qc.invalidateQueries({ queryKey: ["estoque-olist"] }))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
+
 
   const disponivel = useMemo(() => {
     const producao = calcEmProducao(cops);
