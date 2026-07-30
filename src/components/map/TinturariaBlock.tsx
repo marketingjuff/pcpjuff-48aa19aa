@@ -354,8 +354,12 @@ function ReceiptDot({
   programacoes: MapProgramacaoTinturaria[];
   estoquePecas: MapEstoquePeca[];
 }) {
+  // Escopo do sinalizador: apenas a própria linha + as linhas ligadas a ela por
+  // retinção (origem <-> destinos). Linhas que não foram splitadas nem alteradas
+  // não devem herdar o status de outras linhas da mesma cor.
+  const raiz = row.retingir_origem_id ?? row.id;
   const grupo = programacoes.filter(
-    (p) => corBase(p.cor) === corBase(row.cor),
+    (p) => p.id === raiz || p.retingir_origem_id === raiz,
   );
   const completos = grupo.filter(programacaoRecebimentoCompleto).length;
   const total = grupo.length;
@@ -367,10 +371,11 @@ function ReceiptDot({
 
   let cls = "text-muted-foreground";
   let title = "Sem recebimento.";
-  if (emCorrecao > 0) { cls = "text-sky-600"; title = `${emCorrecao} peça(s) em correção no grupo.`; }
-  else if (devolvidas > 0) { cls = "text-black"; title = `${devolvidas} peça(s) devolvida(s) no grupo.`; }
-  else if (total > 0 && completos === total) { cls = "text-emerald-600"; title = "Grupo 100% recebido."; }
-  else if (completos > 0) { cls = "text-amber-500"; title = `Grupo parcialmente recebido (${completos}/${total}).`; }
+  if (emCorrecao > 0) { cls = "text-sky-600"; title = `${emCorrecao} peça(s) em correção nesta linha/retinção.`; }
+  else if (devolvidas > 0) { cls = "text-black"; title = `${devolvidas} peça(s) devolvida(s) nesta linha/retinção.`; }
+  else if (total > 0 && completos === total) { cls = "text-emerald-600"; title = "100% recebido."; }
+  else if (completos > 0) { cls = "text-amber-500"; title = `Parcialmente recebido (${completos}/${total}).`; }
+
 
   return (
     <span
