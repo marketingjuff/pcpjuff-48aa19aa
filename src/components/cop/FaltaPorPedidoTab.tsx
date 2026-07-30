@@ -111,10 +111,16 @@ export function FaltaPorPedidoTab() {
         g.porTamanho.set(it.ps.tamanho, { idx: it.idx, ps: it.ps, falta: it.falta });
         g.faltaTotal += it.falta;
       }
-      const grupos = Array.from(mapa.values());
+      const grupos = Array.from(mapa.values()).filter((g) => {
+        if (modeloFiltro !== "todos" && g.modelo !== modeloFiltro) return false;
+        if (corFiltro !== "todas" && g.cor !== corFiltro) return false;
+        return true;
+      });
+      if (grupos.length === 0) continue;
       const faltaTotal = grupos.reduce((s, g) => s + g.faltaTotal, 0);
       const ancora = dataUrgencia(p);
       arr.push({ pedido: p, grupos, faltaTotal, ancora });
+
     }
     arr.sort((a, b) => {
       const da = a.ancora ?? "9999-12-31";
