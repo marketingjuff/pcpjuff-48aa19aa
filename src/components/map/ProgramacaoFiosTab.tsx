@@ -473,16 +473,6 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 w-7 p-0 shrink-0"
-                                  onClick={() => setDevProd(prod)}
-                                  title="Devolução"
-                                  aria-label="Devolução"
-                                >
-                                  <Undo2 className="h-3.5 w-3.5" />
-                                </Button>
                                 {canManageMap && (
                                   <Button
                                     size="sm"
@@ -552,15 +542,6 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
         onCreated={invalidateAll}
       />
 
-      {devProd && (
-        <DevolucaoDialog
-          open={!!devProd}
-          onOpenChange={(v) => !v && setDevProd(null)}
-          producao={devProd}
-          programacoes={byProdProgs.get(devProd.id) ?? []}
-          onDone={invalidateAll}
-        />
-      )}
     </div>
   );
 }
