@@ -525,3 +525,93 @@ export async function syncEstoquePecas(): Promise<void> {
   if (e3) throw e3;
 }
 
+
+/**
+ * Reverso de `retingirProgramacao`: devolve 1 peça (e kg proporcionais) da linha
+ * de destino para a linha de origem. Se a linha de destino ficar vazia (0 peças)
+ * e tiver sido criada por retingir, ela é removida.
+ */
+export async function desfazerRetingirProgramacao(
+  destinoId: string,
+  origemId: string,
+): Promise<void> {
+  const { data: dest, error: e1 } = await (supabase as any)
+    .from("map_tinturaria_programacoes")
+    .select("*")
+    .eq("id", destinoId)
+    .maybeSingle();
+  if (e1) throw e1;
+  const { data: orig, error: e2 } = await (supabase as any)
+    .from("map_tinturaria_programacoes")
+    .select("*")
+    .eq("id", origemId)
+    .maybeSingle();
+  if (e2) throw e2;
+  if (!dest || !orig) return;
+
+  const pecasDest = Number(dest.pecas ?? 0);
+  const kgDest = Number(dest.kg_enviados ?? 0);
+  const delta = pecasDest > 0 ? round2(kgDest / pecasDest) : 0;
+
+  await patchProgramacao(orig.id, {
+    pecas: Number(orig.pecas ?? 0) + 1,
+    kg_enviados: round2(Number(orig.kg_enviados ?? 0) + delta),
+  } as Partial<MapProgramacaoTinturaria>);
+
+  const restante = Math.max(0, pecasDest - 1);
+  if (restante === 0 && dest.retingir_origem_id === origemId) {
+    const { error: e3 } = await (supabase as any)
+      .from("map_tinturaria_programacoes")
+      .delete()
+      .eq("id", dest.id);
+    if (e3) throw e3;
+    return;
+  }
+  await patchProgramacao(dest.id, {
+    pecas: restante,
+    kg_enviados: clamp0(kgDest - delta),
+  } as Partial<MapProgramacaoTinturaria>);
+}
+
+/**
+ * Desfaz a correção iniciada (retingir/retrabalhar) de uma peça devolvida,
+ * voltando-a ao status "Devolvida" sem correção.
+ */
+export async function desfazerCorrecaoPeca(peca: MapEstoquePeca): Promise<void> {
+  const hist = Array.isArray(peca.historico_correcoes) ? [...peca.historico_correcoes] : [];
+  const idx = [...hist].reverse().findIndex((e) => e.tipo === "correcao_iniciada");
+  const evento = idx >= 0 ? hist[hist.length - 1 - idx] : null;
+  const origemId = evento?.programacao_origem_id ?? null;
+
+  if (peca.correcao_tipo === "retingir" && origemId && peca.programacao_id && peca.programacao_id !== origemId) {
+    await desfazerRetingirProgramacao(peca.programacao_id, origemId);
+  }
+
+  if (idx >= 0) hist.splice(hist.length - 1 - idx, 1);
+
+  await patchEstoquePeca(peca.id, {
+    correcao_tipo: null,
+    correcao_status: null,
+    cor_nova: null,
+    historico_correcoes: hist,
+    ...(origemId ? { programacao_id: origemId } : {}),
+  } as Partial<MapEstoquePeca>);
+}
+
+/**
+ * Desfaz a devolução de uma peça: volta ao estoque de MP limpando os campos de
+ * devolução. Status volta para "Aberta" quando já houve cortes, senão "Fechada".
+ */
+export async function desfazerDevolucaoPeca(peca: MapEstoquePeca): Promise<void> {
+  const hist = Array.isArray(peca.historico_correcoes) ? [...peca.historico_correcoes] : [];
+  const idx = [...hist].reverse().findIndex((e) => e.tipo === "devolucao");
+  if (idx >= 0) hist.splice(hist.length - 1 - idx, 1);
+  const temCortes = Array.isArray(peca.cortes) && peca.cortes.length > 0;
+  await patchEstoquePeca(peca.id, {
+    status: temCortes ? "Aberta" : "Fechada",
+    devolucao_motivo: null,
+    devolucao_data: null,
+    devolucao_nf: null,
+    historico_correcoes: hist,
+  } as Partial<MapEstoquePeca>);
+}

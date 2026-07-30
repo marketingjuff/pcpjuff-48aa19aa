@@ -4,12 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { History } from "lucide-react";
+import { History, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   useEstoquePecas,
   useMapData,
   patchEstoquePeca,
+  desfazerCorrecaoPeca,
+  desfazerDevolucaoPeca,
   prodCode,
   fmtDateBR,
   corBase,
@@ -102,6 +104,7 @@ export function DevolucoesTab() {
   const [corrigir, setCorrigir] = useState<MapEstoquePeca | null>(null);
   const [receber, setReceber] = useState<MapEstoquePeca | null>(null);
   const [hist, setHist] = useState<MapEstoquePeca | null>(null);
+  const [desfazendo, setDesfazendo] = useState<string | null>(null);
 
   const { data: pecas = [], isLoading } = useEstoquePecas();
   const { producoes: prodProg } = useMapData(false);
@@ -130,6 +133,28 @@ export function DevolucoesTab() {
       toast.error(e?.message ?? "Falha ao salvar NF.");
     }
   }
+
+  async function desfazer(p: MapEstoquePeca) {
+    const isCorrecao = !!p.correcao_status;
+    const msg = isCorrecao
+      ? "Desfazer a correção desta peça? Ela volta para 'Devolvida' e a programação de tinturaria é revertida."
+      : "Desfazer a devolução desta peça? Ela volta para o estoque de MP.";
+    if (!window.confirm(msg)) return;
+    setDesfazendo(p.id);
+    try {
+      if (isCorrecao) await desfazerCorrecaoPeca(p);
+      else await desfazerDevolucaoPeca(p);
+      toast.success(isCorrecao ? "Correção desfeita." : "Devolução desfeita.");
+      refresh();
+      qc.invalidateQueries({ queryKey: ["map", "programacoes"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao desfazer.");
+    } finally {
+      setDesfazendo(null);
+    }
+  }
+
+
 
   return (
     <div className="space-y-3">
@@ -210,6 +235,16 @@ export function DevolucoesTab() {
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setHist(p)} title="Histórico">
                         <History className="h-3.5 w-3.5" />
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        disabled={desfazendo === p.id}
+                        onClick={() => desfazer(p)}
+                        title={p.correcao_status ? "Desfazer correção (volta para Devolvida)" : "Desfazer devolução (volta ao estoque de MP)"}
+                      >
+                        <Undo2 className="h-3.5 w-3.5 mr-1" /> Desfazer
+                      </Button>
                       {!p.correcao_status ? (
                         <Button size="sm" className="h-7 text-xs" onClick={() => setCorrigir(p)}>Corrigir</Button>
                       ) : (
@@ -223,6 +258,7 @@ export function DevolucoesTab() {
                       )}
                     </div>
                   </td>
+
                 </tr>
               );
             })}
