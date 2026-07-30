@@ -20,6 +20,7 @@ export function MapConfigPanel() {
       <ListaCard kind="map_malharia" titulo="Malharias" placeholder="Ex.: Mavelo" />
       <ListaCard kind="map_tinturaria" titulo="Tinturarias" placeholder="Ex.: Martêxtil" />
       <ListaCard kind="map_acabamento" titulo="Acabamentos" placeholder="Ex.: ACAB5" />
+      <ListaCard kind="map_motivo_devolucao" titulo="Motivos de devolução" placeholder="Ex.: cor errada" />
       <CoresAcabamentoCard />
       <AcessoMapCard />
     </div>
