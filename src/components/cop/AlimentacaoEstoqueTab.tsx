@@ -124,10 +124,26 @@ export function AlimentacaoEstoqueTab() {
     },
     onSuccess: (parsed, vars) => {
       qc.invalidateQueries({ queryKey: ["estoque-olist"] });
+      setLinhasUltimo((prev) => ({ ...prev, ...parsed.linhasPorProduto }));
       toast.success(
         `${vars.empresa}: ${parsed.totalLinhas} linha(s) lida(s), ${parsed.itens.length} combinação(ões) agregada(s)` +
           (parsed.ignoradas.length ? `, ${parsed.ignoradas.length} ignorada(s)` : ""),
       );
+      if (parsed.ignoradas.length) {
+        const ex = parsed.ignoradas.slice(0, 3).map((l) => `linha ${l.linha}: ${l.motivo}`).join(" · ");
+        toast.warning(`${parsed.ignoradas.length} linha(s) ignorada(s) — ${ex}${parsed.ignoradas.length > 3 ? " …" : ""}`, { duration: 12000 });
+      }
+      const novosPendentes = Array.from(new Set(parsed.itens.map((i) => i.produto_olist))).filter(
+        (p) => !mapPorProduto.has(p),
+      );
+      if (novosPendentes.length) {
+        toast.error(
+          `${novosPendentes.length} produto(s) sem mapeamento (ficam FORA do Saldo Real): ${novosPendentes
+            .slice(0, 3)
+            .join(", ")}${novosPendentes.length > 3 ? "…" : ""} — mapeie abaixo em "Produtos pendentes de mapeamento".`,
+          { duration: 20000 },
+        );
+      }
       setEmpresaPrevia(vars.empresa);
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao importar planilha."),
