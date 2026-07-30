@@ -537,7 +537,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
                               </SelectContent>
                             </Select>
                           </td>
-                          {REFACAO_TAMANHOS.map((t) => {
+                          {REFACAO_TAMANHOS.map((t, ti) => {
                             const rec = emCorrecao && g.modelo && g.cor ? qtdRecebidaDe(g.modelo, g.cor, t) : 0;
                             const v = g.qtd[t] ?? 0;
                             const erroLinha = emCorrecao && rec > 0 && v < rec;
@@ -546,12 +546,15 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
                                 <Input
                                   type="number"
                                   min={emCorrecao ? rec : 0}
+                                  data-corte-cell={`${i}-${ti}`}
                                   className={"h-8 text-center px-1 tabular-nums w-full " + (erroLinha ? "border-destructive text-destructive" : "")}
                                   value={g.qtd[t] ?? ""}
                                   onChange={(e) => setQtd(i, t, Number(e.target.value))}
+                                  onKeyDown={(e) => moverCelula(e, i, ti)}
                                   disabled={bloqueado}
                                   title={rec > 0 ? `Já recebido: ${rec}` : undefined}
                                 />
+
                                 {rec > 0 && (
                                   <div className="text-[10px] text-muted-foreground mt-0.5">≥{rec}</div>
                                 )}
