@@ -16,6 +16,7 @@ import { useIsAdmin } from "@/hooks/use-role";
 import { PerdaDetalheDialog } from "./PerdaDetalheDialog";
 import { CorrigirPerdaDialog } from "./CorrigirPerdaDialog";
 import { RegistrarPerdaManualDialog } from "./RegistrarPerdaManualDialog";
+import { useTableSort, SortTh } from "@/components/shared/sortable";
 
 const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 
@@ -101,6 +102,22 @@ export function ControlePerdasTab() {
     for (const p of filtradas) arr[mes(p.data)].qtd += p.qtd;
     return arr;
   }, [filtradas]);
+
+  const filtradasSort = useTableSort(filtradas, {
+    origem: (p) => p.origem,
+    area: (p) => (p.origem === "pcp" ? (p.erro_producao ? "Produção" : (p.area_erro ?? "")) : ""),
+    identificacao: (p) => p.identificacao ?? "",
+    data: (p) => p.data,
+    motivo: (p) => p.motivo ?? "",
+    destino: (p) => p.destino ?? "",
+    berco: (p) => p.berco ?? "",
+    oficina: (p) => p.oficina_nome ?? "",
+    modelo: (p) => p.modelo,
+    cor: (p) => p.cor,
+    tamanho: (p) => p.tamanho,
+    qtd: (p) => p.qtd,
+    responsavel: (p) => p.responsavel ?? "",
+  });
 
   const excluirManual = useMutation({
     mutationFn: async (id: string) => {
@@ -207,28 +224,28 @@ export function ControlePerdasTab() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Origem</TableHead>
-                  <TableHead>Área do erro</TableHead>
-                  <TableHead>Identificação</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Motivo</TableHead>
-                  <TableHead>Destino</TableHead>
-                  <TableHead>Berço</TableHead>
-                  <TableHead>Oficina</TableHead>
-                  <TableHead>Modelo</TableHead>
-                  <TableHead>Cor</TableHead>
-                  <TableHead>Tam.</TableHead>
-                  <TableHead className="text-right">Qtd</TableHead>
-                  <TableHead>Responsável</TableHead>
+                  <SortTh label="Origem" sortKey="origem" current={filtradasSort.sortKey} dir={filtradasSort.sortDir} onSort={filtradasSort.toggle} />
+                  <SortTh label="Área do erro" sortKey="area" current={filtradasSort.sortKey} dir={filtradasSort.sortDir} onSort={filtradasSort.toggle} />
+                  <SortTh label="Identificação" sortKey="identificacao" current={filtradasSort.sortKey} dir={filtradasSort.sortDir} onSort={filtradasSort.toggle} />
+                  <SortTh label="Data" sortKey="data" current={filtradasSort.sortKey} dir={filtradasSort.sortDir} onSort={filtradasSort.toggle} />
+                  <SortTh label="Motivo" sortKey="motivo" current={filtradasSort.sortKey} dir={filtradasSort.sortDir} onSort={filtradasSort.toggle} />
+                  <SortTh label="Destino" sortKey="destino" current={filtradasSort.sortKey} dir={filtradasSort.sortDir} onSort={filtradasSort.toggle} />
+                  <SortTh label="Berço" sortKey="berco" current={filtradasSort.sortKey} dir={filtradasSort.sortDir} onSort={filtradasSort.toggle} />
+                  <SortTh label="Oficina" sortKey="oficina" current={filtradasSort.sortKey} dir={filtradasSort.sortDir} onSort={filtradasSort.toggle} />
+                  <SortTh label="Modelo" sortKey="modelo" current={filtradasSort.sortKey} dir={filtradasSort.sortDir} onSort={filtradasSort.toggle} />
+                  <SortTh label="Cor" sortKey="cor" current={filtradasSort.sortKey} dir={filtradasSort.sortDir} onSort={filtradasSort.toggle} />
+                  <SortTh label="Tam." sortKey="tamanho" current={filtradasSort.sortKey} dir={filtradasSort.sortDir} onSort={filtradasSort.toggle} />
+                  <SortTh label="Qtd" sortKey="qtd" current={filtradasSort.sortKey} dir={filtradasSort.sortDir} onSort={filtradasSort.toggle} className="text-right" />
+                  <SortTh label="Responsável" sortKey="responsavel" current={filtradasSort.sortKey} dir={filtradasSort.sortDir} onSort={filtradasSort.toggle} />
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow><TableCell colSpan={14}>Carregando…</TableCell></TableRow>
-                ) : filtradas.length === 0 ? (
+                ) : filtradasSort.rows.length === 0 ? (
                   <TableRow><TableCell colSpan={14} className="text-muted-foreground">Nenhuma perda para os filtros atuais.</TableCell></TableRow>
-                ) : filtradas.map((p) => {
+                ) : filtradasSort.rows.map((p) => {
                   const hex = corHex(p.cor); const fg = corTextoSobre(hex);
                   const areaErro = p.origem === "pcp" ? (p.erro_producao ? "Produção" : (p.area_erro ?? "—")) : "—";
                   return (

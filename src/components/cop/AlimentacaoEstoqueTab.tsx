@@ -17,6 +17,7 @@ import {
   type ItemOlist,
   type LinhaIgnorada,
 } from "@/lib/estoque-olist";
+import { useTableSort, SortTh } from "@/components/shared/sortable";
 
 const EMPRESAS: EmpresaOlist[] = ["JOKE", "JUFF"];
 
@@ -198,6 +199,22 @@ export function AlimentacaoEstoqueTab() {
   const fmtLinhas = (l: number[]) =>
     l.length === 0 ? "—" : l.slice(0, 6).join(", ") + (l.length > 6 ? ` … (+${l.length - 6})` : "");
 
+  const pendentesSort = useTableSort(pendentesInfo, {
+    produto: (p) => p.produto,
+    empresas: (p) => p.empresas.join(", "),
+    qtd: (p) => p.qtd,
+    linhas: (p) => p.linhas.length,
+  });
+
+  const mapaOrdenado = useMemo(
+    () => mapa.slice().sort((a, b) => a.produto_olist.localeCompare(b.produto_olist, "pt-BR")),
+    [mapa],
+  );
+  const mapaSort = useTableSort(mapaOrdenado, {
+    produto: (m) => m.produto_olist,
+    modelo: (m) => m.modelo_cop,
+  });
+
   const previa = useMemo(() => {
     const q = busca.trim().toLowerCase();
     return itens
@@ -210,6 +227,13 @@ export function AlimentacaoEstoqueTab() {
       );
   }, [itens, empresaPrevia, busca]);
 
+  const previaSort = useTableSort(previa, {
+    produto: (it) => it.produto_olist,
+    cor: (it) => it.cor,
+    tamanho: (it) => it.tamanho,
+    qtd: (it) => it.qtd,
+  });
+
   const ignoradasUltimas = useMemo(() => {
     const out: { empresa: EmpresaOlist; l: LinhaIgnorada }[] = [];
     for (const [empresa, s] of ultimos) {
@@ -217,6 +241,13 @@ export function AlimentacaoEstoqueTab() {
     }
     return out;
   }, [ultimos]);
+
+  const ignoradasSort = useTableSort(ignoradasUltimas, {
+    empresa: (x) => x.empresa,
+    linha: (x) => x.l.linha,
+    produto: (x) => x.l.produto,
+    motivo: (x) => x.l.motivo,
+  });
 
   function handleFile(empresa: EmpresaOlist, file?: File | null) {
     if (!file) return;
@@ -313,16 +344,16 @@ export function AlimentacaoEstoqueTab() {
                 <table className="w-full text-[12.5px]">
                   <thead className="bg-muted/40 text-xs">
                     <tr>
-                      <th className="p-2 text-left">Produto na Olist</th>
-                      <th className="p-2 text-left w-[90px]">Empresa(s)</th>
-                      <th className="p-2 text-right w-[80px]">Qtd fora</th>
-                      <th className="p-2 text-left w-[170px]">Linhas da planilha</th>
+                      <SortTh label="Produto na Olist" sortKey="produto" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-left" />
+                      <SortTh label="Empresa(s)" sortKey="empresas" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-left w-[90px]" />
+                      <SortTh label="Qtd fora" sortKey="qtd" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-right w-[80px]" />
+                      <SortTh label="Linhas da planilha" sortKey="linhas" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-left w-[170px]" />
                       <th className="p-2 text-left w-[240px]">Modelo COP</th>
                       <th className="p-2 w-[100px]" />
                     </tr>
                   </thead>
                   <tbody>
-                    {pendentesInfo.map((p) => (
+                    {pendentesSort.rows.map((p) => (
                       <tr key={p.produto} className="border-t">
                         <td className="p-2">{p.produto}</td>
                         <td className="p-2 font-semibold">{p.empresas.join(", ") || "—"}</td>
@@ -360,14 +391,12 @@ export function AlimentacaoEstoqueTab() {
                 <table className="w-full text-[12.5px]">
                   <thead className="bg-muted/40 text-xs">
                     <tr>
-                      <th className="p-2 text-left">Produto na Olist</th>
-                      <th className="p-2 text-left w-[240px]">Modelo COP</th>
+                      <SortTh label="Produto na Olist" sortKey="produto" current={mapaSort.sortKey} dir={mapaSort.sortDir} onSort={mapaSort.toggle} className="text-left" />
+                      <SortTh label="Modelo COP" sortKey="modelo" current={mapaSort.sortKey} dir={mapaSort.sortDir} onSort={mapaSort.toggle} className="text-left w-[240px]" />
                     </tr>
                   </thead>
                   <tbody>
-                    {mapa
-                      .slice()
-                      .sort((a, b) => a.produto_olist.localeCompare(b.produto_olist, "pt-BR"))
+                    {mapaSort.rows
                       .map((m) => (
                         <tr key={m.id} className="border-t">
                           <td className="p-2">{m.produto_olist}</td>
@@ -396,14 +425,14 @@ export function AlimentacaoEstoqueTab() {
             <table className="w-full text-[12px]">
               <thead className="bg-muted/40 text-xs">
                 <tr>
-                  <th className="p-2 text-left w-[80px]">Empresa</th>
-                  <th className="p-2 text-left w-[70px]">Linha</th>
-                  <th className="p-2 text-left">Produto</th>
-                  <th className="p-2 text-left">Motivo</th>
+                  <SortTh label="Empresa" sortKey="empresa" current={ignoradasSort.sortKey} dir={ignoradasSort.sortDir} onSort={ignoradasSort.toggle} className="text-left w-[80px]" />
+                  <SortTh label="Linha" sortKey="linha" current={ignoradasSort.sortKey} dir={ignoradasSort.sortDir} onSort={ignoradasSort.toggle} className="text-left w-[70px]" />
+                  <SortTh label="Produto" sortKey="produto" current={ignoradasSort.sortKey} dir={ignoradasSort.sortDir} onSort={ignoradasSort.toggle} className="text-left" />
+                  <SortTh label="Motivo" sortKey="motivo" current={ignoradasSort.sortKey} dir={ignoradasSort.sortDir} onSort={ignoradasSort.toggle} className="text-left" />
                 </tr>
               </thead>
               <tbody>
-                {ignoradasUltimas.map((x, i) => (
+                {ignoradasSort.rows.map((x, i) => (
                   <tr key={i} className="border-t">
                     <td className="p-2 font-semibold">{x.empresa}</td>
                     <td className="p-2 tabular-nums">{x.l.linha}</td>
@@ -437,16 +466,16 @@ export function AlimentacaoEstoqueTab() {
             <table className="w-full text-[12.5px]">
               <thead className="bg-muted/40 text-xs">
                 <tr>
-                  <th className="p-2 text-left">Produto</th>
-                  <th className="p-2 text-left w-[140px]">Cor</th>
-                  <th className="p-2 text-left w-[80px]">Tamanho</th>
-                  <th className="p-2 text-right w-[80px]">Qtd</th>
+                  <SortTh label="Produto" sortKey="produto" current={previaSort.sortKey} dir={previaSort.sortDir} onSort={previaSort.toggle} className="text-left" />
+                  <SortTh label="Cor" sortKey="cor" current={previaSort.sortKey} dir={previaSort.sortDir} onSort={previaSort.toggle} className="text-left w-[140px]" />
+                  <SortTh label="Tamanho" sortKey="tamanho" current={previaSort.sortKey} dir={previaSort.sortDir} onSort={previaSort.toggle} className="text-left w-[80px]" />
+                  <SortTh label="Qtd" sortKey="qtd" current={previaSort.sortKey} dir={previaSort.sortDir} onSort={previaSort.toggle} className="text-right w-[80px]" />
                 </tr>
               </thead>
               <tbody>
-                {previa.length === 0 ? (
+                {previaSort.rows.length === 0 ? (
                   <tr><td colSpan={4} className="p-4 text-center text-muted-foreground">Sem dados.</td></tr>
-                ) : previa.map((it, i) => (
+                ) : previaSort.rows.map((it, i) => (
                   <tr key={i} className={`border-t ${i % 2 ? "bg-muted/30" : ""}`}>
                     <td className="p-2">{it.produto_olist}</td>
                     <td className="p-2">{it.cor}</td>

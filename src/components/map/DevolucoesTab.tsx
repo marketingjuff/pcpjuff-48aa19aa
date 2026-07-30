@@ -21,6 +21,7 @@ import {
 } from "@/lib/map";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { InlineInput } from "./InlineInput";
+import { useTableSort, SortTh } from "@/components/shared/sortable";
 import { CorrigirPecaDialog } from "./CorrigirPecaDialog";
 import { ReceberPecaCorrigidaDialog } from "./ReceberPecaCorrigidaDialog";
 
@@ -118,12 +119,23 @@ export function DevolucoesTab() {
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["map", "estoque_pecas"] });
 
-  const linhas = useMemo(() => {
+  const linhasBase = useMemo(() => {
     return pecas
       .filter((p) => p.status === "Devolvida")
       .filter((p) => (filtro === "todas" ? true : situacao(p) === filtro))
       .sort((a, b) => (a.ne ?? Number.MAX_SAFE_INTEGER) - (b.ne ?? Number.MAX_SAFE_INTEGER));
   }, [pecas, filtro]);
+
+  const { rows: linhas, sortKey, sortDir, toggle } = useTableSort(linhasBase, {
+    ne: (p) => p.ne,
+    prod: (p) => { const pr = prodMap.get(p.producao_id); return pr ? prodCode(pr.numero) : null; },
+    numero_peca: (p) => p.numero_peca,
+    cor: (p) => corBase(p.cor),
+    motivo: (p) => p.devolucao_motivo,
+    data_devolucao: (p) => p.devolucao_data,
+    nf_devolucao: (p) => p.devolucao_nf,
+    situacao: (p) => situacao(p),
+  });
 
   async function salvarNf(p: MapEstoquePeca, v: string | null) {
     try {
@@ -176,14 +188,14 @@ export function DevolucoesTab() {
         <table className="w-full text-xs">
           <thead className="bg-yellow-100/60 text-left">
             <tr>
-              <th className="p-2">NE</th>
-              <th className="p-2">PROD</th>
-              <th className="p-2">Nº peça</th>
-              <th className="p-2 text-center">Cor atual</th>
-              <th className="p-2">Motivo</th>
-              <th className="p-2 text-center">Data devolução</th>
-              <th className="p-2 text-center">NF devolução</th>
-              <th className="p-2 text-center">Situação</th>
+              <SortTh label="NE" sortKey="ne" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
+              <SortTh label="PROD" sortKey="prod" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
+              <SortTh label="Nº peça" sortKey="numero_peca" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
+              <SortTh label="Cor atual" sortKey="cor" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="Motivo" sortKey="motivo" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
+              <SortTh label="Data devolução" sortKey="data_devolucao" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="NF devolução" sortKey="nf_devolucao" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="Situação" sortKey="situacao" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
               <th className="p-2 text-right">Ações</th>
             </tr>
           </thead>

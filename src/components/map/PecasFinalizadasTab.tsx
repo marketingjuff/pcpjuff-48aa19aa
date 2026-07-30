@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEstoquePecas, patchEstoquePeca, fmtDateBR, corBase, type MapEstoquePeca } from "@/lib/map";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+import { useTableSort, SortTh } from "@/components/shared/sortable";
 
 export function PecasFinalizadasTab() {
   const qc = useQueryClient();
@@ -40,7 +41,7 @@ export function PecasFinalizadasTab() {
   const [fNF, setFNF] = useState<string>("");
   const [fNE, setFNE] = useState<string>("");
 
-  const finalizadas = useMemo(() => {
+  const finalizadasBase = useMemo(() => {
     return pecas
       .filter((p) => p.status === "100% utilizada")
       .filter((p) =>
@@ -58,6 +59,20 @@ export function PecasFinalizadasTab() {
         return na - nb;
       });
   }, [pecas, fCor, fNF, fNE]);
+
+  const { rows: finalizadas, sortKey, sortDir, toggle } = useTableSort(finalizadasBase, {
+    ne: (p) => p.ne,
+    prod: (p) => prodNumeroMap[p.producao_id],
+    nf: (p) => p.nota_fiscal,
+    cor: (p) => corBase(p.cor),
+    data_entrada: (p) => p.data_entrada,
+    numero_peca: (p) => p.numero_peca,
+    abertura: (p) => p.data_abertura,
+    larg: (p) => (p.larg != null ? Number(p.larg) : null),
+    alt: (p) => (p.alt_inicial != null ? Number(p.alt_inicial) : null),
+    cortes: (p) => (p.cortes ?? []).length,
+    total: (p) => (p.cortes ?? []).reduce((s, c) => s + Number(c.metros ?? 0), 0),
+  });
 
   const totalUtilizado = useMemo(
     () =>
@@ -112,17 +127,17 @@ export function PecasFinalizadasTab() {
           </colgroup>
           <thead className="bg-muted/40">
             <tr>
-              <th className="p-1 font-medium text-center">NE</th>
-              <th className="p-1 font-medium text-center">PROD</th>
-              <th className="p-1 font-medium text-center">NF</th>
-              <th className="p-1 font-medium text-center">Cor</th>
-              <th className="p-1 font-medium text-center">Data entrada</th>
-              <th className="p-1 font-medium text-center">Nº peça</th>
-              <th className="p-1 font-medium text-center">Abertura</th>
-              <th className="p-1 font-medium text-center">Larg (m)</th>
-              <th className="p-1 font-medium text-center">Alt (m)</th>
-              <th className="p-1 font-medium text-center">Cortes</th>
-              <th className="p-1 font-medium text-center">Total (m)</th>
+              <SortTh label="NE" sortKey="ne" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="PROD" sortKey="prod" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="NF" sortKey="nf" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="Cor" sortKey="cor" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="Data entrada" sortKey="data_entrada" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="Nº peça" sortKey="numero_peca" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="Abertura" sortKey="abertura" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="Larg (m)" sortKey="larg" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="Alt (m)" sortKey="alt" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="Cortes" sortKey="cortes" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="Total (m)" sortKey="total" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
               <th className="p-1 font-medium text-center">Ações</th>
             </tr>
           </thead>

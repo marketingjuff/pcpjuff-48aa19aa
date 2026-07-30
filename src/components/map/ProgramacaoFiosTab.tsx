@@ -25,6 +25,7 @@ import { TinturariaBlock } from "./TinturariaBlock";
 import { NovoProdDialog } from "./NovoProdDialog";
 import { InlineInput } from "./InlineInput";
 import { useCanAccessMap } from "@/hooks/use-role";
+import { useTableSort, SortTh } from "@/components/shared/sortable";
 
 interface Props { finalizado: boolean; focusProdId?: string; initialFioFilter?: string; }
 
@@ -152,18 +153,59 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
   }, [prodsAll, fData, fEmpresa, fFornecedor, fNota, fProd, fStatus, finalizado, byProdEntregas, byProdProgs]);
 
 
-  // Grupos por data_pedido — ascendente; dentro do grupo, numero ascendente
+  const { sortKey, sortDir, toggle: toggleSort } = useTableSort(prods, {
+    prod: (p) => Number(p.numero),
+    empresa: (p) => p.faturar_para,
+    kg_sol: (p) => Number(p.kg_solicitados ?? 0),
+    kg_receb: (p) => sumKgEntregas(byProdEntregas.get(p.id) ?? []),
+    fornecedor: (p) => p.fornecedor,
+    data_pagamento: (p) => p.data_pagamento,
+    fio: (p) => calcStatusFio(p),
+    malharia: (p) => p.status_malharia ?? "incompleto",
+    tinturaria: (p) => calcStatusTinturaria(byProdProgs.get(p.id) ?? [], sumPecasEntregas(byProdEntregas.get(p.id) ?? [])),
+    nota_fiscal: (p) => p.nota_fiscal,
+    data_faturamento: (p) => p.data_faturamento,
+  });
+
+  // Grupos por data_pedido — ascendente; dentro do grupo, numero ascendente (ou coluna ordenada)
   const grupos = useMemo(() => {
     const g = new Map<string, MapProducao[]>();
     for (const p of prods) {
       const arr = g.get(p.data_pedido) ?? [];
       arr.push(p); g.set(p.data_pedido, arr);
     }
+    const getters: Record<string, (p: MapProducao) => any> = {
+      prod: (p) => Number(p.numero),
+      empresa: (p) => p.faturar_para,
+      kg_sol: (p) => Number(p.kg_solicitados ?? 0),
+      kg_receb: (p) => sumKgEntregas(byProdEntregas.get(p.id) ?? []),
+      fornecedor: (p) => p.fornecedor,
+      data_pagamento: (p) => p.data_pagamento,
+      fio: (p) => calcStatusFio(p),
+      malharia: (p) => p.status_malharia ?? "incompleto",
+      tinturaria: (p) => calcStatusTinturaria(byProdProgs.get(p.id) ?? [], sumPecasEntregas(byProdEntregas.get(p.id) ?? [])),
+      nota_fiscal: (p) => p.nota_fiscal,
+      data_faturamento: (p) => p.data_faturamento,
+    };
     for (const arr of g.values()) {
-      arr.sort((a, b) => Number(a.numero) - Number(b.numero));
+      if (sortKey && getters[sortKey]) {
+        const get = getters[sortKey];
+        const mult = sortDir === "asc" ? 1 : -1;
+        arr.sort((a, b) => {
+          const va = get(a); const vb = get(b);
+          const ea = va == null || va === ""; const eb = vb == null || vb === "";
+          if (ea && eb) return 0;
+          if (ea) return 1;
+          if (eb) return -1;
+          if (typeof va === "number" && typeof vb === "number") return (va - vb) * mult;
+          return String(va).localeCompare(String(vb), "pt-BR", { numeric: true, sensitivity: "base" }) * mult;
+        });
+      } else {
+        arr.sort((a, b) => Number(a.numero) - Number(b.numero));
+      }
     }
     return Array.from(g.entries()).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
-  }, [prods]);
+  }, [prods, sortKey, sortDir, byProdEntregas, byProdProgs]);
 
   function toggle(id: string) {
     setExpanded((prev) => {
@@ -344,17 +386,17 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
               <thead className="bg-muted/40 text-[10.5px] uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="p-1.5 whitespace-nowrap"></th>
-                  <th className="p-1.5 text-left whitespace-nowrap">Prod</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Empresa</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Kg sol.</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Kg receb.</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Fornecedor</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Data pagamento</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Fio</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Malharia</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Tinturaria</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Nota fiscal</th>
-                  <th className="p-1.5 text-center whitespace-nowrap">Data faturam.</th>
+                  <SortTh label="Prod" sortKey="prod" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left whitespace-nowrap" />
+                  <SortTh label="Empresa" sortKey="empresa" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center whitespace-nowrap" />
+                  <SortTh label="Kg sol." sortKey="kg_sol" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center whitespace-nowrap" />
+                  <SortTh label="Kg receb." sortKey="kg_receb" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center whitespace-nowrap" />
+                  <SortTh label="Fornecedor" sortKey="fornecedor" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center whitespace-nowrap" />
+                  <SortTh label="Data pagamento" sortKey="data_pagamento" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center whitespace-nowrap" />
+                  <SortTh label="Fio" sortKey="fio" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center whitespace-nowrap" />
+                  <SortTh label="Malharia" sortKey="malharia" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center whitespace-nowrap" />
+                  <SortTh label="Tinturaria" sortKey="tinturaria" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center whitespace-nowrap" />
+                  <SortTh label="Nota fiscal" sortKey="nota_fiscal" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center whitespace-nowrap" />
+                  <SortTh label="Data faturam." sortKey="data_faturamento" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center whitespace-nowrap" />
                   <th className="p-1.5 text-right whitespace-nowrap"></th>
                 </tr>
               </thead>

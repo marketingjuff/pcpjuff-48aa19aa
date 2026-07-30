@@ -14,12 +14,14 @@ import {
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import type { Pedido, PecaSolicitada } from "@/lib/pedidos";
 import { REFACAO_MODELOS, REFACAO_CORES } from "@/lib/pedidos";
+import { CorSelect } from "@/components/shared/cor-select";
 import type { Cop, Oficina } from "@/lib/cop";
 import { rotuloCop, colunasTamanhos } from "@/lib/cop";
 import { dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
 import { BaixaCopDialog, type ItemFalta } from "./BaixaCopDialog";
 import { FaltaPecaPopup } from "./FaltaPecaPopup";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
+import { useTableSort, SortTh } from "@/components/shared/sortable";
 
 type GrupoFalta = {
   modelo: string;
@@ -137,6 +139,20 @@ export function FaltaPorPedidoTab() {
     return colunasTamanhos(set);
   }, [linhas]);
 
+  const sortGetters = useMemo(() => {
+    const g: Record<string, (row: LinhaFalta) => string | number | null | undefined> = {
+      orcamento: (l) => l.pedido.orcamento ?? "",
+      modelo: (l) => l.grupos[0]?.modelo ?? "",
+      cor: (l) => l.grupos[0]?.cor ?? "",
+      total: (l) => l.faltaTotal,
+    };
+    for (const t of tamanhosColunas) {
+      g[t] = (l) => l.grupos.reduce((s, gr) => s + (gr.porTamanho.get(t)?.falta ?? 0), 0);
+    }
+    return g;
+  }, [tamanhosColunas]);
+  const { rows: linhasOrdenadas, sortKey, sortDir, toggle: toggleSort } = useTableSort(linhas, sortGetters);
+
   type PedidoRow = LinhaFalta & { grupo: GrupoFalta; primeira: boolean; rowSpan: number };
   type DateGroup = {
     key: string;
@@ -149,7 +165,7 @@ export function FaltaPorPedidoTab() {
 
   const dateGroups: DateGroup[] = useMemo(() => {
     const map = new Map<string, LinhaFalta[]>();
-    for (const l of linhas) {
+    for (const l of linhasOrdenadas) {
       const k = l.ancora ?? "sem-data";
       if (!map.has(k)) map.set(k, []);
       map.get(k)!.push(l);
@@ -174,7 +190,7 @@ export function FaltaPorPedidoTab() {
       out.push({ key: k, ancora: ls[0]?.ancora ?? null, linhas: ls, rows: rs, subtotais, total });
     }
     return out;
-  }, [linhas]);
+  }, [linhasOrdenadas]);
 
   const allGroupKeys = useMemo(() => dateGroups.map((g) => g.key), [dateGroups]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -272,17 +288,8 @@ export function FaltaPorPedidoTab() {
           </div>
           <div className="flex items-center gap-1.5">
             <Label className="text-xs whitespace-nowrap">Cor:</Label>
-            <Select value={corFiltro} onValueChange={setCorFiltro}>
-              <SelectTrigger className="h-9 w-[150px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                {REFACAO_CORES.map((c) => (
-                  <SelectItem key={c.nome} value={c.nome}>{c.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CorSelect value={corFiltro} onChange={setCorFiltro} allValue="todas" allLabel="Todas" className="h-9 w-[150px]" />
+
           </div>
           {(modeloFiltro !== "todos" || corFiltro !== "todas" || busca) && (
             <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => { setBusca(""); setModeloFiltro("todos"); setCorFiltro("todas"); }}>
@@ -311,13 +318,13 @@ export function FaltaPorPedidoTab() {
             </colgroup>
             <thead className="bg-muted/40 text-xs">
               <tr>
-                <th className="px-1 py-2 text-left whitespace-nowrap">Orçamento</th>
-                <th className="px-1 py-2 text-left whitespace-nowrap">Modelo</th>
-                <th className="px-1 py-2 text-left whitespace-nowrap">Cor</th>
+                <SortTh label="Orçamento" sortKey="orcamento" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left whitespace-nowrap" />
+                <SortTh label="Modelo" sortKey="modelo" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left whitespace-nowrap" />
+                <SortTh label="Cor" sortKey="cor" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left whitespace-nowrap" />
                 {tamanhosColunas.map((t) => (
-                  <th key={t} className="px-1 py-2 text-center whitespace-nowrap">{t}</th>
+                  <SortTh key={t} label={t} sortKey={t} current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center whitespace-nowrap" />
                 ))}
-                <th className="px-1 py-2 text-right whitespace-nowrap">Tot.</th>
+                <SortTh label="Tot." sortKey="total" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-right whitespace-nowrap" />
                 <th className="px-1 py-2 whitespace-nowrap"> </th>
               </tr>
             </thead>

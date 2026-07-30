@@ -9,6 +9,7 @@ import {
   type MapProducao, type MapEntregaMalharia,
 } from "@/lib/map";
 import { BaixaQuebraDialog } from "./BaixaQuebraDialog";
+import { useTableSort, SortTh } from "@/components/shared/sortable";
 
 type Filtro = "pendente" | "conciliada" | "todas";
 
@@ -47,11 +48,21 @@ export function QuebraTab() {
     return { pendentes, conciliadas, kgTotal };
   }, [todasLinhas]);
 
-  const linhas = useMemo(() => todasLinhas.filter((r) => {
+  const linhasBase = useMemo(() => todasLinhas.filter((r) => {
     if (filtro === "todas") return true;
     const conc = !!r.prod.quebra_conciliada;
     return filtro === "conciliada" ? conc : !conc;
   }), [todasLinhas, filtro]);
+
+  const { rows: linhas, sortKey, sortDir, toggle } = useTableSort(linhasBase, {
+    prod: (r) => prodCode(r.prod.numero),
+    empresa: (r) => r.prod.faturar_para,
+    fornecedor: (r) => r.prod.fornecedor,
+    kg_sol: (r) => Number(r.prod.kg_solicitados ?? 0),
+    kg_receb: (r) => sumKgEntregas(r.es),
+    quebra: (r) => r.kg,
+    status: (r) => (r.prod.quebra_conciliada ? "Conciliada" : "Pendente"),
+  });
 
   async function desfazer(prod: MapProducao) {
     try {
@@ -110,13 +121,13 @@ export function QuebraTab() {
         <table className="w-full text-xs">
           <thead className="bg-yellow-100/60 text-left">
             <tr>
-              <th className="p-2">Prod</th>
-              <th className="p-2 text-center">Empresa</th>
-              <th className="p-2">Fornecedor</th>
-              <th className="p-2 text-right">Kg solicitados</th>
-              <th className="p-2 text-right">Kg recebidos</th>
-              <th className="p-2 text-right">Quebra (kg)</th>
-              <th className="p-2 text-center">Status</th>
+              <SortTh label="Prod" sortKey="prod" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
+              <SortTh label="Empresa" sortKey="empresa" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
+              <SortTh label="Fornecedor" sortKey="fornecedor" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
+              <SortTh label="Kg solicitados" sortKey="kg_sol" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
+              <SortTh label="Kg recebidos" sortKey="kg_receb" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
+              <SortTh label="Quebra (kg)" sortKey="quebra" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
+              <SortTh label="Status" sortKey="status" current={sortKey} dir={sortDir} onSort={toggle} className="text-center" />
               <th className="p-2 text-right">Ação</th>
             </tr>
           </thead>

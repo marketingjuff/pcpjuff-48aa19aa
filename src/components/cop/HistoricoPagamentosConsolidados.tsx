@@ -7,6 +7,7 @@ import { ChevronDown, ChevronRight, History } from "lucide-react";
 import type { PagamentoConsolidado, Oficina } from "@/lib/cop";
 import { rotuloCop } from "@/lib/cop";
 import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
+import { useTableSort, SortTh } from "@/components/shared/sortable";
 
 function fmtMoney(n: number) {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -47,6 +48,16 @@ export function HistoricoPagamentosConsolidados() {
     return m;
   }, [oficinas]);
 
+  const sortGetters = useMemo(() => ({
+    data: (r: PagamentoConsolidado) => r.pago_em,
+    oficina: (r: PagamentoConsolidado) => oficinaNome.get(r.oficina_id) ?? "",
+    qtd: (r: PagamentoConsolidado) => (Array.isArray(r.detalhes) ? r.detalhes.length : 0),
+    valor: (r: PagamentoConsolidado) => Number(r.valor_total),
+    observacao: (r: PagamentoConsolidado) => r.observacao ?? "",
+    pago_por: (r: PagamentoConsolidado) => resolveNome(profiles, r.pago_por),
+  }), [oficinaNome, profiles]);
+  const { rows: registrosOrdenados, sortKey, sortDir, toggle: toggleSort } = useTableSort(registros, sortGetters);
+
   function toggle(id: string) {
     setExpandidos((prev) => {
       const n = new Set(prev);
@@ -69,12 +80,12 @@ export function HistoricoPagamentosConsolidados() {
             <thead className="bg-muted/40 text-xs">
               <tr>
                 <th className="p-2 w-8"></th>
-                <th className="p-2 text-left">Data</th>
-                <th className="p-2 text-left">Oficina</th>
-                <th className="p-2 text-center">Qtd COPs</th>
-                <th className="p-2 text-right">Valor total</th>
-                <th className="p-2 text-left">Observação</th>
-                <th className="p-2 text-left">Pago por</th>
+                <SortTh label="Data" sortKey="data" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left" />
+                <SortTh label="Oficina" sortKey="oficina" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left" />
+                <SortTh label="Qtd COPs" sortKey="qtd" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center" />
+                <SortTh label="Valor total" sortKey="valor" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-right" />
+                <SortTh label="Observação" sortKey="observacao" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left" />
+                <SortTh label="Pago por" sortKey="pago_por" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left" />
               </tr>
             </thead>
             <tbody>
@@ -82,7 +93,7 @@ export function HistoricoPagamentosConsolidados() {
                 <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">Carregando…</td></tr>
               ) : registros.length === 0 ? (
                 <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">Nenhum pagamento consolidado ainda.</td></tr>
-              ) : registros.map((r) => {
+              ) : registrosOrdenados.map((r) => {
                 const aberto = expandidos.has(r.id);
                 const detalhes = Array.isArray(r.detalhes) ? r.detalhes : [];
                 return (

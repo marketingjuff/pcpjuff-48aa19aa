@@ -25,6 +25,7 @@ import {
   getRecebida, getPerda, colunasTamanhos, mesclarPerdasEmObservacoes, linhaUrgente, refacoesDoCop,
 } from "@/lib/cop";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
+import { CorSelect } from "@/components/shared/cor-select";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { abrirRomaneioParaImpressao } from "@/lib/romaneio-pdf";
 import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
@@ -1202,13 +1203,8 @@ function BuscaPecasBlock({ cops, oficinas, onSelect }: { cops: Cop[]; oficinas: 
           </div>
           <div>
             <Label className="text-xs">Cor</Label>
-            <Select value={cor || "__all__"} onValueChange={(v) => setCor(v === "__all__" ? "" : v)}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">Todas</SelectItem>
-                {REFACAO_CORES.map((c) => <SelectItem key={c.nome} value={c.nome}>{c.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <CorSelect value={cor || "__all__"} onChange={(v) => setCor(v === "__all__" ? "" : v)} allValue="__all__" allLabel="Todas" className="h-9" />
+
           </div>
           <div>
             <Label className="text-xs">Tamanho</Label>

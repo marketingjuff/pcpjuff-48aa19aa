@@ -26,6 +26,7 @@ import type { Cop } from "@/lib/cop";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { abrirInventarioParaImpressao, type InventarioRow } from "@/lib/inventario-pdf";
+import { useTableSort, SortTh } from "@/components/shared/sortable";
 
 const STATUS_LIST: MapEstoquePecaStatus[] = [
   "Fechada",
@@ -236,6 +237,17 @@ export function EstoqueMpTab() {
     });
   }, [pecas, programacoes, producoesAbertas, entregas]);
 
+  const { rows: cardsSorted, sortKey: cardsSortKey, sortDir: cardsSortDir, toggle: cardsToggle } = useTableSort(cards, {
+    cor: (c) => c.cor,
+    producao: (c) => c.producao,
+    fechada: (c) => c.Fechada,
+    aberta: (c) => c.Aberta,
+    corte: (c) => c.Corte,
+    devolvida: (c) => c.Devolvida,
+    total: (c) => c.Fechada + c.Aberta + c.Corte,
+    util: (c) => c["100% utilizada"],
+  });
+
   // ---------- Filtros ----------
   const [fCor, setFCor] = useState<string>("__todas__");
   const [fStatus, setFStatus] = useState<string>("__todos__");
@@ -253,7 +265,7 @@ export function EstoqueMpTab() {
   const [sel, setSel] = useState<Record<string, boolean>>({});
   const [devolverOpen, setDevolverOpen] = useState(false);
 
-  const pecasFiltradas = useMemo(() => {
+  const pecasFiltradasBase = useMemo(() => {
     return pecas
       .filter((p) => p.status !== "100% utilizada" && p.status !== "Devolvida")
       .filter((p) => (fCor === "__todas__" ? true : corBase(p.cor) === fCor))
@@ -267,6 +279,24 @@ export function EstoqueMpTab() {
         return na - nb;
       });
   }, [pecas, fCor, fStatus, fNF]);
+
+  const { rows: pecasFiltradas, sortKey: pecasSortKey, sortDir: pecasSortDir, toggle: pecasToggle } = useTableSort(pecasFiltradasBase, {
+    ne: (p) => p.ne,
+    prod: (p) => prodNumeroMap[p.producao_id],
+    nf: (p) => p.nota_fiscal,
+    cor: (p) => corBase(p.cor),
+    data_entrada: (p) => p.data_entrada,
+    numero_peca: (p) => p.numero_peca,
+    status: (p) => p.status,
+    abertura: (p) => p.data_abertura,
+    larg: (p) => (p.larg != null ? Number(p.larg) : null),
+    alt: (p) => (p.alt_inicial != null ? Number(p.alt_inicial) : null),
+    cortes: (p) => (p.cortes ?? []).length,
+    saldo: (p) => {
+      const usado = (p.cortes ?? []).reduce((s, c) => s + Number(c.metros ?? 0), 0);
+      return p.alt_inicial != null ? Number(p.alt_inicial) - usado : null;
+    },
+  });
 
   const pecasSelecionadas = useMemo(
     () => pecasFiltradas.filter((p) => sel[p.id]),
@@ -370,26 +400,26 @@ export function EstoqueMpTab() {
           </colgroup>
           <thead className="bg-muted/40">
             <tr className="text-left">
-              <th className="py-1 px-1.5 font-medium">Cor</th>
-              <th className="py-1 px-1.5 font-medium text-right tabular-nums">Produção</th>
-              <th className="py-1 px-1.5 font-medium text-right tabular-nums">Fechada</th>
-              <th className="py-1 px-1.5 font-medium text-right tabular-nums">Aberta</th>
-              <th className="py-1 px-1.5 font-medium text-right tabular-nums">Corte</th>
-              <th className="py-1 px-1.5 font-medium text-right tabular-nums text-red-700">Devolvida</th>
-              <th className="py-1 px-1.5 font-medium text-right tabular-nums">Total</th>
-              <th className="py-1 px-1.5 font-medium text-right tabular-nums text-muted-foreground/80">100% util.</th>
+              <SortTh label="Cor" sortKey="cor" current={cardsSortKey} dir={cardsSortDir} onSort={cardsToggle} className="py-1 px-1.5" />
+              <SortTh label="Produção" sortKey="producao" current={cardsSortKey} dir={cardsSortDir} onSort={cardsToggle} className="py-1 px-1.5 text-right tabular-nums" />
+              <SortTh label="Fechada" sortKey="fechada" current={cardsSortKey} dir={cardsSortDir} onSort={cardsToggle} className="py-1 px-1.5 text-right tabular-nums" />
+              <SortTh label="Aberta" sortKey="aberta" current={cardsSortKey} dir={cardsSortDir} onSort={cardsToggle} className="py-1 px-1.5 text-right tabular-nums" />
+              <SortTh label="Corte" sortKey="corte" current={cardsSortKey} dir={cardsSortDir} onSort={cardsToggle} className="py-1 px-1.5 text-right tabular-nums" />
+              <SortTh label="Devolvida" sortKey="devolvida" current={cardsSortKey} dir={cardsSortDir} onSort={cardsToggle} className="py-1 px-1.5 text-right tabular-nums text-red-700" />
+              <SortTh label="Total" sortKey="total" current={cardsSortKey} dir={cardsSortDir} onSort={cardsToggle} className="py-1 px-1.5 text-right tabular-nums" />
+              <SortTh label="100% util." sortKey="util" current={cardsSortKey} dir={cardsSortDir} onSort={cardsToggle} className="py-1 px-1.5 text-right tabular-nums text-muted-foreground/80" />
               <th className="py-1 px-1.5 font-medium text-right tabular-nums text-muted-foreground/80">% part.</th>
             </tr>
           </thead>
           <tbody>
-            {cards.length === 0 ? (
+            {cardsSorted.length === 0 ? (
               <tr>
                 <td colSpan={9} className="p-3 text-center text-muted-foreground">
                   {isLoading ? "Carregando…" : "Sem dados de estoque ainda."}
                 </td>
               </tr>
             ) : (
-              cards.map((c, i) => {
+              cardsSorted.map((c, i) => {
                 const isCru = c.cor === "CRU";
                 const bg = isCru ? "#e8dcc4" : corHex(c.cor);
                 const fg = corTextoSobre(bg);
@@ -448,7 +478,10 @@ export function EstoqueMpTab() {
       {/* ---------- Filtros ---------- */}
       <div className="flex flex-wrap items-center gap-2">
         <Select value={fCor} onValueChange={setFCor}>
-          <SelectTrigger className="h-8 w-[160px] text-xs">
+          <SelectTrigger
+            className="h-8 w-[160px] text-xs font-semibold"
+            style={fCor && fCor !== "__todas__" ? { backgroundColor: corHex(fCor), color: corTextoSobre(corHex(fCor)) } : undefined}
+          >
             <SelectValue placeholder="Cor" />
           </SelectTrigger>
           <SelectContent>
@@ -535,18 +568,18 @@ export function EstoqueMpTab() {
                   }}
                 />
               </th>
-              <th className="p-1 font-medium text-center">NE</th>
-              <th className="p-1 font-medium text-center">PROD</th>
-              <th className="p-1 font-medium text-center">NF</th>
-              <th className="p-1 font-medium text-center">Cor</th>
-              <th className="p-1 font-medium text-center">Data entrada</th>
-              <th className="p-1 font-medium text-center">Nº peça</th>
-              <th className="p-1 font-medium text-center">Status</th>
-              <th className="p-1 font-medium text-center">Abertura</th>
-              <th className="p-1 font-medium text-center">Larg (m)</th>
-              <th className="p-1 font-medium text-center">Alt (m)</th>
-              <th className="p-1 font-medium text-center">Cortes</th>
-              <th className="p-1 font-medium text-center">Saldo (m)</th>
+              <SortTh label="NE" sortKey="ne" current={pecasSortKey} dir={pecasSortDir} onSort={pecasToggle} className="text-center" />
+              <SortTh label="PROD" sortKey="prod" current={pecasSortKey} dir={pecasSortDir} onSort={pecasToggle} className="text-center" />
+              <SortTh label="NF" sortKey="nf" current={pecasSortKey} dir={pecasSortDir} onSort={pecasToggle} className="text-center" />
+              <SortTh label="Cor" sortKey="cor" current={pecasSortKey} dir={pecasSortDir} onSort={pecasToggle} className="text-center" />
+              <SortTh label="Data entrada" sortKey="data_entrada" current={pecasSortKey} dir={pecasSortDir} onSort={pecasToggle} className="text-center" />
+              <SortTh label="Nº peça" sortKey="numero_peca" current={pecasSortKey} dir={pecasSortDir} onSort={pecasToggle} className="text-center" />
+              <SortTh label="Status" sortKey="status" current={pecasSortKey} dir={pecasSortDir} onSort={pecasToggle} className="text-center" />
+              <SortTh label="Abertura" sortKey="abertura" current={pecasSortKey} dir={pecasSortDir} onSort={pecasToggle} className="text-center" />
+              <SortTh label="Larg (m)" sortKey="larg" current={pecasSortKey} dir={pecasSortDir} onSort={pecasToggle} className="text-center" />
+              <SortTh label="Alt (m)" sortKey="alt" current={pecasSortKey} dir={pecasSortDir} onSort={pecasToggle} className="text-center" />
+              <SortTh label="Cortes" sortKey="cortes" current={pecasSortKey} dir={pecasSortDir} onSort={pecasToggle} className="text-center" />
+              <SortTh label="Saldo (m)" sortKey="saldo" current={pecasSortKey} dir={pecasSortDir} onSort={pecasToggle} className="text-center" />
             </tr>
           </thead>
           <tbody>

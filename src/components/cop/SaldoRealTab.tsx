@@ -1,3 +1,4 @@
+import { CorSelect } from "@/components/shared/cor-select";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +15,7 @@ import {
   pkKey, calcEmProducao, calcFaltantes, calcRecebido, calcPerdas, calcDisponivel,
 } from "@/lib/cop-saldos";
 import { useItensUltimoSnapshot, useProdutoMap } from "./AlimentacaoEstoqueTab";
+import { useTableSort, SortTh } from "@/components/shared/sortable";
 
 export function SaldoRealTab() {
   const qc = useQueryClient();
@@ -136,6 +138,18 @@ export function SaldoRealTab() {
     return m;
   }, [linhas, saldoReal]);
 
+  const sortGetters = useMemo(() => {
+    const g: Record<string, (row: { modelo: string; cor: string }) => string | number | null | undefined> = {
+      cor: (l) => l.cor,
+      modelo: (l) => l.modelo,
+    };
+    for (const t of REFACAO_TAMANHOS) {
+      g[t] = (l) => saldoReal.get(pkKey(l.modelo, l.cor, t)) ?? 0;
+    }
+    return g;
+  }, [saldoReal]);
+  const { rows: linhasOrdenadas, sortKey, sortDir, toggle: toggleSort } = useTableSort(linhas, sortGetters);
+
   const [popup, setPopup] = useState<{ modelo: string; cor: string; tamanho: string } | null>(null);
   const pk = popup ? pkKey(popup.modelo, popup.cor, popup.tamanho) : null;
 
@@ -162,13 +176,15 @@ export function SaldoRealTab() {
           </div>
           <div className="flex items-center gap-2">
             <Label className="text-xs">Cor:</Label>
-            <Select value={corFiltro} onValueChange={setCorFiltro}>
-              <SelectTrigger className="h-9 w-[180px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                {cores.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <CorSelect
+              value={corFiltro}
+              onChange={setCorFiltro}
+              allValue="todas"
+              allLabel="Todas"
+              options={cores.map((c) => ({ nome: c }))}
+              className="h-9 w-[180px]"
+            />
+
           </div>
           <Button variant={apenasNegativos ? "default" : "outline"} onClick={() => setApenasNegativos((v) => !v)}>
             <AlertCircle className="h-4 w-4 mr-1" />
@@ -197,9 +213,11 @@ export function SaldoRealTab() {
           <table className="w-full text-[12.5px] leading-[1.2]">
             <thead className="bg-muted/40 text-xs">
               <tr>
-                <th className="p-2 text-left min-w-[56px]">Cor</th>
-                <th className="p-2 text-left min-w-[64px]">Modelo</th>
-                {REFACAO_TAMANHOS.map((t) => <th key={t} className="p-2 text-center w-[96px]">{t}</th>)}
+                <SortTh label="Cor" sortKey="cor" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left min-w-[56px]" />
+                <SortTh label="Modelo" sortKey="modelo" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left min-w-[64px]" />
+                {REFACAO_TAMANHOS.map((t) => (
+                  <SortTh key={t} label={t} sortKey={t} current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center w-[96px] justify-center" />
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -208,7 +226,7 @@ export function SaldoRealTab() {
               ) : (() => {
                 let corIdx = -1;
                 let lastCor: string | null = null;
-                return linhas.map((l, i) => {
+                return linhasOrdenadas.map((l, i) => {
                   const hex = corHex(l.cor); const fg = corTextoSobre(hex);
                   const novaCor = lastCor !== l.cor;
                   if (novaCor) { corIdx++; lastCor = l.cor; }

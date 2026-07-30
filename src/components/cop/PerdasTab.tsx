@@ -294,7 +294,10 @@ export function PerdasTab() {
             <div>
               <Label>Cor</Label>
               <Select value={form.cor} onValueChange={(v) => setForm((f) => ({ ...f, cor: v }))}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectTrigger
+                  className="h-9 font-semibold"
+                  style={form.cor ? { backgroundColor: corHex(form.cor), color: corTextoSobre(corHex(form.cor)) } : undefined}
+                ><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
                   {REFACAO_CORES.map((c) => {
                     const fg = corTextoSobre(c.hex);

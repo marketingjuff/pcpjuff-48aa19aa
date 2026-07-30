@@ -20,6 +20,7 @@ import { rotuloCop } from "@/lib/cop";
 import { useIsAdmin } from "@/hooks/use-role";
 import { useFeriados } from "@/hooks/use-feriados";
 import { isPagamentoAtrasado } from "@/components/cop/PagamentoOficinasTab";
+import { useTableSort, SortTh } from "@/components/shared/sortable";
 
 function fmtMoney(n: number) {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -86,6 +87,13 @@ export function PagamentoConsolidadoCard() {
       (a, b) => (a.numero - b.numero) || (a.letra ?? "").localeCompare(b.letra ?? ""),
     );
   }, [oficinaId, liberadosPorOficina]);
+
+  const copsDaOficinaSort = useTableSort(copsDaOficina, {
+    cop: (c) => c.numero,
+    liberado_em: (c) => c.pagamento_liberado_em ?? "",
+    status: (c) => (isPagamentoAtrasado(c, feriados) ? 1 : 0),
+    valor: (c) => Number(c.pagamento_valor_calculado ?? 0),
+  });
 
   // Pré-selecionar todos ao trocar de oficina
   useEffect(() => {
@@ -166,14 +174,14 @@ export function PagamentoConsolidadoCard() {
                     <thead className="bg-muted/40 text-xs">
                       <tr>
                         <th className="p-2 text-center w-10"></th>
-                        <th className="p-2 text-left">COP</th>
-                        <th className="p-2 text-left">Liberado em</th>
-                        <th className="p-2 text-left">Status</th>
-                        <th className="p-2 text-right">Valor</th>
+                        <SortTh label="COP" sortKey="cop" current={copsDaOficinaSort.sortKey} dir={copsDaOficinaSort.sortDir} onSort={copsDaOficinaSort.toggle} className="text-left" />
+                        <SortTh label="Liberado em" sortKey="liberado_em" current={copsDaOficinaSort.sortKey} dir={copsDaOficinaSort.sortDir} onSort={copsDaOficinaSort.toggle} className="text-left" />
+                        <SortTh label="Status" sortKey="status" current={copsDaOficinaSort.sortKey} dir={copsDaOficinaSort.sortDir} onSort={copsDaOficinaSort.toggle} className="text-left" />
+                        <SortTh label="Valor" sortKey="valor" current={copsDaOficinaSort.sortKey} dir={copsDaOficinaSort.sortDir} onSort={copsDaOficinaSort.toggle} className="text-right" />
                       </tr>
                     </thead>
                     <tbody>
-                      {copsDaOficina.map((c) => {
+                      {copsDaOficinaSort.rows.map((c) => {
                         const atras = isPagamentoAtrasado(c, feriados);
                         const checked = selecionados.has(c.id);
                         return (
