@@ -92,6 +92,7 @@ export function AlimentacaoEstoqueTab() {
   const [busca, setBusca] = useState("");
   const [empresaPrevia, setEmpresaPrevia] = useState<EmpresaOlist>("JOKE");
   const [pendenteSel, setPendenteSel] = useState<Record<string, string>>({});
+  const [linhasUltimo, setLinhasUltimo] = useState<Record<string, number[]>>({});
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const ultimaGeral = snaps[0]?.importado_em ?? null;
@@ -123,10 +124,26 @@ export function AlimentacaoEstoqueTab() {
     },
     onSuccess: (parsed, vars) => {
       qc.invalidateQueries({ queryKey: ["estoque-olist"] });
+      setLinhasUltimo((prev) => ({ ...prev, ...parsed.linhasPorProduto }));
       toast.success(
         `${vars.empresa}: ${parsed.totalLinhas} linha(s) lida(s), ${parsed.itens.length} combinação(ões) agregada(s)` +
           (parsed.ignoradas.length ? `, ${parsed.ignoradas.length} ignorada(s)` : ""),
       );
+      if (parsed.ignoradas.length) {
+        const ex = parsed.ignoradas.slice(0, 3).map((l) => `linha ${l.linha}: ${l.motivo}`).join(" · ");
+        toast.warning(`${parsed.ignoradas.length} linha(s) ignorada(s) — ${ex}${parsed.ignoradas.length > 3 ? " …" : ""}`, { duration: 12000 });
+      }
+      const novosPendentes = Array.from(new Set(parsed.itens.map((i) => i.produto_olist))).filter(
+        (p) => !mapPorProduto.has(p),
+      );
+      if (novosPendentes.length) {
+        toast.error(
+          `${novosPendentes.length} produto(s) sem mapeamento (ficam FORA do Saldo Real): ${novosPendentes
+            .slice(0, 3)
+            .join(", ")}${novosPendentes.length > 3 ? "…" : ""} — mapeie abaixo em "Produtos pendentes de mapeamento".`,
+          { duration: 20000 },
+        );
+      }
       setEmpresaPrevia(vars.empresa);
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao importar planilha."),
@@ -167,6 +184,19 @@ export function AlimentacaoEstoqueTab() {
     () => produtosNoEstoque.filter((p) => !mapPorProduto.has(p)),
     [produtosNoEstoque, mapPorProduto],
   );
+
+  const pendentesInfo = useMemo(() => {
+    return pendentes.map((p) => {
+      const linhasItens = itens.filter((i) => i.produto_olist === p);
+      const empresas = Array.from(new Set(linhasItens.map((i) => i.empresa))).sort();
+      const qtd = linhasItens.reduce((a, i) => a + (i.qtd ?? 0), 0);
+      const linhas = linhasUltimo[p] ?? [];
+      return { produto: p, empresas, combos: linhasItens.length, qtd, linhas };
+    });
+  }, [pendentes, itens, linhasUltimo]);
+
+  const fmtLinhas = (l: number[]) =>
+    l.length === 0 ? "—" : l.slice(0, 6).join(", ") + (l.length > 6 ? ` … (+${l.length - 6})` : "");
 
   const previa = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -270,41 +300,57 @@ export function AlimentacaoEstoqueTab() {
           {pendentes.length === 0 ? (
             <div className="text-xs text-muted-foreground">Todos os produtos das últimas importações estão mapeados.</div>
           ) : (
-            <div className="overflow-auto max-h-[40vh] tbl-congelada">
-              <table className="w-full text-[12.5px]">
-                <thead className="bg-muted/40 text-xs">
-                  <tr>
-                    <th className="p-2 text-left">Produto na Olist</th>
-                    <th className="p-2 text-left w-[240px]">Modelo COP</th>
-                    <th className="p-2 w-[100px]" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendentes.map((p) => (
-                    <tr key={p} className="border-t">
-                      <td className="p-2">{p}</td>
-                      <td className="p-2">
-                        <Select value={pendenteSel[p] ?? ""} onValueChange={(v) => setPendenteSel((s) => ({ ...s, [p]: v }))}>
-                          <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                          <SelectContent>
-                            {REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="p-2 text-right">
-                        <Button
-                          size="sm"
-                          disabled={!pendenteSel[p] || salvarMap.isPending}
-                          onClick={() => salvarMap.mutate({ produto: p, modelo: pendenteSel[p] })}
-                        >
-                          Salvar
-                        </Button>
-                      </td>
+            <>
+              <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">
+                <AlertTriangle className="h-4 w-4 mt-0.5 text-destructive" />
+                <span>
+                  <b>{pendentes.length} produto(s)</b> das planilhas importadas não têm equivalência com um modelo do COP.
+                  Motivo: o nome exato do produto na Olist não existe na tabela de mapeamento. Enquanto não forem mapeados,
+                  essas peças <b>não entram no Saldo Real</b>.
+                </span>
+              </div>
+              <div className="overflow-auto max-h-[40vh] tbl-congelada">
+                <table className="w-full text-[12.5px]">
+                  <thead className="bg-muted/40 text-xs">
+                    <tr>
+                      <th className="p-2 text-left">Produto na Olist</th>
+                      <th className="p-2 text-left w-[90px]">Empresa(s)</th>
+                      <th className="p-2 text-right w-[80px]">Qtd fora</th>
+                      <th className="p-2 text-left w-[170px]">Linhas da planilha</th>
+                      <th className="p-2 text-left w-[240px]">Modelo COP</th>
+                      <th className="p-2 w-[100px]" />
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {pendentesInfo.map((p) => (
+                      <tr key={p.produto} className="border-t">
+                        <td className="p-2">{p.produto}</td>
+                        <td className="p-2 font-semibold">{p.empresas.join(", ") || "—"}</td>
+                        <td className="p-2 text-right font-semibold tabular-nums">{p.qtd}</td>
+                        <td className="p-2 text-muted-foreground tabular-nums">{fmtLinhas(p.linhas)}</td>
+                        <td className="p-2">
+                          <Select value={pendenteSel[p.produto] ?? ""} onValueChange={(v) => setPendenteSel((s) => ({ ...s, [p.produto]: v }))}>
+                            <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                            <SelectContent>
+                              {REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="p-2 text-right">
+                          <Button
+                            size="sm"
+                            disabled={!pendenteSel[p.produto] || salvarMap.isPending}
+                            onClick={() => salvarMap.mutate({ produto: p.produto, modelo: pendenteSel[p.produto] })}
+                          >
+                            Salvar
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
 
           {mapa.length > 0 && (

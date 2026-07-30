@@ -20,6 +20,8 @@ export interface ResultadoParse {
   itens: ItemOlist[];
   ignoradas: LinhaIgnorada[];
   totalLinhas: number;
+  /** produto_olist → linhas da planilha em que ele apareceu (para avisos de mapeamento) */
+  linhasPorProduto: Record<string, number[]>;
 }
 
 function semAcento(s: string) {
@@ -83,6 +85,7 @@ export async function parsePlanilhaOlist(file: File): Promise<ResultadoParse> {
 
   const itens: ItemOlist[] = [];
   const ignoradas: LinhaIgnorada[] = [];
+  const linhasPorProduto: Record<string, number[]> = {};
 
   rows.forEach((row, i) => {
     const produtoRaw = acharCampo(row, ["produto", "descricao"]);
@@ -96,9 +99,10 @@ export async function parsePlanilhaOlist(file: File): Promise<ResultadoParse> {
     }
     const qtdNum = Number(String(qtdRaw ?? "0").replace(/\./g, "").replace(",", "."));
     itens.push({ ...parsed, qtd: Number.isFinite(qtdNum) ? Math.trunc(qtdNum) : 0 });
+    (linhasPorProduto[parsed.produto_olist] ??= []).push(i + 2);
   });
 
-  return { itens: agregarItens(itens), ignoradas, totalLinhas: rows.length };
+  return { itens: agregarItens(itens), ignoradas, totalLinhas: rows.length, linhasPorProduto };
 }
 
 export function empresaPeloNome(nome: string): EmpresaOlist | null {
