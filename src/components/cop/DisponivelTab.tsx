@@ -1,3 +1,4 @@
+import { CorSelect } from "@/components/shared/cor-select";
 import { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
