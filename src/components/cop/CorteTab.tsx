@@ -348,6 +348,30 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     setGrupos((g) => g.map((l, idx) => idx === i ? { ...l, qtd: { ...l.qtd, [t]: Math.max(0, Math.floor(Number(v) || 0)) } } : l));
   }
 
+  // Enter/setas: navega para a próxima célula (direita; no fim da linha, desce).
+  function moverCelula(e: React.KeyboardEvent<HTMLInputElement>, i: number, ti: number) {
+    const total = REFACAO_TAMANHOS.length;
+    let alvo: string | null = null;
+    if (e.key === "Enter") {
+      alvo = ti + 1 < total ? `${i}-${ti + 1}` : `${i + 1}-0`;
+    } else if (e.key === "ArrowDown") {
+      alvo = `${i + 1}-${ti}`;
+    } else if (e.key === "ArrowUp") {
+      alvo = i > 0 ? `${i - 1}-${ti}` : null;
+    } else {
+      return;
+    }
+    e.preventDefault();
+    if (!alvo) return;
+    const el = document.querySelector<HTMLInputElement>(`input[data-corte-cell="${alvo}"]`);
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  }
+
+
+
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold tracking-tight">Corte</h2>
