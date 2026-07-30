@@ -79,13 +79,22 @@ export function SaldoRealTab() {
     return set;
   }, [joke, juff, disponivel]);
 
+  /** Saldo multi-empresa (JOKE+JUFF); negativo é considerado ZERADO. */
+  const multiEmpresa = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const k of chaves) {
+      m.set(k, Math.max(0, (joke.get(k) ?? 0) + (juff.get(k) ?? 0)));
+    }
+    return m;
+  }, [chaves, joke, juff]);
+
   const saldoReal = useMemo(() => {
     const m = new Map<string, number>();
     for (const k of chaves) {
-      m.set(k, (joke.get(k) ?? 0) + (juff.get(k) ?? 0) + (disponivel.get(k) ?? 0));
+      m.set(k, (multiEmpresa.get(k) ?? 0) + (disponivel.get(k) ?? 0));
     }
     return m;
-  }, [chaves, joke, juff, disponivel]);
+  }, [chaves, multiEmpresa, disponivel]);
 
   const cores = useMemo(() => {
     const s = new Set<string>();
