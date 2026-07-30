@@ -73,6 +73,15 @@ export interface HistoricoCorrecaoEvento {
   correcao?: CorrecaoTipo;
   cor_nova?: string | null;
   programacao_origem_id?: string | null;
+  programacao_destino_id?: string | null;
+  destino_criada?: boolean;
+  delta_kg_enviados?: number;
+  origem_snapshot?: {
+    pecas: number;
+    kg_enviados: number;
+    pecas_recebidas: number | null;
+    kg_recebidos: number | null;
+  } | null;
   numero_peca_antigo?: string | null;
   nota_fiscal_antiga?: string | null;
   cor_antiga?: string | null;
