@@ -487,21 +487,37 @@ export function EstoqueMpTab() {
       <div className="rounded-md border bg-white/70 overflow-auto max-h-[70vh] tbl-congelada">
         <table className="w-full text-[12.5px] table-fixed">
           <colgroup>
+            <col style={{ width: "3%" }} />
             <col style={{ width: "5%" }} />
             <col style={{ width: "6%" }} />
-            <col style={{ width: "13%" }} />
+            <col style={{ width: "12%" }} />
             <col style={{ width: "7%" }} />
             <col style={{ width: "9%" }} />
             <col style={{ width: "9%" }} />
-            <col style={{ width: "10%" }} />
+            <col style={{ width: "9%" }} />
             <col style={{ width: "9%" }} />
             <col style={{ width: "6%" }} />
             <col style={{ width: "5%" }} />
-            <col style={{ width: "14%" }} />
+            <col style={{ width: "13%" }} />
             <col style={{ width: "7%" }} />
           </colgroup>
           <thead className="bg-muted/40">
             <tr>
+              <th className="p-1 font-medium text-center">
+                <input
+                  type="checkbox"
+                  className="h-3.5 w-3.5 align-middle"
+                  checked={pecasFiltradas.length > 0 && pecasFiltradas.every((p) => sel[p.id])}
+                  onChange={(e) => {
+                    const v = e.target.checked;
+                    setSel(() => {
+                      const next: Record<string, boolean> = {};
+                      if (v) for (const p of pecasFiltradas) next[p.id] = true;
+                      return next;
+                    });
+                  }}
+                />
+              </th>
               <th className="p-1 font-medium text-center">NE</th>
               <th className="p-1 font-medium text-center">PROD</th>
               <th className="p-1 font-medium text-center">NF</th>
@@ -519,7 +535,7 @@ export function EstoqueMpTab() {
           <tbody>
             {pecasFiltradas.length === 0 ? (
               <tr>
-                <td colSpan={12} className="p-3 text-center text-muted-foreground">
+                <td colSpan={13} className="p-3 text-center text-muted-foreground">
                   Sem peças.
                 </td>
               </tr>
@@ -539,6 +555,14 @@ export function EstoqueMpTab() {
                     key={p.id}
                     className={`border-t ${i % 2 === 1 ? "bg-muted/20" : ""}`}
                   >
+                    <td className="p-1 text-center">
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 align-middle"
+                        checked={!!sel[p.id]}
+                        onChange={(e) => setSel((s) => ({ ...s, [p.id]: e.target.checked }))}
+                      />
+                    </td>
                     <td className="p-1 text-center tabular-nums font-semibold">
                       {p.ne != null ? `NE${p.ne}` : "—"}
                     </td>
