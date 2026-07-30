@@ -122,13 +122,15 @@ export function DisponivelTab() {
           }} title="Recarregar"><RefreshCw className="h-4 w-4" /></Button>
           <div className="flex items-center gap-2">
             <Label className="text-xs">Cor:</Label>
-            <Select value={corFiltro} onValueChange={setCorFiltro}>
-              <SelectTrigger className="h-9 w-[200px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                {coresDisponiveis.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <CorSelect
+              value={corFiltro}
+              onChange={setCorFiltro}
+              allValue="todas"
+              allLabel="Todas"
+              options={coresDisponiveis.map((c) => ({ nome: c }))}
+              className="h-9 w-[200px]"
+            />
+
           </div>
           <Button
             variant={apenasFaltando ? "default" : "outline"}
