@@ -372,12 +372,24 @@ const clamp0 = (n: number) => (n < 0 ? 0 : round2(n));
  * Move 1 peça (e os kg proporcionais) da programação de tinturaria original para
  * uma linha da cor nova. Reduz a original e cria/incrementa a linha destino.
  * A soma (original reduzida + nova) fecha com os totais anteriores.
- * Retorna o id da linha destino.
+ * Retorna dados suficientes para desfazer a operação com exatidão.
  */
+export interface RetingirResultado {
+  destino_id: string;
+  destino_criada: boolean;
+  delta_kg_enviados: number;
+  origem_snapshot: {
+    pecas: number;
+    kg_enviados: number;
+    pecas_recebidas: number | null;
+    kg_recebidos: number | null;
+  };
+}
+
 export async function retingirProgramacao(
   programacaoId: string,
   corNova: string,
-): Promise<string> {
+): Promise<RetingirResultado> {
   const { data: orig, error: e1 } = await (supabase as any)
     .from("map_tinturaria_programacoes")
     .select("*")
@@ -389,12 +401,19 @@ export async function retingirProgramacao(
   const pecas = Number(orig.pecas ?? 0);
   const pecasRec = orig.pecas_recebidas == null ? null : Number(orig.pecas_recebidas);
   const kgEnv = Number(orig.kg_enviados ?? 0);
-  const kgRec = Number(orig.kg_recebidos ?? 0);
+  const kgRec = orig.kg_recebidos == null ? null : Number(orig.kg_recebidos);
 
   const razaoEnv = pecas > 0 ? kgEnv / pecas : 0;
-  const razaoRec = pecasRec != null && pecasRec > 0 ? kgRec / pecasRec : 0;
+  const razaoRec = pecasRec != null && pecasRec > 0 && kgRec != null ? kgRec / pecasRec : 0;
   const deltaEnv = round2(razaoEnv);
   const deltaRec = round2(razaoRec);
+
+  const origemSnapshot = {
+    pecas,
+    kg_enviados: kgEnv,
+    pecas_recebidas: pecasRec,
+    kg_recebidos: kgRec,
+  };
 
   // 1) Reduz a linha original proporcionalmente (nunca negativo).
   const patchOrig: Record<string, unknown> = {
@@ -403,7 +422,7 @@ export async function retingirProgramacao(
   };
   if (pecasRec != null && pecasRec > 0) {
     patchOrig.pecas_recebidas = Math.max(0, pecasRec - 1);
-    patchOrig.kg_recebidos = clamp0(kgRec - deltaRec);
+    if (kgRec != null) patchOrig.kg_recebidos = clamp0(kgRec - deltaRec);
   }
   await patchProgramacao(orig.id, patchOrig as Partial<MapProgramacaoTinturaria>);
 
@@ -424,7 +443,12 @@ export async function retingirProgramacao(
       pecas: Number(destino.pecas ?? 0) + 1,
       kg_enviados: round2(Number(destino.kg_enviados ?? 0) + deltaEnv),
     } as Partial<MapProgramacaoTinturaria>);
-    return destino.id as string;
+    return {
+      destino_id: destino.id as string,
+      destino_criada: false,
+      delta_kg_enviados: deltaEnv,
+      origem_snapshot: origemSnapshot,
+    };
   }
 
   const { data: nova, error: e3 } = await (supabase as any)
@@ -446,8 +470,14 @@ export async function retingirProgramacao(
     .select("id")
     .single();
   if (e3) throw e3;
-  return nova.id as string;
+  return {
+    destino_id: nova.id as string,
+    destino_criada: true,
+    delta_kg_enviados: deltaEnv,
+    origem_snapshot: origemSnapshot,
+  };
 }
+
 
 
 
