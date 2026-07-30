@@ -84,8 +84,11 @@ export function FaltaPorPedidoTab() {
   }, [qc]);
 
   const [busca, setBusca] = useState("");
+  const [modeloFiltro, setModeloFiltro] = useState("todos");
+  const [corFiltro, setCorFiltro] = useState("todas");
   const [historico, setHistorico] = useState<Pedido | null>(null);
   const [popupPeca, setPopupPeca] = useState<{ modelo: string; cor: string; tamanho: string } | null>(null);
+
 
   const linhas: LinhaFalta[] = useMemo(() => {
     const arr: LinhaFalta[] = [];
