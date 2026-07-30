@@ -448,7 +448,10 @@ export function EstoqueMpTab() {
       {/* ---------- Filtros ---------- */}
       <div className="flex flex-wrap items-center gap-2">
         <Select value={fCor} onValueChange={setFCor}>
-          <SelectTrigger className="h-8 w-[160px] text-xs">
+          <SelectTrigger
+            className="h-8 w-[160px] text-xs font-semibold"
+            style={fCor && fCor !== "__todas__" ? { backgroundColor: corHex(fCor), color: corTextoSobre(corHex(fCor)) } : undefined}
+          >
             <SelectValue placeholder="Cor" />
           </SelectTrigger>
           <SelectContent>

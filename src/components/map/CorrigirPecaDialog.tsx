@@ -108,7 +108,12 @@ export function CorrigirPecaDialog({ open, onOpenChange, peca, onDone }: Props) 
             <div>
               <Label className="text-xs">Nova cor</Label>
               <Select value={cor} onValueChange={setCor}>
-                <SelectTrigger><SelectValue placeholder="Selecione a cor" /></SelectTrigger>
+                <SelectTrigger
+                  className="font-semibold"
+                  style={cor ? { backgroundColor: corHex(cor.split("-")[0]), color: corTextoSobre(corHex(cor.split("-")[0])) } : undefined}
+                >
+                  <SelectValue placeholder="Selecione a cor" />
+                </SelectTrigger>
                 <SelectContent>
                   {opcoes.map((o: any) => {
                     const fg = corTextoSobre(o.hex);
