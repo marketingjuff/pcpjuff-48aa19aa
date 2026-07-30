@@ -271,7 +271,10 @@ export function SaldoRealTab() {
               <tbody>
                 <tr className="border-b"><td className="py-1">Estoque JOKE</td><td className="py-1 text-right font-semibold tabular-nums">{joke.get(pk) ?? 0}</td></tr>
                 <tr className="border-b"><td className="py-1">Estoque JUFF</td><td className="py-1 text-right font-semibold tabular-nums">{juff.get(pk) ?? 0}</td></tr>
-                <tr className="border-b"><td className="py-1">Saldo Multi-Empresa</td><td className="py-1 text-right font-semibold tabular-nums">{(joke.get(pk) ?? 0) + (juff.get(pk) ?? 0)}</td></tr>
+                <tr className="border-b">
+                  <td className="py-1">Saldo Multi-Empresa {(joke.get(pk) ?? 0) + (juff.get(pk) ?? 0) < 0 && <span className="text-xs text-muted-foreground">(negativo zerado)</span>}</td>
+                  <td className="py-1 text-right font-semibold tabular-nums">{multiEmpresa.get(pk) ?? 0}</td>
+                </tr>
                 <tr className="border-b"><td className="py-1">Saldo Disponível (COP)</td><td className="py-1 text-right font-semibold tabular-nums">{disponivel.get(pk) ?? 0}</td></tr>
                 <tr><td className="py-1 font-bold">Saldo Real</td><td className="py-1 text-right font-bold tabular-nums">{saldoReal.get(pk) ?? 0}</td></tr>
               </tbody>
