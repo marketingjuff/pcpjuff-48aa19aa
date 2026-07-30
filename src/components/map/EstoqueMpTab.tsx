@@ -21,6 +21,7 @@ import {
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { InlineInput } from "./InlineInput";
 import { EstoquePecaCortesCell } from "./EstoquePecaCortesCell";
+import { DevolverPecasDialog } from "./DevolverPecasDialog";
 import type { Cop } from "@/lib/cop";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
@@ -249,9 +250,12 @@ export function EstoqueMpTab() {
     return Array.from(s).sort();
   }, [pecas]);
 
+  const [sel, setSel] = useState<Record<string, boolean>>({});
+  const [devolverOpen, setDevolverOpen] = useState(false);
+
   const pecasFiltradas = useMemo(() => {
     return pecas
-      .filter((p) => p.status !== "100% utilizada")
+      .filter((p) => p.status !== "100% utilizada" && p.status !== "Devolvida")
       .filter((p) => (fCor === "__todas__" ? true : corBase(p.cor) === fCor))
       .filter((p) => (fStatus === "__todos__" ? true : p.status === fStatus))
       .filter((p) =>
@@ -263,6 +267,11 @@ export function EstoqueMpTab() {
         return na - nb;
       });
   }, [pecas, fCor, fStatus, fNF]);
+
+  const pecasSelecionadas = useMemo(
+    () => pecasFiltradas.filter((p) => sel[p.id]),
+    [pecasFiltradas, sel],
+  );
 
   async function commitField(peca: MapEstoquePeca, field: keyof MapEstoquePeca, raw: string | null) {
     try {
@@ -478,6 +487,14 @@ export function EstoqueMpTab() {
           onChange={(e) => setFNF(e.target.value)}
           className="h-8 w-[160px] text-xs"
         />
+        <Button
+          size="sm"
+          className="h-8 text-xs"
+          disabled={pecasSelecionadas.length === 0}
+          onClick={() => setDevolverOpen(true)}
+        >
+          Devolver selecionadas{pecasSelecionadas.length ? ` (${pecasSelecionadas.length})` : ""}
+        </Button>
         <span className="text-xs text-muted-foreground ml-auto tabular-nums">
           {pecasFiltradas.length} peça(s)
         </span>
