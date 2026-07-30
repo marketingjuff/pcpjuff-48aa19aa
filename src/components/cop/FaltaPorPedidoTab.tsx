@@ -14,6 +14,7 @@ import {
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import type { Pedido, PecaSolicitada } from "@/lib/pedidos";
 import { REFACAO_MODELOS, REFACAO_CORES } from "@/lib/pedidos";
+import { CorSelect } from "@/components/shared/cor-select";
 import type { Cop, Oficina } from "@/lib/cop";
 import { rotuloCop, colunasTamanhos } from "@/lib/cop";
 import { dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
