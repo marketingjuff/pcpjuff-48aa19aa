@@ -35,7 +35,7 @@ export function CorSelect({
   value, onChange, allValue, allLabel = "Todas as cores",
   options, placeholder = "Cor", disabled, className,
 }: CorSelectProps) {
-  const lista = options ?? REFACAO_CORES.map((c) => ({ nome: c.nome }));
+  const lista: { nome: string; label?: string }[] = options ?? REFACAO_CORES.map((c) => ({ nome: c.nome }));
   const isAll = allValue != null && value === allValue;
   const base = corNomeBase(value);
   const atual = lista.find((o) => o.nome === base || o.nome === value);
