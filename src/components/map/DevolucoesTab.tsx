@@ -210,6 +210,16 @@ export function DevolucoesTab() {
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setHist(p)} title="Histórico">
                         <History className="h-3.5 w-3.5" />
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        disabled={desfazendo === p.id}
+                        onClick={() => desfazer(p)}
+                        title={p.correcao_status ? "Desfazer correção (volta para Devolvida)" : "Desfazer devolução (volta ao estoque de MP)"}
+                      >
+                        <Undo2 className="h-3.5 w-3.5 mr-1" /> Desfazer
+                      </Button>
                       {!p.correcao_status ? (
                         <Button size="sm" className="h-7 text-xs" onClick={() => setCorrigir(p)}>Corrigir</Button>
                       ) : (
@@ -223,6 +233,7 @@ export function DevolucoesTab() {
                       )}
                     </div>
                   </td>
+
                 </tr>
               );
             })}
