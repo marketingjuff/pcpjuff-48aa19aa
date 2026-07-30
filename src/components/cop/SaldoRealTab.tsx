@@ -162,13 +162,15 @@ export function SaldoRealTab() {
           </div>
           <div className="flex items-center gap-2">
             <Label className="text-xs">Cor:</Label>
-            <Select value={corFiltro} onValueChange={setCorFiltro}>
-              <SelectTrigger className="h-9 w-[180px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                {cores.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <CorSelect
+              value={corFiltro}
+              onChange={setCorFiltro}
+              allValue="todas"
+              allLabel="Todas"
+              options={cores.map((c) => ({ nome: c }))}
+              className="h-9 w-[180px]"
+            />
+
           </div>
           <Button variant={apenasNegativos ? "default" : "outline"} onClick={() => setApenasNegativos((v) => !v)}>
             <AlertCircle className="h-4 w-4 mr-1" />
