@@ -25,6 +25,7 @@ import {
   getRecebida, getPerda, colunasTamanhos, mesclarPerdasEmObservacoes, linhaUrgente, refacoesDoCop,
 } from "@/lib/cop";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
+import { CorSelect } from "@/components/shared/cor-select";
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { abrirRomaneioParaImpressao } from "@/lib/romaneio-pdf";
 import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
