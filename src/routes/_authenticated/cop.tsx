@@ -137,6 +137,13 @@ function CopHome() {
           <TabsContent value="disponivel" forceMount hidden={tab !== "disponivel"}>
             <DisponivelTab />
           </TabsContent>
+          <TabsContent value="alimentacao-estoque" forceMount hidden={tab !== "alimentacao-estoque"}>
+            <AlimentacaoEstoqueTab />
+          </TabsContent>
+          <TabsContent value="saldo-real" forceMount hidden={tab !== "saldo-real"}>
+            <SaldoRealTab />
+          </TabsContent>
+
           <TabsContent value="falta" forceMount hidden={tab !== "falta"}>
             <FaltaPorPedidoTab />
           </TabsContent>
