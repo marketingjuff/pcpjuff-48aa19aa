@@ -38,6 +38,7 @@ export const REFACAO_MODELOS = [
   "ML Masculina", "ML Feminina", "Camiseta Infantil", "ML Infantil",
   "Regata Cross", "Regata Wing", "Regata Move",
   "ML Hide Masculina", "ML Hide Feminina", "ML Hide Infantil",
+  "Regata Breeze", "Não Identificado",
 ] as const;
 
 export const REFACAO_TAMANHOS = ["PP", "P", "M", "G", "GG", "EXG", "EXXG"] as const;
