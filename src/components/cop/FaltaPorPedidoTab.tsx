@@ -128,7 +128,8 @@ export function FaltaPorPedidoTab() {
       return da.localeCompare(db);
     });
     return arr;
-  }, [pedidos, busca]);
+  }, [pedidos, busca, modeloFiltro, corFiltro]);
+
 
   const tamanhosColunas = useMemo(() => {
     const set = new Set<string>();
