@@ -564,6 +564,11 @@ export async function syncEstoquePecas(): Promise<void> {
 export async function desfazerRetingirProgramacao(
   destinoId: string,
   origemId: string,
+  info?: {
+    destino_criada?: boolean;
+    delta_kg_enviados?: number;
+    origem_snapshot?: RetingirResultado["origem_snapshot"] | null;
+  },
 ): Promise<void> {
   const { data: dest, error: e1 } = await (supabase as any)
     .from("map_tinturaria_programacoes")
@@ -581,15 +586,38 @@ export async function desfazerRetingirProgramacao(
 
   const pecasDest = Number(dest.pecas ?? 0);
   const kgDest = Number(dest.kg_enviados ?? 0);
-  const delta = pecasDest > 0 ? round2(kgDest / pecasDest) : 0;
+  // kg movidos nesta operação: preferimos o valor registrado no histórico.
+  const delta =
+    info?.delta_kg_enviados != null
+      ? round2(info.delta_kg_enviados)
+      : pecasDest > 0
+        ? round2(kgDest / pecasDest)
+        : 0;
 
-  await patchProgramacao(orig.id, {
-    pecas: Number(orig.pecas ?? 0) + 1,
-    kg_enviados: round2(Number(orig.kg_enviados ?? 0) + delta),
-  } as Partial<MapProgramacaoTinturaria>);
+  // 1) Restaura a linha de origem exatamente como estava (quando temos snapshot).
+  const snap = info?.origem_snapshot ?? null;
+  if (snap) {
+    const patch: Record<string, unknown> = {
+      pecas: snap.pecas,
+      kg_enviados: round2(snap.kg_enviados),
+    };
+    if (snap.pecas_recebidas != null) patch.pecas_recebidas = snap.pecas_recebidas;
+    if (snap.kg_recebidos != null) patch.kg_recebidos = round2(snap.kg_recebidos);
+    await patchProgramacao(orig.id, patch as Partial<MapProgramacaoTinturaria>);
+  } else {
+    const pecasRecOrig = orig.pecas_recebidas == null ? null : Number(orig.pecas_recebidas);
+    const patch: Record<string, unknown> = {
+      pecas: Number(orig.pecas ?? 0) + 1,
+      kg_enviados: round2(Number(orig.kg_enviados ?? 0) + delta),
+    };
+    if (pecasRecOrig != null) patch.pecas_recebidas = pecasRecOrig + 1;
+    await patchProgramacao(orig.id, patch as Partial<MapProgramacaoTinturaria>);
+  }
 
+  // 2) Remove a linha destino se ela foi criada por esta operação; senão devolve 1 peça.
   const restante = Math.max(0, pecasDest - 1);
-  if (restante === 0 && dest.retingir_origem_id === origemId) {
+  const criadaAqui = info?.destino_criada ?? dest.retingir_origem_id === origemId;
+  if (criadaAqui && restante === 0) {
     const { error: e3 } = await (supabase as any)
       .from("map_tinturaria_programacoes")
       .delete()
@@ -612,9 +640,14 @@ export async function desfazerCorrecaoPeca(peca: MapEstoquePeca): Promise<void> 
   const idx = [...hist].reverse().findIndex((e) => e.tipo === "correcao_iniciada");
   const evento = idx >= 0 ? hist[hist.length - 1 - idx] : null;
   const origemId = evento?.programacao_origem_id ?? null;
+  const destinoId = evento?.programacao_destino_id ?? peca.programacao_id;
 
-  if (peca.correcao_tipo === "retingir" && origemId && peca.programacao_id && peca.programacao_id !== origemId) {
-    await desfazerRetingirProgramacao(peca.programacao_id, origemId);
+  if (peca.correcao_tipo === "retingir" && origemId && destinoId && destinoId !== origemId) {
+    await desfazerRetingirProgramacao(destinoId, origemId, {
+      destino_criada: evento?.destino_criada ?? undefined,
+      delta_kg_enviados: evento?.delta_kg_enviados ?? undefined,
+      origem_snapshot: evento?.origem_snapshot ?? null,
+    });
   }
 
   if (idx >= 0) hist.splice(hist.length - 1 - idx, 1);
@@ -627,6 +660,7 @@ export async function desfazerCorrecaoPeca(peca: MapEstoquePeca): Promise<void> 
     ...(origemId ? { programacao_id: origemId } : {}),
   } as Partial<MapEstoquePeca>);
 }
+
 
 /**
  * Desfaz a devolução de uma peça: volta ao estoque de MP limpando os campos de
