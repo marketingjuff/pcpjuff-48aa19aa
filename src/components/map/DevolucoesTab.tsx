@@ -104,6 +104,7 @@ export function DevolucoesTab() {
   const [corrigir, setCorrigir] = useState<MapEstoquePeca | null>(null);
   const [receber, setReceber] = useState<MapEstoquePeca | null>(null);
   const [hist, setHist] = useState<MapEstoquePeca | null>(null);
+  const [desfazendo, setDesfazendo] = useState<string | null>(null);
 
   const { data: pecas = [], isLoading } = useEstoquePecas();
   const { producoes: prodProg } = useMapData(false);
