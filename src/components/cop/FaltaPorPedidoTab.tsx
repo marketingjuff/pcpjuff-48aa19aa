@@ -4,13 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RefreshCw, ChevronRight, ChevronDown } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw, ChevronRight, ChevronDown, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import type { Pedido, PecaSolicitada } from "@/lib/pedidos";
+import { REFACAO_MODELOS, REFACAO_CORES } from "@/lib/pedidos";
 import type { Cop, Oficina } from "@/lib/cop";
 import { rotuloCop, colunasTamanhos } from "@/lib/cop";
 import { dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
@@ -81,8 +84,11 @@ export function FaltaPorPedidoTab() {
   }, [qc]);
 
   const [busca, setBusca] = useState("");
+  const [modeloFiltro, setModeloFiltro] = useState("todos");
+  const [corFiltro, setCorFiltro] = useState("todas");
   const [historico, setHistorico] = useState<Pedido | null>(null);
   const [popupPeca, setPopupPeca] = useState<{ modelo: string; cor: string; tamanho: string } | null>(null);
+
 
   const linhas: LinhaFalta[] = useMemo(() => {
     const arr: LinhaFalta[] = [];
@@ -105,10 +111,16 @@ export function FaltaPorPedidoTab() {
         g.porTamanho.set(it.ps.tamanho, { idx: it.idx, ps: it.ps, falta: it.falta });
         g.faltaTotal += it.falta;
       }
-      const grupos = Array.from(mapa.values());
+      const grupos = Array.from(mapa.values()).filter((g) => {
+        if (modeloFiltro !== "todos" && g.modelo !== modeloFiltro) return false;
+        if (corFiltro !== "todas" && g.cor !== corFiltro) return false;
+        return true;
+      });
+      if (grupos.length === 0) continue;
       const faltaTotal = grupos.reduce((s, g) => s + g.faltaTotal, 0);
       const ancora = dataUrgencia(p);
       arr.push({ pedido: p, grupos, faltaTotal, ancora });
+
     }
     arr.sort((a, b) => {
       const da = a.ancora ?? "9999-12-31";
@@ -116,7 +128,8 @@ export function FaltaPorPedidoTab() {
       return da.localeCompare(db);
     });
     return arr;
-  }, [pedidos, busca]);
+  }, [pedidos, busca, modeloFiltro, corFiltro]);
+
 
   const tamanhosColunas = useMemo(() => {
     const set = new Set<string>();
@@ -241,11 +254,45 @@ export function FaltaPorPedidoTab() {
             placeholder="Buscar orçamento/pedido Olist..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="h-9 w-[260px]"
+            className="h-9 w-[220px]"
           />
+          <div className="flex items-center gap-1.5">
+            <Label className="text-xs whitespace-nowrap">Modelo:</Label>
+            <Select value={modeloFiltro} onValueChange={setModeloFiltro}>
+              <SelectTrigger className="h-9 w-[150px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {REFACAO_MODELOS.map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Label className="text-xs whitespace-nowrap">Cor:</Label>
+            <Select value={corFiltro} onValueChange={setCorFiltro}>
+              <SelectTrigger className="h-9 w-[150px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas</SelectItem>
+                {REFACAO_CORES.map((c) => (
+                  <SelectItem key={c.nome} value={c.nome}>{c.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {(modeloFiltro !== "todos" || corFiltro !== "todas" || busca) && (
+            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => { setBusca(""); setModeloFiltro("todos"); setCorFiltro("todas"); }}>
+              <X className="h-3.5 w-3.5 mr-1" /> Limpar
+            </Button>
+          )}
         </div>
         <div className="text-xs text-muted-foreground">{linhas.length} pedidos · ordenados por urgência</div>
       </div>
+
 
       {linhas.length === 0 ? (
         <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhum pedido com peças faltantes.</CardContent></Card>
