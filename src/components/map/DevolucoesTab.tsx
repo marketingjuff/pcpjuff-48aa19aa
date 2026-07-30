@@ -133,6 +133,28 @@ export function DevolucoesTab() {
     }
   }
 
+  async function desfazer(p: MapEstoquePeca) {
+    const isCorrecao = !!p.correcao_status;
+    const msg = isCorrecao
+      ? "Desfazer a correção desta peça? Ela volta para 'Devolvida' e a programação de tinturaria é revertida."
+      : "Desfazer a devolução desta peça? Ela volta para o estoque de MP.";
+    if (!window.confirm(msg)) return;
+    setDesfazendo(p.id);
+    try {
+      if (isCorrecao) await desfazerCorrecaoPeca(p);
+      else await desfazerDevolucaoPeca(p);
+      toast.success(isCorrecao ? "Correção desfeita." : "Devolução desfeita.");
+      refresh();
+      qc.invalidateQueries({ queryKey: ["map", "programacoes"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao desfazer.");
+    } finally {
+      setDesfazendo(null);
+    }
+  }
+
+
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
