@@ -254,11 +254,45 @@ export function FaltaPorPedidoTab() {
             placeholder="Buscar orçamento/pedido Olist..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="h-9 w-[260px]"
+            className="h-9 w-[220px]"
           />
+          <div className="flex items-center gap-1.5">
+            <Label className="text-xs whitespace-nowrap">Modelo:</Label>
+            <Select value={modeloFiltro} onValueChange={setModeloFiltro}>
+              <SelectTrigger className="h-9 w-[150px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {REFACAO_MODELOS.map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Label className="text-xs whitespace-nowrap">Cor:</Label>
+            <Select value={corFiltro} onValueChange={setCorFiltro}>
+              <SelectTrigger className="h-9 w-[150px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas</SelectItem>
+                {REFACAO_CORES.map((c) => (
+                  <SelectItem key={c.nome} value={c.nome}>{c.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {(modeloFiltro !== "todos" || corFiltro !== "todas" || busca) && (
+            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => { setBusca(""); setModeloFiltro("todos"); setCorFiltro("todas"); }}>
+              <X className="h-3.5 w-3.5 mr-1" /> Limpar
+            </Button>
+          )}
         </div>
         <div className="text-xs text-muted-foreground">{linhas.length} pedidos · ordenados por urgência</div>
       </div>
+
 
       {linhas.length === 0 ? (
         <Card><CardContent className="p-6 text-sm text-muted-foreground text-center">Nenhum pedido com peças faltantes.</CardContent></Card>
