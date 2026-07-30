@@ -4,13 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RefreshCw, ChevronRight, ChevronDown } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw, ChevronRight, ChevronDown, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import type { Pedido, PecaSolicitada } from "@/lib/pedidos";
+import { REFACAO_MODELOS, REFACAO_CORES } from "@/lib/pedidos";
 import type { Cop, Oficina } from "@/lib/cop";
 import { rotuloCop, colunasTamanhos } from "@/lib/cop";
 import { dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
