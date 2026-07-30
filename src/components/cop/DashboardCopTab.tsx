@@ -9,6 +9,7 @@ import { REFACAO_TAMANHOS, cmpModeloCor, type Pedido } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { calcEmProducao, calcFaltantes, calcRecebido, calcPerdas, calcDisponivel, pkKey, dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
 import { formatDateBR } from "@/lib/format";
+import { useTableSort, SortTh } from "@/components/shared/sortable";
 
 export function DashboardCopTab() {
   const qc = useQueryClient();
@@ -101,6 +102,18 @@ export function DashboardCopTab() {
       .sort((a, b) => (a.ancora! > b.ancora! ? 1 : -1))
       .slice(0, 10);
   }, [pedidos]);
+
+  const topNegSort = useTableSort(topNegativos, {
+    item: (x) => `${x.modelo} ${x.cor} ${x.tamanho}`,
+    saldo: (x) => x.saldo,
+  });
+
+  const urgentesSort = useTableSort(urgentes, {
+    orcamento: (x) => x.p.orcamento ?? "",
+    pedido: (x) => (x.p as any).pedido_olist ?? "",
+    limite: (x) => (x.ancora ? addDiasUteis(x.ancora, -2) : null),
+    inicio: (x) => x.ancora ?? null,
+  });
 
   type LinhaConsol = { modelo: string; cor: string; todos: boolean; tamanhos: Map<string, number> };
   type CopUrg = { cop: Cop; ultimaEm: string; qtdPedidos: number; linhas: LinhaConsol[] };
@@ -196,9 +209,12 @@ export function DashboardCopTab() {
               <p className="text-sm text-muted-foreground">Tudo coberto.</p>
             ) : (
               <table className="w-full text-[12.5px] leading-[1.2]">
-                <thead className="text-xs text-muted-foreground"><tr><th className="text-left p-1">Item</th><th className="text-right p-1">Saldo</th></tr></thead>
+                <thead className="text-xs text-muted-foreground"><tr>
+                  <SortTh label="Item" sortKey="item" current={topNegSort.sortKey} dir={topNegSort.sortDir} onSort={topNegSort.toggle} className="text-left" />
+                  <SortTh label="Saldo" sortKey="saldo" current={topNegSort.sortKey} dir={topNegSort.sortDir} onSort={topNegSort.toggle} className="text-right" />
+                </tr></thead>
                 <tbody>
-                  {topNegativos.map((x, i) => (
+                  {topNegSort.rows.map((x, i) => (
                     <tr key={i} className="border-t">
                       <td className="p-1">{x.modelo} · {x.cor} · {x.tamanho}</td>
                       <td className="p-1 text-right text-red-700 font-bold tabular-nums">{x.saldo}</td>
@@ -267,13 +283,13 @@ export function DashboardCopTab() {
           ) : (
             <table className="w-full text-[12.5px] leading-[1.2]">
               <thead className="text-xs text-muted-foreground"><tr>
-                <th className="text-left p-1">Orçamento</th>
-                <th className="text-left p-1">Pedido Olist</th>
-                <th className="text-left p-1">Limite (-2 d.ú.)</th>
-                <th className="text-left p-1">Início estamp./acab.</th>
+                <SortTh label="Orçamento" sortKey="orcamento" current={urgentesSort.sortKey} dir={urgentesSort.sortDir} onSort={urgentesSort.toggle} className="text-left" />
+                <SortTh label="Pedido Olist" sortKey="pedido" current={urgentesSort.sortKey} dir={urgentesSort.sortDir} onSort={urgentesSort.toggle} className="text-left" />
+                <SortTh label="Limite (-2 d.ú.)" sortKey="limite" current={urgentesSort.sortKey} dir={urgentesSort.sortDir} onSort={urgentesSort.toggle} className="text-left" />
+                <SortTh label="Início estamp./acab." sortKey="inicio" current={urgentesSort.sortKey} dir={urgentesSort.sortDir} onSort={urgentesSort.toggle} className="text-left" />
               </tr></thead>
               <tbody>
-                {urgentes.map(({ p, ancora }) => (
+                {urgentesSort.rows.map(({ p, ancora }) => (
                   <tr key={p.id} className="border-t">
                     <td className="p-1 font-mono">{p.orcamento ?? "—"}</td>
                     <td className="p-1 font-mono">{(p as any).pedido_olist ?? "—"}</td>

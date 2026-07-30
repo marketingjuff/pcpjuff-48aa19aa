@@ -14,6 +14,7 @@ import {
   type NoOficina,
 } from "@/lib/cop-oficinas";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+import { useTableSort, SortTh, type SortDir } from "@/components/shared/sortable";
 
 const NUM = (n: number) => (n > 0 ? n : "–");
 
@@ -74,8 +75,36 @@ export function OficinasHojeTab() {
     };
   }, [qc]);
 
-  const grupos = useMemo<NoOficina[]>(() => arvoreProducaoHoje(cops, oficinas), [cops, oficinas]);
-  const tamanhos = useMemo(() => tamanhosVisiveis(grupos), [grupos]);
+  const gruposBase = useMemo<NoOficina[]>(() => arvoreProducaoHoje(cops, oficinas), [cops, oficinas]);
+  const tamanhos = useMemo(() => tamanhosVisiveis(gruposBase), [gruposBase]);
+
+  const { sortKey, sortDir, toggle: toggleSort } = useTableSort(gruposBase, {});
+
+  function copSortValue(c: NoOficina["cops"][number], key: string): string | number {
+    if (key === "cop") return c.rotulo;
+    if (key === "modelo") return c.modelos[0]?.modelo ?? "";
+    if (key === "cor") return c.modelos[0]?.cores[0]?.cor ?? "";
+    if (key === "total") return c.total;
+    return c.modelos.reduce((s, m) => s + m.cores.reduce((s2, cor) => s2 + (cor.porTamanho[key] ?? 0), 0), 0);
+  }
+
+  const grupos = useMemo<NoOficina[]>(() => {
+    if (!sortKey) return gruposBase;
+    const mult = sortDir === "asc" ? 1 : -1;
+    if (sortKey === "oficina") {
+      return [...gruposBase].sort((a, b) => a.oficina.nome.localeCompare(b.oficina.nome, "pt-BR") * mult);
+    }
+    return gruposBase.map((g) => ({
+      ...g,
+      cops: [...g.cops].sort((a, b) => {
+        const va = copSortValue(a, sortKey);
+        const vb = copSortValue(b, sortKey);
+        if (typeof va === "number" && typeof vb === "number") return (va - vb) * mult;
+        return String(va).localeCompare(String(vb), "pt-BR", { numeric: true, sensitivity: "base" }) * mult;
+      }),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gruposBase, sortKey, sortDir]);
 
   const allGroupKeys = useMemo(() => grupos.map((g) => g.oficina.id), [grupos]);
 
@@ -195,16 +224,14 @@ export function OficinasHojeTab() {
           <table className="text-[12.5px] leading-[1.2] border-collapse w-max min-w-full">
             <thead className="bg-muted/50 text-xs sticky top-0 z-20">
               <tr>
-                <th className="p-1.5 text-left border-r w-[160px] min-w-[160px]">Oficina</th>
-                <th className="p-1.5 text-left border-r w-[90px] min-w-[90px]">COP</th>
-                <th className="p-1.5 text-left border-r w-[140px] min-w-[140px]">Modelo</th>
-                <th className="p-1.5 text-left border-r w-[120px] min-w-[120px]">Cor</th>
+                <SortTh label="Oficina" sortKey="oficina" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left border-r w-[160px] min-w-[160px]" />
+                <SortTh label="COP" sortKey="cop" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left border-r w-[90px] min-w-[90px]" />
+                <SortTh label="Modelo" sortKey="modelo" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left border-r w-[140px] min-w-[140px]" />
+                <SortTh label="Cor" sortKey="cor" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left border-r w-[120px] min-w-[120px]" />
                 {tamanhos.map((t) => (
-                  <th key={t} className="w-11 min-w-[2.75rem] p-1.5 text-right">
-                    {t}
-                  </th>
+                  <SortTh key={t} label={t} sortKey={t} current={sortKey} dir={sortDir} onSort={toggleSort} className="w-11 min-w-[2.75rem] text-right" />
                 ))}
-                <th className="p-1.5 text-right border-l w-[80px] min-w-[80px]">Total</th>
+                <SortTh label="Total" sortKey="total" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-right border-l w-[80px] min-w-[80px]" />
               </tr>
             </thead>
             <tbody>

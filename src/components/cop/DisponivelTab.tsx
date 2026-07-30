@@ -20,6 +20,7 @@ import { rotuloRomaneio } from "@/lib/cop";
 import {
   pkKey, calcEmProducao, calcFaltantes, calcRecebido, calcPerdas, calcDisponivel, pedidosDoItem,
 } from "@/lib/cop-saldos";
+import { useTableSort, SortTh } from "@/components/shared/sortable";
 
 export function DisponivelTab() {
   const qc = useQueryClient();
@@ -109,6 +110,18 @@ export function DisponivelTab() {
     return s;
   }, [totaisTam]);
 
+  const sortGetters = useMemo(() => {
+    const g: Record<string, (row: { modelo: string; cor: string }) => string | number | null | undefined> = {
+      cor: (l) => l.cor,
+      modelo: (l) => l.modelo,
+    };
+    for (const t of REFACAO_TAMANHOS) {
+      g[t] = (l) => disponivel.get(pkKey(l.modelo, l.cor, t)) ?? 0;
+    }
+    return g;
+  }, [disponivel]);
+  const { rows: linhasOrdenadas, sortKey, sortDir, toggle: toggleSort } = useTableSort(linhas, sortGetters);
+
   // Popup
   const [popup, setPopup] = useState<{ modelo: string; cor: string; tamanho: string } | null>(null);
 
@@ -152,10 +165,10 @@ export function DisponivelTab() {
           <table className="w-full text-[12.5px] leading-[1.2]">
             <thead className="bg-muted/40 text-xs">
               <tr>
-                <th className="p-2 text-left min-w-[56px]">Cor</th>
-                <th className="p-2 text-left min-w-[64px]">Modelo</th>
+                <SortTh label="Cor" sortKey="cor" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left min-w-[56px]" />
+                <SortTh label="Modelo" sortKey="modelo" current={sortKey} dir={sortDir} onSort={toggleSort} className="text-left min-w-[64px]" />
                 {REFACAO_TAMANHOS.map((t) => (
-                  <th key={t} className="p-2 text-center w-[96px]">{t}</th>
+                  <SortTh key={t} label={t} sortKey={t} current={sortKey} dir={sortDir} onSort={toggleSort} className="text-center w-[96px]" />
                 ))}
                 <th className="p-2 text-center w-[96px]" />
               </tr>
@@ -166,7 +179,7 @@ export function DisponivelTab() {
               ) : (() => {
                 let corIdx = -1;
                 let lastCor: string | null = null;
-                return linhas.map((l, i) => {
+                return linhasOrdenadas.map((l, i) => {
                   const hex = corHex(l.cor); const fg = corTextoSobre(hex);
                   const novaCor = lastCor !== l.cor;
                   if (novaCor) { corIdx++; lastCor = l.cor; }
