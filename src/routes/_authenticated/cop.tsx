@@ -17,6 +17,8 @@ import { DashboardCopTab } from "@/components/cop/DashboardCopTab";
 import { OficinasHojeTab } from "@/components/cop/OficinasHojeTab";
 import { HistoricoCopTab } from "@/components/cop/HistoricoCopTab";
 import { ControlePerdasTab } from "@/components/cop/ControlePerdasTab";
+import { AlimentacaoEstoqueTab } from "@/components/cop/AlimentacaoEstoqueTab";
+import { SaldoRealTab } from "@/components/cop/SaldoRealTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cop")({
@@ -31,6 +33,8 @@ export const Route = createFileRoute("/_authenticated/cop")({
 const BASE_TABS = [
   { value: "dashboard", label: "Dashboard COP" },
   { value: "disponivel", label: "Disponível" },
+  { value: "alimentacao-estoque", label: "Alimentação Estoque Real" },
+  { value: "saldo-real", label: "Saldo Real Juff" },
   { value: "falta", label: "Falta por Pedido" },
   { value: "oficinas-hoje", label: "Oficinas Hoje" },
   { value: "corte", label: "Corte" },
@@ -39,6 +43,7 @@ const BASE_TABS = [
   { value: "perdas", label: "Perdas" },
   { value: "controle-perdas", label: "Controle de Perdas" },
 ];
+
 
 function CopHome() {
   const navigate = useNavigate();
