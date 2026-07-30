@@ -20,6 +20,8 @@ export interface ResultadoParse {
   itens: ItemOlist[];
   ignoradas: LinhaIgnorada[];
   totalLinhas: number;
+  /** produto_olist → linhas da planilha em que ele apareceu (para avisos de mapeamento) */
+  linhasPorProduto: Record<string, number[]>;
 }
 
 function semAcento(s: string) {
