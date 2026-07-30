@@ -361,13 +361,14 @@ function ReceiptDot({
   const total = grupo.length;
 
   const gruposIds = new Set(grupo.map((g) => g.id));
-  const temDevolvida = estoquePecas.some(
-    (pe) => gruposIds.has(pe.programacao_id) && pe.status === "Devolvida",
-  );
+  const pecasGrupo = estoquePecas.filter((pe) => gruposIds.has(pe.programacao_id));
+  const emCorrecao = pecasGrupo.filter((pe) => pe.status === "Devolvida" && !!pe.correcao_status).length;
+  const devolvidas = pecasGrupo.filter((pe) => pe.status === "Devolvida" && !pe.correcao_status).length;
 
   let cls = "text-muted-foreground";
   let title = "Sem recebimento.";
-  if (temDevolvida) { cls = "text-black"; title = "Peça devolvida no grupo."; }
+  if (emCorrecao > 0) { cls = "text-sky-600"; title = `${emCorrecao} peça(s) em correção no grupo.`; }
+  else if (devolvidas > 0) { cls = "text-black"; title = `${devolvidas} peça(s) devolvida(s) no grupo.`; }
   else if (total > 0 && completos === total) { cls = "text-emerald-600"; title = "Grupo 100% recebido."; }
   else if (completos > 0) { cls = "text-amber-500"; title = `Grupo parcialmente recebido (${completos}/${total}).`; }
 
