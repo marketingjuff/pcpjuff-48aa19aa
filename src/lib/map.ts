@@ -73,6 +73,15 @@ export interface HistoricoCorrecaoEvento {
   correcao?: CorrecaoTipo;
   cor_nova?: string | null;
   programacao_origem_id?: string | null;
+  programacao_destino_id?: string | null;
+  destino_criada?: boolean;
+  delta_kg_enviados?: number;
+  origem_snapshot?: {
+    pecas: number;
+    kg_enviados: number;
+    pecas_recebidas: number | null;
+    kg_recebidos: number | null;
+  } | null;
   numero_peca_antigo?: string | null;
   nota_fiscal_antiga?: string | null;
   cor_antiga?: string | null;
@@ -372,12 +381,24 @@ const clamp0 = (n: number) => (n < 0 ? 0 : round2(n));
  * Move 1 peça (e os kg proporcionais) da programação de tinturaria original para
  * uma linha da cor nova. Reduz a original e cria/incrementa a linha destino.
  * A soma (original reduzida + nova) fecha com os totais anteriores.
- * Retorna o id da linha destino.
+ * Retorna dados suficientes para desfazer a operação com exatidão.
  */
+export interface RetingirResultado {
+  destino_id: string;
+  destino_criada: boolean;
+  delta_kg_enviados: number;
+  origem_snapshot: {
+    pecas: number;
+    kg_enviados: number;
+    pecas_recebidas: number | null;
+    kg_recebidos: number | null;
+  };
+}
+
 export async function retingirProgramacao(
   programacaoId: string,
   corNova: string,
-): Promise<string> {
+): Promise<RetingirResultado> {
   const { data: orig, error: e1 } = await (supabase as any)
     .from("map_tinturaria_programacoes")
     .select("*")
@@ -389,12 +410,19 @@ export async function retingirProgramacao(
   const pecas = Number(orig.pecas ?? 0);
   const pecasRec = orig.pecas_recebidas == null ? null : Number(orig.pecas_recebidas);
   const kgEnv = Number(orig.kg_enviados ?? 0);
-  const kgRec = Number(orig.kg_recebidos ?? 0);
+  const kgRec = orig.kg_recebidos == null ? null : Number(orig.kg_recebidos);
 
   const razaoEnv = pecas > 0 ? kgEnv / pecas : 0;
-  const razaoRec = pecasRec != null && pecasRec > 0 ? kgRec / pecasRec : 0;
+  const razaoRec = pecasRec != null && pecasRec > 0 && kgRec != null ? kgRec / pecasRec : 0;
   const deltaEnv = round2(razaoEnv);
   const deltaRec = round2(razaoRec);
+
+  const origemSnapshot = {
+    pecas,
+    kg_enviados: kgEnv,
+    pecas_recebidas: pecasRec,
+    kg_recebidos: kgRec,
+  };
 
   // 1) Reduz a linha original proporcionalmente (nunca negativo).
   const patchOrig: Record<string, unknown> = {
@@ -403,7 +431,7 @@ export async function retingirProgramacao(
   };
   if (pecasRec != null && pecasRec > 0) {
     patchOrig.pecas_recebidas = Math.max(0, pecasRec - 1);
-    patchOrig.kg_recebidos = clamp0(kgRec - deltaRec);
+    if (kgRec != null) patchOrig.kg_recebidos = clamp0(kgRec - deltaRec);
   }
   await patchProgramacao(orig.id, patchOrig as Partial<MapProgramacaoTinturaria>);
 
@@ -424,7 +452,12 @@ export async function retingirProgramacao(
       pecas: Number(destino.pecas ?? 0) + 1,
       kg_enviados: round2(Number(destino.kg_enviados ?? 0) + deltaEnv),
     } as Partial<MapProgramacaoTinturaria>);
-    return destino.id as string;
+    return {
+      destino_id: destino.id as string,
+      destino_criada: false,
+      delta_kg_enviados: deltaEnv,
+      origem_snapshot: origemSnapshot,
+    };
   }
 
   const { data: nova, error: e3 } = await (supabase as any)
@@ -446,8 +479,14 @@ export async function retingirProgramacao(
     .select("id")
     .single();
   if (e3) throw e3;
-  return nova.id as string;
+  return {
+    destino_id: nova.id as string,
+    destino_criada: true,
+    delta_kg_enviados: deltaEnv,
+    origem_snapshot: origemSnapshot,
+  };
 }
+
 
 
 
@@ -534,6 +573,11 @@ export async function syncEstoquePecas(): Promise<void> {
 export async function desfazerRetingirProgramacao(
   destinoId: string,
   origemId: string,
+  info?: {
+    destino_criada?: boolean;
+    delta_kg_enviados?: number;
+    origem_snapshot?: RetingirResultado["origem_snapshot"] | null;
+  },
 ): Promise<void> {
   const { data: dest, error: e1 } = await (supabase as any)
     .from("map_tinturaria_programacoes")
@@ -551,15 +595,38 @@ export async function desfazerRetingirProgramacao(
 
   const pecasDest = Number(dest.pecas ?? 0);
   const kgDest = Number(dest.kg_enviados ?? 0);
-  const delta = pecasDest > 0 ? round2(kgDest / pecasDest) : 0;
+  // kg movidos nesta operação: preferimos o valor registrado no histórico.
+  const delta =
+    info?.delta_kg_enviados != null
+      ? round2(info.delta_kg_enviados)
+      : pecasDest > 0
+        ? round2(kgDest / pecasDest)
+        : 0;
 
-  await patchProgramacao(orig.id, {
-    pecas: Number(orig.pecas ?? 0) + 1,
-    kg_enviados: round2(Number(orig.kg_enviados ?? 0) + delta),
-  } as Partial<MapProgramacaoTinturaria>);
+  // 1) Restaura a linha de origem exatamente como estava (quando temos snapshot).
+  const snap = info?.origem_snapshot ?? null;
+  if (snap) {
+    const patch: Record<string, unknown> = {
+      pecas: snap.pecas,
+      kg_enviados: round2(snap.kg_enviados),
+    };
+    if (snap.pecas_recebidas != null) patch.pecas_recebidas = snap.pecas_recebidas;
+    if (snap.kg_recebidos != null) patch.kg_recebidos = round2(snap.kg_recebidos);
+    await patchProgramacao(orig.id, patch as Partial<MapProgramacaoTinturaria>);
+  } else {
+    const pecasRecOrig = orig.pecas_recebidas == null ? null : Number(orig.pecas_recebidas);
+    const patch: Record<string, unknown> = {
+      pecas: Number(orig.pecas ?? 0) + 1,
+      kg_enviados: round2(Number(orig.kg_enviados ?? 0) + delta),
+    };
+    if (pecasRecOrig != null) patch.pecas_recebidas = pecasRecOrig + 1;
+    await patchProgramacao(orig.id, patch as Partial<MapProgramacaoTinturaria>);
+  }
 
+  // 2) Remove a linha destino se ela foi criada por esta operação; senão devolve 1 peça.
   const restante = Math.max(0, pecasDest - 1);
-  if (restante === 0 && dest.retingir_origem_id === origemId) {
+  const criadaAqui = info?.destino_criada ?? dest.retingir_origem_id === origemId;
+  if (criadaAqui && restante === 0) {
     const { error: e3 } = await (supabase as any)
       .from("map_tinturaria_programacoes")
       .delete()
@@ -582,9 +649,14 @@ export async function desfazerCorrecaoPeca(peca: MapEstoquePeca): Promise<void> 
   const idx = [...hist].reverse().findIndex((e) => e.tipo === "correcao_iniciada");
   const evento = idx >= 0 ? hist[hist.length - 1 - idx] : null;
   const origemId = evento?.programacao_origem_id ?? null;
+  const destinoId = evento?.programacao_destino_id ?? peca.programacao_id;
 
-  if (peca.correcao_tipo === "retingir" && origemId && peca.programacao_id && peca.programacao_id !== origemId) {
-    await desfazerRetingirProgramacao(peca.programacao_id, origemId);
+  if (peca.correcao_tipo === "retingir" && origemId && destinoId && destinoId !== origemId) {
+    await desfazerRetingirProgramacao(destinoId, origemId, {
+      destino_criada: evento?.destino_criada ?? undefined,
+      delta_kg_enviados: evento?.delta_kg_enviados ?? undefined,
+      origem_snapshot: evento?.origem_snapshot ?? null,
+    });
   }
 
   if (idx >= 0) hist.splice(hist.length - 1 - idx, 1);
@@ -597,6 +669,7 @@ export async function desfazerCorrecaoPeca(peca: MapEstoquePeca): Promise<void> 
     ...(origemId ? { programacao_id: origemId } : {}),
   } as Partial<MapEstoquePeca>);
 }
+
 
 /**
  * Desfaz a devolução de uma peça: volta ao estoque de MP limpando os campos de
