@@ -1202,13 +1202,8 @@ function BuscaPecasBlock({ cops, oficinas, onSelect }: { cops: Cop[]; oficinas: 
           </div>
           <div>
             <Label className="text-xs">Cor</Label>
-            <Select value={cor || "__all__"} onValueChange={(v) => setCor(v === "__all__" ? "" : v)}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">Todas</SelectItem>
-                {REFACAO_CORES.map((c) => <SelectItem key={c.nome} value={c.nome}>{c.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <CorSelect value={cor || "__all__"} onChange={(v) => setCor(v === "__all__" ? "" : v)} allValue="__all__" allLabel="Todas" className="h-9" />
+
           </div>
           <div>
             <Label className="text-xs">Tamanho</Label>
