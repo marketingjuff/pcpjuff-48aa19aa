@@ -55,6 +55,7 @@ export interface MapProgramacaoTinturaria {
   data_recebimento: string | null;
   nota_fiscal_recebimento: string | null;
   nota_cobertura: string | null;
+  retingir_origem_id?: string | null;
   created_at: string;
 }
 
@@ -71,6 +72,7 @@ export interface HistoricoCorrecaoEvento {
   nf_devolucao?: string | null;
   correcao?: CorrecaoTipo;
   cor_nova?: string | null;
+  programacao_origem_id?: string | null;
   numero_peca_antigo?: string | null;
   nota_fiscal_antiga?: string | null;
   cor_antiga?: string | null;
@@ -362,6 +364,92 @@ export async function patchProgramacao(id: string, patch: Partial<MapProgramacao
   const { error } = await (supabase as any).from("map_tinturaria_programacoes").update(patch).eq("id", id);
   if (error) throw error;
 }
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+const clamp0 = (n: number) => (n < 0 ? 0 : round2(n));
+
+/**
+ * Move 1 peça (e os kg proporcionais) da programação de tinturaria original para
+ * uma linha da cor nova. Reduz a original e cria/incrementa a linha destino.
+ * A soma (original reduzida + nova) fecha com os totais anteriores.
+ * Retorna o id da linha destino.
+ */
+export async function retingirProgramacao(
+  programacaoId: string,
+  corNova: string,
+): Promise<string> {
+  const { data: orig, error: e1 } = await (supabase as any)
+    .from("map_tinturaria_programacoes")
+    .select("*")
+    .eq("id", programacaoId)
+    .maybeSingle();
+  if (e1) throw e1;
+  if (!orig) throw new Error("Programação de tinturaria da peça não encontrada.");
+
+  const pecas = Number(orig.pecas ?? 0);
+  const pecasRec = orig.pecas_recebidas == null ? null : Number(orig.pecas_recebidas);
+  const kgEnv = Number(orig.kg_enviados ?? 0);
+  const kgRec = Number(orig.kg_recebidos ?? 0);
+
+  const razaoEnv = pecas > 0 ? kgEnv / pecas : 0;
+  const razaoRec = pecasRec != null && pecasRec > 0 ? kgRec / pecasRec : 0;
+  const deltaEnv = round2(razaoEnv);
+  const deltaRec = round2(razaoRec);
+
+  // 1) Reduz a linha original proporcionalmente (nunca negativo).
+  const patchOrig: Record<string, unknown> = {
+    pecas: Math.max(0, pecas - 1),
+    kg_enviados: clamp0(kgEnv - deltaEnv),
+  };
+  if (pecasRec != null && pecasRec > 0) {
+    patchOrig.pecas_recebidas = Math.max(0, pecasRec - 1);
+    patchOrig.kg_recebidos = clamp0(kgRec - deltaRec);
+  }
+  await patchProgramacao(orig.id, patchOrig as Partial<MapProgramacaoTinturaria>);
+
+  // 2) Procura linha destino já aberta (mesma origem, mesma cor, sem recebimento).
+  const { data: existentes, error: e2 } = await (supabase as any)
+    .from("map_tinturaria_programacoes")
+    .select("*")
+    .eq("producao_id", orig.producao_id)
+    .eq("retingir_origem_id", orig.id)
+    .eq("cor", corNova)
+    .is("pecas_recebidas", null)
+    .is("nota_fiscal_recebimento", null);
+  if (e2) throw e2;
+
+  const destino = (existentes ?? [])[0];
+  if (destino) {
+    await patchProgramacao(destino.id, {
+      pecas: Number(destino.pecas ?? 0) + 1,
+      kg_enviados: round2(Number(destino.kg_enviados ?? 0) + deltaEnv),
+    } as Partial<MapProgramacaoTinturaria>);
+    return destino.id as string;
+  }
+
+  const { data: nova, error: e3 } = await (supabase as any)
+    .from("map_tinturaria_programacoes")
+    .insert({
+      producao_id: orig.producao_id,
+      tinturaria: orig.tinturaria,
+      data_programacao: new Date().toISOString().slice(0, 10),
+      cor: corNova,
+      pecas: 1,
+      kg_enviados: deltaEnv,
+      kg_recebidos: null,
+      pecas_recebidas: null,
+      data_recebimento: null,
+      nota_fiscal_recebimento: null,
+      nota_cobertura: null,
+      retingir_origem_id: orig.id,
+    })
+    .select("id")
+    .single();
+  if (e3) throw e3;
+  return nova.id as string;
+}
+
+
 
 // -------------------- Estoque de MP (peças de tecido) --------------------
 

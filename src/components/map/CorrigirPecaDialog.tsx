@@ -9,6 +9,7 @@ import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   corComAcabamento,
   patchEstoquePeca,
+  retingirProgramacao,
   useCorAcabamentos,
   type HistoricoCorrecaoEvento,
   type MapEstoquePeca,
@@ -44,11 +45,21 @@ export function CorrigirPecaDialog({ open, onOpenChange, peca, onDone }: Props) 
     setSaving(true);
     try {
       const corNova = tipo === "retingir" ? cor : (peca.cor ?? null);
+
+      // Retingir move 1 peça (e kg proporcionais) da linha de tinturaria
+      // original para uma linha da cor nova no bloco Tinturaria do PROD.
+      let novaProgramacaoId: string | null = null;
+      if (tipo === "retingir" && peca.programacao_id && corNova) {
+        novaProgramacaoId = await retingirProgramacao(peca.programacao_id, corNova);
+      }
+
       const evento: HistoricoCorrecaoEvento = {
         tipo: "correcao_iniciada",
         em: new Date().toISOString(),
         correcao: tipo,
-        ...(tipo === "retingir" ? { cor_nova: corNova } : {}),
+        ...(tipo === "retingir"
+          ? { cor_nova: corNova, programacao_origem_id: peca.programacao_id ?? null }
+          : {}),
       };
       const historico = [...(Array.isArray(peca.historico_correcoes) ? peca.historico_correcoes : []), evento];
       await patchEstoquePeca(peca.id, {
@@ -56,6 +67,7 @@ export function CorrigirPecaDialog({ open, onOpenChange, peca, onDone }: Props) 
         correcao_status: tipo === "retingir" ? "aguardando_retingir" : "em_retrabalho",
         cor_nova: corNova,
         historico_correcoes: historico,
+        ...(novaProgramacaoId ? { programacao_id: novaProgramacaoId } : {}),
       } as any);
       toast.success(tipo === "retingir" ? "Peça enviada para retingir." : "Peça enviada para retrabalho.");
       onDone();
@@ -66,6 +78,7 @@ export function CorrigirPecaDialog({ open, onOpenChange, peca, onDone }: Props) 
       setSaving(false);
     }
   }
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
