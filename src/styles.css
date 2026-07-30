@@ -204,3 +204,17 @@
     box-shadow: inset 0 -1px 0 var(--color-border);
   }
 }
+
+@layer base {
+  /* COP: sem setinhas de incremento nos campos numéricos (UX de digitação). */
+  .cop-scope input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .cop-scope input[type="number"]::-webkit-outer-spin-button,
+  .cop-scope input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+}

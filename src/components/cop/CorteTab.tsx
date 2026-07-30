@@ -348,6 +348,30 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     setGrupos((g) => g.map((l, idx) => idx === i ? { ...l, qtd: { ...l.qtd, [t]: Math.max(0, Math.floor(Number(v) || 0)) } } : l));
   }
 
+  // Enter/setas: navega para a próxima célula (direita; no fim da linha, desce).
+  function moverCelula(e: React.KeyboardEvent<HTMLInputElement>, i: number, ti: number) {
+    const total = REFACAO_TAMANHOS.length;
+    let alvo: string | null = null;
+    if (e.key === "Enter") {
+      alvo = ti + 1 < total ? `${i}-${ti + 1}` : `${i + 1}-0`;
+    } else if (e.key === "ArrowDown") {
+      alvo = `${i + 1}-${ti}`;
+    } else if (e.key === "ArrowUp") {
+      alvo = i > 0 ? `${i - 1}-${ti}` : null;
+    } else {
+      return;
+    }
+    e.preventDefault();
+    if (!alvo) return;
+    const el = document.querySelector<HTMLInputElement>(`input[data-corte-cell="${alvo}"]`);
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  }
+
+
+
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold tracking-tight">Corte</h2>
@@ -537,7 +561,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
                               </SelectContent>
                             </Select>
                           </td>
-                          {REFACAO_TAMANHOS.map((t) => {
+                          {REFACAO_TAMANHOS.map((t, ti) => {
                             const rec = emCorrecao && g.modelo && g.cor ? qtdRecebidaDe(g.modelo, g.cor, t) : 0;
                             const v = g.qtd[t] ?? 0;
                             const erroLinha = emCorrecao && rec > 0 && v < rec;
@@ -546,12 +570,15 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
                                 <Input
                                   type="number"
                                   min={emCorrecao ? rec : 0}
+                                  data-corte-cell={`${i}-${ti}`}
                                   className={"h-8 text-center px-1 tabular-nums w-full " + (erroLinha ? "border-destructive text-destructive" : "")}
                                   value={g.qtd[t] ?? ""}
                                   onChange={(e) => setQtd(i, t, Number(e.target.value))}
+                                  onKeyDown={(e) => moverCelula(e, i, ti)}
                                   disabled={bloqueado}
                                   title={rec > 0 ? `Já recebido: ${rec}` : undefined}
                                 />
+
                                 {rec > 0 && (
                                   <div className="text-[10px] text-muted-foreground mt-0.5">≥{rec}</div>
                                 )}
