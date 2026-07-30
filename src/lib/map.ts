@@ -60,6 +60,26 @@ export interface MapProgramacaoTinturaria {
 
 export type MapEstoquePecaStatus = "Fechada" | "Aberta" | "Corte" | "Devolvida" | "100% utilizada";
 
+export type CorrecaoTipo = "retingir" | "retrabalhar";
+export type CorrecaoStatus = "aguardando_retingir" | "em_retrabalho";
+
+export interface HistoricoCorrecaoEvento {
+  tipo: "devolucao" | "correcao_iniciada" | "retorno";
+  em: string;
+  motivo?: string | null;
+  data_devolucao?: string | null;
+  nf_devolucao?: string | null;
+  correcao?: CorrecaoTipo;
+  cor_nova?: string | null;
+  numero_peca_antigo?: string | null;
+  nota_fiscal_antiga?: string | null;
+  cor_antiga?: string | null;
+  data_entrada_antiga?: string | null;
+  numero_peca_novo?: string | null;
+  nota_fiscal_nova?: string | null;
+  data_entrada_nova?: string | null;
+}
+
 export interface MapEstoqueCorte {
   cop_id: string;
   cop_numero: number;
@@ -82,6 +102,13 @@ export interface MapEstoquePeca {
   alt_inicial: number | null;
   larg: number | null;
   cortes: MapEstoqueCorte[];
+  devolucao_motivo?: string | null;
+  devolucao_data?: string | null;
+  devolucao_nf?: string | null;
+  correcao_tipo?: CorrecaoTipo | null;
+  correcao_status?: CorrecaoStatus | null;
+  cor_nova?: string | null;
+  historico_correcoes?: HistoricoCorrecaoEvento[];
   created_at: string;
   updated_at: string;
 }

@@ -21,6 +21,7 @@ import {
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { InlineInput } from "./InlineInput";
 import { EstoquePecaCortesCell } from "./EstoquePecaCortesCell";
+import { DevolverPecasDialog } from "./DevolverPecasDialog";
 import type { Cop } from "@/lib/cop";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
@@ -249,9 +250,12 @@ export function EstoqueMpTab() {
     return Array.from(s).sort();
   }, [pecas]);
 
+  const [sel, setSel] = useState<Record<string, boolean>>({});
+  const [devolverOpen, setDevolverOpen] = useState(false);
+
   const pecasFiltradas = useMemo(() => {
     return pecas
-      .filter((p) => p.status !== "100% utilizada")
+      .filter((p) => p.status !== "100% utilizada" && p.status !== "Devolvida")
       .filter((p) => (fCor === "__todas__" ? true : corBase(p.cor) === fCor))
       .filter((p) => (fStatus === "__todos__" ? true : p.status === fStatus))
       .filter((p) =>
@@ -263,6 +267,11 @@ export function EstoqueMpTab() {
         return na - nb;
       });
   }, [pecas, fCor, fStatus, fNF]);
+
+  const pecasSelecionadas = useMemo(
+    () => pecasFiltradas.filter((p) => sel[p.id]),
+    [pecasFiltradas, sel],
+  );
 
   async function commitField(peca: MapEstoquePeca, field: keyof MapEstoquePeca, raw: string | null) {
     try {
@@ -467,7 +476,7 @@ export function EstoqueMpTab() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__todos__">Todos os status</SelectItem>
-            {STATUS_LIST.filter((s) => s !== "100% utilizada").map((s) => (
+            {STATUS_LIST.filter((s) => s !== "100% utilizada" && s !== "Devolvida").map((s) => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}
           </SelectContent>
@@ -478,6 +487,14 @@ export function EstoqueMpTab() {
           onChange={(e) => setFNF(e.target.value)}
           className="h-8 w-[160px] text-xs"
         />
+        <Button
+          size="sm"
+          className="h-8 text-xs"
+          disabled={pecasSelecionadas.length === 0}
+          onClick={() => setDevolverOpen(true)}
+        >
+          Devolver selecionadas{pecasSelecionadas.length ? ` (${pecasSelecionadas.length})` : ""}
+        </Button>
         <span className="text-xs text-muted-foreground ml-auto tabular-nums">
           {pecasFiltradas.length} peça(s)
         </span>
@@ -487,21 +504,37 @@ export function EstoqueMpTab() {
       <div className="rounded-md border bg-white/70 overflow-auto max-h-[70vh] tbl-congelada">
         <table className="w-full text-[12.5px] table-fixed">
           <colgroup>
+            <col style={{ width: "3%" }} />
             <col style={{ width: "5%" }} />
             <col style={{ width: "6%" }} />
-            <col style={{ width: "13%" }} />
+            <col style={{ width: "12%" }} />
             <col style={{ width: "7%" }} />
             <col style={{ width: "9%" }} />
             <col style={{ width: "9%" }} />
-            <col style={{ width: "10%" }} />
+            <col style={{ width: "9%" }} />
             <col style={{ width: "9%" }} />
             <col style={{ width: "6%" }} />
             <col style={{ width: "5%" }} />
-            <col style={{ width: "14%" }} />
+            <col style={{ width: "13%" }} />
             <col style={{ width: "7%" }} />
           </colgroup>
           <thead className="bg-muted/40">
             <tr>
+              <th className="p-1 font-medium text-center">
+                <input
+                  type="checkbox"
+                  className="h-3.5 w-3.5 align-middle"
+                  checked={pecasFiltradas.length > 0 && pecasFiltradas.every((p) => sel[p.id])}
+                  onChange={(e) => {
+                    const v = e.target.checked;
+                    setSel(() => {
+                      const next: Record<string, boolean> = {};
+                      if (v) for (const p of pecasFiltradas) next[p.id] = true;
+                      return next;
+                    });
+                  }}
+                />
+              </th>
               <th className="p-1 font-medium text-center">NE</th>
               <th className="p-1 font-medium text-center">PROD</th>
               <th className="p-1 font-medium text-center">NF</th>
@@ -519,7 +552,7 @@ export function EstoqueMpTab() {
           <tbody>
             {pecasFiltradas.length === 0 ? (
               <tr>
-                <td colSpan={12} className="p-3 text-center text-muted-foreground">
+                <td colSpan={13} className="p-3 text-center text-muted-foreground">
                   Sem peças.
                 </td>
               </tr>
@@ -539,6 +572,14 @@ export function EstoqueMpTab() {
                     key={p.id}
                     className={`border-t ${i % 2 === 1 ? "bg-muted/20" : ""}`}
                   >
+                    <td className="p-1 text-center">
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 align-middle"
+                        checked={!!sel[p.id]}
+                        onChange={(e) => setSel((s) => ({ ...s, [p.id]: e.target.checked }))}
+                      />
+                    </td>
                     <td className="p-1 text-center tabular-nums font-semibold">
                       {p.ne != null ? `NE${p.ne}` : "—"}
                     </td>
@@ -576,7 +617,7 @@ export function EstoqueMpTab() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {STATUS_LIST.map((s) => (
+                          {STATUS_LIST.filter((s) => s !== "Devolvida").map((s) => (
                             <SelectItem key={s} value={s}>{s}</SelectItem>
                           ))}
                         </SelectContent>
@@ -634,6 +675,13 @@ export function EstoqueMpTab() {
           </tbody>
         </table>
       </div>
+
+      <DevolverPecasDialog
+        open={devolverOpen}
+        onOpenChange={setDevolverOpen}
+        pecas={pecasSelecionadas}
+        onDone={() => { setSel({}); refresh(); }}
+      />
     </div>
   );
 }

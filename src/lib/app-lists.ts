@@ -7,6 +7,7 @@ export type AppListKind =
   | "refacao_problema_arte" | "refacao_problema_dtf" | "refacao_problema_silk" | "refacao_problema_acabamento"
   | "refacao_area_identifica" | "refacao_area_erro"
   | "map_fio_fornecedor" | "map_malharia" | "map_tinturaria" | "map_acabamento"
+  | "map_motivo_devolucao"
   | "destino_perda";
 
 export interface AppListItem {

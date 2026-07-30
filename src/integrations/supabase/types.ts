@@ -472,10 +472,17 @@ export type Database = {
         Row: {
           alt_inicial: number | null
           cor: string | null
+          cor_nova: string | null
+          correcao_status: string | null
+          correcao_tipo: string | null
           cortes: Json
           created_at: string
           data_abertura: string | null
           data_entrada: string | null
+          devolucao_data: string | null
+          devolucao_motivo: string | null
+          devolucao_nf: string | null
+          historico_correcoes: Json
           id: string
           larg: number | null
           ne: number | null
@@ -489,10 +496,17 @@ export type Database = {
         Insert: {
           alt_inicial?: number | null
           cor?: string | null
+          cor_nova?: string | null
+          correcao_status?: string | null
+          correcao_tipo?: string | null
           cortes?: Json
           created_at?: string
           data_abertura?: string | null
           data_entrada?: string | null
+          devolucao_data?: string | null
+          devolucao_motivo?: string | null
+          devolucao_nf?: string | null
+          historico_correcoes?: Json
           id?: string
           larg?: number | null
           ne?: number | null
@@ -506,10 +520,17 @@ export type Database = {
         Update: {
           alt_inicial?: number | null
           cor?: string | null
+          cor_nova?: string | null
+          correcao_status?: string | null
+          correcao_tipo?: string | null
           cortes?: Json
           created_at?: string
           data_abertura?: string | null
           data_entrada?: string | null
+          devolucao_data?: string | null
+          devolucao_motivo?: string | null
+          devolucao_nf?: string | null
+          historico_correcoes?: Json
           id?: string
           larg?: number | null
           ne?: number | null

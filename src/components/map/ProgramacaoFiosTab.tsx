@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateInputBR } from "@/components/ui/date-input";
-import { ChevronDown, ChevronRight, Plus, CheckCircle2, RotateCcw, Pencil, X, Undo2, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, CheckCircle2, RotateCcw, Pencil, X, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,7 +24,6 @@ import { MalhariaBlock } from "./MalhariaBlock";
 import { TinturariaBlock } from "./TinturariaBlock";
 import { NovoProdDialog } from "./NovoProdDialog";
 import { InlineInput } from "./InlineInput";
-import { DevolucaoDialog } from "./DevolucaoDialog";
 import { useCanAccessMap } from "@/hooks/use-role";
 
 interface Props { finalizado: boolean; focusProdId?: string; initialFioFilter?: string; }
@@ -41,7 +40,6 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [dlgOpen, setDlgOpen] = useState(false);
   const [editingProd, setEditingProd] = useState<MapProducao | null>(null);
-  const [devProd, setDevProd] = useState<MapProducao | null>(null);
   const focusedRef = useRef<string | null>(null);
 
 
@@ -473,16 +471,6 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 w-7 p-0 shrink-0"
-                                  onClick={() => setDevProd(prod)}
-                                  title="Devolução"
-                                  aria-label="Devolução"
-                                >
-                                  <Undo2 className="h-3.5 w-3.5" />
-                                </Button>
                                 {canManageMap && (
                                   <Button
                                     size="sm"
@@ -552,15 +540,6 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
         onCreated={invalidateAll}
       />
 
-      {devProd && (
-        <DevolucaoDialog
-          open={!!devProd}
-          onOpenChange={(v) => !v && setDevProd(null)}
-          producao={devProd}
-          programacoes={byProdProgs.get(devProd.id) ?? []}
-          onDone={invalidateAll}
-        />
-      )}
     </div>
   );
 }
