@@ -328,6 +328,74 @@ export type Database = {
           },
         ]
       }
+      estoque_olist_itens: {
+        Row: {
+          cor: string
+          empresa: string
+          id: string
+          produto_olist: string
+          qtd: number
+          snapshot_id: string
+          tamanho: string
+        }
+        Insert: {
+          cor: string
+          empresa: string
+          id?: string
+          produto_olist: string
+          qtd?: number
+          snapshot_id: string
+          tamanho: string
+        }
+        Update: {
+          cor?: string
+          empresa?: string
+          id?: string
+          produto_olist?: string
+          qtd?: number
+          snapshot_id?: string
+          tamanho?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_olist_itens_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_olist_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estoque_olist_snapshots: {
+        Row: {
+          arquivo_nome: string | null
+          empresa: string
+          id: string
+          importado_em: string
+          importado_por: string | null
+          linhas_ignoradas: Json
+          total_linhas: number
+        }
+        Insert: {
+          arquivo_nome?: string | null
+          empresa: string
+          id?: string
+          importado_em?: string
+          importado_por?: string | null
+          linhas_ignoradas?: Json
+          total_linhas?: number
+        }
+        Update: {
+          arquivo_nome?: string | null
+          empresa?: string
+          id?: string
+          importado_em?: string
+          importado_por?: string | null
+          linhas_ignoradas?: Json
+          total_linhas?: number
+        }
+        Relationships: []
+      }
       feriados: {
         Row: {
           created_at: string
@@ -778,6 +846,30 @@ export type Database = {
           updated_at?: string
           valor_frete?: number
           valores_por_modelo?: Json
+        }
+        Relationships: []
+      }
+      olist_produto_map: {
+        Row: {
+          criado_em: string
+          criado_por: string | null
+          id: string
+          modelo_cop: string
+          produto_olist: string
+        }
+        Insert: {
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          modelo_cop: string
+          produto_olist: string
+        }
+        Update: {
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          modelo_cop?: string
+          produto_olist?: string
         }
         Relationships: []
       }
