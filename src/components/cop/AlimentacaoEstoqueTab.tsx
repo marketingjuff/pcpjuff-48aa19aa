@@ -92,6 +92,7 @@ export function AlimentacaoEstoqueTab() {
   const [busca, setBusca] = useState("");
   const [empresaPrevia, setEmpresaPrevia] = useState<EmpresaOlist>("JOKE");
   const [pendenteSel, setPendenteSel] = useState<Record<string, string>>({});
+  const [linhasUltimo, setLinhasUltimo] = useState<Record<string, number[]>>({});
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const ultimaGeral = snaps[0]?.importado_em ?? null;
