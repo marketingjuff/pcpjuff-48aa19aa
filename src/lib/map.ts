@@ -102,6 +102,13 @@ export interface MapEstoquePeca {
   alt_inicial: number | null;
   larg: number | null;
   cortes: MapEstoqueCorte[];
+  devolucao_motivo?: string | null;
+  devolucao_data?: string | null;
+  devolucao_nf?: string | null;
+  correcao_tipo?: CorrecaoTipo | null;
+  correcao_status?: CorrecaoStatus | null;
+  cor_nova?: string | null;
+  historico_correcoes?: HistoricoCorrecaoEvento[];
   created_at: string;
   updated_at: string;
 }
