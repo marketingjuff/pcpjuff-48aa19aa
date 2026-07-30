@@ -634,6 +634,13 @@ export function EstoqueMpTab() {
           </tbody>
         </table>
       </div>
+
+      <DevolverPecasDialog
+        open={devolverOpen}
+        onOpenChange={setDevolverOpen}
+        pecas={pecasSelecionadas}
+        onDone={() => { setSel({}); refresh(); }}
+      />
     </div>
   );
 }
