@@ -165,6 +165,7 @@ function AppHomeInner() {
     ...((isManager || canSee("finalizados")) ? [{ value: "fin", label: "Finalizados" }] : []),
     ...(isManager ? [{ value: "retrab", label: "Retrabalho" }] : []),
     ...(isAdmin ? [{ value: "historico", label: "Histórico PCP" }] : []),
+    ...(isAdmin ? [{ value: "importolist", label: "Importação Olist" }] : []),
   ];
   const activeTabLabel = tabs.find((t) => t.value === tab)?.label ?? "";
 
