@@ -24,7 +24,7 @@ Receita, pedidos e peças por UF de entrega, sempre vinda de `pedidos.uf_entrega
 - Somente pedidos do grupo **casados** (existem na Olist e no PCP). Sem os dois lados, fora da comparação.
 - **Peças vendidas** = Σ `qtd` dos itens da Olist com `is_servico = false`.
 - **Peças produzidas** = `pedidos.qtd` do PCP.
-- **Peças perdidas** = episódios de `refacoes` + `pecas_perdidas`, como terceira coluna explicativa.
+- **Peças perdidas** = Σ `perda_pecas` de todos os episódios do array `refacoes` (as perdas vivem dentro de cada episódio; `pecas_perdidas` é apenas o detalhe opcional por modelo/cor/tamanho, não uma fonte separada). `perda_adesivos` e `qtd_falta_adesivos` nunca são somados entre si e nunca entram na contagem de peças. Terceira coluna, explicativa.
 - Comparação por **totais**, sem quebra por modelo/cor/tamanho.
 - A diferença (absoluta e percentual) aparece como informação **neutra**: sem alerta, sem cor de erro, sem bloqueio, com uma linha de texto lembrando que perdas e refações fazem a produção superar a venda.
 - Visão consolidada do período + série mensal (vendidas · produzidas · perdidas · diferença).
