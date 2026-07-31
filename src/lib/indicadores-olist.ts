@@ -18,6 +18,8 @@
  */
 
 import { REFACAO_TAMANHOS, cmpModelo, cmpCor } from "@/lib/pedidos";
+import type { RefacaoEpisodio, CorrecaoEtapa } from "@/lib/pedidos";
+import { diasUteisEntre, todayISO, type Feriados } from "@/lib/dias-uteis";
 
 export type EmpresaFiltro = "CONSOLIDADO" | "JOKE" | "JUFF";
 export type Grupo = "casados" | "so_olist" | "excluidos" | "so_pcp";
