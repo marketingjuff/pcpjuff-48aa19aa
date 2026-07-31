@@ -166,6 +166,7 @@ function AppHomeInner() {
     ...(isManager ? [{ value: "retrab", label: "Retrabalho" }] : []),
     ...(isAdmin ? [{ value: "historico", label: "Histórico PCP" }] : []),
     ...(isAdmin ? [{ value: "importolist", label: "Importação Olist" }] : []),
+    ...(isAdmin ? [{ value: "indicadores", label: "Indicadores" }] : []),
   ];
   const activeTabLabel = tabs.find((t) => t.value === tab)?.label ?? "";
 
