@@ -56,6 +56,9 @@ import {
   type PedidoDb,
 } from "@/lib/indicadores-olist";
 import { useFeriados } from "@/hooks/use-feriados";
+import { abrirIndicadoresParaImpressao } from "@/lib/indicadores-pdf";
+import { FileDown } from "lucide-react";
+
 
 /* ------------------------------------------------------------------ */
 
@@ -360,6 +363,40 @@ export function IndicadoresTab() {
 
   const mostraSoPcp = grupos.includes("so_pcp");
 
+  const exportarPdf = () => {
+    void abrirIndicadoresParaImpressao({
+      periodo: intervalo,
+      comparar,
+      periodoAnterior: comparar ? periodoAnterior(intervalo.de, intervalo.ate) : null,
+      filtros: {
+        empresa,
+        vendedores,
+        modelos,
+        cores,
+        tamanhos,
+        situacoes,
+        grupos: grupos.map((g) => GRUPOS.find((x) => x.v === g)?.label ?? g),
+      },
+      resumo: r,
+      resumoAnterior: rAnt,
+      mensal,
+      situacoes: situacoesLinhas,
+      rankings: RANKINGS.map((cfg) => ({ titulo: cfg.titulo, linhas: ranking(atuais, cfg.dim) })),
+      gradeTamanho: gradeTam,
+      gradeCor,
+      abcModelo,
+      clientes,
+      vendedores: vendedoresLinhas,
+      frete,
+      ufs: ufLinhas,
+      vendidoProduzido: vxp,
+      producao: prod,
+      saude,
+    });
+  };
+
+
+
 
   return (
     <div className="space-y-4">
@@ -425,6 +462,11 @@ export function IndicadoresTab() {
               <SelectItem value="JUFF">JUFF</SelectItem>
             </SelectContent>
           </Select>
+
+          <Button variant="outline" size="sm" className="h-9 gap-2" onClick={exportarPdf} disabled={isLoading}>
+            <FileDown className="h-4 w-4" /> Exportar PDF
+          </Button>
+
 
           <Button variant="outline" size="icon" className="h-9 w-9" title="Recarregar" onClick={() => refetch()}>
             {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
