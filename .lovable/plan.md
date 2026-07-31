@@ -26,22 +26,35 @@ Período (mês atual, mês anterior, 30/60/90 dias, ano, intervalo livre) · com
 
 Sem recorte automático de situação: todas aparecem e o filtro faz o corte.
 
+O grupo **só PCP** é apenas lista e contagem: pedidos que existem no PCP e não na Olist não têm item, preço nem cliente, então ficam fora de faturamento, ticket médio, peças e rankings — não viram linhas zeradas puxando a média.
+
 ## Regras de cálculo
 
-- Faturamento = Σ (`qtd` × `valor_unitario`) − descontos. **Frete e despesas fora.**
+Faturamento em três etapas, na ordem correta (o percentual incide sobre o subtotal **depois** dos descontos de item, nunca sobre o bruto; `desconto_valor` e `desconto_percentual` são mutuamente exclusivos, só um vem preenchido):
+
+```text
+subtotal_item   = qtd × valor_unitario − desconto_item
+subtotal_pedido = Σ subtotal_item
+liquido_pedido  = subtotal_pedido
+                  − desconto_valor
+                  − (subtotal_pedido × desconto_percentual / 100)
+```
+
+- Faturamento = Σ `liquido_pedido`. **Frete e despesas fora.**
 - Peças vendidas = Σ `qtd` só de itens com `is_servico = false`.
 - Preço médio por peça = faturamento de produtos ÷ peças vendidas (serviços fora dos dois lados).
 - Ticket médio = faturamento ÷ nº de pedidos.
 - Excluídos fora de tudo por padrão; produto sem mapeamento entra no faturamento mas fica fora dos rankings de modelo.
 - Tamanhos sempre na ordem de `REFACAO_TAMANHOS`; modelo/cor com `cmpModeloCor`.
 
+
 ## Blocos
 
 1. **Resumo** — cartões de faturamento, pedidos, peças, ticket médio e preço médio por peça, com variação % contra o período anterior quando a comparação estiver ligada.
 2. **Faturamento** — evolução mensal consolidada, participação JOKE × JUFF por mês, distribuição por situação.
 3. **Produto** — composição por receita e por volume (duas ordenações) e curva ABC de modelo.
-4. **Clientes** — curva ABC por `cpf_cnpj`, recorrentes × novos, maiores clientes por receita.
-5. **Vendedores** — receita, pedidos, peças, ticket médio e desconto médio concedido.
+4. **Clientes** — curva ABC por `cpf_cnpj`, recorrentes × novos, maiores clientes por receita. A primeira compra de cada `cpf_cnpj` é apurada sobre o **histórico completo**, ignorando o filtro de período: quem comprou em março não é "novo" em julho. O filtro define quem aparece na lista, não quem é novo.
+5. **Vendedores** — receita, pedidos, peças, ticket médio e desconto médio concedido. O desconto é convertido para uma base única (valor em reais e percentual equivalente sobre o subtotal), para que quem dá 13% e quem dá R$ 200 sejam comparáveis.
 10. **Frete** — total, frete médio por pedido, % de pedidos com frete cobrado e distribuição por UF, em seção própria, **nunca somado ao faturamento**.
 
 ## Bloco 12 — Rankings (destaque próprio)
@@ -56,3 +69,5 @@ Cada ranking: ordenar por quantidade, faturamento ou nº de pedidos; exibir 10 /
 - Gráficos com `recharts`, já instalado; tabelas com o padrão `.tbl-congelada` e `SortTh`/`useTableSort` de `@/components/shared/sortable`.
 - Aba e conteúdo condicionados a `isAdmin`, seguindo o padrão de "Importação Olist".
 - Sem migração de banco nesta fase: nenhuma tabela, coluna ou policy nova.
+- O desconto de pedido é normalizado uma única vez, no cálculo do líquido por pedido, e reaproveitado por todos os blocos — nenhum bloco recalcula desconto por conta própria.
+- Carregar `olist_pedidos` e `olist_itens` inteiros de 1000 em 1000 atende hoje; filtrar por período no banco fica anotado como evolução futura, sem mudança agora.
