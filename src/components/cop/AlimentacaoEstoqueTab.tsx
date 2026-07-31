@@ -136,7 +136,7 @@ export function AlimentacaoEstoqueTab() {
     },
     onSuccess: (parsed, vars) => {
       qc.invalidateQueries({ queryKey: ["estoque-olist"] });
-      setLinhasUltimo((prev) => ({ ...prev, ...parsed.linhasPorProduto }));
+      
       toast.success(
         `${vars.empresa}: ${parsed.totalLinhas} linha(s) lida(s), ${parsed.itens.length} combinação(ões) agregada(s)` +
           (parsed.ignoradas.length ? `, ${parsed.ignoradas.length} ignorada(s)` : ""),
