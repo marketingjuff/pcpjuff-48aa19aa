@@ -202,7 +202,9 @@ export function ImportacaoOlistTab() {
 
   return (
     <div className="space-y-4">
+      <PendenciaMapeamentoAlert />
       <Card>
+
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Upload className="h-4 w-4" /> Importação de pedidos da Olist
