@@ -216,10 +216,12 @@ export function IndicadoresTab() {
         }),
         supabase.from("olist_produto_map" as any).select("produto_olist, modelo_cop"),
         supabase.from("olist_pedidos_excluidos" as any).select("numero_pedido"),
-        lerTudo<{ pedido_olist: string; uf_entrega: string | null }>(async (from, to) => {
+        lerTudo<PcpDb>(async (from, to) => {
           const { data, error } = await supabase
             .from("pedidos")
-            .select("pedido_olist, uf_entrega")
+            .select(
+              "pedido_olist, uf_entrega, qtd, entrada_pedido, data_entrega, inicio_estamparia, termino_estamparia, inicio_acabamento, termino_acabamento, saida_juff, finalizado_em, arte_data, refacoes, correcoes_etapa",
+            )
             .not("pedido_olist", "is", null)
             .range(from, to);
           if (error) throw error;
