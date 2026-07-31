@@ -22,6 +22,7 @@ import { ExpedicaoTab } from "@/components/pcp/ExpedicaoTab";
 import { RetrabalhoTab } from "@/components/pcp/RetrabalhoTab";
 import { HistoricoTab } from "@/components/pcp/HistoricoTab";
 import { ImportacaoOlistTab } from "@/components/pcp/ImportacaoOlistTab";
+import { IndicadoresTab } from "@/components/pcp/IndicadoresTab";
 import { DirtyFormProvider } from "@/components/pcp/dirty-form-context";
 import { fecharEpisodiosResolvidos } from "@/lib/pedidos";
 import { MacroSwitch } from "@/routes/_authenticated/cop";
@@ -166,6 +167,7 @@ function AppHomeInner() {
     ...(isManager ? [{ value: "retrab", label: "Retrabalho" }] : []),
     ...(isAdmin ? [{ value: "historico", label: "Histórico PCP" }] : []),
     ...(isAdmin ? [{ value: "importolist", label: "Importação Olist" }] : []),
+    ...(isAdmin ? [{ value: "indicadores", label: "Indicadores" }] : []),
   ];
   const activeTabLabel = tabs.find((t) => t.value === tab)?.label ?? "";
 
@@ -314,6 +316,12 @@ function AppHomeInner() {
               <ImportacaoOlistTab />
             </TabsContent>
           )}
+          {isAdmin && tab === "indicadores" && (
+            <TabsContent value="indicadores">
+              <IndicadoresTab />
+            </TabsContent>
+          )}
+
 
         </Tabs>
       </main>
