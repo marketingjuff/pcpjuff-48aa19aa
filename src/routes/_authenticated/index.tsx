@@ -315,6 +315,12 @@ function AppHomeInner() {
               <ImportacaoOlistTab />
             </TabsContent>
           )}
+          {isAdmin && tab === "indicadores" && (
+            <TabsContent value="indicadores">
+              <IndicadoresTab />
+            </TabsContent>
+          )}
+
 
         </Tabs>
       </main>
