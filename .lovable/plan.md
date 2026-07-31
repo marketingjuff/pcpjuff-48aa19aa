@@ -26,14 +26,27 @@ Período (mês atual, mês anterior, 30/60/90 dias, ano, intervalo livre) · com
 
 Sem recorte automático de situação: todas aparecem e o filtro faz o corte.
 
+O grupo **só PCP** é apenas lista e contagem: pedidos que existem no PCP e não na Olist não têm item, preço nem cliente, então ficam fora de faturamento, ticket médio, peças e rankings — não viram linhas zeradas puxando a média.
+
 ## Regras de cálculo
 
-- Faturamento = Σ (`qtd` × `valor_unitario`) − descontos. **Frete e despesas fora.**
+Faturamento em três etapas, na ordem correta (o percentual incide sobre o subtotal **depois** dos descontos de item, nunca sobre o bruto; `desconto_valor` e `desconto_percentual` são mutuamente exclusivos, só um vem preenchido):
+
+```text
+subtotal_item   = qtd × valor_unitario − desconto_item
+subtotal_pedido = Σ subtotal_item
+liquido_pedido  = subtotal_pedido
+                  − desconto_valor
+                  − (subtotal_pedido × desconto_percentual / 100)
+```
+
+- Faturamento = Σ `liquido_pedido`. **Frete e despesas fora.**
 - Peças vendidas = Σ `qtd` só de itens com `is_servico = false`.
 - Preço médio por peça = faturamento de produtos ÷ peças vendidas (serviços fora dos dois lados).
 - Ticket médio = faturamento ÷ nº de pedidos.
 - Excluídos fora de tudo por padrão; produto sem mapeamento entra no faturamento mas fica fora dos rankings de modelo.
 - Tamanhos sempre na ordem de `REFACAO_TAMANHOS`; modelo/cor com `cmpModeloCor`.
+
 
 ## Blocos
 
