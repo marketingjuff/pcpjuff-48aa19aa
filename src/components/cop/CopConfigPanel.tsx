@@ -25,8 +25,10 @@ export function CopConfigPanel() {
       <OficinasCard />
       <MotivosPerdaCard />
       <DestinosPerdaCard />
+      <ProdutoMapCard />
       <CoresCopCard />
       <AcessoCard />
+
     </div>
   );
 }
