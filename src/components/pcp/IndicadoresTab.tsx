@@ -1355,3 +1355,36 @@ function GradeCard({ titulo, grade }: { titulo: string; grade: ReturnType<typeof
     </Card>
   );
 }
+
+/* ------------------------------------------------------------------ */
+
+function ListaDiagnostico({ titulo, itens }: { titulo: string; itens: string[] }) {
+  const [aberto, setAberto] = useState(false);
+  return (
+    <div className="rounded-md border p-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs font-semibold">
+          {titulo} <Badge variant="secondary">{itens.length}</Badge>
+        </div>
+        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setAberto((v) => !v)}>
+          {aberto ? "Ocultar" : "Ver lista"}
+        </Button>
+      </div>
+      {aberto && (
+        <div className="mt-2 max-h-56 overflow-auto">
+          {itens.length === 0 ? (
+            <div className="text-xs text-muted-foreground">Nenhum pedido nesta condição.</div>
+          ) : (
+            <div className="flex flex-wrap gap-1">
+              {itens.map((n) => (
+                <Badge key={n} variant="outline" className="tabular-nums">
+                  {n}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
