@@ -363,6 +363,40 @@ export function IndicadoresTab() {
 
   const mostraSoPcp = grupos.includes("so_pcp");
 
+  const exportarPdf = () => {
+    void abrirIndicadoresParaImpressao({
+      periodo: intervalo,
+      comparar,
+      periodoAnterior: comparar ? periodoAnterior(intervalo.de, intervalo.ate) : null,
+      filtros: {
+        empresa,
+        vendedores,
+        modelos,
+        cores,
+        tamanhos,
+        situacoes,
+        grupos: grupos.map((g) => GRUPOS.find((x) => x.v === g)?.label ?? g),
+      },
+      resumo: r,
+      resumoAnterior: rAnt,
+      mensal,
+      situacoes: situacoesLinhas,
+      rankings: RANKINGS.map((cfg) => ({ titulo: cfg.titulo, linhas: ranking(atuais, cfg.dim) })),
+      gradeTamanho: gradeTam,
+      gradeCor,
+      abcModelo,
+      clientes,
+      vendedores: vendedoresLinhas,
+      frete,
+      ufs: ufLinhas,
+      vendidoProduzido: vxp,
+      producao: prod,
+      saude,
+    });
+  };
+
+
+
 
   return (
     <div className="space-y-4">
