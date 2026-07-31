@@ -42,14 +42,20 @@ import {
   resumo,
   resumoFrete,
   variacao,
+  porUf,
+  vendidoVsProduzido,
+  produtividadePcp,
+  saudeCadastro,
   type DimRanking,
   type EmpresaFiltro,
   type Filtros,
   type Grupo,
   type ItemDb,
   type OrdemRanking,
+  type PcpDb,
   type PedidoDb,
 } from "@/lib/indicadores-olist";
+import { useFeriados } from "@/hooks/use-feriados";
 
 /* ------------------------------------------------------------------ */
 
@@ -216,10 +222,12 @@ export function IndicadoresTab() {
         }),
         supabase.from("olist_produto_map" as any).select("produto_olist, modelo_cop"),
         supabase.from("olist_pedidos_excluidos" as any).select("numero_pedido"),
-        lerTudo<{ pedido_olist: string; uf_entrega: string | null }>(async (from, to) => {
+        lerTudo<PcpDb>(async (from, to) => {
           const { data, error } = await supabase
             .from("pedidos")
-            .select("pedido_olist, uf_entrega")
+            .select(
+              "pedido_olist, uf_entrega, qtd, entrada_pedido, data_entrega, inicio_estamparia, termino_estamparia, inicio_acabamento, termino_acabamento, saida_juff, finalizado_em, arte_data, refacoes, correcoes_etapa",
+            )
             .not("pedido_olist", "is", null)
             .range(from, to);
           if (error) throw error;
@@ -238,10 +246,12 @@ export function IndicadoresTab() {
 
       const ufPorPedido = new Map<string, string>();
       const noPcp = new Set<string>();
+      const pcpPorPedido = new Map<string, PcpDb>();
       for (const r of pcp) {
-        const num = String(r.pedido_olist).trim();
+        const num = String(r.pedido_olist ?? "").trim();
         if (!num) continue;
         noPcp.add(num);
+        pcpPorPedido.set(num, r);
         if (r.uf_entrega) ufPorPedido.set(num, String(r.uf_entrega).trim().toUpperCase());
       }
 
@@ -251,14 +261,18 @@ export function IndicadoresTab() {
 
       const calc = calcularPedidos(pedidosVig, itensVig, modeloPorProduto);
       const excluidos = new Set((exclRes.data ?? []).map((r: any) => String(r.numero_pedido)));
+      const numsOlist = new Set(calc.map((p) => p.numero_pedido));
 
       return {
         calc,
         excluidos,
         noPcp,
         ufPorPedido,
+        pcpPorPedido,
+        pcpLista: pcp,
+        modeloPorProduto,
         primeiraCompra: primeiraCompraPorCliente(calc),
-        soPcp: [...noPcp].filter((n) => !calc.some((p) => p.numero_pedido === n)),
+        soPcp: [...noPcp].filter((n) => !numsOlist.has(n)),
       };
     },
   });
@@ -326,7 +340,26 @@ export function IndicadoresTab() {
   const gradeTam = useMemo(() => gradePorModelo(atuais, "tamanho"), [atuais]);
   const gradeCor = useMemo(() => gradePorModelo(atuais, "cor"), [atuais]);
 
+  /* ---- Fase 5 — cruzamento com o PCP ---- */
+  const { feriados } = useFeriados();
+  const pcpPorPedido = data?.pcpPorPedido ?? new Map<string, PcpDb>();
+  const ufLinhas = useMemo(() => porUf(atuais, data?.ufPorPedido ?? new Map()), [atuais, data]);
+  const vxp = useMemo(() => vendidoVsProduzido(atuais, pcpPorPedido), [atuais, pcpPorPedido]);
+  const pcpPeriodo = useMemo(
+    () =>
+      (data?.pcpLista ?? []).filter(
+        (r) => r.entrada_pedido && r.entrada_pedido >= intervalo.de && r.entrada_pedido <= intervalo.ate,
+      ),
+    [data, intervalo],
+  );
+  const prod = useMemo(() => produtividadePcp(pcpPeriodo, feriados), [pcpPeriodo, feriados]);
+  const saude = useMemo(
+    () => saudeCadastro(atuais, pcpPorPedido, data?.modeloPorProduto ?? new Map(), data?.soPcp ?? []),
+    [atuais, pcpPorPedido, data],
+  );
+
   const mostraSoPcp = grupos.includes("so_pcp");
+
 
   return (
     <div className="space-y-4">
@@ -760,6 +793,390 @@ export function IndicadoresTab() {
         </CardContent>
       </Card>
 
+      {/* ---------------- Bloco 6 — Distribuição geográfica ---------------- */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Distribuição geográfica</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="text-xs text-muted-foreground">
+            A UF de entrega vem sempre do PCP (<code>uf_entrega</code>). Pedido sem par no PCP aparece como “—”.
+          </div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={ufLinhas.slice(0, 10)}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis dataKey="uf" fontSize={11} />
+                <YAxis fontSize={11} tickFormatter={(v) => fmtNum(Number(v))} />
+                <RTooltip formatter={(v: any) => fmtMoeda(Number(v))} />
+                <Bar dataKey="faturamento" name="Faturamento" fill="hsl(var(--primary))" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="max-h-72 overflow-auto">
+            <table className="tbl-congelada w-full text-xs">
+              <thead>
+                <tr>
+                  <th className="px-2 py-1 text-left">UF (PCP)</th>
+                  <th className="px-2 py-1 text-right">Faturamento</th>
+                  <th className="px-2 py-1 text-right">%</th>
+                  <th className="px-2 py-1 text-right">Pedidos</th>
+                  <th className="px-2 py-1 text-right">Peças</th>
+                  <th className="px-2 py-1 text-right">Frete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ufLinhas.map((u) => (
+                  <tr key={u.uf} className="border-t">
+                    <td className="px-2 py-1">{u.uf}</td>
+                    <td className="px-2 py-1 text-right font-semibold tabular-nums">{fmtMoeda(u.faturamento)}</td>
+                    <td className="px-2 py-1 text-right tabular-nums">{u.perc.toFixed(1)}%</td>
+                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(u.pedidos)}</td>
+                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(u.pecas)}</td>
+                    <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(u.frete)}</td>
+                  </tr>
+                ))}
+                {ufLinhas.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-2 py-4 text-center text-muted-foreground">
+                      Sem dados no período.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ---------------- Bloco 7 — Vendido × Produzido ---------------- */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Vendido × Produzido</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="text-xs text-muted-foreground">
+            Comparação de totais, somente nos pedidos casados (existem na Olist e no PCP). Peças vendidas vêm dos
+            itens da Olist; peças produzidas, da quantidade do pedido no PCP. A diferença é esperada: perdas e
+            refações fazem a produção não coincidir com a venda — é informação, não erro.
+          </div>
+          <div className="grid gap-2 md:grid-cols-5">
+            <Kpi titulo="Pedidos casados" valor={fmtNum(vxp.total.pedidos)} varPerc={null} comparar={false} />
+            <Kpi titulo="Peças vendidas" valor={fmtNum(vxp.total.vendidas)} varPerc={null} comparar={false} />
+            <Kpi titulo="Peças produzidas" valor={fmtNum(vxp.total.produzidas)} varPerc={null} comparar={false} />
+            <Kpi titulo="Peças perdidas" valor={fmtNum(vxp.total.perdidas)} varPerc={null} comparar={false} />
+            <Kpi
+              titulo="Diferença"
+              valor={`${vxp.total.diferenca > 0 ? "+" : ""}${fmtNum(vxp.total.diferenca)}${
+                vxp.total.difPerc == null ? "" : ` (${vxp.total.difPerc.toFixed(1)}%)`
+              }`}
+              varPerc={null}
+              comparar={false}
+            />
+          </div>
+          <div className="max-h-72 overflow-auto">
+            <table className="tbl-congelada w-full text-xs">
+              <thead>
+                <tr>
+                  <th className="px-2 py-1 text-left">Mês</th>
+                  <th className="px-2 py-1 text-right">Pedidos</th>
+                  <th className="px-2 py-1 text-right">Vendidas</th>
+                  <th className="px-2 py-1 text-right">Produzidas</th>
+                  <th className="px-2 py-1 text-right">Perdidas</th>
+                  <th className="px-2 py-1 text-right">Diferença</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vxp.mensal.map((l) => (
+                  <tr key={l.chave} className="border-t">
+                    <td className="px-2 py-1">{fmtMes(l.chave)}</td>
+                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.pedidos)}</td>
+                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.vendidas)}</td>
+                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.produzidas)}</td>
+                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.perdidas)}</td>
+                    <td className="px-2 py-1 text-right tabular-nums">
+                      {l.diferenca > 0 ? "+" : ""}
+                      {fmtNum(l.diferenca)}
+                    </td>
+                  </tr>
+                ))}
+                {vxp.mensal.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-2 py-4 text-center text-muted-foreground">
+                      Sem pedidos casados no período.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ---------------- Bloco 8 — Produção e prazo (só PCP) ---------------- */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Produção e prazo (só PCP)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="text-xs text-muted-foreground">
+            Bloco exclusivamente do PCP: os filtros de empresa, vendedor, modelo, cor, tamanho e situação não valem
+            aqui. Recorte pela entrada do pedido no período, prazos em dias úteis (com feriados).
+          </div>
+          <div className="grid gap-2 md:grid-cols-5">
+            <Kpi titulo="Pedidos no período" valor={fmtNum(prod.pedidos)} varPerc={null} comparar={false} />
+            <Kpi
+              titulo="Prazo médio (entrada → saída)"
+              valor={prod.prazoMedio == null ? "—" : `${prod.prazoMedio.toFixed(1)} d.ú.`}
+              varPerc={null}
+              comparar={false}
+            />
+            <Kpi
+              titulo="Entregas no prazo"
+              valor={prod.percNoPrazo == null ? "—" : `${prod.percNoPrazo.toFixed(1)}%`}
+              varPerc={null}
+              comparar={false}
+            />
+            <Kpi
+              titulo="Atraso médio"
+              valor={prod.atrasoMedio == null ? "—" : `${prod.atrasoMedio.toFixed(1)} d.ú.`}
+              varPerc={null}
+              comparar={false}
+            />
+            <Kpi titulo="Gargalo" valor={prod.gargalo ?? "—"} varPerc={null} comparar={false} />
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="overflow-auto">
+              <div className="mb-1 text-xs font-semibold">Tempo médio por etapa</div>
+              <table className="tbl-congelada w-full text-xs">
+                <thead>
+                  <tr>
+                    <th className="px-2 py-1 text-left">Etapa</th>
+                    <th className="px-2 py-1 text-right">Média (d.ú.)</th>
+                    <th className="px-2 py-1 text-right">Pedidos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {prod.etapas.map((e) => (
+                    <tr key={e.etapa} className="border-t">
+                      <td className="px-2 py-1">
+                        {e.etapa}
+                        {prod.gargalo === e.etapa && (
+                          <Badge variant="secondary" className="ml-2">
+                            gargalo
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="px-2 py-1 text-right font-semibold tabular-nums">{e.media.toFixed(1)}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(e.pedidos)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="overflow-auto">
+              <div className="mb-1 text-xs font-semibold">Refações por área</div>
+              <table className="tbl-congelada w-full text-xs">
+                <thead>
+                  <tr>
+                    <th className="px-2 py-1 text-left">Área</th>
+                    <th className="px-2 py-1 text-right">Episódios</th>
+                    <th className="px-2 py-1 text-right">Peças a refazer</th>
+                    <th className="px-2 py-1 text-right">Peças perdidas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {prod.refacoesPorArea.map((a) => (
+                    <tr key={a.area} className="border-t">
+                      <td className="px-2 py-1">{a.area}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(a.episodios)}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(a.pecas)}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(a.perdidas)}</td>
+                    </tr>
+                  ))}
+                  {prod.refacoesPorArea.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-2 py-4 text-center text-muted-foreground">
+                        Sem refações no período.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="overflow-auto">
+              <div className="mb-1 text-xs font-semibold">
+                Pedidos atrasados <Badge variant="secondary">{prod.atrasados.length}</Badge>
+              </div>
+              <div className="max-h-56 overflow-auto">
+                <table className="tbl-congelada w-full text-xs">
+                  <thead>
+                    <tr>
+                      <th className="px-2 py-1 text-left">Pedido</th>
+                      <th className="px-2 py-1 text-left">Entrega</th>
+                      <th className="px-2 py-1 text-right">Dias em atraso</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {prod.atrasados.map((a) => (
+                      <tr key={`${a.pedido}-${a.data_entrega}`} className="border-t">
+                        <td className="px-2 py-1 tabular-nums">{a.pedido}</td>
+                        <td className="px-2 py-1 tabular-nums">{a.data_entrega}</td>
+                        <td className="px-2 py-1 text-right tabular-nums">{fmtNum(a.dias)}</td>
+                      </tr>
+                    ))}
+                    {prod.atrasados.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="px-2 py-4 text-center text-muted-foreground">
+                          Nenhum pedido atrasado.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="overflow-auto">
+              <div className="mb-1 text-xs font-semibold">
+                Pedidos em risco (até 3 dias úteis) <Badge variant="secondary">{prod.emRisco.length}</Badge>
+              </div>
+              <div className="max-h-56 overflow-auto">
+                <table className="tbl-congelada w-full text-xs">
+                  <thead>
+                    <tr>
+                      <th className="px-2 py-1 text-left">Pedido</th>
+                      <th className="px-2 py-1 text-left">Entrega</th>
+                      <th className="px-2 py-1 text-right">Dias restantes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {prod.emRisco.map((a) => (
+                      <tr key={`${a.pedido}-${a.data_entrega}`} className="border-t">
+                        <td className="px-2 py-1 tabular-nums">{a.pedido}</td>
+                        <td className="px-2 py-1 tabular-nums">{a.data_entrega}</td>
+                        <td className="px-2 py-1 text-right tabular-nums">{fmtNum(a.dias)}</td>
+                      </tr>
+                    ))}
+                    {prod.emRisco.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="px-2 py-4 text-center text-muted-foreground">
+                          Nenhum pedido em risco.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-auto">
+            <div className="mb-1 text-xs font-semibold">Correções de etapa por aba de origem</div>
+            <div className="flex flex-wrap gap-2 text-xs">
+              {prod.correcoesPorAba.map((c) => (
+                <Badge key={c.aba} variant="outline" className="tabular-nums">
+                  {c.aba}: {fmtNum(c.qtd)}
+                </Badge>
+              ))}
+              {prod.correcoesPorAba.length === 0 && (
+                <span className="text-muted-foreground">Sem correções de etapa no período.</span>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ---------------- Bloco 9 — Saúde do cadastro ---------------- */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Saúde do cadastro</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="text-xs text-muted-foreground">
+            Diagnóstico de cadastro para conferência. Nenhum item aqui bloqueia nada.
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <ListaDiagnostico titulo="Pedidos somente na Olist" itens={saude.soOlist} />
+            <ListaDiagnostico titulo="Pedidos somente no PCP" itens={saude.soPcp} />
+
+            <div className="overflow-auto">
+              <div className="mb-1 text-xs font-semibold">
+                Produtos sem mapeamento <Badge variant="secondary">{saude.semMapeamento.length}</Badge>
+              </div>
+              <div className="max-h-56 overflow-auto">
+                <table className="tbl-congelada w-full text-xs">
+                  <thead>
+                    <tr>
+                      <th className="px-2 py-1 text-left">Produto Olist</th>
+                      <th className="px-2 py-1 text-right">Peças</th>
+                      <th className="px-2 py-1 text-right">Receita</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {saude.semMapeamento.map((s) => (
+                      <tr key={s.produto} className="border-t">
+                        <td className="px-2 py-1">{s.produto}</td>
+                        <td className="px-2 py-1 text-right tabular-nums">{fmtNum(s.pecas)}</td>
+                        <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(s.faturamento)}</td>
+                      </tr>
+                    ))}
+                    {saude.semMapeamento.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="px-2 py-4 text-center text-muted-foreground">
+                          Todos os produtos do período estão mapeados.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="overflow-auto">
+              <div className="mb-1 text-xs font-semibold">
+                Divergências de quantidade (casados) <Badge variant="secondary">{saude.divergencias.length}</Badge>
+              </div>
+              <div className="max-h-56 overflow-auto">
+                <table className="tbl-congelada w-full text-xs">
+                  <thead>
+                    <tr>
+                      <th className="px-2 py-1 text-left">Pedido</th>
+                      <th className="px-2 py-1 text-right">Olist</th>
+                      <th className="px-2 py-1 text-right">PCP</th>
+                      <th className="px-2 py-1 text-right">Diferença</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {saude.divergencias.map((d) => (
+                      <tr key={d.pedido} className="border-t">
+                        <td className="px-2 py-1 tabular-nums">{d.pedido}</td>
+                        <td className="px-2 py-1 text-right tabular-nums">{fmtNum(d.olist)}</td>
+                        <td className="px-2 py-1 text-right tabular-nums">{fmtNum(d.pcp)}</td>
+                        <td className="px-2 py-1 text-right tabular-nums">
+                          {d.diferenca > 0 ? "+" : ""}
+                          {fmtNum(d.diferenca)}
+                        </td>
+                      </tr>
+                    ))}
+                    {saude.divergencias.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-2 py-4 text-center text-muted-foreground">
+                          Sem divergências no período.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* ---------------- Somente PCP: lista e contagem ---------------- */}
       {mostraSoPcp && (
         <Card>
@@ -936,5 +1353,38 @@ function GradeCard({ titulo, grade }: { titulo: string; grade: ReturnType<typeof
         </table>
       </CardContent>
     </Card>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+function ListaDiagnostico({ titulo, itens }: { titulo: string; itens: string[] }) {
+  const [aberto, setAberto] = useState(false);
+  return (
+    <div className="rounded-md border p-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs font-semibold">
+          {titulo} <Badge variant="secondary">{itens.length}</Badge>
+        </div>
+        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setAberto((v) => !v)}>
+          {aberto ? "Ocultar" : "Ver lista"}
+        </Button>
+      </div>
+      {aberto && (
+        <div className="mt-2 max-h-56 overflow-auto">
+          {itens.length === 0 ? (
+            <div className="text-xs text-muted-foreground">Nenhum pedido nesta condição.</div>
+          ) : (
+            <div className="flex flex-wrap gap-1">
+              {itens.map((n) => (
+                <Badge key={n} variant="outline" className="tabular-nums">
+                  {n}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

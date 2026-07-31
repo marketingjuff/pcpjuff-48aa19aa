@@ -18,6 +18,8 @@
  */
 
 import { REFACAO_TAMANHOS, cmpModelo, cmpCor } from "@/lib/pedidos";
+import type { RefacaoEpisodio, CorrecaoEtapa } from "@/lib/pedidos";
+import { diasUteisEntre, todayISO, type Feriados } from "@/lib/dias-uteis";
 
 export type EmpresaFiltro = "CONSOLIDADO" | "JOKE" | "JUFF";
 export type Grupo = "casados" | "so_olist" | "excluidos" | "so_pcp";
@@ -611,3 +613,307 @@ export const fmtMes = (mes: string) => {
   const [a, m] = mes.split("-");
   return `${m}/${a.slice(2)}`;
 };
+
+/* ================================================================== */
+/* FASE 5 — Cruzamento com o PCP                                       */
+/* ================================================================== */
+
+/**
+ * Registro do PCP usado nos blocos 6 a 9.
+ *
+ * Casamento Olist ↔ PCP é EXCLUSIVAMENTE por `pedido_olist = numero_pedido`.
+ * Não existe fallback por `orcamento`.
+ */
+export interface PcpDb {
+  pedido_olist: string | null;
+  uf_entrega: string | null;
+  qtd: number | null;
+  entrada_pedido: string | null;
+  data_entrega: string | null;
+  inicio_estamparia: string | null;
+  termino_estamparia: string | null;
+  inicio_acabamento: string | null;
+  termino_acabamento: string | null;
+  saida_juff: string | null;
+  finalizado_em: string | null;
+  arte_data: string | null;
+  refacoes: RefacaoEpisodio[] | null;
+  correcoes_etapa: CorrecaoEtapa[] | null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Bloco 6 — Distribuição geográfica                                   */
+/* ------------------------------------------------------------------ */
+
+export interface LinhaUf {
+  uf: string;
+  pedidos: number;
+  pecas: number;
+  faturamento: number;
+  frete: number;
+  perc: number; // participação na receita
+}
+
+/** UF sempre do PCP (`pedidos.uf_entrega`); sem par no PCP entra como "—". */
+export function porUf(pedidos: PedidoFiltrado[], ufPorPedido: Map<string, string>): LinhaUf[] {
+  const f = resumoFrete(pedidos, ufPorPedido);
+  const total = f.porUf.reduce((s, u) => s + u.faturamento, 0);
+  return f.porUf
+    .map((u) => ({ ...u, perc: total ? (u.faturamento / total) * 100 : 0 }))
+    .sort((a, b) => b.faturamento - a.faturamento);
+}
+
+/* ------------------------------------------------------------------ */
+/* Bloco 7 — Vendido × Produzido                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Peças perdidas de um pedido do PCP.
+ * Soma apenas `perda_pecas` dos episódios de `refacoes`.
+ * `perda_adesivos` e `qtd_falta_adesivos` NUNCA entram nesta conta e nunca
+ * são somados entre si.
+ */
+export function perdaPecasPcp(p: Pick<PcpDb, "refacoes">): number {
+  return (p.refacoes ?? []).reduce((s, e) => s + n(e?.perda_pecas), 0);
+}
+
+export interface LinhaVendidoProduzido {
+  chave: string; // "TOTAL" no consolidado, AAAA-MM na série
+  pedidos: number;
+  vendidas: number;
+  produzidas: number;
+  perdidas: number;
+  diferenca: number; // produzidas − vendidas
+  difPerc: number | null;
+}
+
+export interface VendidoProduzido {
+  total: LinhaVendidoProduzido;
+  mensal: LinhaVendidoProduzido[];
+}
+
+/**
+ * Compara TOTAIS de peças vendidas (Olist) × produzidas (PCP), apenas nos
+ * pedidos casados. A diferença é informação neutra, explicada por perdas e
+ * refações — não é erro.
+ */
+export function vendidoVsProduzido(
+  pedidos: PedidoFiltrado[],
+  pcpPorPedido: Map<string, PcpDb>,
+): VendidoProduzido {
+  const acc = (chave: string): LinhaVendidoProduzido => ({
+    chave,
+    pedidos: 0,
+    vendidas: 0,
+    produzidas: 0,
+    perdidas: 0,
+    diferenca: 0,
+    difPerc: null,
+  });
+
+  const total = acc("TOTAL");
+  const meses = new Map<string, LinhaVendidoProduzido>();
+
+  for (const p of pedidos) {
+    const pcp = pcpPorPedido.get(p.numero_pedido);
+    if (!pcp) continue; // sem os dois lados, fora da comparação
+    const vendidas = p.itens.filter((i) => !i.is_servico).reduce((s, i) => s + i.qtd, 0);
+    const produzidas = n(pcp.qtd);
+    const perdidas = perdaPecasPcp(pcp);
+
+    const alvos = [total];
+    if (p.mes) {
+      const m = meses.get(p.mes) ?? acc(p.mes);
+      meses.set(p.mes, m);
+      alvos.push(m);
+    }
+    for (const a of alvos) {
+      a.pedidos += 1;
+      a.vendidas += vendidas;
+      a.produzidas += produzidas;
+      a.perdidas += perdidas;
+    }
+  }
+
+  const fechar = (l: LinhaVendidoProduzido) => {
+    l.diferenca = l.produzidas - l.vendidas;
+    l.difPerc = l.vendidas ? (l.diferenca / l.vendidas) * 100 : null;
+    return l;
+  };
+
+  return {
+    total: fechar(total),
+    mensal: [...meses.values()].map(fechar).sort((a, b) => a.chave.localeCompare(b.chave)),
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Bloco 8 — Produção e prazo (só PCP)                                 */
+/* ------------------------------------------------------------------ */
+
+export interface LinhaEtapa {
+  etapa: string;
+  media: number;
+  pedidos: number;
+}
+
+export interface ProdutividadePcp {
+  pedidos: number;
+  prazoMedio: number | null; // entrada_pedido → saida_juff, dias úteis
+  entregues: number;
+  etapas: LinhaEtapa[];
+  gargalo: string | null;
+  noPrazo: number;
+  atrasadosEntregues: number;
+  percNoPrazo: number | null;
+  atrasoMedio: number | null;
+  atrasados: { pedido: string; data_entrega: string; dias: number }[];
+  emRisco: { pedido: string; data_entrega: string; dias: number }[];
+  refacoesPorArea: { area: string; episodios: number; pecas: number; perdidas: number }[];
+  correcoesPorAba: { aba: string; qtd: number }[];
+}
+
+const _media = (v: number[]) => (v.length ? v.reduce((s, x) => s + x, 0) / v.length : null);
+
+/** Bloco exclusivamente PCP: não sofre recorte por empresa nem vendedor. */
+export function produtividadePcp(
+  registros: PcpDb[],
+  feriados: Feriados,
+  hojeIso: string = todayISO(),
+): ProdutividadePcp {
+  const prazos: number[] = [];
+  const etapaVals: Record<string, number[]> = { Arte: [], Estamparia: [], Acabamento: [], Expedição: [] };
+  let noPrazo = 0;
+  let atrasadosEntregues = 0;
+  const atrasosDias: number[] = [];
+  const atrasados: ProdutividadePcp["atrasados"] = [];
+  const emRisco: ProdutividadePcp["emRisco"] = [];
+  const areas = new Map<string, { area: string; episodios: number; pecas: number; perdidas: number }>();
+  const abas = new Map<string, number>();
+
+  const dias = (a: string | null, b: string | null) =>
+    a && b ? diasUteisEntre(a, b, feriados) : null;
+
+  for (const r of registros) {
+    const num = (r.pedido_olist ?? "").trim() || "—";
+
+    const prazo = dias(r.entrada_pedido, r.saida_juff);
+    if (prazo != null) prazos.push(prazo);
+
+    const push = (k: string, v: number | null) => {
+      if (v != null) etapaVals[k].push(v);
+    };
+    push("Arte", dias(r.entrada_pedido, r.arte_data));
+    push("Estamparia", dias(r.inicio_estamparia, r.termino_estamparia));
+    push("Acabamento", dias(r.inicio_acabamento, r.termino_acabamento));
+    push("Expedição", dias(r.termino_acabamento, r.saida_juff));
+
+    if (r.data_entrega) {
+      if (r.saida_juff) {
+        if (r.saida_juff <= r.data_entrega) noPrazo++;
+        else {
+          atrasadosEntregues++;
+          atrasosDias.push(diasUteisEntre(r.data_entrega, r.saida_juff, feriados));
+        }
+      } else if (r.data_entrega < hojeIso) {
+        atrasados.push({
+          pedido: num,
+          data_entrega: r.data_entrega,
+          dias: diasUteisEntre(r.data_entrega, hojeIso, feriados),
+        });
+      } else {
+        const restantes = diasUteisEntre(hojeIso, r.data_entrega, feriados);
+        if (restantes <= 3) emRisco.push({ pedido: num, data_entrega: r.data_entrega, dias: restantes });
+      }
+    }
+
+    for (const e of r.refacoes ?? []) {
+      const area = (e?.area_erro || e?.area_identificou || "—").trim() || "—";
+      const l = areas.get(area) ?? { area, episodios: 0, pecas: 0, perdidas: 0 };
+      l.episodios += 1;
+      l.pecas += n(e?.pecas_refazer);
+      l.perdidas += n(e?.perda_pecas);
+      areas.set(area, l);
+    }
+    for (const c of r.correcoes_etapa ?? []) {
+      const aba = (c?.aba_origem ?? "—") as string;
+      abas.set(aba, (abas.get(aba) ?? 0) + 1);
+    }
+  }
+
+  const etapas: LinhaEtapa[] = Object.entries(etapaVals).map(([etapa, v]) => ({
+    etapa,
+    media: _media(v) ?? 0,
+    pedidos: v.length,
+  }));
+  const gargalo = etapas.filter((e) => e.pedidos > 0).sort((a, b) => b.media - a.media)[0]?.etapa ?? null;
+  const entregues = noPrazo + atrasadosEntregues;
+
+  return {
+    pedidos: registros.length,
+    prazoMedio: _media(prazos),
+    entregues,
+    etapas,
+    gargalo,
+    noPrazo,
+    atrasadosEntregues,
+    percNoPrazo: entregues ? (noPrazo / entregues) * 100 : null,
+    atrasoMedio: _media(atrasosDias),
+    atrasados: atrasados.sort((a, b) => b.dias - a.dias),
+    emRisco: emRisco.sort((a, b) => a.dias - b.dias),
+    refacoesPorArea: [...areas.values()].sort((a, b) => b.episodios - a.episodios),
+    correcoesPorAba: [...abas.entries()]
+      .map(([aba, qtd]) => ({ aba, qtd }))
+      .sort((a, b) => b.qtd - a.qtd),
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Bloco 9 — Saúde do cadastro                                         */
+/* ------------------------------------------------------------------ */
+
+export interface SaudeCadastro {
+  soOlist: string[];
+  soPcp: string[];
+  semMapeamento: { produto: string; pecas: number; faturamento: number }[];
+  divergencias: { pedido: string; olist: number; pcp: number; diferenca: number }[];
+}
+
+/** Diagnóstico de cadastro — informativo, sem semântica de erro. */
+export function saudeCadastro(
+  pedidos: PedidoFiltrado[],
+  pcpPorPedido: Map<string, PcpDb>,
+  modeloPorProduto: Map<string, string>,
+  soPcp: string[],
+): SaudeCadastro {
+  const soOlist: string[] = [];
+  const divergencias: SaudeCadastro["divergencias"] = [];
+  const semMap = new Map<string, { produto: string; pecas: number; faturamento: number }>();
+
+  for (const p of pedidos) {
+    const pcp = pcpPorPedido.get(p.numero_pedido);
+    if (!pcp) soOlist.push(p.numero_pedido);
+    else {
+      const olist = p.itens.filter((i) => !i.is_servico).reduce((s, i) => s + i.qtd, 0);
+      const q = n(pcp.qtd);
+      if (olist !== q) divergencias.push({ pedido: p.numero_pedido, olist, pcp: q, diferenca: q - olist });
+    }
+    for (const i of p.itens) {
+      if (i.is_servico) continue;
+      const prod = (i.produto_olist ?? "").trim();
+      if (!prod || modeloPorProduto.has(prod)) continue;
+      const l = semMap.get(prod) ?? { produto: prod, pecas: 0, faturamento: 0 };
+      l.pecas += i.qtd;
+      l.faturamento += i.subtotal;
+      semMap.set(prod, l);
+    }
+  }
+
+  return {
+    soOlist: soOlist.sort((a, b) => a.localeCompare(b, "pt-BR")),
+    soPcp: [...soPcp].sort((a, b) => a.localeCompare(b, "pt-BR")),
+    semMapeamento: [...semMap.values()].sort((a, b) => b.pecas - a.pecas),
+    divergencias: divergencias.sort((a, b) => Math.abs(b.diferenca) - Math.abs(a.diferenca)),
+  };
+}
+
