@@ -56,6 +56,9 @@ import {
   type PedidoDb,
 } from "@/lib/indicadores-olist";
 import { useFeriados } from "@/hooks/use-feriados";
+import { abrirIndicadoresParaImpressao } from "@/lib/indicadores-pdf";
+import { FileDown } from "lucide-react";
+
 
 /* ------------------------------------------------------------------ */
 
