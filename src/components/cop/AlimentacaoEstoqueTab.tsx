@@ -106,7 +106,6 @@ export function AlimentacaoEstoqueTab() {
   const [empresaPrevia, setEmpresaPrevia] = useState<EmpresaOlist>("JOKE");
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const inputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const ultimaGeral = snaps[0]?.importado_em ?? null;
 
