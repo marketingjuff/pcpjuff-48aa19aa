@@ -246,10 +246,12 @@ export function IndicadoresTab() {
 
       const ufPorPedido = new Map<string, string>();
       const noPcp = new Set<string>();
+      const pcpPorPedido = new Map<string, PcpDb>();
       for (const r of pcp) {
-        const num = String(r.pedido_olist).trim();
+        const num = String(r.pedido_olist ?? "").trim();
         if (!num) continue;
         noPcp.add(num);
+        pcpPorPedido.set(num, r);
         if (r.uf_entrega) ufPorPedido.set(num, String(r.uf_entrega).trim().toUpperCase());
       }
 
@@ -259,14 +261,18 @@ export function IndicadoresTab() {
 
       const calc = calcularPedidos(pedidosVig, itensVig, modeloPorProduto);
       const excluidos = new Set((exclRes.data ?? []).map((r: any) => String(r.numero_pedido)));
+      const numsOlist = new Set(calc.map((p) => p.numero_pedido));
 
       return {
         calc,
         excluidos,
         noPcp,
         ufPorPedido,
+        pcpPorPedido,
+        pcpLista: pcp,
+        modeloPorProduto,
         primeiraCompra: primeiraCompraPorCliente(calc),
-        soPcp: [...noPcp].filter((n) => !calc.some((p) => p.numero_pedido === n)),
+        soPcp: [...noPcp].filter((n) => !numsOlist.has(n)),
       };
     },
   });
