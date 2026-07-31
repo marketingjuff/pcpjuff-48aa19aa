@@ -63,14 +63,26 @@ export function useItensUltimoSnapshot() {
     queryKey: ["estoque-olist", "itens", ids],
     enabled: ids.length > 0,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("estoque_olist_itens" as any)
-        .select("*")
-        .in("snapshot_id", ids);
-      if (error) throw error;
-      return (data ?? []) as unknown as (ItemOlist & { empresa: EmpresaOlist; snapshot_id: string })[];
+      // Paginação obrigatória: o Data API limita cada resposta a 1000 linhas.
+      type Row = ItemOlist & { empresa: EmpresaOlist; snapshot_id: string };
+      const out: Row[] = [];
+      const PAGE = 1000;
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("estoque_olist_itens" as any)
+          .select("*")
+          .in("snapshot_id", ids)
+          .order("id", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const page = (data ?? []) as unknown as Row[];
+        out.push(...page);
+        if (page.length < PAGE) break;
+      }
+      return out;
     },
   });
+
   return { ultimos, itens: q.data ?? [], isLoading: q.isLoading };
 }
 
