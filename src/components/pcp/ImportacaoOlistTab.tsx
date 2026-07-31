@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, AlertTriangle, CheckCircle2, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { parseVendasOlist, type EmpresaOlist, type ResultadoImportacaoVendas } from "@/lib/olist-vendas";
+import { PendenciaMapeamentoAlert } from "@/components/cop/PendenciaMapeamentoAlert";
+
 
 const EMPRESAS: EmpresaOlist[] = ["JOKE", "JUFF"];
 const CHUNK = 500;
@@ -202,7 +204,9 @@ export function ImportacaoOlistTab() {
 
   return (
     <div className="space-y-4">
+      <PendenciaMapeamentoAlert />
       <Card>
+
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Upload className="h-4 w-4" /> Importação de pedidos da Olist

@@ -18,6 +18,8 @@ import {
   type LinhaIgnorada,
 } from "@/lib/estoque-olist";
 import { useTableSort, SortTh } from "@/components/shared/sortable";
+import { PendenciaMapeamentoAlert } from "./PendenciaMapeamentoAlert";
+
 
 const EMPRESAS: EmpresaOlist[] = ["JOKE", "JUFF"];
 
@@ -104,9 +106,8 @@ export function AlimentacaoEstoqueTab() {
   const { data: mapa = [] } = useProdutoMap();
   const [busca, setBusca] = useState("");
   const [empresaPrevia, setEmpresaPrevia] = useState<EmpresaOlist>("JOKE");
-  const [pendenteSel, setPendenteSel] = useState<Record<string, string>>({});
-  const [linhasUltimo, setLinhasUltimo] = useState<Record<string, number[]>>({});
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
+
 
   const ultimaGeral = snaps[0]?.importado_em ?? null;
 
@@ -137,7 +138,7 @@ export function AlimentacaoEstoqueTab() {
     },
     onSuccess: (parsed, vars) => {
       qc.invalidateQueries({ queryKey: ["estoque-olist"] });
-      setLinhasUltimo((prev) => ({ ...prev, ...parsed.linhasPorProduto }));
+      
       toast.success(
         `${vars.empresa}: ${parsed.totalLinhas} linha(s) lida(s), ${parsed.itens.length} combinação(ões) agregada(s)` +
           (parsed.ignoradas.length ? `, ${parsed.ignoradas.length} ignorada(s)` : ""),
@@ -153,7 +154,7 @@ export function AlimentacaoEstoqueTab() {
         toast.error(
           `${novosPendentes.length} produto(s) sem mapeamento (ficam FORA do Saldo Real): ${novosPendentes
             .slice(0, 3)
-            .join(", ")}${novosPendentes.length > 3 ? "…" : ""} — mapeie abaixo em "Produtos pendentes de mapeamento".`,
+            .join(", ")}${novosPendentes.length > 3 ? "…" : ""} — o de-para é feito em Configurações do COP.`,
           { duration: 20000 },
         );
       }
@@ -162,70 +163,13 @@ export function AlimentacaoEstoqueTab() {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao importar planilha."),
   });
 
-  const salvarMap = useMutation({
-    mutationFn: async ({ produto, modelo, id }: { produto: string; modelo: string; id?: string }) => {
-      const { data: user } = await supabase.auth.getUser();
-      if (id) {
-        const { error } = await supabase.from("olist_produto_map" as any).update({ modelo_cop: modelo } as any).eq("id", id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("olist_produto_map" as any)
-          .insert({ produto_olist: produto, modelo_cop: modelo, criado_por: user.user?.id ?? null } as any);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["estoque-olist", "produto-map"] });
-      toast.success("Mapeamento salvo.");
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar mapeamento."),
-  });
-
   const mapPorProduto = useMemo(
     () => new Map(mapa.map((m) => [m.produto_olist, m])),
     [mapa],
   );
 
-  const produtosNoEstoque = useMemo(() => {
-    const s = new Set<string>();
-    for (const it of itens) s.add(it.produto_olist);
-    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [itens]);
 
-  const pendentes = useMemo(
-    () => produtosNoEstoque.filter((p) => !mapPorProduto.has(p)),
-    [produtosNoEstoque, mapPorProduto],
-  );
 
-  const pendentesInfo = useMemo(() => {
-    return pendentes.map((p) => {
-      const linhasItens = itens.filter((i) => i.produto_olist === p);
-      const empresas = Array.from(new Set(linhasItens.map((i) => i.empresa))).sort();
-      const qtd = linhasItens.reduce((a, i) => a + (i.qtd ?? 0), 0);
-      const linhas = linhasUltimo[p] ?? [];
-      return { produto: p, empresas, combos: linhasItens.length, qtd, linhas };
-    });
-  }, [pendentes, itens, linhasUltimo]);
-
-  const fmtLinhas = (l: number[]) =>
-    l.length === 0 ? "—" : l.slice(0, 6).join(", ") + (l.length > 6 ? ` … (+${l.length - 6})` : "");
-
-  const pendentesSort = useTableSort(pendentesInfo, {
-    produto: (p) => p.produto,
-    empresas: (p) => p.empresas.join(", "),
-    qtd: (p) => p.qtd,
-    linhas: (p) => p.linhas.length,
-  });
-
-  const mapaOrdenado = useMemo(
-    () => mapa.slice().sort((a, b) => a.produto_olist.localeCompare(b.produto_olist, "pt-BR")),
-    [mapa],
-  );
-  const mapaSort = useTableSort(mapaOrdenado, {
-    produto: (m) => m.produto_olist,
-    modelo: (m) => m.modelo_cop,
-  });
 
   const previa = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -284,6 +228,9 @@ export function AlimentacaoEstoqueTab() {
         </div>
       </div>
 
+      <PendenciaMapeamentoAlert />
+
+
       {EMPRESAS.some((e) => !ultimos.has(e)) && (
         <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
           <AlertTriangle className="h-4 w-4" />
@@ -332,103 +279,8 @@ export function AlimentacaoEstoqueTab() {
         })}
       </div>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            Produtos pendentes de mapeamento
-            {pendentes.length > 0 && <Badge variant="destructive">{pendentes.length}</Badge>}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {pendentes.length === 0 ? (
-            <div className="text-xs text-muted-foreground">Todos os produtos das últimas importações estão mapeados.</div>
-          ) : (
-            <>
-              <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">
-                <AlertTriangle className="h-4 w-4 mt-0.5 text-destructive" />
-                <span>
-                  <b>{pendentes.length} produto(s)</b> das planilhas importadas não têm equivalência com um modelo do COP.
-                  Motivo: o nome exato do produto na Olist não existe na tabela de mapeamento. Enquanto não forem mapeados,
-                  essas peças <b>não entram no Saldo Real</b>.
-                </span>
-              </div>
-              <div className="overflow-auto max-h-[40vh] tbl-congelada">
-                <table className="w-full text-[12.5px]">
-                  <thead className="bg-muted/40 text-xs">
-                    <tr>
-                      <SortTh label="Produto na Olist" sortKey="produto" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-left" />
-                      <SortTh label="Empresa(s)" sortKey="empresas" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-left w-[90px]" />
-                      <SortTh label="Qtd fora" sortKey="qtd" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-right w-[80px]" />
-                      <SortTh label="Linhas da planilha" sortKey="linhas" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-left w-[170px]" />
-                      <th className="p-2 text-left w-[240px]">Modelo COP</th>
-                      <th className="p-2 w-[100px]" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pendentesSort.rows.map((p) => (
-                      <tr key={p.produto} className="border-t">
-                        <td className="p-2">{p.produto}</td>
-                        <td className="p-2 font-semibold">{p.empresas.join(", ") || "—"}</td>
-                        <td className="p-2 text-right font-semibold tabular-nums">{p.qtd}</td>
-                        <td className="p-2 text-muted-foreground tabular-nums">{fmtLinhas(p.linhas)}</td>
-                        <td className="p-2">
-                          <Select value={pendenteSel[p.produto] ?? ""} onValueChange={(v) => setPendenteSel((s) => ({ ...s, [p.produto]: v }))}>
-                            <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                            <SelectContent>
-                              {REFACAO_MODELOS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="p-2 text-right">
-                          <Button
-                            size="sm"
-                            disabled={!pendenteSel[p.produto] || salvarMap.isPending}
-                            onClick={() => salvarMap.mutate({ produto: p.produto, modelo: pendenteSel[p.produto] })}
-                          >
-                            Salvar
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
 
-          {mapa.length > 0 && (
-            <div>
-              <div className="text-xs font-semibold mb-1">Já mapeados ({mapa.length})</div>
-              <div className="overflow-auto max-h-[35vh] tbl-congelada">
-                <table className="w-full text-[12.5px]">
-                  <thead className="bg-muted/40 text-xs">
-                    <tr>
-                      <SortTh label="Produto na Olist" sortKey="produto" current={mapaSort.sortKey} dir={mapaSort.sortDir} onSort={mapaSort.toggle} className="text-left" />
-                      <SortTh label="Modelo COP" sortKey="modelo" current={mapaSort.sortKey} dir={mapaSort.sortDir} onSort={mapaSort.toggle} className="text-left w-[240px]" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mapaSort.rows
-                      .map((m) => (
-                        <tr key={m.id} className="border-t">
-                          <td className="p-2">{m.produto_olist}</td>
-                          <td className="p-2">
-                            <Select value={m.modelo_cop} onValueChange={(v) => salvarMap.mutate({ produto: m.produto_olist, modelo: v, id: m.id })}>
-                              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {REFACAO_MODELOS.map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
 
       {ignoradasUltimas.length > 0 && (
         <Card>
