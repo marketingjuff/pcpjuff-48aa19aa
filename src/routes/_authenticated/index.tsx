@@ -309,6 +309,11 @@ function AppHomeInner() {
               <HistoricoTab />
             </TabsContent>
           )}
+          {isAdmin && (
+            <TabsContent value="importolist" forceMount hidden={tab !== "importolist"}>
+              <ImportacaoOlistTab />
+            </TabsContent>
+          )}
 
         </Tabs>
       </main>
