@@ -144,7 +144,7 @@ function lerPlanilha(
       const desc = parseDesconto(campo(row, ["desconto do pedido", "desconto pedido"]));
       acc.pedidos.set(numero, {
         numero_pedido: numero,
-        data: dataBr(campo(row, ["data prevista"]) !== undefined ? campo(row, ["data"]) : campo(row, ["data"])),
+        data: dataBr(campo(row, ["data"])),
         data_prevista: dataBr(campo(row, ["data prevista"])),
         nome_contato: txt(campo(row, ["nome do contato", "nome contato"])),
         cpf_cnpj: txt(campo(row, ["cpf/cnpj", "cpf cnpj", "cnpj"])),
