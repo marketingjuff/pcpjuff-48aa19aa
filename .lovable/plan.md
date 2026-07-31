@@ -69,3 +69,5 @@ Cada ranking: ordenar por quantidade, faturamento ou nº de pedidos; exibir 10 /
 - Gráficos com `recharts`, já instalado; tabelas com o padrão `.tbl-congelada` e `SortTh`/`useTableSort` de `@/components/shared/sortable`.
 - Aba e conteúdo condicionados a `isAdmin`, seguindo o padrão de "Importação Olist".
 - Sem migração de banco nesta fase: nenhuma tabela, coluna ou policy nova.
+- O desconto de pedido é normalizado uma única vez, no cálculo do líquido por pedido, e reaproveitado por todos os blocos — nenhum bloco recalcula desconto por conta própria.
+- Carregar `olist_pedidos` e `olist_itens` inteiros de 1000 em 1000 atende hoje; filtrar por período no banco fica anotado como evolução futura, sem mudança agora.
