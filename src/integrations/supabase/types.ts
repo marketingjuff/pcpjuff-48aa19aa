@@ -852,6 +852,181 @@ export type Database = {
         }
         Relationships: []
       }
+      olist_import_lotes: {
+        Row: {
+          arquivo_nome: string | null
+          arquivos_lidos: number | null
+          empresa: string
+          id: string
+          importado_em: string
+          importado_por: string | null
+          total_itens: number | null
+          total_linhas: number | null
+          total_pedidos: number | null
+        }
+        Insert: {
+          arquivo_nome?: string | null
+          arquivos_lidos?: number | null
+          empresa: string
+          id?: string
+          importado_em?: string
+          importado_por?: string | null
+          total_itens?: number | null
+          total_linhas?: number | null
+          total_pedidos?: number | null
+        }
+        Update: {
+          arquivo_nome?: string | null
+          arquivos_lidos?: number | null
+          empresa?: string
+          id?: string
+          importado_em?: string
+          importado_por?: string | null
+          total_itens?: number | null
+          total_linhas?: number | null
+          total_pedidos?: number | null
+        }
+        Relationships: []
+      }
+      olist_itens: {
+        Row: {
+          cor: string | null
+          desconto_item: number | null
+          descricao_original: string
+          id: string
+          is_servico: boolean
+          lote_id: string
+          numero_pedido: string
+          produto_olist: string | null
+          qtd: number
+          tamanho: string | null
+          valor_unitario: number
+        }
+        Insert: {
+          cor?: string | null
+          desconto_item?: number | null
+          descricao_original: string
+          id?: string
+          is_servico?: boolean
+          lote_id: string
+          numero_pedido: string
+          produto_olist?: string | null
+          qtd?: number
+          tamanho?: string | null
+          valor_unitario?: number
+        }
+        Update: {
+          cor?: string | null
+          desconto_item?: number | null
+          descricao_original?: string
+          id?: string
+          is_servico?: boolean
+          lote_id?: string
+          numero_pedido?: string
+          produto_olist?: string | null
+          qtd?: number
+          tamanho?: string | null
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "olist_itens_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "olist_import_lotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      olist_pedidos: {
+        Row: {
+          cpf_cnpj: string | null
+          data: string | null
+          data_prevista: string | null
+          desconto_original: string | null
+          desconto_percentual: number | null
+          desconto_valor: number | null
+          despesas: number | null
+          empresa: string
+          frete: number | null
+          id: string
+          lote_id: string
+          nome_contato: string | null
+          numero_pedido: string
+          situacao: string | null
+          vendedor: string | null
+          vendedor_original: string | null
+        }
+        Insert: {
+          cpf_cnpj?: string | null
+          data?: string | null
+          data_prevista?: string | null
+          desconto_original?: string | null
+          desconto_percentual?: number | null
+          desconto_valor?: number | null
+          despesas?: number | null
+          empresa: string
+          frete?: number | null
+          id?: string
+          lote_id: string
+          nome_contato?: string | null
+          numero_pedido: string
+          situacao?: string | null
+          vendedor?: string | null
+          vendedor_original?: string | null
+        }
+        Update: {
+          cpf_cnpj?: string | null
+          data?: string | null
+          data_prevista?: string | null
+          desconto_original?: string | null
+          desconto_percentual?: number | null
+          desconto_valor?: number | null
+          despesas?: number | null
+          empresa?: string
+          frete?: number | null
+          id?: string
+          lote_id?: string
+          nome_contato?: string | null
+          numero_pedido?: string
+          situacao?: string | null
+          vendedor?: string | null
+          vendedor_original?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "olist_pedidos_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "olist_import_lotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      olist_pedidos_excluidos: {
+        Row: {
+          excluido_em: string
+          excluido_por: string | null
+          id: string
+          motivo: string | null
+          numero_pedido: string
+        }
+        Insert: {
+          excluido_em?: string
+          excluido_por?: string | null
+          id?: string
+          motivo?: string | null
+          numero_pedido: string
+        }
+        Update: {
+          excluido_em?: string
+          excluido_por?: string | null
+          id?: string
+          motivo?: string | null
+          numero_pedido?: string
+        }
+        Relationships: []
+      }
       olist_produto_map: {
         Row: {
           criado_em: string
