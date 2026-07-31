@@ -152,7 +152,7 @@ export function AlimentacaoEstoqueTab() {
         toast.error(
           `${novosPendentes.length} produto(s) sem mapeamento (ficam FORA do Saldo Real): ${novosPendentes
             .slice(0, 3)
-            .join(", ")}${novosPendentes.length > 3 ? "…" : ""} — mapeie abaixo em "Produtos pendentes de mapeamento".`,
+            .join(", ")}${novosPendentes.length > 3 ? "…" : ""} — o de-para é feito em Configurações do COP.`,
           { duration: 20000 },
         );
       }
