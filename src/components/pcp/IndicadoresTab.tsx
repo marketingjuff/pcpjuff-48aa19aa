@@ -42,14 +42,20 @@ import {
   resumo,
   resumoFrete,
   variacao,
+  porUf,
+  vendidoVsProduzido,
+  produtividadePcp,
+  saudeCadastro,
   type DimRanking,
   type EmpresaFiltro,
   type Filtros,
   type Grupo,
   type ItemDb,
   type OrdemRanking,
+  type PcpDb,
   type PedidoDb,
 } from "@/lib/indicadores-olist";
+import { useFeriados } from "@/hooks/use-feriados";
 
 /* ------------------------------------------------------------------ */
 
