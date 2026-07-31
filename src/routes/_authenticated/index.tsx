@@ -21,6 +21,7 @@ import { FinalizadosTab } from "@/components/pcp/FinalizadosTab";
 import { ExpedicaoTab } from "@/components/pcp/ExpedicaoTab";
 import { RetrabalhoTab } from "@/components/pcp/RetrabalhoTab";
 import { HistoricoTab } from "@/components/pcp/HistoricoTab";
+import { ImportacaoOlistTab } from "@/components/pcp/ImportacaoOlistTab";
 import { DirtyFormProvider } from "@/components/pcp/dirty-form-context";
 import { fecharEpisodiosResolvidos } from "@/lib/pedidos";
 import { MacroSwitch } from "@/routes/_authenticated/cop";
@@ -164,6 +165,7 @@ function AppHomeInner() {
     ...((isManager || canSee("finalizados")) ? [{ value: "fin", label: "Finalizados" }] : []),
     ...(isManager ? [{ value: "retrab", label: "Retrabalho" }] : []),
     ...(isAdmin ? [{ value: "historico", label: "Histórico PCP" }] : []),
+    ...(isAdmin ? [{ value: "importolist", label: "Importação Olist" }] : []),
   ];
   const activeTabLabel = tabs.find((t) => t.value === tab)?.label ?? "";
 
@@ -305,6 +307,11 @@ function AppHomeInner() {
           {isAdmin && (
             <TabsContent value="historico" forceMount hidden={tab !== "historico"}>
               <HistoricoTab />
+            </TabsContent>
+          )}
+          {isAdmin && (
+            <TabsContent value="importolist" forceMount hidden={tab !== "importolist"}>
+              <ImportacaoOlistTab />
             </TabsContent>
           )}
 
