@@ -13,7 +13,7 @@ Sem migração: nenhuma tabela, coluna ou policy nova.
 
 ## Dados adicionais lidos
 
-A consulta do PCP hoje traz apenas `pedido_olist` e `uf_entrega`. Passa a trazer também (mesma leitura paginada de 1000 em 1000): `orcamento`, `qtd`, `entrada_pedido`, `data_entrega`, `inicio_estamparia`, `termino_estamparia`, `inicio_acabamento`, `termino_acabamento`, `saida_juff`, `data_saida_juff`, `finalizado_em`, `arte_data`, `refacoes`, `correcoes_etapa`, `pecas_solicitadas`. Feriados via o hook já existente, para os dias úteis.
+A consulta do PCP hoje traz apenas `pedido_olist` e `uf_entrega`. Passa a trazer também (mesma leitura paginada de 1000 em 1000): `qtd`, `entrada_pedido`, `data_entrega`, `inicio_estamparia`, `termino_estamparia`, `inicio_acabamento`, `termino_acabamento`, `saida_juff`, `finalizado_em`, `arte_data`, `refacoes`, `correcoes_etapa`. Feriados via o hook já existente, para os dias úteis.
 
 ## Bloco 6 — Distribuição geográfica
 
