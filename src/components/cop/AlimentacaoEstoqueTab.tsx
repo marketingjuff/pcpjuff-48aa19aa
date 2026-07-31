@@ -162,39 +162,11 @@ export function AlimentacaoEstoqueTab() {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao importar planilha."),
   });
 
-  const salvarMap = useMutation({
-    mutationFn: async ({ produto, modelo, id }: { produto: string; modelo: string; id?: string }) => {
-      const { data: user } = await supabase.auth.getUser();
-      if (id) {
-        const { error } = await supabase.from("olist_produto_map" as any).update({ modelo_cop: modelo } as any).eq("id", id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("olist_produto_map" as any)
-          .insert({ produto_olist: produto, modelo_cop: modelo, criado_por: user.user?.id ?? null } as any);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["estoque-olist", "produto-map"] });
-      toast.success("Mapeamento salvo.");
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar mapeamento."),
-  });
-
   const mapPorProduto = useMemo(
     () => new Map(mapa.map((m) => [m.produto_olist, m])),
     [mapa],
   );
 
-  const produtosNoEstoque = useMemo(() => {
-    const s = new Set<string>();
-    for (const it of itens) s.add(it.produto_olist);
-    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [itens]);
-
-  const fmtLinhas = (l: number[]) =>
-    l.length === 0 ? "—" : l.slice(0, 6).join(", ") + (l.length > 6 ? ` … (+${l.length - 6})` : "");
 
 
 
