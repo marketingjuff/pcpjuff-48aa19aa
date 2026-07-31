@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { REFACAO_MODELOS } from "@/lib/pedidos";
 import type { Oficina } from "@/lib/cop";
 import { useAppList, useAppListMutations } from "@/lib/app-lists";
+import { ProdutoMapCard } from "./ProdutoMapCard";
+
 import {
   useCopColorSettings, DEFAULT_COP_COLOR_SETTINGS,
   COP_ETAPAS_CONFIGURAVEIS, type CopColorSettings, type CopBotaoKey,
