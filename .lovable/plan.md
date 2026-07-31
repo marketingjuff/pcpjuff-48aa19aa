@@ -33,7 +33,7 @@ Receita, pedidos e peças por UF de entrega, sempre vinda de `pedidos.uf_entrega
 
 Independente da Olist; usa todos os pedidos do PCP no período.
 
-- Prazo médio de entrada até saída, em **dias úteis** (`@/lib/dias-uteis`, com feriados).
+- Prazo médio de `entrada_pedido` até `saida_juff`, em **dias úteis** (`@/lib/dias-uteis`, com feriados). `data_saida_juff` não é usada.
 - Tempo médio por etapa (arte, estamparia, acabamento, expedição) e destaque do gargalo.
 - Pontualidade contra `data_entrega`: % no prazo, média de dias de atraso.
 - Listas de pedidos atrasados e em risco.
