@@ -340,7 +340,26 @@ export function IndicadoresTab() {
   const gradeTam = useMemo(() => gradePorModelo(atuais, "tamanho"), [atuais]);
   const gradeCor = useMemo(() => gradePorModelo(atuais, "cor"), [atuais]);
 
+  /* ---- Fase 5 — cruzamento com o PCP ---- */
+  const { feriados } = useFeriados();
+  const pcpPorPedido = data?.pcpPorPedido ?? new Map<string, PcpDb>();
+  const ufLinhas = useMemo(() => porUf(atuais, data?.ufPorPedido ?? new Map()), [atuais, data]);
+  const vxp = useMemo(() => vendidoVsProduzido(atuais, pcpPorPedido), [atuais, pcpPorPedido]);
+  const pcpPeriodo = useMemo(
+    () =>
+      (data?.pcpLista ?? []).filter(
+        (r) => r.entrada_pedido && r.entrada_pedido >= intervalo.de && r.entrada_pedido <= intervalo.ate,
+      ),
+    [data, intervalo],
+  );
+  const prod = useMemo(() => produtividadePcp(pcpPeriodo, feriados), [pcpPeriodo, feriados]);
+  const saude = useMemo(
+    () => saudeCadastro(atuais, pcpPorPedido, data?.modeloPorProduto ?? new Map(), data?.soPcp ?? []),
+    [atuais, pcpPorPedido, data],
+  );
+
   const mostraSoPcp = grupos.includes("so_pcp");
+
 
   return (
     <div className="space-y-4">
