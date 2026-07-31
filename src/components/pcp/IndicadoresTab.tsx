@@ -463,6 +463,11 @@ export function IndicadoresTab() {
             </SelectContent>
           </Select>
 
+          <Button variant="outline" size="sm" className="h-9 gap-2" onClick={exportarPdf} disabled={isLoading}>
+            <FileDown className="h-4 w-4" /> Exportar PDF
+          </Button>
+
+
           <Button variant="outline" size="icon" className="h-9 w-9" title="Recarregar" onClick={() => refetch()}>
             {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           </Button>
