@@ -53,8 +53,8 @@ liquido_pedido  = subtotal_pedido
 1. **Resumo** — cartões de faturamento, pedidos, peças, ticket médio e preço médio por peça, com variação % contra o período anterior quando a comparação estiver ligada.
 2. **Faturamento** — evolução mensal consolidada, participação JOKE × JUFF por mês, distribuição por situação.
 3. **Produto** — composição por receita e por volume (duas ordenações) e curva ABC de modelo.
-4. **Clientes** — curva ABC por `cpf_cnpj`, recorrentes × novos, maiores clientes por receita.
-5. **Vendedores** — receita, pedidos, peças, ticket médio e desconto médio concedido.
+4. **Clientes** — curva ABC por `cpf_cnpj`, recorrentes × novos, maiores clientes por receita. A primeira compra de cada `cpf_cnpj` é apurada sobre o **histórico completo**, ignorando o filtro de período: quem comprou em março não é "novo" em julho. O filtro define quem aparece na lista, não quem é novo.
+5. **Vendedores** — receita, pedidos, peças, ticket médio e desconto médio concedido. O desconto é convertido para uma base única (valor em reais e percentual equivalente sobre o subtotal), para que quem dá 13% e quem dá R$ 200 sejam comparáveis.
 10. **Frete** — total, frete médio por pedido, % de pedidos com frete cobrado e distribuição por UF, em seção própria, **nunca somado ao faturamento**.
 
 ## Bloco 12 — Rankings (destaque próprio)
