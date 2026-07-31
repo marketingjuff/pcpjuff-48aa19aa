@@ -22,6 +22,7 @@ import { ExpedicaoTab } from "@/components/pcp/ExpedicaoTab";
 import { RetrabalhoTab } from "@/components/pcp/RetrabalhoTab";
 import { HistoricoTab } from "@/components/pcp/HistoricoTab";
 import { ImportacaoOlistTab } from "@/components/pcp/ImportacaoOlistTab";
+import { IndicadoresTab } from "@/components/pcp/IndicadoresTab";
 import { DirtyFormProvider } from "@/components/pcp/dirty-form-context";
 import { fecharEpisodiosResolvidos } from "@/lib/pedidos";
 import { MacroSwitch } from "@/routes/_authenticated/cop";
