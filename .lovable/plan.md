@@ -55,6 +55,6 @@ Tudo apresentado como diagnóstico de cadastro, sem semântica de erro.
 
 - Novas funções puras em `indicadores-olist.ts`: `porUf`, `vendidoVsProduzido` (+ série mensal), `produtividadePcp`, `saudeCadastro`. Continuam operando sobre arrays já filtrados, para a fase 6 (PDF) reaproveitar sem recalcular.
 - Recorte de período: pedidos da Olist pela `data` (como hoje); pedidos do PCP por `entrada_pedido`. Os blocos de prazo e pontualidade usam as datas próprias de cada etapa dentro desse recorte.
-- Casamento Olist ↔ PCP por `pedido_olist`, com fallback em `orcamento`, no mesmo padrão já usado no painel.
+- Casamento Olist ↔ PCP **exclusivamente** por `pedidos.pedido_olist = numero_pedido`. Sem fallback por `orcamento`, sem heurística: `orcamento` é outro identificador (letras + dígitos) e não é comparável ao número numérico da Olist. Quem não casa por esse campo é "somente na Olist" ou "somente no PCP".
 - Tabelas no padrão `.tbl-congelada` com `SortTh`/`useTableSort`; gráficos com `recharts`.
 - Filtros existentes continuam valendo; empresa e vendedor não recortam o bloco 8, que é exclusivamente PCP — isso fica indicado no cabeçalho do bloco.
