@@ -18,6 +18,8 @@ import {
   type LinhaIgnorada,
 } from "@/lib/estoque-olist";
 import { useTableSort, SortTh } from "@/components/shared/sortable";
+import { PendenciaMapeamentoAlert } from "./PendenciaMapeamentoAlert";
+
 
 const EMPRESAS: EmpresaOlist[] = ["JOKE", "JUFF"];
 
