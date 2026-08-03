@@ -138,6 +138,13 @@ export function SaldoRealTab() {
     return m;
   }, [linhas, saldoReal]);
 
+  const totalGeral = useMemo(() => {
+    let s = 0;
+    for (const v of totaisTam.values()) s += v;
+    return s;
+  }, [totaisTam]);
+
+
   const sortGetters = useMemo(() => {
     const g: Record<string, (row: { modelo: string; cor: string }) => string | number | null | undefined> = {
       cor: (l) => l.cor,
