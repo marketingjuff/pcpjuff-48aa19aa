@@ -286,6 +286,13 @@ export function SaldoRealTab() {
                     <td key={t} className="p-2 text-center tabular-nums">{totaisTam.get(t) ?? 0}</td>
                   ))}
                 </tr>
+                <tr className="border-t font-bold">
+                  <td className="p-2" colSpan={2}>Total de peças existentes</td>
+                  <td className="p-2 text-center tabular-nums" colSpan={REFACAO_TAMANHOS.length}>
+                    {totalGeral.toLocaleString("pt-BR")}
+                  </td>
+                </tr>
+
               </tfoot>
             )}
           </table>
