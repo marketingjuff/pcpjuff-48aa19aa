@@ -319,9 +319,15 @@ function AppHomeInner() {
           )}
           {isAdmin && tab === "indicadores" && (
             <TabsContent value="indicadores">
-              <IndicadoresTab />
+              <IndicadoresTab escopo="custom" />
             </TabsContent>
           )}
+          {isAdmin && tab === "indicadores_store" && (
+            <TabsContent value="indicadores_store">
+              <IndicadoresTab escopo="store" />
+            </TabsContent>
+          )}
+
 
 
         </Tabs>
