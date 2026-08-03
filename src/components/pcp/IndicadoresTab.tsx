@@ -547,7 +547,6 @@ export function IndicadoresTab() {
 
         <div className="flex flex-wrap items-center gap-2">
           <Select
-            modal={false}
             value={preset}
             onValueChange={(v) => {
               const p = v as Preset;
