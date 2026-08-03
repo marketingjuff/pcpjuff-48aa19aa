@@ -766,7 +766,7 @@ export function drillSoOlist(
     {
       ...o,
       campo: "linhas",
-      nota: "Pedidos que existem na Olist e não têm par no PCP (casamento apenas por pedido_olist).",
+      nota: NOTA_CASAMENTO,
     },
   );
 }
@@ -776,7 +776,8 @@ export function drillSoPcp(
   numeros: string[],
   o: { titulo: string; subtitulo?: string; indicadorLabel: string; indicadorValor: number | null },
 ): DrillPayload {
-  const set = new Set(numeros);
+  /* `numeros` já são bases de pedido da Olist; cada parcial vira uma linha. */
+  const set = new Set(numeros.map((n) => basePedidoOlist(n)));
   const colunas: DrillColuna[] = [
     ...COL_PCP_ID,
     { chave: "orcamento", label: "Orçamento", tipo: "texto" },
@@ -786,13 +787,16 @@ export function drillSoPcp(
     { chave: "qtd", label: "Qtd", tipo: "numero", align: "right" },
   ];
   const vistos = new Set<string>();
+  const basesVistas = new Set<string>();
   const linhas: DrillLinha[] = [];
   for (const r of registros) {
-    const p = idPcp(r);
-    if (!set.has(p) || vistos.has(p)) continue;
-    vistos.add(p);
+    const base = basePedidoOlist(r.pedido_olist);
+    const registro = idPcp(r);
+    if (!set.has(base) || vistos.has(registro)) continue;
+    vistos.add(registro);
+    basesVistas.add(base);
     linhas.push({
-      pedido: p,
+      ...idsPcp(r),
       orcamento: txt(r.orcamento),
       vendedor: txt(r.vendedor),
       entrada: r.entrada_pedido,
@@ -800,12 +804,21 @@ export function drillSoPcp(
       qtd: num(r.qtd),
     });
   }
-  for (const p of numeros) {
-    if (vistos.has(p)) continue;
-    vistos.add(p);
-    linhas.push({ pedido: p, orcamento: null, vendedor: null, entrada: null, entrega: null, qtd: null });
+  for (const n of set) {
+    if (basesVistas.has(n)) continue;
+    basesVistas.add(n);
+    linhas.push({
+      pedido: n,
+      pedido_olist: n,
+      orcamento: null,
+      vendedor: null,
+      entrada: null,
+      entrega: null,
+      qtd: null,
+    });
   }
   linhas.sort((a, b) => String(a.pedido ?? "").localeCompare(String(b.pedido ?? ""), "pt-BR"));
+
   return fechar(
     {
       ...o,
