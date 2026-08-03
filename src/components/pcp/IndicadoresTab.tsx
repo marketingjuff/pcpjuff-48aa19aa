@@ -1466,18 +1466,41 @@ export function IndicadoresTab() {
             refações fazem a produção não coincidir com a venda — é informação, não erro.
           </div>
           <div className="grid gap-2 md:grid-cols-5">
-            <Kpi titulo="Pedidos casados" valor={fmtNum(vxp.total.pedidos)} varPerc={null} comparar={false} />
-            <Kpi titulo="Peças vendidas" valor={fmtNum(vxp.total.vendidas)} varPerc={null} comparar={false} />
-            <Kpi titulo="Peças produzidas" valor={fmtNum(vxp.total.produzidas)} varPerc={null} comparar={false} />
-            <Kpi titulo="Peças perdidas" valor={fmtNum(vxp.total.perdidas)} varPerc={null} comparar={false} />
-            <Kpi
-              titulo="Diferença"
-              valor={`${vxp.total.diferenca > 0 ? "+" : ""}${fmtNum(vxp.total.diferenca)}${
-                vxp.total.difPerc == null ? "" : ` (${vxp.total.difPerc.toFixed(1)}%)`
-              }`}
-              varPerc={null}
-              comparar={false}
-            />
+            {(
+              [
+                { t: "Pedidos casados", v: vxp.total.pedidos, l: fmtNum(vxp.total.pedidos), c: "linhas" as const },
+                { t: "Peças vendidas", v: vxp.total.vendidas, l: fmtNum(vxp.total.vendidas), c: "vendidas" as const },
+                { t: "Peças produzidas", v: vxp.total.produzidas, l: fmtNum(vxp.total.produzidas), c: "produzidas" as const },
+                { t: "Peças perdidas", v: vxp.total.perdidas, l: fmtNum(vxp.total.perdidas), c: "perdidas" as const },
+                {
+                  t: "Diferença",
+                  v: vxp.total.diferenca,
+                  l: `${vxp.total.diferenca > 0 ? "+" : ""}${fmtNum(vxp.total.diferenca)}${
+                    vxp.total.difPerc == null ? "" : ` (${vxp.total.difPerc.toFixed(1)}%)`
+                  }`,
+                  c: "diferenca" as const,
+                },
+              ]
+            ).map((k) => (
+              <Kpi
+                key={k.t}
+                titulo={k.t}
+                valor={k.l}
+                varPerc={null}
+                comparar={false}
+                onDrill={() =>
+                  abrirDrill(
+                    drillVendidoProduzido(atuais, pcpPorPedido, {
+                      titulo: `${k.t} — Vendido × Produzido`,
+                      subtitulo: subOlist,
+                      indicadorLabel: k.l,
+                      indicadorValor: k.c === "linhas" ? k.v : k.v,
+                      campo: k.c,
+                    }),
+                  )
+                }
+              />
+            ))}
           </div>
           <div className="max-h-72 overflow-auto">
             <table className="tbl-congelada w-full text-xs">
@@ -1492,19 +1515,42 @@ export function IndicadoresTab() {
                 </tr>
               </thead>
               <tbody>
-                {vxp.mensal.map((l) => (
-                  <tr key={l.chave} className="border-t">
-                    <td className="px-2 py-1">{fmtMes(l.chave)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.pedidos)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.vendidas)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.produzidas)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.perdidas)}</td>
+                {vxp.mensal.map((l) => {
+                  const cel = (valor: number, label: string, campo: CampoVxp, titulo: string) => (
                     <td className="px-2 py-1 text-right tabular-nums">
-                      {l.diferenca > 0 ? "+" : ""}
-                      {fmtNum(l.diferenca)}
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillVendidoProduzido(atuais, pcpPorPedido, {
+                            titulo,
+                            subtitulo: `${fmtMes(l.chave)} · ${subOlist}`,
+                            indicadorLabel: label,
+                            indicadorValor: valor,
+                            campo,
+                            mes: l.chave,
+                          })
+                        }
+                      >
+                        {label}
+                      </ValorDrill>
                     </td>
-                  </tr>
-                ))}
+                  );
+                  return (
+                    <tr key={l.chave} className="border-t">
+                      <td className="px-2 py-1">{fmtMes(l.chave)}</td>
+                      {cel(l.pedidos, fmtNum(l.pedidos), "linhas", `Pedidos casados — ${fmtMes(l.chave)}`)}
+                      {cel(l.vendidas, fmtNum(l.vendidas), "vendidas", `Peças vendidas — ${fmtMes(l.chave)}`)}
+                      {cel(l.produzidas, fmtNum(l.produzidas), "produzidas", `Peças produzidas — ${fmtMes(l.chave)}`)}
+                      {cel(l.perdidas, fmtNum(l.perdidas), "perdidas", `Peças perdidas — ${fmtMes(l.chave)}`)}
+                      {cel(
+                        l.diferenca,
+                        `${l.diferenca > 0 ? "+" : ""}${fmtNum(l.diferenca)}`,
+                        "diferenca",
+                        `Diferença — ${fmtMes(l.chave)}`,
+                      )}
+                    </tr>
+                  );
+                })}
                 {vxp.mensal.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-2 py-4 text-center text-muted-foreground">
@@ -1865,12 +1911,49 @@ export function IndicadoresTab() {
             Diagnóstico de cadastro para conferência. Nenhum item aqui bloqueia nada.
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
-            <ListaDiagnostico titulo="Pedidos somente na Olist" itens={saude.soOlist} />
-            <ListaDiagnostico titulo="Pedidos somente no PCP" itens={saude.soPcp} />
+            <ListaDiagnostico
+              titulo="Pedidos somente na Olist"
+              itens={saude.soOlist}
+              onDrill={() =>
+                abrirDrill(
+                  drillSoOlist(atuais, saude.soOlist, {
+                    titulo: "Pedidos somente na Olist",
+                    indicadorLabel: fmtNum(saude.soOlist.length),
+                    indicadorValor: saude.soOlist.length,
+                  }),
+                )
+              }
+            />
+            <ListaDiagnostico
+              titulo="Pedidos somente no PCP"
+              itens={saude.soPcp}
+              onDrill={() =>
+                abrirDrill(
+                  drillSoPcp(pcpPeriodo, saude.soPcp, {
+                    titulo: "Pedidos somente no PCP",
+                    subtitulo: NOTA_BLOCO_PCP,
+                    indicadorLabel: fmtNum(saude.soPcp.length),
+                    indicadorValor: saude.soPcp.length,
+                  }),
+                )
+              }
+            />
 
             <div className="overflow-auto">
               <div className="mb-1 text-xs font-semibold">
-                Produtos sem mapeamento <Badge variant="secondary">{saude.semMapeamento.length}</Badge>
+                Produtos sem mapeamento{" "}
+                <ValorDrill
+                  onDrill={abrirDrill}
+                  build={() =>
+                    drillSemMapeamento(saude.semMapeamento, {
+                      titulo: "Produtos sem mapeamento",
+                      indicadorLabel: fmtNum(saude.semMapeamento.length),
+                      indicadorValor: saude.semMapeamento.length,
+                    })
+                  }
+                >
+                  <Badge variant="secondary">{saude.semMapeamento.length}</Badge>
+                </ValorDrill>
               </div>
               <div className="max-h-56 overflow-auto">
                 <table className="tbl-congelada w-full text-xs">
@@ -1903,7 +1986,19 @@ export function IndicadoresTab() {
 
             <div className="overflow-auto">
               <div className="mb-1 text-xs font-semibold">
-                Divergências de quantidade (casados) <Badge variant="secondary">{saude.divergencias.length}</Badge>
+                Divergências de quantidade (casados){" "}
+                <ValorDrill
+                  onDrill={abrirDrill}
+                  build={() =>
+                    drillDivergencias(saude.divergencias, atuais, {
+                      titulo: "Divergências de quantidade (pedidos casados)",
+                      indicadorLabel: fmtNum(saude.divergencias.length),
+                      indicadorValor: saude.divergencias.length,
+                    })
+                  }
+                >
+                  <Badge variant="secondary">{saude.divergencias.length}</Badge>
+                </ValorDrill>
               </div>
               <div className="max-h-56 overflow-auto">
                 <table className="tbl-congelada w-full text-xs">
@@ -2236,13 +2331,28 @@ function GradeCard({
 
 /* ------------------------------------------------------------------ */
 
-function ListaDiagnostico({ titulo, itens }: { titulo: string; itens: string[] }) {
+function ListaDiagnostico({
+  titulo,
+  itens,
+  onDrill,
+}: {
+  titulo: string;
+  itens: string[];
+  onDrill?: () => void;
+}) {
   const [aberto, setAberto] = useState(false);
   return (
     <div className="rounded-md border p-2">
       <div className="flex items-center justify-between gap-2">
         <div className="text-xs font-semibold">
-          {titulo} <Badge variant="secondary">{itens.length}</Badge>
+          {titulo}{" "}
+          {onDrill ? (
+            <ValorDrill onDrill={() => onDrill()} build={() => null}>
+              <Badge variant="secondary">{itens.length}</Badge>
+            </ValorDrill>
+          ) : (
+            <Badge variant="secondary">{itens.length}</Badge>
+          )}
         </div>
         <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setAberto((v) => !v)}>
           {aberto ? "Ocultar" : "Ver lista"}
