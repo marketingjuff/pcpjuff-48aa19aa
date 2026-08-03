@@ -27,6 +27,8 @@ import {
 type ClienteAbc = LinhaCliente & { perc: number; acumulado: number; classe: string };
 
 export interface IndicadoresPdfDados {
+  /** "Juff Custom" | "Juff Store" — identifica o escopo no cabeçalho e no arquivo. */
+  escopoLabel: string;
   periodo: { de: string; ate: string };
   comparar: boolean;
   periodoAnterior: { de: string; ate: string } | null;
@@ -50,10 +52,11 @@ export interface IndicadoresPdfDados {
   clientes: ClienteAbc[];
   vendedores: LinhaVendedor[];
   frete: ResumoFrete;
-  ufs: LinhaUf[];
-  vendidoProduzido: VendidoProduzido;
-  producao: ProdutividadePcp;
-  saude: SaudeCadastro;
+  /** Seções exclusivas do escopo Custom: ausentes, não são renderizadas. */
+  ufs?: LinhaUf[];
+  vendidoProduzido?: VendidoProduzido;
+  producao?: ProdutividadePcp;
+  saude?: SaudeCadastro;
 }
 
 function esc(s: string | number | null | undefined): string {
@@ -139,18 +142,18 @@ function corpoHtml(d: IndicadoresPdfDados, gerador: string): string {
     lista("Cor", f.cores),
     lista("Tamanho", f.tamanhos),
     lista("Situação", f.situacoes),
-    `Grupos: ${f.grupos.join(", ") || "—"}`,
+    f.grupos.length ? `Grupos: ${f.grupos.join(", ")}` : null,
   ]
     .filter(Boolean)
     .join(" · ");
 
-  const p = d.producao;
 
   return `
 <header class="cab">
   <img src="${esc(logoJuff.url)}" alt="Juff" />
   <div class="titleblock">
     <div class="title">Painel de Indicadores</div>
+    <div class="data">${esc(d.escopoLabel)}</div>
     <div class="data">${esc(dataBR(d.periodo.de))} a ${esc(dataBR(d.periodo.ate))}</div>
     <div class="meta">${esc(filtrosTexto)}</div>
     ${
@@ -386,7 +389,8 @@ ${bloco(
 }
 
 export async function abrirIndicadoresParaImpressao(d: IndicadoresPdfDados) {
-  const titulo = `indicadores-${d.periodo.de}-a-${d.periodo.ate}`;
+  const slug = d.escopoLabel.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const titulo = `indicadores${slug ? `-${slug}` : ""}-${d.periodo.de}-a-${d.periodo.ate}`;
 
   const { data: { user } } = await supabase.auth.getUser();
   const gerador = user?.email ?? user?.user_metadata?.name ?? "usuário desconhecido";
