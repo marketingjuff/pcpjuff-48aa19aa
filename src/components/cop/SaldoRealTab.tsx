@@ -198,7 +198,13 @@ export function SaldoRealTab() {
             {apenasNegativos ? "Mostrando: negativos" : "Apenas negativos"}
           </Button>
         </div>
-        <div className="text-xs text-muted-foreground">{linhas.length} linhas</div>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="rounded-md border bg-card px-3 py-1.5 text-sm">
+            Total de peças existentes: <span className="font-bold tabular-nums text-foreground">{totalGeral.toLocaleString("pt-BR")}</span>
+          </span>
+          <span>{linhas.length} linhas</span>
+        </div>
+
       </div>
 
       {naoMapeados.size > 0 && (
