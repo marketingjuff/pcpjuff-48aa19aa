@@ -527,6 +527,8 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
 
   /* ---- Detalhamento (drill-down), somente leitura ---- */
   const nomes = useProfilesMap();
+  /* No escopo Store não há PCP: nada de UF nos detalhamentos. */
+  const ufMapaDrill = soPcpAtivo ? (data?.ufPorPedido ?? new Map<string, string>()) : new Map<string, string>();
   const [drill, setDrill] = useState<DrillPayload | null>(null);
   const abrirDrill = (p: DrillPayload) => setDrill(p);
   const subPcp = `Entrada entre ${intervalo.de} e ${intervalo.ate}`;
@@ -1119,7 +1121,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                 build={() =>
                   drillClientes(
                     clientes.filter((c) => c.novo),
-                    data?.primeiraCompra ?? new Map(),
+                    primeiraCompra,
                     {
                       titulo: "Clientes novos no período",
                       subtitulo: `${subOlist} · primeira compra apurada em todo o histórico`,
@@ -1140,7 +1142,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                 build={() =>
                   drillClientes(
                     clientes.filter((c) => !c.novo),
-                    data?.primeiraCompra ?? new Map(),
+                    primeiraCompra,
                     {
                       titulo: "Clientes recorrentes no período",
                       subtitulo: `${subOlist} · primeira compra apurada em todo o histórico`,
@@ -1406,7 +1408,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                     indicadorLabel: fmtMoeda(frete.total),
                     indicadorValor: frete.total,
                     campo: "frete",
-                    ufPorPedido: data?.ufPorPedido ?? new Map(),
+                    ufPorPedido: ufMapaDrill,
                   }),
                 )
               }
@@ -1425,7 +1427,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                     indicadorValor: frete.medio,
                     campo: "frete",
                     media: true,
-                    ufPorPedido: data?.ufPorPedido ?? new Map(),
+                    ufPorPedido: ufMapaDrill,
                   }),
                 )
               }
@@ -1446,7 +1448,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                       indicadorLabel: `${frete.percComFrete.toFixed(1)}%`,
                       indicadorValor: null,
                       campo: "linhas",
-                      ufPorPedido: data?.ufPorPedido ?? new Map(),
+                      ufPorPedido: ufMapaDrill,
                     },
                   ),
                 )
