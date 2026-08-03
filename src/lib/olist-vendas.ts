@@ -205,6 +205,14 @@ function lerPlanilha(
       });
     }
 
+    const rateadoBruto = campo(row, ["desconto do pedido rateado", "desconto pedido rateado"]);
+    if (rateadoBruto !== undefined && String(rateadoBruto ?? "").trim() !== "") {
+      acc.temRateio = true;
+      acc.rateio.set(numero, (acc.rateio.get(numero) ?? 0) + num(rateadoBruto));
+    }
+
+
+
     const descricao = String(campo(row, ["descricao"]) ?? "").trim();
     if (!descricao) {
       acc.ignoradas.push({ arquivo, linha, motivo: "Descrição vazia" });
