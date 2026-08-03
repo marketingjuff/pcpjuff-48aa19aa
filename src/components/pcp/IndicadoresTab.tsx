@@ -131,6 +131,8 @@ function intervaloPreset(p: Preset): { de: string; ate: string } {
   return { de: iso(new Date(hoje.getTime() - (dias - 1) * 86400000)), ate: iso(hoje) };
 }
 
+type OpcaoMulti = string | { valor: string; label: string; hint?: string };
+
 function MultiSelect({
   label,
   opcoes,
@@ -138,10 +140,11 @@ function MultiSelect({
   onChange,
 }: {
   label: string;
-  opcoes: string[];
+  opcoes: OpcaoMulti[];
   valor: string[];
   onChange: (v: string[]) => void;
 }) {
+  const itens = opcoes.map((o) => (typeof o === "string" ? { valor: o, label: o, hint: undefined } : o));
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -161,14 +164,20 @@ function MultiSelect({
           </Button>
         </div>
         <div className="max-h-64 space-y-1 overflow-auto">
-          {opcoes.length === 0 && <div className="text-xs text-muted-foreground">Sem opções</div>}
-          {opcoes.map((o) => (
-            <label key={o} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-xs hover:bg-muted">
+          {itens.length === 0 && <div className="text-xs text-muted-foreground">Sem opções</div>}
+          {itens.map((o) => (
+            <label
+              key={o.valor}
+              className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-xs hover:bg-muted"
+            >
               <Checkbox
-                checked={valor.includes(o)}
-                onCheckedChange={(c) => onChange(c ? [...valor, o] : valor.filter((v) => v !== o))}
+                checked={valor.includes(o.valor)}
+                onCheckedChange={(c) => onChange(c ? [...valor, o.valor] : valor.filter((v) => v !== o.valor))}
               />
-              <span className="truncate">{o}</span>
+              <span className="truncate">{o.label}</span>
+              {o.hint ? (
+                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">{o.hint}</span>
+              ) : null}
             </label>
           ))}
         </div>
@@ -176,6 +185,7 @@ function MultiSelect({
     </Popover>
   );
 }
+
 
 function Kpi({
   titulo,
