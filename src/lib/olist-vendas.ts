@@ -46,6 +46,15 @@ export interface ResumoStoreImport {
   foraPadrao: { descricao: string; motivo: string }[];
 }
 
+/** Pedido cujo desconto não passou na checagem de sanidade da prévia (informativo). */
+export interface PedidoDescontoSuspeito {
+  numero_pedido: string;
+  subtotal: number;
+  desconto: number;
+  liquido: number;
+  motivo: string;
+}
+
 export interface ResultadoImportacaoVendas {
   arquivosLidos: number;
   totalLinhas: number;
@@ -57,7 +66,10 @@ export interface ResultadoImportacaoVendas {
   /** Pedidos com ao menos um item Juff Store — ficam fora da conferência com o PCP. */
   pedidosStore: string[];
   store: ResumoStoreImport;
+  /** Conferência não bloqueante: descontos maiores que o subtotal ou rateio divergente. */
+  pedidosDescontoSuspeito: PedidoDescontoSuspeito[];
 }
+
 
 
 function semAcento(s: string) {
