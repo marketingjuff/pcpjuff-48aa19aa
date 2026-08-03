@@ -467,6 +467,34 @@ export function IndicadoresTab() {
     });
   }, [data, vendedores]);
 
+  /* Registros completos do PCP para os pedidos "Somente PCP" (peças, prazos, vendedor). */
+  const soPcpRegs = useMemo(() => {
+    const porNumero = new Map((data?.pcpLista ?? []).map((r) => [String(r.pedido_olist ?? "").trim(), r]));
+    return soPcpLista
+      .map((num) => porNumero.get(String(num).trim()))
+      .filter((r): r is PcpDrill => Boolean(r));
+  }, [data, soPcpLista]);
+
+  const soPcpResumo = useMemo(() => {
+    const pecas = soPcpRegs.reduce((a, r) => a + (Number(r.qtd) || 0), 0);
+    const comQtd = soPcpRegs.filter((r) => Number(r.qtd) > 0).length;
+    const finalizados = soPcpRegs.filter((r) => Boolean(r.finalizado_em)).length;
+    const vendedoresDistintos = new Set(
+      soPcpRegs.map((r) => String(r.vendedor ?? "").trim()).filter(Boolean),
+    ).size;
+    return {
+      pedidos: soPcpLista.length,
+      pecas,
+      mediaPecas: comQtd > 0 ? pecas / comQtd : 0,
+      finalizados,
+      emAberto: soPcpRegs.length - finalizados,
+      vendedoresDistintos,
+      semRegistro: soPcpLista.length - soPcpRegs.length,
+    };
+  }, [soPcpRegs, soPcpLista]);
+
+
+
 
   /* ---- Detalhamento (drill-down), somente leitura ---- */
   const nomes = useProfilesMap();
