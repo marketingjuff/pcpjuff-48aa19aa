@@ -169,8 +169,11 @@ function lerPlanilha(
     servicos: Set<string>;
     produtos: Set<string>;
     ignoradas: ResultadoImportacaoVendas["linhasIgnoradas"];
+    rateio: Map<string, number>;
+    temRateio: boolean;
   },
 ): number {
+
   const wb = XLSX.read(buf, { type: "array", cellDates: true });
   const ws = wb.Sheets[wb.SheetNames[0]];
   if (!ws) return 0;
