@@ -23,6 +23,8 @@ import { diasUteisEntre, todayISO, type Feriados } from "@/lib/dias-uteis";
 
 export type EmpresaFiltro = "CONSOLIDADO" | "JOKE" | "JUFF";
 export type Grupo = "casados" | "so_olist" | "excluidos" | "so_pcp";
+/** Escopo do painel: atacado (passa pelo PCP) ou e-commerce (independente). */
+export type EscopoIndicadores = "custom" | "store";
 
 export interface PedidoDb {
   numero_pedido: string;
@@ -43,6 +45,8 @@ export interface ItemDb {
   numero_pedido: string;
   lote_id: string;
   produto_olist: string | null;
+  /** descrição crua da planilha da Olist (opcional) */
+  descricao_original?: string | null;
   cor: string | null;
   tamanho: string | null;
   qtd: number | null;
@@ -53,6 +57,7 @@ export interface ItemDb {
 
 export interface ItemCalc {
   produto_olist: string | null;
+  descricao_original?: string | null;
   modelo: string | null;
   cor: string | null;
   tamanho: string | null;
@@ -123,6 +128,7 @@ export function calcularPedidos(
     const arr = porPedido.get(it.numero_pedido) ?? [];
     arr.push({
       produto_olist: produto,
+      descricao_original: it.descricao_original ?? null,
       modelo: produto ? (modeloPorProduto.get(produto) ?? null) : null,
       cor: it.cor ?? null,
       tamanho: it.tamanho ?? null,
@@ -176,6 +182,40 @@ export function primeiraCompraPorCliente(todos: PedidoCalc[]): Map<string, strin
   }
   return map;
 }
+
+/* ------------------------------------------------------------------ */
+/* Escopo: Juff Custom (atacado) × Juff Store (e-commerce)             */
+/* ------------------------------------------------------------------ */
+
+function normalizaTexto(v: string | null | undefined): string {
+  return String(v ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Item do e-commerce: a descrição da Olist traz "Juff Store" no nome do produto. */
+export function isItemJuffStore(texto: string | null | undefined): boolean {
+  return normalizaTexto(texto).includes("juff store");
+}
+
+/**
+ * Números de pedido que contêm pelo menos um item Juff Store.
+ * O corte é por pedido inteiro: um único item do e-commerce leva o pedido todo
+ * (itens, frete, despesas e descontos) para o escopo Store.
+ */
+export function pedidosJuffStore(itens: ItemDb[]): Set<string> {
+  const out = new Set<string>();
+  for (const it of itens) {
+    if (isItemJuffStore(it.descricao_original) || isItemJuffStore(it.produto_olist)) {
+      out.add(it.numero_pedido);
+    }
+  }
+  return out;
+}
+
 
 /* ------------------------------------------------------------------ */
 /* Filtros                                                            */

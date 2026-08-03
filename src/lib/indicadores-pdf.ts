@@ -27,6 +27,8 @@ import {
 type ClienteAbc = LinhaCliente & { perc: number; acumulado: number; classe: string };
 
 export interface IndicadoresPdfDados {
+  /** "Juff Custom" | "Juff Store" — identifica o escopo no cabeçalho e no arquivo. */
+  escopoLabel: string;
   periodo: { de: string; ate: string };
   comparar: boolean;
   periodoAnterior: { de: string; ate: string } | null;
@@ -50,10 +52,11 @@ export interface IndicadoresPdfDados {
   clientes: ClienteAbc[];
   vendedores: LinhaVendedor[];
   frete: ResumoFrete;
-  ufs: LinhaUf[];
-  vendidoProduzido: VendidoProduzido;
-  producao: ProdutividadePcp;
-  saude: SaudeCadastro;
+  /** Seções exclusivas do escopo Custom: ausentes, não são renderizadas. */
+  ufs?: LinhaUf[];
+  vendidoProduzido?: VendidoProduzido;
+  producao?: ProdutividadePcp;
+  saude?: SaudeCadastro;
 }
 
 function esc(s: string | number | null | undefined): string {
@@ -139,18 +142,18 @@ function corpoHtml(d: IndicadoresPdfDados, gerador: string): string {
     lista("Cor", f.cores),
     lista("Tamanho", f.tamanhos),
     lista("Situação", f.situacoes),
-    `Grupos: ${f.grupos.join(", ") || "—"}`,
+    f.grupos.length ? `Grupos: ${f.grupos.join(", ")}` : null,
   ]
     .filter(Boolean)
     .join(" · ");
 
-  const p = d.producao;
 
   return `
 <header class="cab">
   <img src="${esc(logoJuff.url)}" alt="Juff" />
   <div class="titleblock">
     <div class="title">Painel de Indicadores</div>
+    <div class="data">${esc(d.escopoLabel)}</div>
     <div class="data">${esc(dataBR(d.periodo.de))} a ${esc(dataBR(d.periodo.ate))}</div>
     <div class="meta">${esc(filtrosTexto)}</div>
     ${
@@ -259,45 +262,52 @@ ${bloco(
   ),
 )}
 
-${bloco(
-  "Frete e distribuição por UF",
-  `Total ${fmtMoeda(d.frete.total)} · médio por pedido ${fmtMoeda(d.frete.medio)} · ${d.frete.percComFrete.toLocaleString(
-    "pt-BR",
-    { maximumFractionDigits: 1 },
-  )}% dos pedidos com frete cobrado. O frete nunca é somado ao faturamento. A UF vem sempre do PCP.`,
-  tabela(
-    ["UF", "Pedidos", "Peças", "Faturamento", "% receita", "Frete"],
-    d.ufs.map(
-      (u) =>
-        `<tr><td class="l">${esc(u.uf)}</td>${num(u.pedidos)}${num(u.pecas)}${moeda(u.faturamento)}${perc(
-          u.perc,
-        )}${moeda(u.frete)}</tr>`,
-    ),
-  ),
-)}
-
-${bloco(
+${d.ufs
+  ? bloco(
+      "Frete e distribuição por UF",
+      `Total ${fmtMoeda(d.frete.total)} · médio por pedido ${fmtMoeda(d.frete.medio)} · ${d.frete.percComFrete.toLocaleString(
+        "pt-BR",
+        { maximumFractionDigits: 1 },
+      )}% dos pedidos com frete cobrado. O frete nunca é somado ao faturamento. A UF vem sempre do PCP.`,
+      tabela(
+        ["UF", "Pedidos", "Peças", "Faturamento", "% receita", "Frete"],
+        d.ufs.map(
+          (u) =>
+            `<tr><td class="l">${esc(u.uf)}</td>${num(u.pedidos)}${num(u.pecas)}${moeda(u.faturamento)}${perc(
+              u.perc,
+            )}${moeda(u.frete)}</tr>`,
+        ),
+      ),
+    )
+  : bloco(
+      "Frete",
+      `Total ${fmtMoeda(d.frete.total)} · médio por pedido ${fmtMoeda(d.frete.medio)} · ${d.frete.percComFrete.toLocaleString(
+        "pt-BR",
+        { maximumFractionDigits: 1 },
+      )}% dos pedidos com frete cobrado. O frete nunca é somado ao faturamento.`,
+      "",
+    )}
+${d.vendidoProduzido ? ((vxp) => bloco(
   "Vendido × Produzido",
   "Apenas pedidos casados (Olist + PCP). A diferença é esperada: perdas e refações fazem a produção superar a venda.",
   tabela(
     ["Período", "Pedidos", "Vendidas", "Produzidas", "Perdidas", "Diferença", "Dif. %"],
     [
-      ...d.vendidoProduzido.mensal.map(
+      ...vxp.mensal.map(
         (m) =>
           `<tr><td class="l">${esc(fmtMes(m.chave))}</td>${num(m.pedidos)}${num(m.vendidas)}${num(
             m.produzidas,
           )}${num(m.perdidas)}${num(m.diferenca)}<td class="n">${esc(fmtPerc(m.difPerc))}</td></tr>`,
       ),
-      `<tr class="tot"><td class="l">Total</td>${num(d.vendidoProduzido.total.pedidos)}${num(
-        d.vendidoProduzido.total.vendidas,
-      )}${num(d.vendidoProduzido.total.produzidas)}${num(d.vendidoProduzido.total.perdidas)}${num(
-        d.vendidoProduzido.total.diferenca,
-      )}<td class="n">${esc(fmtPerc(d.vendidoProduzido.total.difPerc))}</td></tr>`,
+      `<tr class="tot"><td class="l">Total</td>${num(vxp.total.pedidos)}${num(
+        vxp.total.vendidas,
+      )}${num(vxp.total.produzidas)}${num(vxp.total.perdidas)}${num(
+        vxp.total.diferenca,
+      )}<td class="n">${esc(fmtPerc(vxp.total.difPerc))}</td></tr>`,
     ],
   ),
-)}
-
-${bloco(
+))(d.vendidoProduzido) : ""}
+${d.producao ? ((p) => bloco(
   "Produção e prazo (somente PCP)",
   "Bloco exclusivamente PCP: não sofre recorte por empresa, modelo, cor, tamanho ou situação. O filtro de Vendedor vale e usa o vendedor cadastrado no PCP. Prazos em dias úteis, com feriados.",
   `<div class="kpis">
@@ -353,25 +363,24 @@ ${bloco(
       p.correcoesPorAba.map((c) => `<tr><td class="l">${esc(c.aba)}</td>${num(c.qtd)}</tr>`),
       "Nenhuma correção no período.",
     ),
-)}
-
-${bloco(
+))(d.producao) : ""}
+${d.saude ? ((sd) => bloco(
   "Saúde do cadastro",
   "Diagnóstico de cadastro — informativo, sem semântica de erro.",
-  listaHtml("Somente na Olist", d.saude.soOlist.slice(0, 120)) +
-    listaHtml("Somente no PCP", d.saude.soPcp.slice(0, 120)) +
-    `<h3>Produtos sem mapeamento (${d.saude.semMapeamento.length})</h3>` +
+  listaHtml("Somente na Olist", sd.soOlist.slice(0, 120)) +
+    listaHtml("Somente no PCP", sd.soPcp.slice(0, 120)) +
+    `<h3>Produtos sem mapeamento (${sd.semMapeamento.length})</h3>` +
     tabela(
       ["Produto Olist", "Peças", "Faturamento"],
-      d.saude.semMapeamento.map(
+      sd.semMapeamento.map(
         (s) => `<tr><td class="l">${esc(s.produto)}</td>${num(s.pecas)}${moeda(s.faturamento)}</tr>`,
       ),
       "Todos os produtos estão mapeados.",
     ) +
-    `<h3>Divergências de quantidade (${d.saude.divergencias.length})</h3>` +
+    `<h3>Divergências de quantidade (${sd.divergencias.length})</h3>` +
     tabela(
       ["Pedido", "Olist", "PCP", "Diferença"],
-      d.saude.divergencias
+      sd.divergencias
         .slice(0, 60)
         .map(
           (v) =>
@@ -379,14 +388,14 @@ ${bloco(
         ),
       "Nenhuma divergência.",
     ),
-)}
-
+))(d.saude) : ""}
 <footer class="pe">Painel de Indicadores gerado em ${esc(agoraBR())} por ${esc(gerador)}</footer>
 `;
 }
 
 export async function abrirIndicadoresParaImpressao(d: IndicadoresPdfDados) {
-  const titulo = `indicadores-${d.periodo.de}-a-${d.periodo.ate}`;
+  const slug = d.escopoLabel.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const titulo = `indicadores${slug ? `-${slug}` : ""}-${d.periodo.de}-a-${d.periodo.ate}`;
 
   const { data: { user } } = await supabase.auth.getUser();
   const gerador = user?.email ?? user?.user_metadata?.name ?? "usuário desconhecido";

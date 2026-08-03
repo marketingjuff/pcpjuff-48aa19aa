@@ -56,6 +56,8 @@ import {
   type PedidoDb,
   type PedidoFiltrado,
   type ItemCalc,
+  type EscopoIndicadores,
+  pedidosJuffStore,
 } from "@/lib/indicadores-olist";
 import { useFeriados } from "@/hooks/use-feriados";
 import { useProfilesMap } from "@/hooks/use-profiles-map";
@@ -247,7 +249,8 @@ const RANKINGS: { dim: DimRanking; titulo: string }[] = [
 
 /* ------------------------------------------------------------------ */
 
-export function IndicadoresTab() {
+export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicadores } = {}) {
+  const soPcpAtivo = escopo === "custom";
   const [preset, setPreset] = useState<Preset>("mes");
   const [intervalo, setIntervalo] = useState(() => intervaloPreset("mes"));
   const [comparar, setComparar] = useState(false);
@@ -277,7 +280,9 @@ export function IndicadoresTab() {
         lerTudo<ItemDb>(async (from, to) => {
           const { data, error } = await supabase
             .from("olist_itens" as any)
-            .select("numero_pedido, lote_id, produto_olist, cor, tamanho, qtd, valor_unitario, desconto_item, is_servico")
+            .select(
+              "numero_pedido, lote_id, produto_olist, descricao_original, cor, tamanho, qtd, valor_unitario, desconto_item, is_servico",
+            )
             .range(from, to);
           if (error) throw error;
           return (data ?? []) as any;
@@ -323,6 +328,7 @@ export function IndicadoresTab() {
       const itensVig = (itens as ItemDb[]).filter((i) => vigentePorPedido.get(i.numero_pedido) === i.lote_id);
 
       const calc = calcularPedidos(pedidosVig, itensVig, modeloPorProduto);
+      const pedidosStore = pedidosJuffStore(itensVig);
       const excluidos = new Set((exclRes.data ?? []).map((r: any) => String(r.numero_pedido)));
       const numsOlist = new Set(calc.map((p) => p.numero_pedido));
 
@@ -334,13 +340,21 @@ export function IndicadoresTab() {
         pcpPorPedido,
         pcpLista: pcp,
         modeloPorProduto,
-        primeiraCompra: primeiraCompraPorCliente(calc),
+        pedidosStore,
         soPcp: [...noPcp].filter((n) => !numsOlist.has(n)),
       };
     },
   });
 
-  const base = data?.calc ?? [];
+  /* Recorte por escopo: pedido com ao menos um item "Juff Store" vive só na aba Store. */
+  const base = useMemo(() => {
+    const todos = data?.calc ?? [];
+    const store = data?.pedidosStore ?? new Set<string>();
+    return todos.filter((p) => (escopo === "store" ? store.has(p.numero_pedido) : !store.has(p.numero_pedido)));
+  }, [data, escopo]);
+
+  /* Novo/recorrente é medido só contra o histórico do próprio escopo. */
+  const primeiraCompra = useMemo(() => primeiraCompraPorCliente(base), [base]);
 
   const opcoesVend: OpcaoVendedor[] = useMemo(
     () => opcoesVendedores(base, data?.pcpLista ?? []),
@@ -388,14 +402,17 @@ export function IndicadoresTab() {
       cores,
       tamanhos,
       situacoes,
-      grupos,
+      grupos: soPcpAtivo ? grupos : (["casados", "so_olist"] as Grupo[]),
     }),
-    [intervalo, empresa, vendedores, modelos, cores, tamanhos, situacoes, grupos],
+    [intervalo, empresa, vendedores, modelos, cores, tamanhos, situacoes, grupos, soPcpAtivo],
   );
 
   const ctx = useMemo(
-    () => ({ excluidos: data?.excluidos ?? new Set<string>(), noPcp: data?.noPcp ?? new Set<string>() }),
-    [data],
+    () => ({
+      excluidos: data?.excluidos ?? new Set<string>(),
+      noPcp: soPcpAtivo ? (data?.noPcp ?? new Set<string>()) : new Set<string>(),
+    }),
+    [data, soPcpAtivo],
   );
 
   // O recorte por vendedor sai do aplicarFiltros e passa a usar a regra de união (Olist OU PCP).
@@ -426,8 +443,8 @@ export function IndicadoresTab() {
   const rankModelo = useMemo(() => ranking(atuais, "modelo"), [atuais]);
   const abcModelo = useMemo(() => curvaAbc(rankModelo), [rankModelo]);
   const clientes = useMemo(
-    () => abcClientes(porCliente(atuais, data?.primeiraCompra ?? new Map(), intervalo.de)),
-    [atuais, data, intervalo.de],
+    () => abcClientes(porCliente(atuais, primeiraCompra, intervalo.de)),
+    [atuais, primeiraCompra, intervalo.de],
   );
   const vendedoresLinhas = useMemo(() => porVendedor(atuais), [atuais]);
   const frete = useMemo(() => resumoFrete(atuais, data?.ufPorPedido ?? new Map()), [atuais, data]);
@@ -437,35 +454,47 @@ export function IndicadoresTab() {
   /* ---- Fase 5 — cruzamento com o PCP ---- */
   const { feriados } = useFeriados();
   const pcpPorPedido = data?.pcpPorPedido ?? new Map<string, PcpDb>();
-  const ufLinhas = useMemo(() => porUf(atuais, data?.ufPorPedido ?? new Map()), [atuais, data]);
-  const vxp = useMemo(() => vendidoVsProduzido(atuais, pcpPorPedido), [atuais, pcpPorPedido]);
+  const ufLinhas = useMemo(
+    () => (soPcpAtivo ? porUf(atuais, data?.ufPorPedido ?? new Map()) : []),
+    [atuais, data, soPcpAtivo],
+  );
+  const vxp = useMemo(
+    () => vendidoVsProduzido(soPcpAtivo ? atuais : [], pcpPorPedido),
+    [atuais, pcpPorPedido, soPcpAtivo],
+  );
   const pcpPeriodo = useMemo(
     () =>
-      (data?.pcpLista ?? []).filter(
+      (soPcpAtivo ? (data?.pcpLista ?? []) : []).filter(
         (r) =>
           r.entrada_pedido &&
           r.entrada_pedido >= intervalo.de &&
           r.entrada_pedido <= intervalo.ate &&
           pcpNoRecorteVendedor(r, vendedores),
       ),
-    [data, intervalo, vendedores],
+    [data, intervalo, vendedores, soPcpAtivo],
   );
   const prod = useMemo(() => produtividadePcp(pcpPeriodo, feriados), [pcpPeriodo, feriados]);
   const saude = useMemo(
-    () => saudeCadastro(atuais, pcpPorPedido, data?.modeloPorProduto ?? new Map(), data?.soPcp ?? []),
-    [atuais, pcpPorPedido, data],
+    () =>
+      saudeCadastro(
+        soPcpAtivo ? atuais : [],
+        pcpPorPedido,
+        data?.modeloPorProduto ?? new Map(),
+        soPcpAtivo ? (data?.soPcp ?? []) : [],
+      ),
+    [atuais, pcpPorPedido, data, soPcpAtivo],
   );
 
-  const mostraSoPcp = grupos.includes("so_pcp");
+  const mostraSoPcp = soPcpAtivo && grupos.includes("so_pcp");
   const soPcpLista = useMemo(() => {
-    const lista = data?.soPcp ?? [];
+    const lista = soPcpAtivo ? (data?.soPcp ?? []) : [];
     if (vendedores.length === 0) return lista;
     const porNumero = new Map((data?.pcpLista ?? []).map((r) => [String(r.pedido_olist ?? "").trim(), r]));
     return lista.filter((num) => {
       const reg = porNumero.get(String(num).trim());
       return reg ? pcpNoRecorteVendedor(reg, vendedores) : false;
     });
-  }, [data, vendedores]);
+  }, [data, vendedores, soPcpAtivo]);
 
   /* Registros completos do PCP para os pedidos "Somente PCP" (peças, prazos, vendedor). */
   const soPcpRegs = useMemo(() => {
@@ -498,6 +527,8 @@ export function IndicadoresTab() {
 
   /* ---- Detalhamento (drill-down), somente leitura ---- */
   const nomes = useProfilesMap();
+  /* No escopo Store não há PCP: nada de UF nos detalhamentos. */
+  const ufMapaDrill = soPcpAtivo ? (data?.ufPorPedido ?? new Map<string, string>()) : new Map<string, string>();
   const [drill, setDrill] = useState<DrillPayload | null>(null);
   const abrirDrill = (p: DrillPayload) => setDrill(p);
   const subPcp = `Entrada entre ${intervalo.de} e ${intervalo.ate}`;
@@ -506,6 +537,7 @@ export function IndicadoresTab() {
 
   const exportarPdf = () => {
     void abrirIndicadoresParaImpressao({
+      escopoLabel: soPcpAtivo ? "Juff Custom" : "Juff Store",
       periodo: intervalo,
       comparar,
       periodoAnterior: comparar ? periodoAnterior(intervalo.de, intervalo.ate) : null,
@@ -517,7 +549,7 @@ export function IndicadoresTab() {
         cores,
         tamanhos,
         situacoes,
-        grupos: grupos.map((g) => GRUPOS.find((x) => x.v === g)?.label ?? g),
+        grupos: soPcpAtivo ? grupos.map((g) => GRUPOS.find((x) => x.v === g)?.label ?? g) : [],
       },
       resumo: r,
       resumoAnterior: rAnt,
@@ -530,10 +562,10 @@ export function IndicadoresTab() {
       clientes,
       vendedores: vendedoresLinhas,
       frete,
-      ufs: ufLinhas,
-      vendidoProduzido: vxp,
-      producao: prod,
-      saude,
+      ufs: soPcpAtivo ? ufLinhas : undefined,
+      vendidoProduzido: soPcpAtivo ? vxp : undefined,
+      producao: soPcpAtivo ? prod : undefined,
+      saude: soPcpAtivo ? saude : undefined,
     });
   };
 
@@ -622,6 +654,7 @@ export function IndicadoresTab() {
           <MultiSelect label="Cor" opcoes={opcoes.cores} valor={cores} onChange={setCores} />
           <MultiSelect label="Tamanho" opcoes={opcoes.tamanhos} valor={tamanhos} onChange={setTamanhos} />
           <MultiSelect label="Situação" opcoes={opcoes.situacoes} valor={situacoes} onChange={setSituacoes} />
+          {soPcpAtivo && (
           <div className="flex flex-wrap items-center gap-2 pl-2">
             {GRUPOS.map((g) => (
               <label key={g.v} className="flex cursor-pointer items-center gap-1 text-xs">
@@ -635,7 +668,14 @@ export function IndicadoresTab() {
               </label>
             ))}
           </div>
+          )}
         </div>
+      </div>
+
+      <div className="text-xs font-medium text-muted-foreground">
+        {soPcpAtivo
+          ? "Indicadores — Juff Custom (atacado · sincronizado com o PCP)"
+          : "Indicadores — Juff Store (e-commerce · independente do PCP)"}
       </div>
 
       {isLoading && (
@@ -1081,7 +1121,7 @@ export function IndicadoresTab() {
                 build={() =>
                   drillClientes(
                     clientes.filter((c) => c.novo),
-                    data?.primeiraCompra ?? new Map(),
+                    primeiraCompra,
                     {
                       titulo: "Clientes novos no período",
                       subtitulo: `${subOlist} · primeira compra apurada em todo o histórico`,
@@ -1102,7 +1142,7 @@ export function IndicadoresTab() {
                 build={() =>
                   drillClientes(
                     clientes.filter((c) => !c.novo),
-                    data?.primeiraCompra ?? new Map(),
+                    primeiraCompra,
                     {
                       titulo: "Clientes recorrentes no período",
                       subtitulo: `${subOlist} · primeira compra apurada em todo o histórico`,
@@ -1368,7 +1408,7 @@ export function IndicadoresTab() {
                     indicadorLabel: fmtMoeda(frete.total),
                     indicadorValor: frete.total,
                     campo: "frete",
-                    ufPorPedido: data?.ufPorPedido ?? new Map(),
+                    ufPorPedido: ufMapaDrill,
                   }),
                 )
               }
@@ -1387,7 +1427,7 @@ export function IndicadoresTab() {
                     indicadorValor: frete.medio,
                     campo: "frete",
                     media: true,
-                    ufPorPedido: data?.ufPorPedido ?? new Map(),
+                    ufPorPedido: ufMapaDrill,
                   }),
                 )
               }
@@ -1408,13 +1448,14 @@ export function IndicadoresTab() {
                       indicadorLabel: `${frete.percComFrete.toFixed(1)}%`,
                       indicadorValor: null,
                       campo: "linhas",
-                      ufPorPedido: data?.ufPorPedido ?? new Map(),
+                      ufPorPedido: ufMapaDrill,
                     },
                   ),
                 )
               }
             />
           </div>
+          {escopo === "custom" && (
           <div className="max-h-72 overflow-auto">
             <table className="tbl-congelada w-full text-xs">
               <thead>
@@ -1460,9 +1501,12 @@ export function IndicadoresTab() {
               </tbody>
             </table>
           </div>
+          )}
         </CardContent>
       </Card>
 
+      {escopo === "custom" && (
+        <>
       {/* ---------------- Bloco 6 — Distribuição geográfica ---------------- */}
       <Card>
         <CardHeader className="pb-2">
@@ -2131,9 +2175,12 @@ export function IndicadoresTab() {
           </div>
         </CardContent>
       </Card>
+        </>
+      )}
+
 
       {/* ---------------- Somente PCP: lista e contagem ---------------- */}
-      {mostraSoPcp && (
+      {escopo === "custom" && mostraSoPcp && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">
