@@ -2420,7 +2420,48 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
         </Card>
       )}
 
+      {ehStore && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Descrições fora do padrão</CardTitle>
+            <div className="text-xs text-muted-foreground">
+              Informativo. Esses itens contam normalmente no faturamento e nas peças — o bloco existe para corrigir o
+              cadastro na Olist.
+            </div>
+          </CardHeader>
+          <CardContent>
+            {foraPadrao.length === 0 ? (
+              <div className="text-xs text-muted-foreground">Todas as descrições do período foram reconhecidas.</div>
+            ) : (
+              <div className="max-h-80 overflow-auto">
+                <table className="tbl-congelada w-full text-xs">
+                  <thead>
+                    <tr>
+                      <th className="px-2 py-1 text-left">Descrição na Olist</th>
+                      <th className="px-2 py-1 text-left">Motivo</th>
+                      <th className="px-2 py-1 text-right">Linhas</th>
+                      <th className="px-2 py-1 text-right">Peças</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {foraPadrao.map((f) => (
+                      <tr key={f.descricao} className="border-t">
+                        <td className="px-2 py-1">{f.descricao}</td>
+                        <td className="px-2 py-1">{f.motivo}</td>
+                        <td className="px-2 py-1 text-right tabular-nums">{fmtNum(f.linhas)}</td>
+                        <td className="px-2 py-1 text-right tabular-nums">{fmtNum(f.pecas)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <IndicadorDrillDialog payload={drill} onOpenChange={(o) => !o && setDrill(null)} />
+
     </div>
 
   );
