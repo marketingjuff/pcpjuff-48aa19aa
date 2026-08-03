@@ -2133,6 +2133,9 @@ export function IndicadoresTab() {
           </div>
         </CardContent>
       </Card>
+        </>
+      )}
+
 
       {/* ---------------- Somente PCP: lista e contagem ---------------- */}
       {escopo === "custom" && mostraSoPcp && (
