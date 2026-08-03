@@ -100,7 +100,7 @@ export function filtrarPorVendedor<T extends { numero_pedido: string; vendedor: 
   const sel = new Set(selecionados);
   return pedidos.filter((p) => {
     if (sel.has(chaveVendedor(p.vendedor))) return true;
-    const vPcp = vendedorPcpPorPedido.get(String(p.numero_pedido).trim());
+    const vPcp = vendedorPcpPorPedido.get(basePedidoOlist(p.numero_pedido));
     return !!vPcp && sel.has(chaveVendedor(vPcp));
   });
 }
