@@ -5,8 +5,10 @@
  * componente e devolvem as linhas individuais que formam cada número agregado.
  *
  * Regras obrigatórias (espelham `indicadores-olist.ts`, que NÃO é alterado):
- *  - Casamento Olist ↔ PCP apenas por `pedido_olist`. `orcamento` é coluna
- *    informativa, nunca chave.
+ *  - Casamento Olist ↔ PCP pela BASE do `pedido_olist`: parciais do PCP
+ *    (`3996A`, `3996B`) pertencem ao pedido `3996` da Olist. `orcamento` é
+ *    coluna informativa, nunca chave.
+
  *  - Campo de saída é `saida_juff`.
  *  - Prazos sempre em dias úteis com feriados (`diasUteisEntre`).
  *  - Peças perdidas de um pedido = Σ `perda_pecas` dos episódios
