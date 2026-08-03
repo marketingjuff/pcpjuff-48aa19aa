@@ -543,7 +543,7 @@ export function IndicadoresTab() {
   return (
     <div className="space-y-4">
       {/* ---------------- Filtros ---------------- */}
-      <div className="sticky top-[68px] z-30 -mx-1 space-y-2 rounded-md border bg-background p-3 shadow-sm">
+      <div className="sticky top-[68px] z-40 -mx-1 space-y-2 rounded-md border bg-background p-3 shadow-sm">
 
         <div className="flex flex-wrap items-center gap-2">
           <Select
