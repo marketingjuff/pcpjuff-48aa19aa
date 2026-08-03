@@ -100,6 +100,8 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const temSolicitacao = pecasSolicitadas.length > 0;
   const temPendencia = pecasSolicitadas.some((p) => (Number(p.qtd_enviada) || 0) < (Number(p.qtd) || 0));
   const tudoEnviado = temSolicitacao && !temPendencia;
+  const temBaixaRegistrada =
+    Array.isArray(selected?.pecas_completadas_log) && (selected!.pecas_completadas_log as any[]).length > 0;
 
   async function salvarPecasSolicitadas(next: import("@/lib/pedidos").PecaSolicitada[]) {
     const atuais = ((selected?.pecas_solicitadas ?? []) as import("@/lib/pedidos").PecaSolicitada[]);
@@ -112,9 +114,22 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
       return { ...item, qtd_enviada };
     });
 
-    setForm((f) => ({ ...f, pecas_solicitadas: merged }));
+    const pendente = merged.reduce(
+      (a, p) => a + Math.max(0, (Number(p.qtd) || 0) - (Number(p.qtd_enviada) || 0)),
+      0,
+    );
+
+    setForm((f) => ({
+      ...f,
+      pecas_solicitadas: merged,
+      ...(pendente > 0 ? { status_pecas: "incompleto" } : {}),
+    }));
     if (selected?.id) {
-      onSave({ id: selected.id, pecas_solicitadas: merged } as any);
+      onSave({
+        id: selected.id,
+        pecas_solicitadas: merged,
+        ...(pendente > 0 ? { status_pecas: "incompleto" } : {}),
+      } as any);
     }
   }
 
