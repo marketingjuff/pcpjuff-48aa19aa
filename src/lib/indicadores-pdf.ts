@@ -299,7 +299,7 @@ ${bloco(
 
 ${bloco(
   "Produção e prazo (somente PCP)",
-  "Bloco exclusivamente PCP: não sofre recorte por empresa nem por vendedor. Prazos em dias úteis, com feriados.",
+  "Bloco exclusivamente PCP: não sofre recorte por empresa, modelo, cor, tamanho ou situação. O filtro de Vendedor vale e usa o vendedor cadastrado no PCP. Prazos em dias úteis, com feriados.",
   `<div class="kpis">
     <div class="kpi"><div class="kpi-t">Pedidos no período</div><div class="kpi-v">${esc(fmtNum(p.pedidos))}</div></div>
     <div class="kpi"><div class="kpi-t">Prazo médio (dias úteis)</div><div class="kpi-v">${
