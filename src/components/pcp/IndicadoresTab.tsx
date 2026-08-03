@@ -467,6 +467,34 @@ export function IndicadoresTab() {
     });
   }, [data, vendedores]);
 
+  /* Registros completos do PCP para os pedidos "Somente PCP" (peças, prazos, vendedor). */
+  const soPcpRegs = useMemo(() => {
+    const porNumero = new Map((data?.pcpLista ?? []).map((r) => [String(r.pedido_olist ?? "").trim(), r]));
+    return soPcpLista
+      .map((num) => porNumero.get(String(num).trim()))
+      .filter((r): r is PcpDrill => Boolean(r));
+  }, [data, soPcpLista]);
+
+  const soPcpResumo = useMemo(() => {
+    const pecas = soPcpRegs.reduce((a, r) => a + (Number(r.qtd) || 0), 0);
+    const comQtd = soPcpRegs.filter((r) => Number(r.qtd) > 0).length;
+    const finalizados = soPcpRegs.filter((r) => Boolean(r.finalizado_em)).length;
+    const vendedoresDistintos = new Set(
+      soPcpRegs.map((r) => String(r.vendedor ?? "").trim()).filter(Boolean),
+    ).size;
+    return {
+      pedidos: soPcpLista.length,
+      pecas,
+      mediaPecas: comQtd > 0 ? pecas / comQtd : 0,
+      finalizados,
+      emAberto: soPcpRegs.length - finalizados,
+      vendedoresDistintos,
+      semRegistro: soPcpLista.length - soPcpRegs.length,
+    };
+  }, [soPcpRegs, soPcpLista]);
+
+
+
 
   /* ---- Detalhamento (drill-down), somente leitura ---- */
   const nomes = useProfilesMap();
@@ -2111,22 +2139,90 @@ export function IndicadoresTab() {
               Somente PCP <Badge variant="secondary">{soPcpLista.length}</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="mb-2 text-xs text-muted-foreground">
-              Pedidos que existem no PCP e não na Olist. Sem item, preço ou cliente — por isso entram apenas como
-              lista e contagem, fora de faturamento, ticket médio, peças e rankings. O filtro de Vendedor usa o
-              vendedor cadastrado no PCP.
+          <CardContent className="space-y-3">
+            <div className="text-xs text-muted-foreground">
+              Pedidos que existem no PCP e não na Olist. Sem item, preço ou cliente — por isso ficam fora de
+              faturamento, ticket médio e rankings da Olist. Abaixo, os dados que o PCP possui (peças, prazos e
+              vendedor). O filtro de Vendedor usa o vendedor cadastrado no PCP.
             </div>
-            <div className="max-h-56 overflow-auto text-xs">
-              <div className="flex flex-wrap gap-1">
-                {soPcpLista.map((num) => (
-                  <Badge key={num} variant="outline" className="tabular-nums">
-                    {num}
-                  </Badge>
-                ))}
+
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <Kpi titulo="Pedidos" valor={fmtNum(soPcpResumo.pedidos)} varPerc={null} comparar={false} />
+              <Kpi
+                titulo="Peças (qtd PCP)"
+                valor={fmtNum(soPcpResumo.pecas)}
+                varPerc={null}
+                comparar={false}
+                onDrill={() =>
+                  abrirDrill(
+                    drillPcpPedidos(soPcpRegs, {
+                      titulo: "Peças — Somente PCP",
+                      subtitulo: "Pedidos presentes no PCP e ausentes na Olist",
+                      indicadorLabel: fmtNum(soPcpResumo.pecas),
+                      indicadorValor: soPcpResumo.pecas,
+                    }),
+                  )
+                }
+              />
+              <Kpi
+                titulo="Média de peças/pedido"
+                valor={soPcpResumo.mediaPecas.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}
+                varPerc={null}
+                comparar={false}
+              />
+              <Kpi
+                titulo="Finalizados / em aberto"
+                valor={`${fmtNum(soPcpResumo.finalizados)} / ${fmtNum(soPcpResumo.emAberto)}`}
+                varPerc={null}
+                comparar={false}
+              />
+            </div>
+
+            {soPcpResumo.semRegistro > 0 && (
+              <div className="text-xs text-muted-foreground">
+                {fmtNum(soPcpResumo.semRegistro)} pedido(s) sem registro detalhado no PCP — contam apenas na lista.
               </div>
+            )}
+
+            <div className="max-h-72 overflow-auto rounded-md border">
+              <table className="tbl-congelada w-full text-xs">
+                <thead>
+                  <tr className="bg-muted/50 text-left">
+                    <th className="px-2 py-1">Pedido</th>
+                    <th className="px-2 py-1">Orçamento</th>
+                    <th className="px-2 py-1">Vendedor</th>
+                    <th className="px-2 py-1">Tipo estampa</th>
+                    <th className="px-2 py-1 text-right">Qtd</th>
+                    <th className="px-2 py-1">Entrada</th>
+                    <th className="px-2 py-1">Entrega</th>
+                    <th className="px-2 py-1">Saída Juff</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {soPcpRegs.map((r) => (
+                    <tr key={String(r.id ?? r.pedido_olist)} className="border-t">
+                      <td className="px-2 py-1 tabular-nums">{r.pedido_olist ?? "—"}</td>
+                      <td className="px-2 py-1">{r.orcamento ?? "—"}</td>
+                      <td className="px-2 py-1">{r.vendedor ?? "—"}</td>
+                      <td className="px-2 py-1">{r.tipo_estampa ?? "—"}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(Number(r.qtd) || 0)}</td>
+                      <td className="px-2 py-1 tabular-nums">{r.entrada_pedido ?? "—"}</td>
+                      <td className="px-2 py-1 tabular-nums">{r.data_entrega ?? "—"}</td>
+                      <td className="px-2 py-1 tabular-nums">{r.saida_juff ?? "—"}</td>
+                    </tr>
+                  ))}
+                  {soPcpRegs.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-2 py-3 text-center text-muted-foreground">
+                        Nenhum pedido somente PCP no recorte atual.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </CardContent>
+
         </Card>
       )}
 
