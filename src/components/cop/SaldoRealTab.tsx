@@ -138,6 +138,13 @@ export function SaldoRealTab() {
     return m;
   }, [linhas, saldoReal]);
 
+  const totalGeral = useMemo(() => {
+    let s = 0;
+    for (const v of totaisTam.values()) s += v;
+    return s;
+  }, [totaisTam]);
+
+
   const sortGetters = useMemo(() => {
     const g: Record<string, (row: { modelo: string; cor: string }) => string | number | null | undefined> = {
       cor: (l) => l.cor,
@@ -191,7 +198,13 @@ export function SaldoRealTab() {
             {apenasNegativos ? "Mostrando: negativos" : "Apenas negativos"}
           </Button>
         </div>
-        <div className="text-xs text-muted-foreground">{linhas.length} linhas</div>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="rounded-md border bg-card px-3 py-1.5 text-sm">
+            Total de peças existentes: <span className="font-bold tabular-nums text-foreground">{totalGeral.toLocaleString("pt-BR")}</span>
+          </span>
+          <span>{linhas.length} linhas</span>
+        </div>
+
       </div>
 
       {naoMapeados.size > 0 && (
@@ -273,6 +286,13 @@ export function SaldoRealTab() {
                     <td key={t} className="p-2 text-center tabular-nums">{totaisTam.get(t) ?? 0}</td>
                   ))}
                 </tr>
+                <tr className="border-t font-bold">
+                  <td className="p-2" colSpan={2}>Total de peças existentes</td>
+                  <td className="p-2 text-center tabular-nums" colSpan={REFACAO_TAMANHOS.length}>
+                    {totalGeral.toLocaleString("pt-BR")}
+                  </td>
+                </tr>
+
               </tfoot>
             )}
           </table>
