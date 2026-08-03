@@ -256,6 +256,16 @@ const RANKINGS: { dim: DimRanking; titulo: string }[] = [
   { dim: "peca", titulo: "Peças mais vendidas (modelo · cor · tamanho)" },
 ];
 
+/* Rankings da aba Juff Store: modelo vem do parse próprio, não do de-para. */
+const RANKINGS_STORE: { dimStore: DimRankingStore; dim: DimRanking; titulo: string }[] = [
+  { dimStore: "modelo_base", dim: "modelo", titulo: "Modelos mais vendidos" },
+  { dimStore: "estampa", dim: "modelo", titulo: "Estampas mais vendidas" },
+  { dimStore: "cor", dim: "cor", titulo: "Cores mais vendidas" },
+  { dimStore: "tamanho", dim: "tamanho", titulo: "Tamanhos mais vendidos" },
+  { dimStore: "peca", dim: "peca", titulo: "Peças mais vendidas (modelo · cor · tamanho)" },
+];
+
+
 /* ------------------------------------------------------------------ */
 
 export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicadores } = {}) {
