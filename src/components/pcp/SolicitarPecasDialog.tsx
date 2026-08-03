@@ -314,13 +314,19 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
           )}
 
           <div className="flex flex-wrap gap-3 pt-2 text-xs text-muted-foreground items-center">
-            <span>Total solicitado: <span className={`font-semibold tabular-nums ${excedeLimite ? "text-red-600" : "text-foreground"}`}>{totals.sol}{typeof limite === "number" && limite > 0 ? `/${limite} (vendedor)` : ""}</span></span>
+            <span>Total solicitado: <span className={`font-semibold tabular-nums ${excedeLimite ? (limiteApenasAviso ? "text-amber-600" : "text-red-600") : "text-foreground"}`}>{totals.sol}{typeof limite === "number" && limite > 0 ? `/${limite} (vendedor)` : ""}</span></span>
             <span>Total enviado: <span className="font-semibold tabular-nums text-foreground">{totals.env}</span></span>
             <span>Pendente: <span className="font-semibold tabular-nums text-foreground">{totals.pend}</span></span>
             {excedeLimite && (
-              <span className="text-red-600">
-                Ultrapassa a quantidade do vendedor ({limite}).
-              </span>
+              limiteApenasAviso ? (
+                <span className="text-amber-600">
+                  Total acima da quantidade do vendedor ({limite}) — permitido porque este pedido já teve peças entregues pelo COP.
+                </span>
+              ) : (
+                <span className="text-red-600">
+                  Ultrapassa a quantidade do vendedor ({limite}).
+                </span>
+              )
             )}
           </div>
         </div>
