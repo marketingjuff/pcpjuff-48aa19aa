@@ -78,6 +78,8 @@ import {
   drillPcpPrazo,
   drillRefacoes,
   drillCorrecoes,
+  NOTA_BLOCO_PCP,
+  type CampoVxp,
   type DrillPayload,
   type PcpDrill,
 } from "@/lib/indicadores-drill";
@@ -2347,9 +2349,16 @@ function ListaDiagnostico({
         <div className="text-xs font-semibold">
           {titulo}{" "}
           {onDrill ? (
-            <ValorDrill onDrill={() => onDrill()} build={() => null}>
-              <Badge variant="secondary">{itens.length}</Badge>
-            </ValorDrill>
+            <button
+              type="button"
+              title="Ver detalhamento"
+              onClick={onDrill}
+              className="cursor-pointer transition-colors hover:opacity-80"
+            >
+              <Badge variant="secondary" className="underline decoration-dotted underline-offset-2">
+                {itens.length}
+              </Badge>
+            </button>
           ) : (
             <Badge variant="secondary">{itens.length}</Badge>
           )}
