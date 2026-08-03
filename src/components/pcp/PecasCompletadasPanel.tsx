@@ -1,20 +1,23 @@
-import { useState } from "react";
 import type { Pedido, PecaSolicitada } from "@/lib/pedidos";
 import { rotuloCop } from "@/lib/cop";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Undo2, Check, X } from "lucide-react";
+import { Pencil, Undo2 } from "lucide-react";
 
-interface Props { pedido: Pedido | null }
+interface Props {
+  pedido: Pedido | null;
+  /** Abre o dialog de peças do pedido (único lugar de edição). */
+  onEditarPecas?: () => void;
+  /** Sincroniza o formulário do PCP após uma reversão. */
+  onAfterSave?: (patch: { pecas_solicitadas: PecaSolicitada[]; status_pecas: string }) => void;
+}
 
 type LogItem = NonNullable<Pedido["pecas_completadas_log"]>[number];
 
