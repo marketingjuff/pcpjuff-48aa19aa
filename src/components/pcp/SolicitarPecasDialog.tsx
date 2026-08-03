@@ -30,6 +30,8 @@ interface Props {
   readOnly?: boolean;
   /** Quantidade máxima de peças permitida (qtd do vendedor). */
   limite?: number;
+  /** Quando true, o limite do vendedor é apenas aviso (não capa nem bloqueia o salvamento). */
+  limiteApenasAviso?: boolean;
   /** Libera para completo: apaga a solicitação e marca o pedido como completo. */
   onLiberarCompleto?: () => void | Promise<void>;
 }
@@ -111,7 +113,7 @@ function desagrupar(grupos: GrupoLinha[]): PecaSolicitada[] {
 }
 
 
-export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletadasLog, onSave, readOnly = false, limite, onLiberarCompleto }: Props) {
+export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletadasLog, onSave, readOnly = false, limite, limiteApenasAviso = false, onLiberarCompleto }: Props) {
   const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value, pecasCompletadasLog));
   const [saving, setSaving] = useState(false);
 
