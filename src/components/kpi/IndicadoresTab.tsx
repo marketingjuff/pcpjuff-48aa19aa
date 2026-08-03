@@ -568,20 +568,24 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   const soPcpLista = useMemo(() => {
     const lista = soPcpAtivo ? (data?.soPcp ?? []) : [];
     if (vendedores.length === 0) return lista;
-    const porNumero = new Map((data?.pcpLista ?? []).map((r) => [String(r.pedido_olist ?? "").trim(), r]));
+    const ags = data?.pcpAgregado ?? new Map<string, PcpAgregado<PcpDrill>>();
     return lista.filter((num) => {
-      const reg = porNumero.get(String(num).trim());
-      return reg ? pcpNoRecorteVendedor(reg, vendedores) : false;
+      const ag = ags.get(basePedidoOlist(num));
+      return ag ? pcpNoRecorteVendedor({ vendedor: ag.vendedor }, vendedores) : false;
     });
   }, [data, vendedores, soPcpAtivo]);
 
-  /* Registros completos do PCP para os pedidos "Somente PCP" (peças, prazos, vendedor). */
+  /* Registros consolidados do PCP para os pedidos "Somente PCP" (peças somadas dos parciais). */
   const soPcpRegs = useMemo(() => {
-    const porNumero = new Map((data?.pcpLista ?? []).map((r) => [String(r.pedido_olist ?? "").trim(), r]));
+    const ags = data?.pcpAgregado ?? new Map<string, PcpAgregado<PcpDrill>>();
     return soPcpLista
-      .map((num) => porNumero.get(String(num).trim()))
+      .map((num) => {
+        const ag = ags.get(basePedidoOlist(num));
+        return ag ? registroConsolidado(ag) : undefined;
+      })
       .filter((r): r is PcpDrill => Boolean(r));
   }, [data, soPcpLista]);
+
 
   const soPcpResumo = useMemo(() => {
     const pecas = soPcpRegs.reduce((a, r) => a + (Number(r.qtd) || 0), 0);
