@@ -23,6 +23,8 @@ import {
   type SaudeCadastro,
   type VendidoProduzido,
 } from "@/lib/indicadores-olist";
+import type { ComposicaoStore } from "@/lib/indicadores-store";
+
 
 type ClienteAbc = LinhaCliente & { perc: number; acumulado: number; classe: string };
 
