@@ -60,6 +60,13 @@ import {
 import { useFeriados } from "@/hooks/use-feriados";
 import { useProfilesMap } from "@/hooks/use-profiles-map";
 import { abrirIndicadoresParaImpressao } from "@/lib/indicadores-pdf";
+import {
+  opcoesVendedores,
+  mapaVendedorPcp,
+  filtrarPorVendedor,
+  pcpNoRecorteVendedor,
+  type OpcaoVendedor,
+} from "@/lib/indicadores-vendedor";
 import { FileDown } from "lucide-react";
 import {
   drillPedidos,
