@@ -743,18 +743,20 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                     </span>
                   )}
                 </Button>
-                <SolicitarPecasDialog
-                  open={solicitarOpen}
-                  onOpenChange={setSolicitarOpen}
-                  value={pecasSolicitadas}
-                  pecasCompletadasLog={selected?.pecas_completadas_log ?? null}
-                  onSave={salvarPecasSolicitadas}
-                  limite={Number(form.qtd ?? selected?.qtd ?? 0) || 0}
-                  limiteApenasAviso={temBaixaRegistrada}
-                  onLiberarCompleto={liberarParaCompleto}
-                />
               </div>
             )}
+
+            {/* Dialog sempre montado, para o lápis do painel de baixas funcionar mesmo com pedido completo */}
+            <SolicitarPecasDialog
+              open={solicitarOpen}
+              onOpenChange={setSolicitarOpen}
+              value={pecasSolicitadas}
+              pecasCompletadasLog={selected?.pecas_completadas_log ?? null}
+              onSave={salvarPecasSolicitadas}
+              limite={Number(form.qtd ?? selected?.qtd ?? 0) || 0}
+              limiteApenasAviso={temBaixaRegistrada}
+              onLiberarCompleto={liberarParaCompleto}
+            />
 
             <div className="sm:col-span-2 lg:col-span-4">
               <PecasCompletadasPanel
@@ -769,6 +771,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 }
               />
             </div>
+
 
 
 
