@@ -577,7 +577,11 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
     };
   }, [soPcpRegs, soPcpLista]);
 
-
+  /* ---- Juff Store: composição e diagnóstico de descrição (só classificação) ---- */
+  const ehStore = escopo === "store";
+  const composicao = useMemo(() => (ehStore ? composicaoStore(atuais) : null), [ehStore, atuais]);
+  const foraPadrao = useMemo(() => (ehStore ? descricoesForaPadrao(atuais) : []), [ehStore, atuais]);
+  const rankEstampas = useMemo(() => (ehStore ? rankingStore(atuais, "estampa") : []), [ehStore, atuais]);
 
 
   /* ---- Detalhamento (drill-down), somente leitura ---- */
