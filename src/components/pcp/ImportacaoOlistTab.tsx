@@ -286,8 +286,34 @@ export function ImportacaoOlistTab() {
               <div className="rounded-md border px-3 py-2">
                 <div className="text-[11px] text-muted-foreground">Na lista de excluídos</div>
                 <div className="font-semibold tabular-nums">{resumo.naLista.length}</div>
-              </div>
             </div>
+
+            {previa.store.pedidos > 0 && (
+              <div className="rounded-md border border-dashed px-3 py-2">
+                <div className="text-xs font-medium">Juff Store (e-commerce)</div>
+                <div className="mt-1 text-xs text-muted-foreground tabular-nums">
+                  {previa.store.pedidos} pedido(s) · {previa.store.linhas} linha(s) · {previa.store.pecas} peça(s).
+                  Esses pedidos não passam pelo PCP e não exigem de-para: ficam fora da conferência acima e dos avisos de
+                  mapeamento.
+                </div>
+                {previa.store.foraPadrao.length > 0 && (
+                  <div className="mt-2">
+                    <div className="text-xs font-medium">
+                      {previa.store.foraPadrao.length} descrição(ões) fora do padrão (informativo)
+                    </div>
+                    <ul className="mt-1 max-h-40 list-disc space-y-0.5 overflow-auto pl-5 text-xs text-muted-foreground">
+                      {previa.store.foraPadrao.map((f) => (
+                        <li key={f.descricao}>
+                          {f.descricao} — {f.motivo}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+
 
             {previa.produtosSemMapeamento.length > 0 && (
               <Alert variant="destructive">
