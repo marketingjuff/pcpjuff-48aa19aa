@@ -636,7 +636,7 @@ export function drillRefacoes(
   o: { titulo: string; subtitulo?: string; indicadorLabel: string; indicadorValor: number | null },
 ): DrillPayload {
   const colunas: DrillColuna[] = [
-    { chave: "pedido", label: "Pedido Olist", tipo: "texto" },
+    ...COL_PCP_ID,
     { chave: "orcamento", label: "Orçamento", tipo: "texto" },
     { chave: "data", label: "Data do episódio", tipo: "data" },
     { chave: "origem_destino", label: "Etapa origem → destino", tipo: "texto" },
@@ -721,7 +721,7 @@ export function drillCorrecoes(
   o: { titulo: string; subtitulo?: string; indicadorLabel: string; indicadorValor: number | null },
 ): DrillPayload {
   const colunas: DrillColuna[] = [
-    { chave: "pedido", label: "Pedido Olist", tipo: "texto" },
+    ...COL_PCP_ID,
     { chave: "orcamento", label: "Orçamento", tipo: "texto" },
     { chave: "quando", label: "Data/hora", tipo: "texto" },
     { chave: "usuario", label: "Usuário", tipo: "texto" },
@@ -778,7 +778,7 @@ export function drillSoPcp(
 ): DrillPayload {
   const set = new Set(numeros);
   const colunas: DrillColuna[] = [
-    { chave: "pedido", label: "Pedido Olist", tipo: "texto" },
+    ...COL_PCP_ID,
     { chave: "orcamento", label: "Orçamento", tipo: "texto" },
     { chave: "vendedor", label: "Vendedor", tipo: "texto" },
     { chave: "entrada", label: "Entrada", tipo: "data" },
