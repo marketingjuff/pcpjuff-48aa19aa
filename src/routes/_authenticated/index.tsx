@@ -41,6 +41,13 @@ function AppHome() {
   );
 }
 
+/** Abas que saíram do PCP e agora vivem no módulo KPI. */
+const KPI_REDIRECT: Record<string, string> = {
+  indicadores: "custom",
+  indicadores_store: "store",
+  importolist: "importolist",
+};
+
 function AppHomeInner() {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -49,11 +56,22 @@ function AppHomeInner() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(search.pedidoId ?? null);
 
+  // Links e a última aba salva podem apontar para as abas migradas para /kpi.
+  const kpiAlvo =
+    KPI_REDIRECT[search.tab ?? ""] ??
+    (typeof window !== "undefined" ? KPI_REDIRECT[window.localStorage.getItem("pcp:tab") ?? ""] : undefined);
   useEffect(() => {
-    if (search.tab) setTab(search.tab);
+    if (!kpiAlvo) return;
+    if (typeof window !== "undefined") window.localStorage.removeItem("pcp:tab");
+    navigate({ to: "/kpi", search: { tab: kpiAlvo } as any, replace: true });
+  }, [kpiAlvo, navigate]);
+
+  useEffect(() => {
+    if (search.tab && !KPI_REDIRECT[search.tab]) setTab(search.tab);
     if (search.pedidoId) setSelectedId(search.pedidoId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.tab, search.pedidoId]);
+
   const isAdmin = useIsAdmin();
   const { data: myRoles = [] } = useMyRoles();
   const isGestor = myRoles.some((r) => r.role === "gestor");
