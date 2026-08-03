@@ -57,7 +57,11 @@ export interface IndicadoresPdfDados {
   vendidoProduzido?: VendidoProduzido;
   producao?: ProdutividadePcp;
   saude?: SaudeCadastro;
+  /** Seções exclusivas do escopo Store: ausentes, não são renderizadas. */
+  composicaoStore?: ComposicaoStore;
+  rankingEstampas?: LinhaRanking[];
 }
+
 
 function esc(s: string | number | null | undefined): string {
   if (s === null || s === undefined) return "";
