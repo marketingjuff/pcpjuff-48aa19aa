@@ -64,19 +64,27 @@ export function opcoesVendedores(
     .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
 }
 
-/** numero_pedido (pedido_olist) → vendedor do PCP. */
+/**
+ * Base do pedido da Olist → vendedor do PCP.
+ * Parciais (`3996A`, `3996B`) caem na mesma base (`3996`); vale o vendedor do
+ * primeiro parcial que tiver valor.
+ */
 export function mapaVendedorPcp(
   pcp: { pedido_olist: string | null; vendedor?: string | null }[],
 ): Map<string, string> {
   const map = new Map<string, string>();
-  for (const r of pcp) {
-    const num = String(r.pedido_olist ?? "").trim();
+  const ordenado = [...pcp].sort((a, b) =>
+    sufixoParcial(a.pedido_olist).localeCompare(sufixoParcial(b.pedido_olist), "pt-BR"),
+  );
+  for (const r of ordenado) {
+    const num = basePedidoOlist(r.pedido_olist);
     const vend = String(r.vendedor ?? "").trim();
-    if (!num || !vend) continue;
+    if (!num || !vend || map.has(num)) continue;
     map.set(num, vend);
   }
   return map;
 }
+
 
 /** Aplica a regra de união: Olist OU PCP. Seleção vazia devolve a lista intacta. */
 export function filtrarPorVendedor<T extends { numero_pedido: string; vendedor: string }>(
