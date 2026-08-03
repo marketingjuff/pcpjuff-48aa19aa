@@ -625,6 +625,9 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       vendidoProduzido: soPcpAtivo ? vxp : undefined,
       producao: soPcpAtivo ? prod : undefined,
       saude: soPcpAtivo ? saude : undefined,
+      composicaoStore: composicao ?? undefined,
+      rankingEstampas: ehStore ? rankEstampas : undefined,
+
     });
   };
 
