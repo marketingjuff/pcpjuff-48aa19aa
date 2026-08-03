@@ -67,7 +67,14 @@ import {
   type DimRankingStore,
   type ItemStoreCalc,
 } from "@/lib/indicadores-store";
+import {
+  agruparPcpPorPedidoOlist,
+  basePedidoOlist,
+  registroConsolidado,
+  type PcpAgregado,
+} from "@/lib/pedido-olist-match";
 import { useFeriados } from "@/hooks/use-feriados";
+
 
 import { useProfilesMap } from "@/hooks/use-profiles-map";
 import { abrirIndicadoresParaImpressao } from "@/lib/indicadores-pdf";
@@ -335,16 +342,20 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       const modeloPorProduto = new Map<string, string>();
       for (const r of (mapRes.data ?? []) as any[]) modeloPorProduto.set(String(r.produto_olist), String(r.modelo_cop));
 
+      /* Parciais do PCP (3996A + 3996B) formam o pedido 3996 da Olist:
+         quantidade soma, demais campos vêm do primeiro parcial. */
+      const agregados = agruparPcpPorPedidoOlist(pcp as PcpDrill[]);
       const ufPorPedido = new Map<string, string>();
       const noPcp = new Set<string>();
       const pcpPorPedido = new Map<string, PcpDb>();
-      for (const r of pcp) {
-        const num = String(r.pedido_olist ?? "").trim();
-        if (!num) continue;
-        noPcp.add(num);
-        pcpPorPedido.set(num, r);
-        if (r.uf_entrega) ufPorPedido.set(num, String(r.uf_entrega).trim().toUpperCase());
+      const pcpAgregado = new Map<string, PcpAgregado<PcpDrill>>();
+      for (const [base, ag] of agregados) {
+        noPcp.add(base);
+        pcpAgregado.set(base, ag);
+        pcpPorPedido.set(base, registroConsolidado(ag));
+        if (ag.uf_entrega) ufPorPedido.set(base, ag.uf_entrega);
       }
+
 
       const pedidosVig = apenasVigentes(pedidos as any, lotes) as PedidoDb[];
       const vigentePorPedido = new Map(pedidosVig.map((p) => [p.numero_pedido, p.lote_id]));
@@ -361,11 +372,14 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
         noPcp,
         ufPorPedido,
         pcpPorPedido,
+        pcpAgregado,
         pcpLista: pcp,
         modeloPorProduto,
         pedidosStore,
+        /* Bases do PCP sem pedido correspondente na Olist. */
         soPcp: [...noPcp].filter((n) => !numsOlist.has(n)),
       };
+
     },
   });
 
@@ -554,20 +568,24 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   const soPcpLista = useMemo(() => {
     const lista = soPcpAtivo ? (data?.soPcp ?? []) : [];
     if (vendedores.length === 0) return lista;
-    const porNumero = new Map((data?.pcpLista ?? []).map((r) => [String(r.pedido_olist ?? "").trim(), r]));
+    const ags = data?.pcpAgregado ?? new Map<string, PcpAgregado<PcpDrill>>();
     return lista.filter((num) => {
-      const reg = porNumero.get(String(num).trim());
-      return reg ? pcpNoRecorteVendedor(reg, vendedores) : false;
+      const ag = ags.get(basePedidoOlist(num));
+      return ag ? pcpNoRecorteVendedor({ vendedor: ag.vendedor }, vendedores) : false;
     });
   }, [data, vendedores, soPcpAtivo]);
 
-  /* Registros completos do PCP para os pedidos "Somente PCP" (peças, prazos, vendedor). */
+  /* Registros consolidados do PCP para os pedidos "Somente PCP" (peças somadas dos parciais). */
   const soPcpRegs = useMemo(() => {
-    const porNumero = new Map((data?.pcpLista ?? []).map((r) => [String(r.pedido_olist ?? "").trim(), r]));
+    const ags = data?.pcpAgregado ?? new Map<string, PcpAgregado<PcpDrill>>();
     return soPcpLista
-      .map((num) => porNumero.get(String(num).trim()))
+      .map((num) => {
+        const ag = ags.get(basePedidoOlist(num));
+        return ag ? registroConsolidado(ag) : undefined;
+      })
       .filter((r): r is PcpDrill => Boolean(r));
   }, [data, soPcpLista]);
+
 
   const soPcpResumo = useMemo(() => {
     const pecas = soPcpRegs.reduce((a, r) => a + (Number(r.qtd) || 0), 0);
@@ -2395,7 +2413,10 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                 <tbody>
                   {soPcpRegs.map((r) => (
                     <tr key={String(r.id ?? r.pedido_olist)} className="border-t">
-                      <td className="px-2 py-1 tabular-nums">{r.pedido_olist ?? "—"}</td>
+                      <td className="px-2 py-1 tabular-nums">
+                        {data?.pcpAgregado?.get(basePedidoOlist(r.pedido_olist))?.label ?? r.pedido_olist ?? "—"}
+                      </td>
+
                       <td className="px-2 py-1">{r.orcamento ?? "—"}</td>
                       <td className="px-2 py-1">{r.vendedor ?? "—"}</td>
                       <td className="px-2 py-1">{r.tipo_estampa ?? "—"}</td>

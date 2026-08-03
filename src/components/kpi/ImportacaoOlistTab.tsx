@@ -12,6 +12,8 @@ import { Upload, AlertTriangle, CheckCircle2, Loader2, Save } from "lucide-react
 import { toast } from "sonner";
 import { parseVendasOlist, type EmpresaOlist, type ResultadoImportacaoVendas } from "@/lib/olist-vendas";
 import { PendenciaMapeamentoAlert } from "@/components/cop/PendenciaMapeamentoAlert";
+import { basePedidoOlist } from "@/lib/pedido-olist-match";
+
 
 
 const EMPRESAS: EmpresaOlist[] = ["JOKE", "JUFF"];
@@ -122,7 +124,8 @@ export function ImportacaoOlistTab() {
   });
 
   const setMapeados = useMemo(() => new Set(mapeados), [mapeados]);
-  const setPcp = useMemo(() => new Set(pedidosPcp), [pedidosPcp]);
+  /* Parciais do PCP (3996A / 3996B) casam com o pedido único da Olist (3996). */
+  const setPcp = useMemo(() => new Set(pedidosPcp.map((n) => basePedidoOlist(n))), [pedidosPcp]);
   const setExcluidos = useMemo(() => new Set(excluidos), [excluidos]);
 
   const resumo = useMemo(() => {
@@ -130,8 +133,9 @@ export function ImportacaoOlistTab() {
     /* Pedido Juff Store é e-commerce: nunca passa pelo PCP, então fica fora da conferência. */
     const setStore = new Set(previa.pedidosStore);
     const numeros = previa.pedidos.map((p) => p.numero_pedido).filter((n) => !setStore.has(n));
-    const casam = numeros.filter((n) => setPcp.has(n));
-    const soOlist = numeros.filter((n) => !setPcp.has(n));
+    const casam = numeros.filter((n) => setPcp.has(basePedidoOlist(n)));
+    const soOlist = numeros.filter((n) => !setPcp.has(basePedidoOlist(n)));
+
     const naLista = numeros.filter((n) => setExcluidos.has(n));
     const trocaEmpresa = numeros.filter(
       (n) => empresaPorPedido[n] && empresaPorPedido[n] !== empresa,
