@@ -327,6 +327,43 @@ export async function parseVendasOlist(
     .filter((p) => !mapeados.has(p) && !produtosStore.has(p))
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
 
+  /* Conferência de sanidade do desconto — informativa, nunca bloqueia a gravação. */
+  const subtotalPorPedido = new Map<string, number>();
+  for (const i of acc.itens) {
+    const bruto = i.qtd * i.valor_unitario - i.desconto_item;
+    subtotalPorPedido.set(i.numero_pedido, (subtotalPorPedido.get(i.numero_pedido) ?? 0) + bruto);
+  }
+  const pedidosDescontoSuspeito: PedidoDescontoSuspeito[] = [];
+  for (const p of acc.pedidos.values()) {
+    const subtotal = subtotalPorPedido.get(p.numero_pedido) ?? 0;
+    const desconto =
+      p.desconto_valor != null
+        ? p.desconto_valor
+        : p.desconto_percentual != null
+          ? (subtotal * p.desconto_percentual) / 100
+          : 0;
+    const liquido = subtotal - desconto + p.frete + p.despesas;
+    const motivos: string[] = [];
+    if (desconto > subtotal) motivos.push("desconto maior que o valor dos itens");
+    if (liquido < 0) motivos.push("líquido negativo");
+    if (acc.temRateio && p.desconto_valor != null) {
+      const somaRateio = acc.rateio.get(p.numero_pedido);
+      if (somaRateio != null && Math.abs(somaRateio - p.desconto_valor) > 0.05) {
+        motivos.push(`rateio soma ${somaRateio.toFixed(2)}`);
+      }
+    }
+    if (motivos.length > 0) {
+      pedidosDescontoSuspeito.push({
+        numero_pedido: p.numero_pedido,
+        subtotal,
+        desconto,
+        liquido,
+        motivo: motivos.join(" · "),
+      });
+    }
+  }
+  pedidosDescontoSuspeito.sort((a, b) => a.numero_pedido.localeCompare(b.numero_pedido, "pt-BR", { numeric: true }));
+
   return {
     arquivosLidos,
     totalLinhas,
@@ -343,6 +380,9 @@ export async function parseVendasOlist(
       descricoes: Array.from(descricoesStore).sort((a, b) => a.localeCompare(b, "pt-BR")),
       foraPadrao: [...foraPadraoMap.values()].sort((a, b) => a.descricao.localeCompare(b.descricao, "pt-BR")),
     },
+    pedidosDescontoSuspeito,
+  };
+
   };
 
 }
