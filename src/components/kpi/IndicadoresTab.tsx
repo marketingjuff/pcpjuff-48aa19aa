@@ -2413,7 +2413,10 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                 <tbody>
                   {soPcpRegs.map((r) => (
                     <tr key={String(r.id ?? r.pedido_olist)} className="border-t">
-                      <td className="px-2 py-1 tabular-nums">{r.pedido_olist ?? "—"}</td>
+                      <td className="px-2 py-1 tabular-nums">
+                        {data?.pcpAgregado?.get(basePedidoOlist(r.pedido_olist))?.label ?? r.pedido_olist ?? "—"}
+                      </td>
+
                       <td className="px-2 py-1">{r.orcamento ?? "—"}</td>
                       <td className="px-2 py-1">{r.vendedor ?? "—"}</td>
                       <td className="px-2 py-1">{r.tipo_estampa ?? "—"}</td>
