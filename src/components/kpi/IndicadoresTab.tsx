@@ -335,16 +335,20 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       const modeloPorProduto = new Map<string, string>();
       for (const r of (mapRes.data ?? []) as any[]) modeloPorProduto.set(String(r.produto_olist), String(r.modelo_cop));
 
+      /* Parciais do PCP (3996A + 3996B) formam o pedido 3996 da Olist:
+         quantidade soma, demais campos vêm do primeiro parcial. */
+      const agregados = agruparPcpPorPedidoOlist(pcp as PcpDrill[]);
       const ufPorPedido = new Map<string, string>();
       const noPcp = new Set<string>();
       const pcpPorPedido = new Map<string, PcpDb>();
-      for (const r of pcp) {
-        const num = String(r.pedido_olist ?? "").trim();
-        if (!num) continue;
-        noPcp.add(num);
-        pcpPorPedido.set(num, r);
-        if (r.uf_entrega) ufPorPedido.set(num, String(r.uf_entrega).trim().toUpperCase());
+      const pcpAgregado = new Map<string, PcpAgregado<PcpDrill>>();
+      for (const [base, ag] of agregados) {
+        noPcp.add(base);
+        pcpAgregado.set(base, ag);
+        pcpPorPedido.set(base, registroConsolidado(ag));
+        if (ag.uf_entrega) ufPorPedido.set(base, ag.uf_entrega);
       }
+
 
       const pedidosVig = apenasVigentes(pedidos as any, lotes) as PedidoDb[];
       const vigentePorPedido = new Map(pedidosVig.map((p) => [p.numero_pedido, p.lote_id]));
