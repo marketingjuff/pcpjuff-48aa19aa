@@ -250,8 +250,36 @@ export async function parseVendasOlist(
     arquivosLidos = 1;
   }
 
+  /* Juff Store: corte por pedido inteiro, igual à regra do painel. */
+  const pedidosStoreSet = new Set<string>();
+  for (const i of acc.itens) {
+    if (isItemJuffStore(i.descricao_original) || isItemJuffStore(i.produto_olist)) {
+      pedidosStoreSet.add(i.numero_pedido);
+    }
+  }
+
+  const descricoesStore = new Set<string>();
+  const foraPadraoMap = new Map<string, { descricao: string; motivo: string }>();
+  let linhasStore = 0;
+  let pecasStore = 0;
+  const produtosStore = new Set<string>();
+  for (const i of acc.itens) {
+    if (!pedidosStoreSet.has(i.numero_pedido)) continue;
+    if (i.produto_olist) produtosStore.add(i.produto_olist);
+    if (i.is_servico) continue;
+    linhasStore += 1;
+    pecasStore += i.qtd;
+    const desc = (i.descricao_original ?? "").trim();
+    descricoesStore.add(desc);
+    const ps = parseProdutoStore(desc);
+    if (!ps.ok && !foraPadraoMap.has(desc)) {
+      foraPadraoMap.set(desc, { descricao: desc, motivo: ps.motivo ?? "Fora do padrão" });
+    }
+  }
+
+  /* Produto de pedido Store não exige de-para: a classificação é própria. */
   const produtosSemMapeamento = Array.from(acc.produtos)
-    .filter((p) => !mapeados.has(p))
+    .filter((p) => !mapeados.has(p) && !produtosStore.has(p))
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   return {
@@ -262,7 +290,16 @@ export async function parseVendasOlist(
     produtosSemMapeamento,
     servicos: Array.from(acc.servicos).sort((a, b) => a.localeCompare(b, "pt-BR")),
     linhasIgnoradas: acc.ignoradas,
+    pedidosStore: Array.from(pedidosStoreSet).sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true })),
+    store: {
+      pedidos: pedidosStoreSet.size,
+      linhas: linhasStore,
+      pecas: pecasStore,
+      descricoes: Array.from(descricoesStore).sort((a, b) => a.localeCompare(b, "pt-BR")),
+      foraPadrao: [...foraPadraoMap.values()].sort((a, b) => a.descricao.localeCompare(b.descricao, "pt-BR")),
+    },
   };
+
 }
 
 /* ------------------------------------------------------------------ */
