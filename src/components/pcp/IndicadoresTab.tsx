@@ -2412,6 +2412,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
 function RankingCard({
   titulo,
   dim,
+  dimStore,
   atuais,
   anteriores,
   pedidos,
@@ -2420,6 +2421,8 @@ function RankingCard({
 }: {
   titulo: string;
   dim: DimRanking;
+  /** Quando presente, a chave do ranking vem do parse da Juff Store. */
+  dimStore?: DimRankingStore;
   atuais: ReturnType<typeof ranking>;
   anteriores: ReturnType<typeof ranking> | null;
   pedidos: PedidoFiltrado[];
@@ -2427,11 +2430,26 @@ function RankingCard({
   onDrill: (p: DrillPayload) => void;
 }) {
   const filtroDim = (chave: string) => (i: ItemCalc) => {
+    if (dimStore) {
+      const s = (i as ItemStoreCalc).store ?? parseProdutoStore(i.descricao_original ?? i.produto_olist);
+      if (dimStore === "modelo_base") return (s.modelo_base ?? "Não classificado") === chave;
+      if (dimStore === "estampa")
+        return s.tipo_peca === "ESTAMPADA" && (s.estampa ?? "Não classificado") === chave;
+      if (dimStore === "cor") return (s.cor ?? i.cor ?? "Não classificado") === chave;
+      if (dimStore === "tamanho") return (s.tamanho ?? i.tamanho ?? "Não classificado") === chave;
+      const marca = s.tipo_peca === "LISA" ? "Lisa" : "Estampada";
+      return (
+        `${s.modelo_base ?? "Não classificado"} \u00b7 ${s.cor ?? i.cor ?? "—"} \u00b7 ${
+          s.tamanho ?? i.tamanho ?? "—"
+        } (${marca})` === chave
+      );
+    }
     if (dim === "modelo") return i.modelo === chave;
     if (dim === "cor") return i.cor === chave;
     if (dim === "tamanho") return i.tamanho === chave;
     return `${i.modelo} \u00b7 ${i.cor} \u00b7 ${i.tamanho}` === chave;
   };
+
   const [ordem, setOrdem] = useState<OrdemRanking>("pecas");
   const [limite, setLimite] = useState<string>("10");
 
