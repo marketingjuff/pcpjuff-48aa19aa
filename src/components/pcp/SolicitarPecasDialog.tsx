@@ -140,7 +140,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
     setGrupos((arr) => arr.map((g, idx) => {
       if (idx !== i) return g;
       const valor = Math.max(0, n);
-      if (typeof limite === "number" && limite > 0) {
+      if (typeof limite === "number" && limite > 0 && !limiteApenasAviso) {
         const outros = totalAtual(arr, i, tam);
         const permitido = Math.max(0, limite - outros);
         return { ...g, qtd: { ...g.qtd, [tam]: Math.min(valor, permitido) } };
@@ -170,7 +170,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
   const excedeLimite = typeof limite === "number" && limite > 0 && totals.sol > limite;
 
   async function handleSave() {
-    if (excedeLimite) return;
+    if (excedeLimite && !limiteApenasAviso) return;
     setSaving(true);
     try {
       await onSave(desagrupar(grupos));
