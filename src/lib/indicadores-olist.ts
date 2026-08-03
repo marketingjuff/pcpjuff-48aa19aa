@@ -184,6 +184,40 @@ export function primeiraCompraPorCliente(todos: PedidoCalc[]): Map<string, strin
 }
 
 /* ------------------------------------------------------------------ */
+/* Escopo: Juff Custom (atacado) × Juff Store (e-commerce)             */
+/* ------------------------------------------------------------------ */
+
+function normalizaTexto(v: string | null | undefined): string {
+  return String(v ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Item do e-commerce: a descrição da Olist traz "Juff Store" no nome do produto. */
+export function isItemJuffStore(texto: string | null | undefined): boolean {
+  return normalizaTexto(texto).includes("juff store");
+}
+
+/**
+ * Números de pedido que contêm pelo menos um item Juff Store.
+ * O corte é por pedido inteiro: um único item do e-commerce leva o pedido todo
+ * (itens, frete, despesas e descontos) para o escopo Store.
+ */
+export function pedidosJuffStore(itens: ItemDb[]): Set<string> {
+  const out = new Set<string>();
+  for (const it of itens) {
+    if (isItemJuffStore(it.descricao_original) || isItemJuffStore(it.produto_olist)) {
+      out.add(it.numero_pedido);
+    }
+  }
+  return out;
+}
+
+
+/* ------------------------------------------------------------------ */
 /* Filtros                                                            */
 /* ------------------------------------------------------------------ */
 
