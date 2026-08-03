@@ -541,9 +541,10 @@ export function IndicadoresTab() {
 
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" style={{ ["--tbl-congelada-top" as string]: "176px" }}>
       {/* ---------------- Filtros ---------------- */}
-      <div className="sticky top-[68px] z-20 -mx-1 space-y-2 rounded-md border bg-background/95 p-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="sticky top-[68px] z-30 -mx-1 space-y-2 rounded-md border bg-background p-3 shadow-sm">
+
         <div className="flex flex-wrap items-center gap-2">
           <Select
             value={preset}
