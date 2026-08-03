@@ -64,13 +64,24 @@ function semAcento(s: string) {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
-/** Aceita número nativo (41.26) ou texto brasileiro ("41,26" / "1.234,56"). */
+/** Aceita número nativo (503.99), texto BR ("41,26" / "1.234,56") ou texto com ponto decimal ("503.99"). */
 export function num(v: unknown): number {
   if (typeof v === "number") return Number.isFinite(v) ? v : 0;
   const s = String(v ?? "").trim();
   if (!s) return 0;
-  return Number(s.replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".")) || 0;
+  const limpo = s.replace(/[^\d,.-]/g, "");
+  if (!limpo) return 0;
+  let normalizado: string;
+  if (limpo.includes(",")) {
+    normalizado = limpo.replace(/\./g, "").replace(",", ".");
+  } else if (/^-?\d{1,3}(\.\d{3})+$/.test(limpo)) {
+    normalizado = limpo.replace(/\./g, "");
+  } else {
+    normalizado = limpo;
+  }
+  return Number(normalizado) || 0;
 }
+
 
 /** DD/MM/AAAA (ou serial/Date do Excel) → AAAA-MM-DD. */
 export function dataBr(v: unknown): string | null {
