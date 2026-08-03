@@ -1463,6 +1463,8 @@ export function IndicadoresTab() {
         </CardContent>
       </Card>
 
+      {escopo === "custom" && (
+        <>
       {/* ---------------- Bloco 6 — Distribuição geográfica ---------------- */}
       <Card>
         <CardHeader className="pb-2">
