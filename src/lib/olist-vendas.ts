@@ -46,6 +46,15 @@ export interface ResumoStoreImport {
   foraPadrao: { descricao: string; motivo: string }[];
 }
 
+/** Pedido cujo desconto não passou na checagem de sanidade da prévia (informativo). */
+export interface PedidoDescontoSuspeito {
+  numero_pedido: string;
+  subtotal: number;
+  desconto: number;
+  liquido: number;
+  motivo: string;
+}
+
 export interface ResultadoImportacaoVendas {
   arquivosLidos: number;
   totalLinhas: number;
@@ -57,20 +66,34 @@ export interface ResultadoImportacaoVendas {
   /** Pedidos com ao menos um item Juff Store — ficam fora da conferência com o PCP. */
   pedidosStore: string[];
   store: ResumoStoreImport;
+  /** Conferência não bloqueante: descontos maiores que o subtotal ou rateio divergente. */
+  pedidosDescontoSuspeito: PedidoDescontoSuspeito[];
 }
+
 
 
 function semAcento(s: string) {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
-/** Aceita número nativo (41.26) ou texto brasileiro ("41,26" / "1.234,56"). */
+/** Aceita número nativo (503.99), texto BR ("41,26" / "1.234,56") ou texto com ponto decimal ("503.99"). */
 export function num(v: unknown): number {
   if (typeof v === "number") return Number.isFinite(v) ? v : 0;
   const s = String(v ?? "").trim();
   if (!s) return 0;
-  return Number(s.replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".")) || 0;
+  const limpo = s.replace(/[^\d,.-]/g, "");
+  if (!limpo) return 0;
+  let normalizado: string;
+  if (limpo.includes(",")) {
+    normalizado = limpo.replace(/\./g, "").replace(",", ".");
+  } else if (/^-?\d{1,3}(\.\d{3})+$/.test(limpo)) {
+    normalizado = limpo.replace(/\./g, "");
+  } else {
+    normalizado = limpo;
+  }
+  return Number(normalizado) || 0;
 }
+
 
 /** DD/MM/AAAA (ou serial/Date do Excel) → AAAA-MM-DD. */
 export function dataBr(v: unknown): string | null {
@@ -100,12 +123,16 @@ export function normalizarVendedor(bruto: unknown): string {
   return achou ?? "Outros";
 }
 
-/** Desconto do pedido: "13%" → percentual; "0,00" → valor em reais. */
+/** Desconto do pedido: número nativo → valor direto; "13%" → percentual; "0,00" → valor em reais. */
 export function parseDesconto(v: unknown): {
   desconto_valor: number | null;
   desconto_percentual: number | null;
   desconto_original: string | null;
 } {
+  if (typeof v === "number") {
+    if (!Number.isFinite(v)) return { desconto_valor: null, desconto_percentual: null, desconto_original: null };
+    return { desconto_valor: v, desconto_percentual: null, desconto_original: String(v) };
+  }
   const s = String(v ?? "").trim();
   if (!s) return { desconto_valor: null, desconto_percentual: null, desconto_original: null };
   if (s.includes("%")) {
@@ -113,6 +140,7 @@ export function parseDesconto(v: unknown): {
   }
   return { desconto_valor: num(s), desconto_percentual: null, desconto_original: s };
 }
+
 
 function campo(row: Record<string, unknown>, alvos: string[]): unknown {
   const keys = Object.keys(row);
@@ -141,8 +169,11 @@ function lerPlanilha(
     servicos: Set<string>;
     produtos: Set<string>;
     ignoradas: ResultadoImportacaoVendas["linhasIgnoradas"];
+    rateio: Map<string, number>;
+    temRateio: boolean;
   },
 ): number {
+
   const wb = XLSX.read(buf, { type: "array", cellDates: true });
   const ws = wb.Sheets[wb.SheetNames[0]];
   if (!ws) return 0;
@@ -173,6 +204,14 @@ function lerPlanilha(
         despesas: num(campo(row, ["despesas pedido", "despesas"])),
       });
     }
+
+    const rateadoBruto = campo(row, ["desconto do pedido rateado", "desconto pedido rateado"]);
+    if (rateadoBruto !== undefined && String(rateadoBruto ?? "").trim() !== "") {
+      acc.temRateio = true;
+      acc.rateio.set(numero, (acc.rateio.get(numero) ?? 0) + num(rateadoBruto));
+    }
+
+
 
     const descricao = String(campo(row, ["descricao"]) ?? "").trim();
     if (!descricao) {
@@ -231,6 +270,9 @@ export async function parseVendasOlist(
     servicos: new Set<string>(),
     produtos: new Set<string>(),
     ignoradas: [] as ResultadoImportacaoVendas["linhasIgnoradas"],
+    rateio: new Map<string, number>(),
+    temRateio: false,
+
   };
 
   let arquivosLidos = 0;
@@ -285,6 +327,43 @@ export async function parseVendasOlist(
     .filter((p) => !mapeados.has(p) && !produtosStore.has(p))
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
 
+  /* Conferência de sanidade do desconto — informativa, nunca bloqueia a gravação. */
+  const subtotalPorPedido = new Map<string, number>();
+  for (const i of acc.itens) {
+    const bruto = i.qtd * i.valor_unitario - i.desconto_item;
+    subtotalPorPedido.set(i.numero_pedido, (subtotalPorPedido.get(i.numero_pedido) ?? 0) + bruto);
+  }
+  const pedidosDescontoSuspeito: PedidoDescontoSuspeito[] = [];
+  for (const p of acc.pedidos.values()) {
+    const subtotal = subtotalPorPedido.get(p.numero_pedido) ?? 0;
+    const desconto =
+      p.desconto_valor != null
+        ? p.desconto_valor
+        : p.desconto_percentual != null
+          ? (subtotal * p.desconto_percentual) / 100
+          : 0;
+    const liquido = subtotal - desconto + p.frete + p.despesas;
+    const motivos: string[] = [];
+    if (desconto > subtotal) motivos.push("desconto maior que o valor dos itens");
+    if (liquido < 0) motivos.push("líquido negativo");
+    if (acc.temRateio && p.desconto_valor != null) {
+      const somaRateio = acc.rateio.get(p.numero_pedido);
+      if (somaRateio != null && Math.abs(somaRateio - p.desconto_valor) > 0.05) {
+        motivos.push(`rateio soma ${somaRateio.toFixed(2)}`);
+      }
+    }
+    if (motivos.length > 0) {
+      pedidosDescontoSuspeito.push({
+        numero_pedido: p.numero_pedido,
+        subtotal,
+        desconto,
+        liquido,
+        motivo: motivos.join(" · "),
+      });
+    }
+  }
+  pedidosDescontoSuspeito.sort((a, b) => a.numero_pedido.localeCompare(b.numero_pedido, "pt-BR", { numeric: true }));
+
   return {
     arquivosLidos,
     totalLinhas,
@@ -301,6 +380,7 @@ export async function parseVendasOlist(
       descricoes: Array.from(descricoesStore).sort((a, b) => a.localeCompare(b, "pt-BR")),
       foraPadrao: [...foraPadraoMap.values()].sort((a, b) => a.descricao.localeCompare(b.descricao, "pt-BR")),
     },
+    pedidosDescontoSuspeito,
   };
 
 }
