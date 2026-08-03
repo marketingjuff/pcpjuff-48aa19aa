@@ -378,7 +378,7 @@ export function drillPcpPedidos(
   ];
   const linhas: DrillLinha[] = registros
     .map((r) => ({
-      pedido: idPcp(r),
+      ...idsPcp(r),
       orcamento: txt(r.orcamento),
       vendedor: txt(r.vendedor),
       tipo_estampa: txt(r.tipo_estampa),
@@ -409,7 +409,7 @@ export function drillPcpPrazo(
     const p = dias(r.entrada_pedido, r.saida_juff, feriados);
     if (p == null) continue;
     linhas.push({
-      pedido: idPcp(r),
+      ...idsPcp(r),
       orcamento: txt(r.orcamento),
       vendedor: txt(r.vendedor),
       tipo_estampa: txt(r.tipo_estampa),
@@ -451,7 +451,7 @@ export function drillPcpEtapa(
       const d = dias(a, b, feriados);
       if (d == null) continue;
       linhas.push({
-        pedido: idPcp(r),
+        ...idsPcp(r),
         orcamento: txt(r.orcamento),
         vendedor: txt(r.vendedor),
         tipo_estampa: txt(r.tipo_estampa),
@@ -489,7 +489,7 @@ export function drillPcpEntregas(
       ? -diasUteisEntre(r.saida_juff, r.data_entrega, feriados)
       : diasUteisEntre(r.data_entrega, r.saida_juff, feriados);
     linhas.push({
-      pedido: idPcp(r),
+      ...idsPcp(r),
       orcamento: txt(r.orcamento),
       vendedor: txt(r.vendedor),
       tipo_estampa: txt(r.tipo_estampa),
@@ -528,7 +528,7 @@ export function drillPcpAtraso(
     if (!r.data_entrega || !r.saida_juff) continue;
     if (r.saida_juff <= r.data_entrega) continue;
     linhas.push({
-      pedido: idPcp(r),
+      ...idsPcp(r),
       orcamento: txt(r.orcamento),
       vendedor: txt(r.vendedor),
       tipo_estampa: txt(r.tipo_estampa),
@@ -580,7 +580,7 @@ export function drillPcpPendentes(
       if (restantes > 3) continue;
     }
     linhas.push({
-      pedido: idPcp(r),
+      ...idsPcp(r),
       orcamento: txt(r.orcamento),
       vendedor: txt(r.vendedor),
       tipo_estampa: txt(r.tipo_estampa),
@@ -648,7 +648,7 @@ export function drillRefacoes(
         .map((x: any) => `${x?.modelo ?? "—"} · ${x?.cor ?? "—"} · ${x?.tamanho ?? "—"} · ${num(x?.qtd)}`)
         .join(" | ");
       linhas.push({
-        pedido: idPcp(r),
+        ...idsPcp(r),
         orcamento: txt(r.orcamento),
         data: e.data ? String(e.data).slice(0, 10) : null,
         origem_destino: `${e.etapa_origem ?? "—"} → ${
@@ -715,7 +715,7 @@ export function drillCorrecoes(
       if (aba != null && abaC !== aba) continue;
       const d = c.data ? new Date(c.data) : null;
       linhas.push({
-        pedido: idPcp(r),
+        ...idsPcp(r),
         orcamento: txt(r.orcamento),
         quando: d && !Number.isNaN(d.getTime()) ? d.toLocaleString("pt-BR") : (txt(c.data) ?? "—"),
         usuario: resolveNome(nomes, c.usuario_id),
