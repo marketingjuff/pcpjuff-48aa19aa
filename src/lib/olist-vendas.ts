@@ -270,6 +270,9 @@ export async function parseVendasOlist(
     servicos: new Set<string>(),
     produtos: new Set<string>(),
     ignoradas: [] as ResultadoImportacaoVendas["linhasIgnoradas"],
+    rateio: new Map<string, number>(),
+    temRateio: false,
+
   };
 
   let arquivosLidos = 0;
