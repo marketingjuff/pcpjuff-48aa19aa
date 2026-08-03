@@ -12,6 +12,8 @@ import { Upload, AlertTriangle, CheckCircle2, Loader2, Save } from "lucide-react
 import { toast } from "sonner";
 import { parseVendasOlist, type EmpresaOlist, type ResultadoImportacaoVendas } from "@/lib/olist-vendas";
 import { PendenciaMapeamentoAlert } from "@/components/cop/PendenciaMapeamentoAlert";
+import { basePedidoOlist } from "@/lib/pedido-olist-match";
+
 
 
 const EMPRESAS: EmpresaOlist[] = ["JOKE", "JUFF"];
