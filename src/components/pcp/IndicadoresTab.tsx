@@ -726,6 +726,25 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
           <MultiSelect label="Cor" opcoes={opcoes.cores} valor={cores} onChange={setCores} />
           <MultiSelect label="Tamanho" opcoes={opcoes.tamanhos} valor={tamanhos} onChange={setTamanhos} />
           <MultiSelect label="Situação" opcoes={opcoes.situacoes} valor={situacoes} onChange={setSituacoes} />
+          {ehStore && (
+            <>
+              <Select value={tipoPeca} onValueChange={(v) => setTipoPeca(v as typeof tipoPeca)}>
+                <SelectTrigger className="h-9 w-[150px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as peças</SelectItem>
+                  <SelectItem value="lisas">Lisas</SelectItem>
+                  <SelectItem value="estampadas">Estampadas</SelectItem>
+                </SelectContent>
+              </Select>
+              <label className="flex cursor-pointer items-center gap-1 pl-1 text-xs">
+                <Checkbox checked={somenteOutlet} onCheckedChange={(c) => setSomenteOutlet(c === true)} />
+                Somente Outlet
+              </label>
+            </>
+          )}
+
           {soPcpAtivo && (
           <div className="flex flex-wrap items-center gap-2 pl-2">
             {GRUPOS.map((g) => (
