@@ -23,6 +23,8 @@ import { diasUteisEntre, todayISO, type Feriados } from "@/lib/dias-uteis";
 
 export type EmpresaFiltro = "CONSOLIDADO" | "JOKE" | "JUFF";
 export type Grupo = "casados" | "so_olist" | "excluidos" | "so_pcp";
+/** Escopo do painel: atacado (passa pelo PCP) ou e-commerce (independente). */
+export type EscopoIndicadores = "custom" | "store";
 
 export interface PedidoDb {
   numero_pedido: string;
@@ -43,6 +45,8 @@ export interface ItemDb {
   numero_pedido: string;
   lote_id: string;
   produto_olist: string | null;
+  /** descrição crua da planilha da Olist (opcional) */
+  descricao_original?: string | null;
   cor: string | null;
   tamanho: string | null;
   qtd: number | null;
@@ -53,6 +57,7 @@ export interface ItemDb {
 
 export interface ItemCalc {
   produto_olist: string | null;
+  descricao_original?: string | null;
   modelo: string | null;
   cor: string | null;
   tamanho: string | null;
