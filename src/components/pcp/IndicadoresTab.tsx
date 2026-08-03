@@ -350,11 +350,53 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   const base = useMemo(() => {
     const todos = data?.calc ?? [];
     const store = data?.pedidosStore ?? new Set<string>();
-    return todos.filter((p) => (escopo === "store" ? store.has(p.numero_pedido) : !store.has(p.numero_pedido)));
-  }, [data, escopo]);
+    const doEscopo = todos.filter((p) =>
+      escopo === "store" ? store.has(p.numero_pedido) : !store.has(p.numero_pedido),
+    );
+    if (escopo !== "store") return doEscopo;
+
+    /* Na Store o modelo/cor/tamanho vêm do parse próprio (nada de olist_produto_map).
+       O parse é só classificação: qtd, subtotal e descontos ficam idênticos. */
+    const out: typeof doEscopo = [];
+    for (const p of doEscopo) {
+      const itens = p.itens
+        .map((i) => {
+          const ps = parseProdutoStore(i.descricao_original ?? i.produto_olist);
+          const item: ItemStoreCalc = {
+            ...i,
+            store: ps,
+            modelo: i.is_servico ? i.modelo : (ps.modelo_base ?? "Não classificado"),
+            cor: ps.cor ?? i.cor,
+            tamanho: ps.tamanho ?? i.tamanho,
+          };
+          return item;
+        })
+        .filter((i) => {
+          if (i.is_servico) return true;
+          if (somenteOutlet && !i.store.is_outlet) return false;
+          if (tipoPeca === "lisas" && i.store.tipo_peca !== "LISA") return false;
+          if (tipoPeca === "estampadas" && i.store.tipo_peca !== "ESTAMPADA") return false;
+          return true;
+        });
+      if (itens.length === 0) continue;
+      const subtotal = itens.reduce((s, i) => s + i.subtotal, 0);
+      const fator = p.subtotal ? subtotal / p.subtotal : 1;
+      const desconto_pedido = p.desconto_pedido * fator;
+      out.push({
+        ...p,
+        itens,
+        subtotal,
+        desconto_pedido,
+        liquido: subtotal - desconto_pedido,
+        pecas: itens.filter((i) => !i.is_servico).reduce((s, i) => s + i.qtd, 0),
+      });
+    }
+    return out;
+  }, [data, escopo, tipoPeca, somenteOutlet]);
 
   /* Novo/recorrente é medido só contra o histórico do próprio escopo. */
   const primeiraCompra = useMemo(() => primeiraCompraPorCliente(base), [base]);
+
 
   const opcoesVend: OpcaoVendedor[] = useMemo(
     () => opcoesVendedores(base, data?.pcpLista ?? []),
