@@ -211,6 +211,18 @@
 }
 
 @layer base {
+  /* Radix (Select/Dropdown) trava a rolagem aplicando overflow:hidden + padding no <body>.
+     Isso cria um contexto de rolagem e faz a barra de filtros congelada "pular"/sumir
+     enquanto o dropdown está aberto. Neutralizamos apenas esses efeitos de layout. */
+  body[data-scroll-locked] {
+    overflow-y: visible !important;
+    overflow-x: clip !important;
+    padding-right: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
+@layer base {
   /* COP: sem setinhas de incremento nos campos numéricos (UX de digitação). */
   .cop-scope input[type="number"] {
     -moz-appearance: textfield;
