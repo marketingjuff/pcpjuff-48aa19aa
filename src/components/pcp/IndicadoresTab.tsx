@@ -60,6 +60,13 @@ import {
 import { useFeriados } from "@/hooks/use-feriados";
 import { useProfilesMap } from "@/hooks/use-profiles-map";
 import { abrirIndicadoresParaImpressao } from "@/lib/indicadores-pdf";
+import {
+  opcoesVendedores,
+  mapaVendedorPcp,
+  filtrarPorVendedor,
+  pcpNoRecorteVendedor,
+  type OpcaoVendedor,
+} from "@/lib/indicadores-vendedor";
 import { FileDown } from "lucide-react";
 import {
   drillPedidos,
@@ -124,6 +131,8 @@ function intervaloPreset(p: Preset): { de: string; ate: string } {
   return { de: iso(new Date(hoje.getTime() - (dias - 1) * 86400000)), ate: iso(hoje) };
 }
 
+type OpcaoMulti = string | { valor: string; label: string; hint?: string };
+
 function MultiSelect({
   label,
   opcoes,
@@ -131,10 +140,11 @@ function MultiSelect({
   onChange,
 }: {
   label: string;
-  opcoes: string[];
+  opcoes: OpcaoMulti[];
   valor: string[];
   onChange: (v: string[]) => void;
 }) {
+  const itens = opcoes.map((o) => (typeof o === "string" ? { valor: o, label: o, hint: undefined } : o));
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -154,14 +164,20 @@ function MultiSelect({
           </Button>
         </div>
         <div className="max-h-64 space-y-1 overflow-auto">
-          {opcoes.length === 0 && <div className="text-xs text-muted-foreground">Sem opções</div>}
-          {opcoes.map((o) => (
-            <label key={o} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-xs hover:bg-muted">
+          {itens.length === 0 && <div className="text-xs text-muted-foreground">Sem opções</div>}
+          {itens.map((o) => (
+            <label
+              key={o.valor}
+              className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-xs hover:bg-muted"
+            >
               <Checkbox
-                checked={valor.includes(o)}
-                onCheckedChange={(c) => onChange(c ? [...valor, o] : valor.filter((v) => v !== o))}
+                checked={valor.includes(o.valor)}
+                onCheckedChange={(c) => onChange(c ? [...valor, o.valor] : valor.filter((v) => v !== o.valor))}
               />
-              <span className="truncate">{o}</span>
+              <span className="truncate">{o.label}</span>
+              {o.hint ? (
+                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">{o.hint}</span>
+              ) : null}
             </label>
           ))}
         </div>
@@ -169,6 +185,7 @@ function MultiSelect({
     </Popover>
   );
 }
+
 
 function Kpi({
   titulo,
@@ -325,14 +342,31 @@ export function IndicadoresTab() {
 
   const base = data?.calc ?? [];
 
+  const opcoesVend: OpcaoVendedor[] = useMemo(
+    () => opcoesVendedores(base, data?.pcpLista ?? []),
+    [base, data],
+  );
+  const opcoesVendMulti = useMemo(
+    () =>
+      opcoesVend.map((o) => ({
+        valor: o.chave,
+        label: o.label,
+        hint: o.origem === "ambos" ? "Olist + PCP" : o.origem === "pcp" ? "só PCP" : "só Olist",
+      })),
+    [opcoesVend],
+  );
+  const labelsVendSelecionados = useMemo(
+    () => vendedores.map((k) => opcoesVend.find((o) => o.chave === k)?.label ?? k),
+    [vendedores, opcoesVend],
+  );
+  const vendedorPcpPorPedido = useMemo(() => mapaVendedorPcp(data?.pcpLista ?? []), [data]);
+
   const opcoes = useMemo(() => {
-    const v = new Set<string>();
     const s = new Set<string>();
     const m = new Set<string>();
     const c = new Set<string>();
     const t = new Set<string>();
     for (const p of base) {
-      v.add(p.vendedor);
       s.add(p.situacao);
       for (const i of p.itens) {
         if (i.modelo) m.add(i.modelo);
@@ -341,7 +375,7 @@ export function IndicadoresTab() {
       }
     }
     const ord = (x: Set<string>) => [...x].sort((a, b) => a.localeCompare(b, "pt-BR"));
-    return { vendedores: ord(v), situacoes: ord(s), modelos: ord(m), cores: ord(c), tamanhos: ord(t) };
+    return { situacoes: ord(s), modelos: ord(m), cores: ord(c), tamanhos: ord(t) };
   }, [base]);
 
   const filtros: Filtros = useMemo(
@@ -364,12 +398,26 @@ export function IndicadoresTab() {
     [data],
   );
 
-  const atuais = useMemo(() => aplicarFiltros(base, filtros, ctx), [base, filtros, ctx]);
+  // O recorte por vendedor sai do aplicarFiltros e passa a usar a regra de união (Olist OU PCP).
+  const atuais = useMemo(
+    () =>
+      filtrarPorVendedor(
+        aplicarFiltros(base, { ...filtros, vendedores: [] }, ctx),
+        vendedores,
+        vendedorPcpPorPedido,
+      ),
+    [base, filtros, ctx, vendedores, vendedorPcpPorPedido],
+  );
   const anteriores = useMemo(() => {
     if (!comparar) return [];
     const p = periodoAnterior(intervalo.de, intervalo.ate);
-    return aplicarFiltros(base, { ...filtros, de: p.de, ate: p.ate }, ctx);
-  }, [comparar, base, filtros, ctx, intervalo]);
+    return filtrarPorVendedor(
+      aplicarFiltros(base, { ...filtros, vendedores: [], de: p.de, ate: p.ate }, ctx),
+      vendedores,
+      vendedorPcpPorPedido,
+    );
+  }, [comparar, base, filtros, ctx, intervalo, vendedores, vendedorPcpPorPedido]);
+
 
   const r = useMemo(() => resumo(atuais), [atuais]);
   const rAnt = useMemo(() => resumo(anteriores), [anteriores]);
@@ -394,9 +442,13 @@ export function IndicadoresTab() {
   const pcpPeriodo = useMemo(
     () =>
       (data?.pcpLista ?? []).filter(
-        (r) => r.entrada_pedido && r.entrada_pedido >= intervalo.de && r.entrada_pedido <= intervalo.ate,
+        (r) =>
+          r.entrada_pedido &&
+          r.entrada_pedido >= intervalo.de &&
+          r.entrada_pedido <= intervalo.ate &&
+          pcpNoRecorteVendedor(r, vendedores),
       ),
-    [data, intervalo],
+    [data, intervalo, vendedores],
   );
   const prod = useMemo(() => produtividadePcp(pcpPeriodo, feriados), [pcpPeriodo, feriados]);
   const saude = useMemo(
@@ -405,6 +457,16 @@ export function IndicadoresTab() {
   );
 
   const mostraSoPcp = grupos.includes("so_pcp");
+  const soPcpLista = useMemo(() => {
+    const lista = data?.soPcp ?? [];
+    if (vendedores.length === 0) return lista;
+    const porNumero = new Map((data?.pcpLista ?? []).map((r) => [String(r.pedido_olist ?? "").trim(), r]));
+    return lista.filter((num) => {
+      const reg = porNumero.get(String(num).trim());
+      return reg ? pcpNoRecorteVendedor(reg, vendedores) : false;
+    });
+  }, [data, vendedores]);
+
 
   /* ---- Detalhamento (drill-down), somente leitura ---- */
   const nomes = useProfilesMap();
@@ -421,7 +483,8 @@ export function IndicadoresTab() {
       periodoAnterior: comparar ? periodoAnterior(intervalo.de, intervalo.ate) : null,
       filtros: {
         empresa,
-        vendedores,
+        vendedores: labelsVendSelecionados,
+
         modelos,
         cores,
         tamanhos,
@@ -525,7 +588,7 @@ export function IndicadoresTab() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <MultiSelect label="Vendedor" opcoes={opcoes.vendedores} valor={vendedores} onChange={setVendedores} />
+          <MultiSelect label="Vendedor" opcoes={opcoesVendMulti} valor={vendedores} onChange={setVendedores} />
           <MultiSelect label="Modelo" opcoes={opcoes.modelos} valor={modelos} onChange={setModelos} />
           <MultiSelect label="Cor" opcoes={opcoes.cores} valor={cores} onChange={setCores} />
           <MultiSelect label="Tamanho" opcoes={opcoes.tamanhos} valor={tamanhos} onChange={setTamanhos} />
@@ -1573,8 +1636,9 @@ export function IndicadoresTab() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="text-xs text-muted-foreground">
-            Bloco exclusivamente do PCP: os filtros de empresa, vendedor, modelo, cor, tamanho e situação não valem
-            aqui. Recorte pela entrada do pedido no período, prazos em dias úteis (com feriados).
+            Bloco exclusivamente do PCP: os filtros de empresa, modelo, cor, tamanho e situação não valem aqui. O
+            filtro de Vendedor vale e usa o vendedor cadastrado no PCP. Recorte pela entrada do pedido no período,
+            prazos em dias úteis (com feriados).
           </div>
           <div className="grid gap-2 md:grid-cols-5">
             <Kpi
@@ -2044,17 +2108,18 @@ export function IndicadoresTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">
-              Somente PCP <Badge variant="secondary">{data?.soPcp.length ?? 0}</Badge>
+              Somente PCP <Badge variant="secondary">{soPcpLista.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="mb-2 text-xs text-muted-foreground">
               Pedidos que existem no PCP e não na Olist. Sem item, preço ou cliente — por isso entram apenas como
-              lista e contagem, fora de faturamento, ticket médio, peças e rankings.
+              lista e contagem, fora de faturamento, ticket médio, peças e rankings. O filtro de Vendedor usa o
+              vendedor cadastrado no PCP.
             </div>
             <div className="max-h-56 overflow-auto text-xs">
               <div className="flex flex-wrap gap-1">
-                {(data?.soPcp ?? []).map((num) => (
+                {soPcpLista.map((num) => (
                   <Badge key={num} variant="outline" className="tabular-nums">
                     {num}
                   </Badge>
