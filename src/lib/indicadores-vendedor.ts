@@ -3,6 +3,10 @@
  * Somente leitura: nada aqui grava, edita ou apaga dados.
  */
 
+import { basePedidoOlist, sufixoParcial } from "@/lib/pedido-olist-match";
+
+
+
 /** Chave de comparação: trim + maiúsculas + sem acento. */
 export function chaveVendedor(nome: string | null | undefined): string {
   return String(nome ?? "")
