@@ -54,10 +54,38 @@ import {
   type OrdemRanking,
   type PcpDb,
   type PedidoDb,
+  type PedidoFiltrado,
+  type ItemCalc,
 } from "@/lib/indicadores-olist";
 import { useFeriados } from "@/hooks/use-feriados";
+import { useProfilesMap } from "@/hooks/use-profiles-map";
 import { abrirIndicadoresParaImpressao } from "@/lib/indicadores-pdf";
 import { FileDown } from "lucide-react";
+import {
+  drillPedidos,
+  drillItens,
+  drillClientes,
+  drillVendidoProduzido,
+  drillSoOlist,
+  drillSoPcp,
+  drillSemMapeamento,
+  drillDivergencias,
+  drillPcpAtraso,
+  drillPcpEntregas,
+  drillPcpEtapa,
+  drillPcpPedidos,
+  drillPcpPendentes,
+  drillPcpPrazo,
+  drillRefacoes,
+  drillCorrecoes,
+  NOTA_BLOCO_PCP,
+  type CampoVxp,
+  type DrillPayload,
+  type PcpDrill,
+} from "@/lib/indicadores-drill";
+import { IndicadorDrillDialog } from "@/components/pcp/IndicadorDrillDialog";
+import { ValorDrill } from "@/components/pcp/ValorDrill";
+
 
 
 /* ------------------------------------------------------------------ */
@@ -147,17 +175,31 @@ function Kpi({
   valor,
   varPerc,
   comparar,
+  onDrill,
 }: {
   titulo: string;
   valor: string;
   varPerc: number | null;
   comparar: boolean;
+  onDrill?: () => void;
 }) {
   return (
     <Card>
       <CardContent className="p-3">
         <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{titulo}</div>
-        <div className="mt-1 text-xl font-semibold tabular-nums">{valor}</div>
+        {onDrill ? (
+          <button
+            type="button"
+            onClick={onDrill}
+            title="Ver detalhamento"
+            className="mt-1 text-xl font-semibold tabular-nums underline decoration-dotted decoration-muted-foreground/50 underline-offset-4 hover:text-primary hover:decoration-foreground transition-colors"
+          >
+            {valor}
+          </button>
+        ) : (
+          <div className="mt-1 text-xl font-semibold tabular-nums">{valor}</div>
+        )}
+
         {comparar && (
           <div
             className={`text-xs tabular-nums ${
@@ -225,11 +267,12 @@ export function IndicadoresTab() {
         }),
         supabase.from("olist_produto_map" as any).select("produto_olist, modelo_cop"),
         supabase.from("olist_pedidos_excluidos" as any).select("numero_pedido"),
-        lerTudo<PcpDb>(async (from, to) => {
+        lerTudo<PcpDrill>(async (from, to) => {
           const { data, error } = await supabase
             .from("pedidos")
             .select(
-              "pedido_olist, uf_entrega, qtd, entrada_pedido, data_entrega, inicio_estamparia, termino_estamparia, inicio_acabamento, termino_acabamento, saida_juff, finalizado_em, arte_data, refacoes, correcoes_etapa",
+              "id, pedido_olist, orcamento, vendedor, tipo_estampa, uf_entrega, qtd, entrada_pedido, data_entrega, inicio_estamparia, termino_estamparia, inicio_acabamento, termino_acabamento, saida_juff, finalizado_em, arte_data, refacoes, correcoes_etapa",
+
             )
             .not("pedido_olist", "is", null)
             .range(from, to);
@@ -362,6 +405,14 @@ export function IndicadoresTab() {
   );
 
   const mostraSoPcp = grupos.includes("so_pcp");
+
+  /* ---- Detalhamento (drill-down), somente leitura ---- */
+  const nomes = useProfilesMap();
+  const [drill, setDrill] = useState<DrillPayload | null>(null);
+  const abrirDrill = (p: DrillPayload) => setDrill(p);
+  const subPcp = `Entrada entre ${intervalo.de} e ${intervalo.ate}`;
+  const subOlist = `Período ${intervalo.de} a ${intervalo.ate} · filtros do painel aplicados`;
+
 
   const exportarPdf = () => {
     void abrirIndicadoresParaImpressao({
@@ -503,12 +554,97 @@ export function IndicadoresTab() {
 
       {/* ---------------- Bloco 1 — Resumo ---------------- */}
       <div className="grid gap-2 md:grid-cols-5">
-        <Kpi titulo="Faturamento" valor={fmtMoeda(r.faturamento)} varPerc={variacao(r.faturamento, rAnt.faturamento)} comparar={comparar} />
-        <Kpi titulo="Pedidos" valor={fmtNum(r.pedidos)} varPerc={variacao(r.pedidos, rAnt.pedidos)} comparar={comparar} />
-        <Kpi titulo="Peças vendidas" valor={fmtNum(r.pecas)} varPerc={variacao(r.pecas, rAnt.pecas)} comparar={comparar} />
-        <Kpi titulo="Ticket médio" valor={fmtMoeda(r.ticket)} varPerc={variacao(r.ticket, rAnt.ticket)} comparar={comparar} />
-        <Kpi titulo="Preço médio/peça" valor={fmtMoeda(r.precoMedio)} varPerc={variacao(r.precoMedio, rAnt.precoMedio)} comparar={comparar} />
+        <Kpi
+          titulo="Faturamento"
+          valor={fmtMoeda(r.faturamento)}
+          varPerc={variacao(r.faturamento, rAnt.faturamento)}
+          comparar={comparar}
+          onDrill={() =>
+            abrirDrill(
+              drillPedidos(atuais, {
+                titulo: "Faturamento do período",
+                subtitulo: subOlist,
+                indicadorLabel: fmtMoeda(r.faturamento),
+                indicadorValor: r.faturamento,
+                campo: "faturamento",
+              }),
+            )
+          }
+        />
+        <Kpi
+          titulo="Pedidos"
+          valor={fmtNum(r.pedidos)}
+          varPerc={variacao(r.pedidos, rAnt.pedidos)}
+          comparar={comparar}
+          onDrill={() =>
+            abrirDrill(
+              drillPedidos(atuais, {
+                titulo: "Pedidos do período",
+                subtitulo: subOlist,
+                indicadorLabel: fmtNum(r.pedidos),
+                indicadorValor: r.pedidos,
+                campo: "linhas",
+              }),
+            )
+          }
+        />
+        <Kpi
+          titulo="Peças vendidas"
+          valor={fmtNum(r.pecas)}
+          varPerc={variacao(r.pecas, rAnt.pecas)}
+          comparar={comparar}
+          onDrill={() =>
+            abrirDrill(
+              drillPedidos(atuais, {
+                titulo: "Peças vendidas no período",
+                subtitulo: subOlist,
+                nota: "Serviços não contam como peça.",
+                indicadorLabel: fmtNum(r.pecas),
+                indicadorValor: r.pecas,
+                campo: "pecas",
+              }),
+            )
+          }
+        />
+        <Kpi
+          titulo="Ticket médio"
+          valor={fmtMoeda(r.ticket)}
+          varPerc={variacao(r.ticket, rAnt.ticket)}
+          comparar={comparar}
+          onDrill={() =>
+            abrirDrill(
+              drillPedidos(atuais, {
+                titulo: "Ticket médio — pedidos que compõem a média",
+                subtitulo: subOlist,
+                indicadorLabel: fmtMoeda(r.ticket),
+                indicadorValor: r.ticket,
+                campo: "faturamento",
+                media: true,
+              }),
+            )
+          }
+        />
+        <Kpi
+          titulo="Preço médio/peça"
+          valor={fmtMoeda(r.precoMedio)}
+          varPerc={variacao(r.precoMedio, rAnt.precoMedio)}
+          comparar={comparar}
+          onDrill={() =>
+            abrirDrill(
+              drillItens(atuais, {
+                titulo: "Preço médio por peça — itens que compõem a média",
+                subtitulo: subOlist,
+                nota: "Preço médio = faturamento líquido ÷ peças. Confira dividindo o total de subtotal pelo total de peças.",
+                indicadorLabel: fmtMoeda(r.precoMedio),
+                indicadorValor: null,
+                campo: "subtotal",
+                filtro: () => true,
+              }),
+            )
+          }
+        />
       </div>
+
 
       {/* ---------------- Bloco 12 — Rankings (prioritário) ---------------- */}
       <Card className="border-2">
@@ -523,14 +659,31 @@ export function IndicadoresTab() {
               dim={cfg.dim}
               atuais={ranking(atuais, cfg.dim)}
               anteriores={comparar ? ranking(anteriores, cfg.dim) : null}
+              pedidos={atuais}
+              subtitulo={subOlist}
+              onDrill={abrirDrill}
             />
           ))}
         </CardContent>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <GradeCard titulo="Tamanhos por modelo (% dentro do modelo)" grade={gradeTam} />
-        <GradeCard titulo="Cores por modelo (% dentro do modelo)" grade={gradeCor} />
+        <GradeCard
+          titulo="Tamanhos por modelo (% dentro do modelo)"
+          grade={gradeTam}
+          dim="tamanho"
+          pedidos={atuais}
+          subtitulo={subOlist}
+          onDrill={abrirDrill}
+        />
+        <GradeCard
+          titulo="Cores por modelo (% dentro do modelo)"
+          grade={gradeCor}
+          dim="cor"
+          pedidos={atuais}
+          subtitulo={subOlist}
+          onDrill={abrirDrill}
+        />
       </div>
 
       {/* ---------------- Bloco 2 — Faturamento ---------------- */}
@@ -567,16 +720,48 @@ export function IndicadoresTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mensal.map((m) => (
-                    <tr key={m.mes} className="border-t">
-                      <td className="px-2 py-1">{fmtMes(m.mes)}</td>
-                      <td className="px-2 py-1 text-right font-semibold tabular-nums">{fmtMoeda(m.faturamento)}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(m.joke)}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(m.juff)}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(m.pedidos)}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(m.pecas)}</td>
-                    </tr>
-                  ))}
+                  {mensal.map((m) => {
+                    const mesPedidos = atuais.filter((p) => p.mes === m.mes);
+                    const cel = (
+                      valor: number,
+                      tipo: "moeda" | "num",
+                      campo: "faturamento" | "pecas" | "linhas",
+                      titulo: string,
+                      empresaAlvo?: "JOKE" | "JUFF",
+                      forte?: boolean,
+                    ) => (
+                      <td className={`px-2 py-1 text-right tabular-nums ${forte ? "font-semibold" : ""}`}>
+                        <ValorDrill
+                          onDrill={abrirDrill}
+                          build={() =>
+                            drillPedidos(
+                              empresaAlvo ? mesPedidos.filter((p) => p.empresa === empresaAlvo) : mesPedidos,
+                              {
+                                titulo,
+                                subtitulo: `${fmtMes(m.mes)} · ${subOlist}`,
+                                indicadorLabel: tipo === "moeda" ? fmtMoeda(valor) : fmtNum(valor),
+                                indicadorValor: valor,
+                                campo,
+                              },
+                            )
+                          }
+                        >
+                          {tipo === "moeda" ? fmtMoeda(valor) : fmtNum(valor)}
+                        </ValorDrill>
+                      </td>
+                    );
+                    return (
+                      <tr key={m.mes} className="border-t">
+                        <td className="px-2 py-1">{fmtMes(m.mes)}</td>
+                        {cel(m.faturamento, "moeda", "faturamento", `Faturamento — ${fmtMes(m.mes)}`, undefined, true)}
+                        {cel(m.joke, "moeda", "faturamento", `Faturamento JOKE — ${fmtMes(m.mes)}`, "JOKE")}
+                        {cel(m.juff, "moeda", "faturamento", `Faturamento JUFF — ${fmtMes(m.mes)}`, "JUFF")}
+                        {cel(m.pedidos, "num", "linhas", `Pedidos — ${fmtMes(m.mes)}`)}
+                        {cel(m.pecas, "num", "pecas", `Peças — ${fmtMes(m.mes)}`)}
+                      </tr>
+                    );
+                  })}
+
                   {mensal.length === 0 && (
                     <tr>
                       <td colSpan={6} className="px-2 py-4 text-center text-muted-foreground">
@@ -600,15 +785,41 @@ export function IndicadoresTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {situacoesLinhas.map((s) => (
-                    <tr key={s.chave} className="border-t">
-                      <td className="px-2 py-1">{s.chave}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(s.pedidos)}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(s.pecas)}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(s.faturamento)}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{s.perc.toFixed(1)}%</td>
-                    </tr>
-                  ))}
+                  {situacoesLinhas.map((s) => {
+                    const linhasSit = atuais.filter((p) => p.situacao === s.chave);
+                    const cel = (
+                      valor: number,
+                      tipo: "moeda" | "num",
+                      campo: "faturamento" | "pecas" | "linhas",
+                      titulo: string,
+                    ) => (
+                      <td className="px-2 py-1 text-right tabular-nums">
+                        <ValorDrill
+                          onDrill={abrirDrill}
+                          build={() =>
+                            drillPedidos(linhasSit, {
+                              titulo,
+                              subtitulo: `Situação "${s.chave}" · ${subOlist}`,
+                              indicadorLabel: tipo === "moeda" ? fmtMoeda(valor) : fmtNum(valor),
+                              indicadorValor: valor,
+                              campo,
+                            })
+                          }
+                        >
+                          {tipo === "moeda" ? fmtMoeda(valor) : fmtNum(valor)}
+                        </ValorDrill>
+                      </td>
+                    );
+                    return (
+                      <tr key={s.chave} className="border-t">
+                        <td className="px-2 py-1">{s.chave}</td>
+                        {cel(s.pedidos, "num", "linhas", `Pedidos — ${s.chave}`)}
+                        {cel(s.pecas, "num", "pecas", `Peças — ${s.chave}`)}
+                        {cel(s.faturamento, "moeda", "faturamento", `Faturamento — ${s.chave}`)}
+                        <td className="px-2 py-1 text-right tabular-nums">{s.perc.toFixed(1)}%</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -638,7 +849,23 @@ export function IndicadoresTab() {
                   .map((l) => (
                     <tr key={l.chave} className="border-t">
                       <td className="px-2 py-1">{l.chave}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(l.faturamento)}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">
+                        <ValorDrill
+                          onDrill={abrirDrill}
+                          build={() =>
+                            drillItens(atuais, {
+                              titulo: `Receita do modelo ${l.chave}`,
+                              subtitulo: subOlist,
+                              indicadorLabel: fmtMoeda(l.faturamento),
+                              indicadorValor: l.faturamento,
+                              campo: "subtotal",
+                              filtro: (i) => i.modelo === l.chave,
+                            })
+                          }
+                        >
+                          {fmtMoeda(l.faturamento)}
+                        </ValorDrill>
+                      </td>
                       <td className="px-2 py-1 text-right tabular-nums">{l.percFaturamento.toFixed(1)}%</td>
                     </tr>
                   ))}
@@ -662,7 +889,23 @@ export function IndicadoresTab() {
                   .map((l) => (
                     <tr key={l.chave} className="border-t">
                       <td className="px-2 py-1">{l.chave}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.pecas)}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">
+                        <ValorDrill
+                          onDrill={abrirDrill}
+                          build={() =>
+                            drillItens(atuais, {
+                              titulo: `Peças do modelo ${l.chave}`,
+                              subtitulo: subOlist,
+                              indicadorLabel: fmtNum(l.pecas),
+                              indicadorValor: l.pecas,
+                              campo: "qtd",
+                              filtro: (i) => i.modelo === l.chave,
+                            })
+                          }
+                        >
+                          {fmtNum(l.pecas)}
+                        </ValorDrill>
+                      </td>
                       <td className="px-2 py-1 text-right tabular-nums">{l.percPecas.toFixed(1)}%</td>
                     </tr>
                   ))}
@@ -686,8 +929,40 @@ export function IndicadoresTab() {
                 {abcModelo.map((l) => (
                   <tr key={l.chave} className="border-t">
                     <td className="px-2 py-1">{l.chave}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(l.faturamento)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.pecas)}</td>
+                    <td className="px-2 py-1 text-right tabular-nums">
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillItens(atuais, {
+                            titulo: `Curva ABC — receita do modelo ${l.chave} (classe ${l.classe})`,
+                            subtitulo: subOlist,
+                            indicadorLabel: fmtMoeda(l.faturamento),
+                            indicadorValor: l.faturamento,
+                            campo: "subtotal",
+                            filtro: (i) => i.modelo === l.chave,
+                          })
+                        }
+                      >
+                        {fmtMoeda(l.faturamento)}
+                      </ValorDrill>
+                    </td>
+                    <td className="px-2 py-1 text-right tabular-nums">
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillItens(atuais, {
+                            titulo: `Curva ABC — peças do modelo ${l.chave} (classe ${l.classe})`,
+                            subtitulo: subOlist,
+                            indicadorLabel: fmtNum(l.pecas),
+                            indicadorValor: l.pecas,
+                            campo: "qtd",
+                            filtro: (i) => i.modelo === l.chave,
+                          })
+                        }
+                      >
+                        {fmtNum(l.pecas)}
+                      </ValorDrill>
+                    </td>
                     <td className="px-2 py-1 text-right tabular-nums">{l.acumulado.toFixed(1)}%</td>
                     <td className="px-2 py-1 text-center">
                       <Badge variant={l.classe === "A" ? "default" : "secondary"}>{l.classe}</Badge>
@@ -708,10 +983,46 @@ export function IndicadoresTab() {
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-4 text-xs">
             <span>
-              Novos: <span className="font-semibold tabular-nums">{clientes.filter((c) => c.novo).length}</span>
+              Novos:{" "}
+              <ValorDrill
+                onDrill={abrirDrill}
+                build={() =>
+                  drillClientes(
+                    clientes.filter((c) => c.novo),
+                    data?.primeiraCompra ?? new Map(),
+                    {
+                      titulo: "Clientes novos no período",
+                      subtitulo: `${subOlist} · primeira compra apurada em todo o histórico`,
+                      indicadorLabel: fmtNum(clientes.filter((c) => c.novo).length),
+                      indicadorValor: clientes.filter((c) => c.novo).length,
+                    },
+                  )
+                }
+                className="font-semibold tabular-nums"
+              >
+                {clientes.filter((c) => c.novo).length}
+              </ValorDrill>
             </span>
             <span>
-              Recorrentes: <span className="font-semibold tabular-nums">{clientes.filter((c) => !c.novo).length}</span>
+              Recorrentes:{" "}
+              <ValorDrill
+                onDrill={abrirDrill}
+                build={() =>
+                  drillClientes(
+                    clientes.filter((c) => !c.novo),
+                    data?.primeiraCompra ?? new Map(),
+                    {
+                      titulo: "Clientes recorrentes no período",
+                      subtitulo: `${subOlist} · primeira compra apurada em todo o histórico`,
+                      indicadorLabel: fmtNum(clientes.filter((c) => !c.novo).length),
+                      indicadorValor: clientes.filter((c) => !c.novo).length,
+                    },
+                  )
+                }
+                className="font-semibold tabular-nums"
+              >
+                {clientes.filter((c) => !c.novo).length}
+              </ValorDrill>
             </span>
             <span className="text-muted-foreground">
               (a primeira compra é apurada sobre todo o histórico, não sobre o período filtrado)
@@ -735,11 +1046,83 @@ export function IndicadoresTab() {
               <tbody>
                 {clientes.map((c) => (
                   <tr key={c.cliente_id} className="border-t">
-                    <td className="px-2 py-1">{c.nome}</td>
+                    <td className="px-2 py-1">
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillPedidos(
+                            atuais.filter((p) => p.cliente_id === c.cliente_id),
+                            {
+                              titulo: `Pedidos de ${c.nome}`,
+                              subtitulo: subOlist,
+                              indicadorLabel: fmtMoeda(c.faturamento),
+                              indicadorValor: c.faturamento,
+                              campo: "faturamento",
+                            },
+                          )
+                        }
+                      >
+                        {c.nome}
+                      </ValorDrill>
+                    </td>
                     <td className="px-2 py-1 tabular-nums">{c.cliente_id}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(c.pedidos)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(c.pecas)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(c.faturamento)}</td>
+                    <td className="px-2 py-1 text-right tabular-nums">
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillPedidos(
+                            atuais.filter((p) => p.cliente_id === c.cliente_id),
+                            {
+                              titulo: `Pedidos de ${c.nome}`,
+                              subtitulo: subOlist,
+                              indicadorLabel: fmtNum(c.pedidos),
+                              indicadorValor: c.pedidos,
+                              campo: "linhas",
+                            },
+                          )
+                        }
+                      >
+                        {fmtNum(c.pedidos)}
+                      </ValorDrill>
+                    </td>
+                    <td className="px-2 py-1 text-right tabular-nums">
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillPedidos(
+                            atuais.filter((p) => p.cliente_id === c.cliente_id),
+                            {
+                              titulo: `Peças de ${c.nome}`,
+                              subtitulo: subOlist,
+                              indicadorLabel: fmtNum(c.pecas),
+                              indicadorValor: c.pecas,
+                              campo: "pecas",
+                            },
+                          )
+                        }
+                      >
+                        {fmtNum(c.pecas)}
+                      </ValorDrill>
+                    </td>
+                    <td className="px-2 py-1 text-right tabular-nums">
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillPedidos(
+                            atuais.filter((p) => p.cliente_id === c.cliente_id),
+                            {
+                              titulo: `Faturamento de ${c.nome}`,
+                              subtitulo: subOlist,
+                              indicadorLabel: fmtMoeda(c.faturamento),
+                              indicadorValor: c.faturamento,
+                              campo: "faturamento",
+                            },
+                          )
+                        }
+                      >
+                        {fmtMoeda(c.faturamento)}
+                      </ValorDrill>
+                    </td>
                     <td className="px-2 py-1 text-right tabular-nums">{c.perc.toFixed(1)}%</td>
                     <td className="px-2 py-1 text-right tabular-nums">{c.acumulado.toFixed(1)}%</td>
                     <td className="px-2 py-1 text-center">
@@ -783,10 +1166,83 @@ export function IndicadoresTab() {
               {vendedoresLinhas.map((v) => (
                 <tr key={v.vendedor} className="border-t">
                   <td className="px-2 py-1">{v.vendedor}</td>
-                  <td className="px-2 py-1 text-right font-semibold tabular-nums">{fmtMoeda(v.faturamento)}</td>
-                  <td className="px-2 py-1 text-right tabular-nums">{fmtNum(v.pedidos)}</td>
-                  <td className="px-2 py-1 text-right tabular-nums">{fmtNum(v.pecas)}</td>
-                  <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(v.ticket)}</td>
+                  <td className="px-2 py-1 text-right font-semibold tabular-nums">
+                    <ValorDrill
+                      onDrill={abrirDrill}
+                      build={() =>
+                        drillPedidos(
+                          atuais.filter((p) => p.vendedor === v.vendedor),
+                          {
+                            titulo: `Faturamento — ${v.vendedor}`,
+                            subtitulo: subOlist,
+                            indicadorLabel: fmtMoeda(v.faturamento),
+                            indicadorValor: v.faturamento,
+                            campo: "faturamento",
+                          },
+                        )
+                      }
+                    >
+                      {fmtMoeda(v.faturamento)}
+                    </ValorDrill>
+                  </td>
+                  <td className="px-2 py-1 text-right tabular-nums">
+                    <ValorDrill
+                      onDrill={abrirDrill}
+                      build={() =>
+                        drillPedidos(
+                          atuais.filter((p) => p.vendedor === v.vendedor),
+                          {
+                            titulo: `Pedidos — ${v.vendedor}`,
+                            subtitulo: subOlist,
+                            indicadorLabel: fmtNum(v.pedidos),
+                            indicadorValor: v.pedidos,
+                            campo: "linhas",
+                          },
+                        )
+                      }
+                    >
+                      {fmtNum(v.pedidos)}
+                    </ValorDrill>
+                  </td>
+                  <td className="px-2 py-1 text-right tabular-nums">
+                    <ValorDrill
+                      onDrill={abrirDrill}
+                      build={() =>
+                        drillPedidos(
+                          atuais.filter((p) => p.vendedor === v.vendedor),
+                          {
+                            titulo: `Peças — ${v.vendedor}`,
+                            subtitulo: subOlist,
+                            indicadorLabel: fmtNum(v.pecas),
+                            indicadorValor: v.pecas,
+                            campo: "pecas",
+                          },
+                        )
+                      }
+                    >
+                      {fmtNum(v.pecas)}
+                    </ValorDrill>
+                  </td>
+                  <td className="px-2 py-1 text-right tabular-nums">
+                    <ValorDrill
+                      onDrill={abrirDrill}
+                      build={() =>
+                        drillPedidos(
+                          atuais.filter((p) => p.vendedor === v.vendedor),
+                          {
+                            titulo: `Ticket médio — ${v.vendedor}`,
+                            subtitulo: subOlist,
+                            indicadorLabel: fmtMoeda(v.ticket),
+                            indicadorValor: v.ticket,
+                            campo: "faturamento",
+                            media: true,
+                          },
+                        )
+                      }
+                    >
+                      {fmtMoeda(v.ticket)}
+                    </ValorDrill>
+                  </td>
                   <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(v.descontoValor)}</td>
                   <td className="px-2 py-1 text-right tabular-nums">{v.descontoPerc.toFixed(1)}%</td>
                 </tr>
@@ -806,9 +1262,66 @@ export function IndicadoresTab() {
             O frete é apresentado separadamente e nunca é somado ao faturamento. A UF vem do PCP.
           </div>
           <div className="grid gap-2 md:grid-cols-3">
-            <Kpi titulo="Frete total" valor={fmtMoeda(frete.total)} varPerc={null} comparar={false} />
-            <Kpi titulo="Frete médio/pedido" valor={fmtMoeda(frete.medio)} varPerc={null} comparar={false} />
-            <Kpi titulo="Pedidos com frete" valor={`${frete.percComFrete.toFixed(1)}%`} varPerc={null} comparar={false} />
+            <Kpi
+              titulo="Frete total"
+              valor={fmtMoeda(frete.total)}
+              varPerc={null}
+              comparar={false}
+              onDrill={() =>
+                abrirDrill(
+                  drillPedidos(atuais, {
+                    titulo: "Frete total",
+                    subtitulo: subOlist,
+                    nota: "O frete nunca é somado ao faturamento. UF vem do PCP.",
+                    indicadorLabel: fmtMoeda(frete.total),
+                    indicadorValor: frete.total,
+                    campo: "frete",
+                    ufPorPedido: data?.ufPorPedido ?? new Map(),
+                  }),
+                )
+              }
+            />
+            <Kpi
+              titulo="Frete médio/pedido"
+              valor={fmtMoeda(frete.medio)}
+              varPerc={null}
+              comparar={false}
+              onDrill={() =>
+                abrirDrill(
+                  drillPedidos(atuais, {
+                    titulo: "Frete médio por pedido",
+                    subtitulo: subOlist,
+                    indicadorLabel: fmtMoeda(frete.medio),
+                    indicadorValor: frete.medio,
+                    campo: "frete",
+                    media: true,
+                    ufPorPedido: data?.ufPorPedido ?? new Map(),
+                  }),
+                )
+              }
+            />
+            <Kpi
+              titulo="Pedidos com frete"
+              valor={`${frete.percComFrete.toFixed(1)}%`}
+              varPerc={null}
+              comparar={false}
+              onDrill={() =>
+                abrirDrill(
+                  drillPedidos(
+                    atuais.filter((p) => Number(p.frete ?? 0) > 0),
+                    {
+                      titulo: "Pedidos com frete",
+                      subtitulo: subOlist,
+                      nota: `${frete.percComFrete.toFixed(1)}% dos pedidos do período têm frete maior que zero.`,
+                      indicadorLabel: `${frete.percComFrete.toFixed(1)}%`,
+                      indicadorValor: null,
+                      campo: "linhas",
+                      ufPorPedido: data?.ufPorPedido ?? new Map(),
+                    },
+                  ),
+                )
+              }
+            />
           </div>
           <div className="max-h-72 overflow-auto">
             <table className="tbl-congelada w-full text-xs">
@@ -821,14 +1334,37 @@ export function IndicadoresTab() {
                 </tr>
               </thead>
               <tbody>
-                {frete.porUf.map((u) => (
-                  <tr key={u.uf} className="border-t">
-                    <td className="px-2 py-1">{u.uf}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(u.pedidos)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(u.pecas)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(u.frete)}</td>
-                  </tr>
-                ))}
+                {frete.porUf.map((u) => {
+                  const mapaUf = data?.ufPorPedido ?? new Map();
+                  const linhasUf = atuais.filter((p) => (mapaUf.get(p.numero_pedido) ?? "—") === u.uf);
+                  const cel = (valor: number, label: string, campo: "linhas" | "pecas" | "frete", titulo: string) => (
+                    <td className="px-2 py-1 text-right tabular-nums">
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillPedidos(linhasUf, {
+                            titulo,
+                            subtitulo: `UF ${u.uf} · ${subOlist}`,
+                            indicadorLabel: label,
+                            indicadorValor: valor,
+                            campo,
+                            ufPorPedido: mapaUf,
+                          })
+                        }
+                      >
+                        {label}
+                      </ValorDrill>
+                    </td>
+                  );
+                  return (
+                    <tr key={u.uf} className="border-t">
+                      <td className="px-2 py-1">{u.uf}</td>
+                      {cel(u.pedidos, fmtNum(u.pedidos), "linhas", `Pedidos — ${u.uf}`)}
+                      {cel(u.pecas, fmtNum(u.pecas), "pecas", `Peças — ${u.uf}`)}
+                      {cel(u.frete, fmtMoeda(u.frete), "frete", `Frete — ${u.uf}`)}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -868,16 +1404,45 @@ export function IndicadoresTab() {
                 </tr>
               </thead>
               <tbody>
-                {ufLinhas.map((u) => (
-                  <tr key={u.uf} className="border-t">
-                    <td className="px-2 py-1">{u.uf}</td>
-                    <td className="px-2 py-1 text-right font-semibold tabular-nums">{fmtMoeda(u.faturamento)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{u.perc.toFixed(1)}%</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(u.pedidos)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(u.pecas)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(u.frete)}</td>
-                  </tr>
-                ))}
+                {ufLinhas.map((u) => {
+                  const mapaUf = data?.ufPorPedido ?? new Map();
+                  const linhasUf = atuais.filter((p) => (mapaUf.get(p.numero_pedido) ?? "—") === u.uf);
+                  const cel = (
+                    valor: number,
+                    label: string,
+                    campo: "faturamento" | "linhas" | "pecas" | "frete",
+                    titulo: string,
+                    className = "",
+                  ) => (
+                    <td className={`px-2 py-1 text-right tabular-nums ${className}`}>
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillPedidos(linhasUf, {
+                            titulo,
+                            subtitulo: `UF ${u.uf} · ${subOlist}`,
+                            indicadorLabel: label,
+                            indicadorValor: valor,
+                            campo,
+                            ufPorPedido: mapaUf,
+                          })
+                        }
+                      >
+                        {label}
+                      </ValorDrill>
+                    </td>
+                  );
+                  return (
+                    <tr key={u.uf} className="border-t">
+                      <td className="px-2 py-1">{u.uf}</td>
+                      {cel(u.faturamento, fmtMoeda(u.faturamento), "faturamento", `Faturamento — ${u.uf}`, "font-semibold")}
+                      <td className="px-2 py-1 text-right tabular-nums">{u.perc.toFixed(1)}%</td>
+                      {cel(u.pedidos, fmtNum(u.pedidos), "linhas", `Pedidos — ${u.uf}`)}
+                      {cel(u.pecas, fmtNum(u.pecas), "pecas", `Peças — ${u.uf}`)}
+                      {cel(u.frete, fmtMoeda(u.frete), "frete", `Frete — ${u.uf}`)}
+                    </tr>
+                  );
+                })}
                 {ufLinhas.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-2 py-4 text-center text-muted-foreground">
@@ -903,18 +1468,41 @@ export function IndicadoresTab() {
             refações fazem a produção não coincidir com a venda — é informação, não erro.
           </div>
           <div className="grid gap-2 md:grid-cols-5">
-            <Kpi titulo="Pedidos casados" valor={fmtNum(vxp.total.pedidos)} varPerc={null} comparar={false} />
-            <Kpi titulo="Peças vendidas" valor={fmtNum(vxp.total.vendidas)} varPerc={null} comparar={false} />
-            <Kpi titulo="Peças produzidas" valor={fmtNum(vxp.total.produzidas)} varPerc={null} comparar={false} />
-            <Kpi titulo="Peças perdidas" valor={fmtNum(vxp.total.perdidas)} varPerc={null} comparar={false} />
-            <Kpi
-              titulo="Diferença"
-              valor={`${vxp.total.diferenca > 0 ? "+" : ""}${fmtNum(vxp.total.diferenca)}${
-                vxp.total.difPerc == null ? "" : ` (${vxp.total.difPerc.toFixed(1)}%)`
-              }`}
-              varPerc={null}
-              comparar={false}
-            />
+            {(
+              [
+                { t: "Pedidos casados", v: vxp.total.pedidos, l: fmtNum(vxp.total.pedidos), c: "linhas" as const },
+                { t: "Peças vendidas", v: vxp.total.vendidas, l: fmtNum(vxp.total.vendidas), c: "vendidas" as const },
+                { t: "Peças produzidas", v: vxp.total.produzidas, l: fmtNum(vxp.total.produzidas), c: "produzidas" as const },
+                { t: "Peças perdidas", v: vxp.total.perdidas, l: fmtNum(vxp.total.perdidas), c: "perdidas" as const },
+                {
+                  t: "Diferença",
+                  v: vxp.total.diferenca,
+                  l: `${vxp.total.diferenca > 0 ? "+" : ""}${fmtNum(vxp.total.diferenca)}${
+                    vxp.total.difPerc == null ? "" : ` (${vxp.total.difPerc.toFixed(1)}%)`
+                  }`,
+                  c: "diferenca" as const,
+                },
+              ]
+            ).map((k) => (
+              <Kpi
+                key={k.t}
+                titulo={k.t}
+                valor={k.l}
+                varPerc={null}
+                comparar={false}
+                onDrill={() =>
+                  abrirDrill(
+                    drillVendidoProduzido(atuais, pcpPorPedido, {
+                      titulo: `${k.t} — Vendido × Produzido`,
+                      subtitulo: subOlist,
+                      indicadorLabel: k.l,
+                      indicadorValor: k.c === "linhas" ? k.v : k.v,
+                      campo: k.c,
+                    }),
+                  )
+                }
+              />
+            ))}
           </div>
           <div className="max-h-72 overflow-auto">
             <table className="tbl-congelada w-full text-xs">
@@ -929,19 +1517,42 @@ export function IndicadoresTab() {
                 </tr>
               </thead>
               <tbody>
-                {vxp.mensal.map((l) => (
-                  <tr key={l.chave} className="border-t">
-                    <td className="px-2 py-1">{fmtMes(l.chave)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.pedidos)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.vendidas)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.produzidas)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.perdidas)}</td>
+                {vxp.mensal.map((l) => {
+                  const cel = (valor: number, label: string, campo: CampoVxp, titulo: string) => (
                     <td className="px-2 py-1 text-right tabular-nums">
-                      {l.diferenca > 0 ? "+" : ""}
-                      {fmtNum(l.diferenca)}
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillVendidoProduzido(atuais, pcpPorPedido, {
+                            titulo,
+                            subtitulo: `${fmtMes(l.chave)} · ${subOlist}`,
+                            indicadorLabel: label,
+                            indicadorValor: valor,
+                            campo,
+                            mes: l.chave,
+                          })
+                        }
+                      >
+                        {label}
+                      </ValorDrill>
                     </td>
-                  </tr>
-                ))}
+                  );
+                  return (
+                    <tr key={l.chave} className="border-t">
+                      <td className="px-2 py-1">{fmtMes(l.chave)}</td>
+                      {cel(l.pedidos, fmtNum(l.pedidos), "linhas", `Pedidos casados — ${fmtMes(l.chave)}`)}
+                      {cel(l.vendidas, fmtNum(l.vendidas), "vendidas", `Peças vendidas — ${fmtMes(l.chave)}`)}
+                      {cel(l.produzidas, fmtNum(l.produzidas), "produzidas", `Peças produzidas — ${fmtMes(l.chave)}`)}
+                      {cel(l.perdidas, fmtNum(l.perdidas), "perdidas", `Peças perdidas — ${fmtMes(l.chave)}`)}
+                      {cel(
+                        l.diferenca,
+                        `${l.diferenca > 0 ? "+" : ""}${fmtNum(l.diferenca)}`,
+                        "diferenca",
+                        `Diferença — ${fmtMes(l.chave)}`,
+                      )}
+                    </tr>
+                  );
+                })}
                 {vxp.mensal.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-2 py-4 text-center text-muted-foreground">
@@ -966,27 +1577,91 @@ export function IndicadoresTab() {
             aqui. Recorte pela entrada do pedido no período, prazos em dias úteis (com feriados).
           </div>
           <div className="grid gap-2 md:grid-cols-5">
-            <Kpi titulo="Pedidos no período" valor={fmtNum(prod.pedidos)} varPerc={null} comparar={false} />
+            <Kpi
+              titulo="Pedidos no período"
+              valor={fmtNum(prod.pedidos)}
+              varPerc={null}
+              comparar={false}
+              onDrill={() =>
+                abrirDrill(
+                  drillPcpPedidos(pcpPeriodo, {
+                    titulo: "Pedidos no período (PCP)",
+                    subtitulo: subPcp,
+                    indicadorLabel: fmtNum(prod.pedidos),
+                    indicadorValor: prod.pedidos,
+                  }),
+                )
+              }
+            />
             <Kpi
               titulo="Prazo médio (entrada → saída)"
               valor={prod.prazoMedio == null ? "—" : `${prod.prazoMedio.toFixed(1)} d.ú.`}
               varPerc={null}
               comparar={false}
+              onDrill={() =>
+                abrirDrill(
+                  drillPcpPrazo(pcpPeriodo, feriados, {
+                    titulo: "Prazo médio (entrada → saída Juff)",
+                    subtitulo: `${subPcp} · somente pedidos com entrada e saída preenchidas`,
+                    indicadorLabel: prod.prazoMedio == null ? "—" : `${prod.prazoMedio.toFixed(1)} d.ú.`,
+                    indicadorValor: prod.prazoMedio,
+                  }),
+                )
+              }
             />
             <Kpi
               titulo="Entregas no prazo"
               valor={prod.percNoPrazo == null ? "—" : `${prod.percNoPrazo.toFixed(1)}%`}
               varPerc={null}
               comparar={false}
+              onDrill={() =>
+                abrirDrill(
+                  drillPcpEntregas(pcpPeriodo, feriados, {
+                    titulo: "Entregas no prazo",
+                    subtitulo: `${subPcp} · somente pedidos com entrega prometida e saída`,
+                    indicadorLabel: prod.percNoPrazo == null ? "—" : `${prod.percNoPrazo.toFixed(1)}%`,
+                    indicadorValor: null,
+                  }),
+                )
+              }
             />
             <Kpi
               titulo="Atraso médio"
               valor={prod.atrasoMedio == null ? "—" : `${prod.atrasoMedio.toFixed(1)} d.ú.`}
               varPerc={null}
               comparar={false}
+              onDrill={() =>
+                abrirDrill(
+                  drillPcpAtraso(pcpPeriodo, feriados, {
+                    titulo: "Atraso médio",
+                    subtitulo: `${subPcp} · somente pedidos entregues após a data prometida`,
+                    indicadorLabel: prod.atrasoMedio == null ? "—" : `${prod.atrasoMedio.toFixed(1)} d.ú.`,
+                    indicadorValor: prod.atrasoMedio,
+                  }),
+                )
+              }
             />
-            <Kpi titulo="Gargalo" valor={prod.gargalo ?? "—"} varPerc={null} comparar={false} />
+            <Kpi
+              titulo="Gargalo"
+              valor={prod.gargalo ?? "—"}
+              varPerc={null}
+              comparar={false}
+              onDrill={
+                prod.gargalo
+                  ? () =>
+                      abrirDrill(
+                        drillPcpEtapa(pcpPeriodo, feriados, prod.gargalo!, {
+                          titulo: `Gargalo — etapa ${prod.gargalo}`,
+                          subtitulo: subPcp,
+                          indicadorLabel: prod.gargalo!,
+                          indicadorValor: null,
+                        }),
+                      )
+                  : undefined
+              }
+            />
           </div>
+
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="overflow-auto">
@@ -1010,10 +1685,40 @@ export function IndicadoresTab() {
                           </Badge>
                         )}
                       </td>
-                      <td className="px-2 py-1 text-right font-semibold tabular-nums">{e.media.toFixed(1)}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(e.pedidos)}</td>
+                      <td className="px-2 py-1 text-right font-semibold tabular-nums">
+                        <ValorDrill
+                          onDrill={abrirDrill}
+                          build={() =>
+                            drillPcpEtapa(pcpPeriodo, feriados, e.etapa, {
+                              titulo: `Tempo na etapa ${e.etapa}`,
+                              subtitulo: subPcp,
+                              indicadorLabel: `${e.media.toFixed(1)} d.ú.`,
+                              indicadorValor: e.media,
+                            })
+                          }
+                        >
+                          {e.media.toFixed(1)}
+                        </ValorDrill>
+                      </td>
+                      <td className="px-2 py-1 text-right tabular-nums">
+                        <ValorDrill
+                          onDrill={abrirDrill}
+                          build={() =>
+                            drillPcpEtapa(pcpPeriodo, feriados, e.etapa, {
+                              titulo: `Pedidos que passaram pela etapa ${e.etapa}`,
+                              subtitulo: subPcp,
+                              indicadorLabel: fmtNum(e.pedidos),
+                              indicadorValor: e.pedidos,
+                              contagem: true,
+                            })
+                          }
+                        >
+                          {fmtNum(e.pedidos)}
+                        </ValorDrill>
+                      </td>
                     </tr>
                   ))}
+
                 </tbody>
               </table>
             </div>
@@ -1030,14 +1735,38 @@ export function IndicadoresTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {prod.refacoesPorArea.map((a) => (
-                    <tr key={a.area} className="border-t">
-                      <td className="px-2 py-1">{a.area}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(a.episodios)}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(a.pecas)}</td>
-                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(a.perdidas)}</td>
-                    </tr>
-                  ))}
+                  {prod.refacoesPorArea.map((a) => {
+                    const cel = (
+                      modo: "episodios" | "refazer" | "perdidas",
+                      valor: number,
+                      titulo: string,
+                    ) => (
+                      <td className="px-2 py-1 text-right tabular-nums">
+                        <ValorDrill
+                          onDrill={abrirDrill}
+                          build={() =>
+                            drillRefacoes(pcpPeriodo, nomes, modo, a.area, {
+                              titulo,
+                              subtitulo: `${subPcp} · área ${a.area}`,
+                              indicadorLabel: fmtNum(valor),
+                              indicadorValor: valor,
+                            })
+                          }
+                        >
+                          {fmtNum(valor)}
+                        </ValorDrill>
+                      </td>
+                    );
+                    return (
+                      <tr key={a.area} className="border-t">
+                        <td className="px-2 py-1">{a.area}</td>
+                        {cel("episodios", a.episodios, `Episódios de refação — ${a.area}`)}
+                        {cel("refazer", a.pecas, `Peças a refazer — ${a.area}`)}
+                        {cel("perdidas", a.perdidas, `Peças perdidas — ${a.area}`)}
+                      </tr>
+                    );
+                  })}
+
                   {prod.refacoesPorArea.length === 0 && (
                     <tr>
                       <td colSpan={4} className="px-2 py-4 text-center text-muted-foreground">
@@ -1051,8 +1780,22 @@ export function IndicadoresTab() {
 
             <div className="overflow-auto">
               <div className="mb-1 text-xs font-semibold">
-                Pedidos atrasados <Badge variant="secondary">{prod.atrasados.length}</Badge>
+                Pedidos atrasados{" "}
+                <ValorDrill
+                  onDrill={abrirDrill}
+                  build={() =>
+                    drillPcpPendentes(pcpPeriodo, feriados, "atrasados", {
+                      titulo: "Pedidos atrasados",
+                      subtitulo: `${subPcp} · sem saída e com entrega vencida`,
+                      indicadorLabel: fmtNum(prod.atrasados.length),
+                      indicadorValor: prod.atrasados.length,
+                    })
+                  }
+                >
+                  <Badge variant="secondary">{prod.atrasados.length}</Badge>
+                </ValorDrill>
               </div>
+
               <div className="max-h-56 overflow-auto">
                 <table className="tbl-congelada w-full text-xs">
                   <thead>
@@ -1084,8 +1827,22 @@ export function IndicadoresTab() {
 
             <div className="overflow-auto">
               <div className="mb-1 text-xs font-semibold">
-                Pedidos em risco (até 3 dias úteis) <Badge variant="secondary">{prod.emRisco.length}</Badge>
+                Pedidos em risco (até 3 dias úteis){" "}
+                <ValorDrill
+                  onDrill={abrirDrill}
+                  build={() =>
+                    drillPcpPendentes(pcpPeriodo, feriados, "risco", {
+                      titulo: "Pedidos em risco (até 3 dias úteis)",
+                      subtitulo: `${subPcp} · sem saída e entrega a vencer em até 3 d.ú.`,
+                      indicadorLabel: fmtNum(prod.emRisco.length),
+                      indicadorValor: prod.emRisco.length,
+                    })
+                  }
+                >
+                  <Badge variant="secondary">{prod.emRisco.length}</Badge>
+                </ValorDrill>
               </div>
+
               <div className="max-h-56 overflow-auto">
                 <table className="tbl-congelada w-full text-xs">
                   <thead>
@@ -1120,10 +1877,24 @@ export function IndicadoresTab() {
             <div className="mb-1 text-xs font-semibold">Correções de etapa por aba de origem</div>
             <div className="flex flex-wrap gap-2 text-xs">
               {prod.correcoesPorAba.map((c) => (
-                <Badge key={c.aba} variant="outline" className="tabular-nums">
-                  {c.aba}: {fmtNum(c.qtd)}
-                </Badge>
+                <ValorDrill
+                  key={c.aba}
+                  onDrill={abrirDrill}
+                  build={() =>
+                    drillCorrecoes(pcpPeriodo, nomes, c.aba, {
+                      titulo: `Correções de etapa — ${c.aba}`,
+                      subtitulo: subPcp,
+                      indicadorLabel: fmtNum(c.qtd),
+                      indicadorValor: c.qtd,
+                    })
+                  }
+                >
+                  <Badge variant="outline" className="tabular-nums">
+                    {c.aba}: {fmtNum(c.qtd)}
+                  </Badge>
+                </ValorDrill>
               ))}
+
               {prod.correcoesPorAba.length === 0 && (
                 <span className="text-muted-foreground">Sem correções de etapa no período.</span>
               )}
@@ -1142,12 +1913,49 @@ export function IndicadoresTab() {
             Diagnóstico de cadastro para conferência. Nenhum item aqui bloqueia nada.
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
-            <ListaDiagnostico titulo="Pedidos somente na Olist" itens={saude.soOlist} />
-            <ListaDiagnostico titulo="Pedidos somente no PCP" itens={saude.soPcp} />
+            <ListaDiagnostico
+              titulo="Pedidos somente na Olist"
+              itens={saude.soOlist}
+              onDrill={() =>
+                abrirDrill(
+                  drillSoOlist(atuais, saude.soOlist, {
+                    titulo: "Pedidos somente na Olist",
+                    indicadorLabel: fmtNum(saude.soOlist.length),
+                    indicadorValor: saude.soOlist.length,
+                  }),
+                )
+              }
+            />
+            <ListaDiagnostico
+              titulo="Pedidos somente no PCP"
+              itens={saude.soPcp}
+              onDrill={() =>
+                abrirDrill(
+                  drillSoPcp(pcpPeriodo, saude.soPcp, {
+                    titulo: "Pedidos somente no PCP",
+                    subtitulo: NOTA_BLOCO_PCP,
+                    indicadorLabel: fmtNum(saude.soPcp.length),
+                    indicadorValor: saude.soPcp.length,
+                  }),
+                )
+              }
+            />
 
             <div className="overflow-auto">
               <div className="mb-1 text-xs font-semibold">
-                Produtos sem mapeamento <Badge variant="secondary">{saude.semMapeamento.length}</Badge>
+                Produtos sem mapeamento{" "}
+                <ValorDrill
+                  onDrill={abrirDrill}
+                  build={() =>
+                    drillSemMapeamento(saude.semMapeamento, {
+                      titulo: "Produtos sem mapeamento",
+                      indicadorLabel: fmtNum(saude.semMapeamento.length),
+                      indicadorValor: saude.semMapeamento.length,
+                    })
+                  }
+                >
+                  <Badge variant="secondary">{saude.semMapeamento.length}</Badge>
+                </ValorDrill>
               </div>
               <div className="max-h-56 overflow-auto">
                 <table className="tbl-congelada w-full text-xs">
@@ -1180,7 +1988,19 @@ export function IndicadoresTab() {
 
             <div className="overflow-auto">
               <div className="mb-1 text-xs font-semibold">
-                Divergências de quantidade (casados) <Badge variant="secondary">{saude.divergencias.length}</Badge>
+                Divergências de quantidade (casados){" "}
+                <ValorDrill
+                  onDrill={abrirDrill}
+                  build={() =>
+                    drillDivergencias(saude.divergencias, atuais, {
+                      titulo: "Divergências de quantidade (pedidos casados)",
+                      indicadorLabel: fmtNum(saude.divergencias.length),
+                      indicadorValor: saude.divergencias.length,
+                    })
+                  }
+                >
+                  <Badge variant="secondary">{saude.divergencias.length}</Badge>
+                </ValorDrill>
               </div>
               <div className="max-h-56 overflow-auto">
                 <table className="tbl-congelada w-full text-xs">
@@ -1244,7 +2064,10 @@ export function IndicadoresTab() {
           </CardContent>
         </Card>
       )}
+
+      <IndicadorDrillDialog payload={drill} onOpenChange={(o) => !o && setDrill(null)} />
     </div>
+
   );
 }
 
@@ -1255,12 +2078,24 @@ function RankingCard({
   dim,
   atuais,
   anteriores,
+  pedidos,
+  subtitulo,
+  onDrill,
 }: {
   titulo: string;
   dim: DimRanking;
   atuais: ReturnType<typeof ranking>;
   anteriores: ReturnType<typeof ranking> | null;
+  pedidos: PedidoFiltrado[];
+  subtitulo: string;
+  onDrill: (p: DrillPayload) => void;
 }) {
+  const filtroDim = (chave: string) => (i: ItemCalc) => {
+    if (dim === "modelo") return i.modelo === chave;
+    if (dim === "cor") return i.cor === chave;
+    if (dim === "tamanho") return i.tamanho === chave;
+    return `${i.modelo} \u00b7 ${i.cor} \u00b7 ${i.tamanho}` === chave;
+  };
   const [ordem, setOrdem] = useState<OrdemRanking>("pecas");
   const [limite, setLimite] = useState<string>("10");
 
@@ -1321,10 +2156,58 @@ function RankingCard({
                 <tr key={l.chave} className="border-t">
                   <td className="px-2 py-1 tabular-nums">{idx + 1}</td>
                   <td className="px-2 py-1">{l.chave}</td>
-                  <td className="px-2 py-1 text-right font-semibold tabular-nums">{fmtNum(l.pecas)}</td>
+                  <td className="px-2 py-1 text-right font-semibold tabular-nums">
+                    <ValorDrill
+                      onDrill={onDrill}
+                      build={() =>
+                        drillItens(pedidos, {
+                          titulo: `${titulo} — peças de "${l.chave}"`,
+                          subtitulo,
+                          indicadorLabel: fmtNum(l.pecas),
+                          indicadorValor: l.pecas,
+                          campo: "qtd",
+                          filtro: filtroDim(l.chave),
+                        })
+                      }
+                    >
+                      {fmtNum(l.pecas)}
+                    </ValorDrill>
+                  </td>
                   <td className="px-2 py-1 text-right tabular-nums">{l.percPecas.toFixed(1)}%</td>
-                  <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(l.faturamento)}</td>
-                  <td className="px-2 py-1 text-right tabular-nums">{fmtNum(l.pedidos)}</td>
+                  <td className="px-2 py-1 text-right tabular-nums">
+                    <ValorDrill
+                      onDrill={onDrill}
+                      build={() =>
+                        drillItens(pedidos, {
+                          titulo: `${titulo} — receita de "${l.chave}"`,
+                          subtitulo,
+                          indicadorLabel: fmtMoeda(l.faturamento),
+                          indicadorValor: l.faturamento,
+                          campo: "subtotal",
+                          filtro: filtroDim(l.chave),
+                        })
+                      }
+                    >
+                      {fmtMoeda(l.faturamento)}
+                    </ValorDrill>
+                  </td>
+                  <td className="px-2 py-1 text-right tabular-nums">
+                    <ValorDrill
+                      onDrill={onDrill}
+                      build={() =>
+                        drillItens(pedidos, {
+                          titulo: `${titulo} — pedidos com "${l.chave}"`,
+                          subtitulo,
+                          indicadorLabel: fmtNum(l.pedidos),
+                          indicadorValor: l.pedidos,
+                          campo: "pedidos",
+                          filtro: filtroDim(l.chave),
+                        })
+                      }
+                    >
+                      {fmtNum(l.pedidos)}
+                    </ValorDrill>
+                  </td>
                   {posAnterior && (
                     <td className="px-2 py-1 text-right tabular-nums">
                       {antes ? (
@@ -1353,7 +2236,21 @@ function RankingCard({
   );
 }
 
-function GradeCard({ titulo, grade }: { titulo: string; grade: ReturnType<typeof gradePorModelo> }) {
+function GradeCard({
+  titulo,
+  grade,
+  dim,
+  pedidos,
+  subtitulo,
+  onDrill,
+}: {
+  titulo: string;
+  grade: ReturnType<typeof gradePorModelo>;
+  dim: "tamanho" | "cor";
+  pedidos: PedidoFiltrado[];
+  subtitulo: string;
+  onDrill: (p: DrillPayload) => void;
+}) {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -1378,10 +2275,46 @@ function GradeCard({ titulo, grade }: { titulo: string; grade: ReturnType<typeof
                 <td className="px-2 py-1">{l.modelo}</td>
                 {grade.colunas.map((c) => (
                   <td key={c} className="px-2 py-1 text-right tabular-nums">
-                    {l.celulas[c].pecas ? `${l.celulas[c].perc.toFixed(0)}%` : "—"}
+                    {l.celulas[c].pecas ? (
+                      <ValorDrill
+                        onDrill={onDrill}
+                        build={() =>
+                          drillItens(pedidos, {
+                            titulo: `${l.modelo} — ${c}`,
+                            subtitulo,
+                            nota: `Percentual exibido = ${l.celulas[c].perc.toFixed(1)}% das ${fmtNum(l.total)} peças do modelo.`,
+                            indicadorLabel: fmtNum(l.celulas[c].pecas),
+                            indicadorValor: l.celulas[c].pecas,
+                            campo: "qtd",
+                            filtro: (i) =>
+                              i.modelo === l.modelo && (dim === "tamanho" ? i.tamanho === c : i.cor === c),
+                          })
+                        }
+                      >
+                        {`${l.celulas[c].perc.toFixed(0)}%`}
+                      </ValorDrill>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                 ))}
-                <td className="px-2 py-1 text-right font-semibold tabular-nums">{fmtNum(l.total)}</td>
+                <td className="px-2 py-1 text-right font-semibold tabular-nums">
+                  <ValorDrill
+                    onDrill={onDrill}
+                    build={() =>
+                      drillItens(pedidos, {
+                        titulo: `${l.modelo} — total de peças`,
+                        subtitulo,
+                        indicadorLabel: fmtNum(l.total),
+                        indicadorValor: l.total,
+                        campo: "qtd",
+                        filtro: (i) => i.modelo === l.modelo,
+                      })
+                    }
+                  >
+                    {fmtNum(l.total)}
+                  </ValorDrill>
+                </td>
               </tr>
             ))}
             {grade.linhas.length === 0 && (
@@ -1400,13 +2333,35 @@ function GradeCard({ titulo, grade }: { titulo: string; grade: ReturnType<typeof
 
 /* ------------------------------------------------------------------ */
 
-function ListaDiagnostico({ titulo, itens }: { titulo: string; itens: string[] }) {
+function ListaDiagnostico({
+  titulo,
+  itens,
+  onDrill,
+}: {
+  titulo: string;
+  itens: string[];
+  onDrill?: () => void;
+}) {
   const [aberto, setAberto] = useState(false);
   return (
     <div className="rounded-md border p-2">
       <div className="flex items-center justify-between gap-2">
         <div className="text-xs font-semibold">
-          {titulo} <Badge variant="secondary">{itens.length}</Badge>
+          {titulo}{" "}
+          {onDrill ? (
+            <button
+              type="button"
+              title="Ver detalhamento"
+              onClick={onDrill}
+              className="cursor-pointer transition-colors hover:opacity-80"
+            >
+              <Badge variant="secondary" className="underline decoration-dotted underline-offset-2">
+                {itens.length}
+              </Badge>
+            </button>
+          ) : (
+            <Badge variant="secondary">{itens.length}</Badge>
+          )}
         </div>
         <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setAberto((v) => !v)}>
           {aberto ? "Ocultar" : "Ver lista"}
