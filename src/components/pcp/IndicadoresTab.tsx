@@ -342,14 +342,31 @@ export function IndicadoresTab() {
 
   const base = data?.calc ?? [];
 
+  const opcoesVend: OpcaoVendedor[] = useMemo(
+    () => opcoesVendedores(base, data?.pcpLista ?? []),
+    [base, data],
+  );
+  const opcoesVendMulti = useMemo(
+    () =>
+      opcoesVend.map((o) => ({
+        valor: o.chave,
+        label: o.label,
+        hint: o.origem === "ambos" ? "Olist + PCP" : o.origem === "pcp" ? "só PCP" : "só Olist",
+      })),
+    [opcoesVend],
+  );
+  const labelsVendSelecionados = useMemo(
+    () => vendedores.map((k) => opcoesVend.find((o) => o.chave === k)?.label ?? k),
+    [vendedores, opcoesVend],
+  );
+  const vendedorPcpPorPedido = useMemo(() => mapaVendedorPcp(data?.pcpLista ?? []), [data]);
+
   const opcoes = useMemo(() => {
-    const v = new Set<string>();
     const s = new Set<string>();
     const m = new Set<string>();
     const c = new Set<string>();
     const t = new Set<string>();
     for (const p of base) {
-      v.add(p.vendedor);
       s.add(p.situacao);
       for (const i of p.itens) {
         if (i.modelo) m.add(i.modelo);
@@ -358,7 +375,7 @@ export function IndicadoresTab() {
       }
     }
     const ord = (x: Set<string>) => [...x].sort((a, b) => a.localeCompare(b, "pt-BR"));
-    return { vendedores: ord(v), situacoes: ord(s), modelos: ord(m), cores: ord(c), tamanhos: ord(t) };
+    return { situacoes: ord(s), modelos: ord(m), cores: ord(c), tamanhos: ord(t) };
   }, [base]);
 
   const filtros: Filtros = useMemo(
@@ -381,12 +398,26 @@ export function IndicadoresTab() {
     [data],
   );
 
-  const atuais = useMemo(() => aplicarFiltros(base, filtros, ctx), [base, filtros, ctx]);
+  // O recorte por vendedor sai do aplicarFiltros e passa a usar a regra de união (Olist OU PCP).
+  const atuais = useMemo(
+    () =>
+      filtrarPorVendedor(
+        aplicarFiltros(base, { ...filtros, vendedores: [] }, ctx),
+        vendedores,
+        vendedorPcpPorPedido,
+      ),
+    [base, filtros, ctx, vendedores, vendedorPcpPorPedido],
+  );
   const anteriores = useMemo(() => {
     if (!comparar) return [];
     const p = periodoAnterior(intervalo.de, intervalo.ate);
-    return aplicarFiltros(base, { ...filtros, de: p.de, ate: p.ate }, ctx);
-  }, [comparar, base, filtros, ctx, intervalo]);
+    return filtrarPorVendedor(
+      aplicarFiltros(base, { ...filtros, vendedores: [], de: p.de, ate: p.ate }, ctx),
+      vendedores,
+      vendedorPcpPorPedido,
+    );
+  }, [comparar, base, filtros, ctx, intervalo, vendedores, vendedorPcpPorPedido]);
+
 
   const r = useMemo(() => resumo(atuais), [atuais]);
   const rAnt = useMemo(() => resumo(anteriores), [anteriores]);
