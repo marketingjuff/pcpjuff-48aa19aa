@@ -128,6 +128,7 @@ export function calcularPedidos(
     const arr = porPedido.get(it.numero_pedido) ?? [];
     arr.push({
       produto_olist: produto,
+      descricao_original: it.descricao_original ?? null,
       modelo: produto ? (modeloPorProduto.get(produto) ?? null) : null,
       cor: it.cor ?? null,
       tamanho: it.tamanho ?? null,
