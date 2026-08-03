@@ -67,7 +67,14 @@ import {
   type DimRankingStore,
   type ItemStoreCalc,
 } from "@/lib/indicadores-store";
+import {
+  agruparPcpPorPedidoOlist,
+  basePedidoOlist,
+  registroConsolidado,
+  type PcpAgregado,
+} from "@/lib/pedido-olist-match";
 import { useFeriados } from "@/hooks/use-feriados";
+
 
 import { useProfilesMap } from "@/hooks/use-profiles-map";
 import { abrirIndicadoresParaImpressao } from "@/lib/indicadores-pdf";
@@ -365,11 +372,14 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
         noPcp,
         ufPorPedido,
         pcpPorPedido,
+        pcpAgregado,
         pcpLista: pcp,
         modeloPorProduto,
         pedidosStore,
+        /* Bases do PCP sem pedido correspondente na Olist. */
         soPcp: [...noPcp].filter((n) => !numsOlist.has(n)),
       };
+
     },
   });
 
