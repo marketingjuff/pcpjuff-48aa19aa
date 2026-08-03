@@ -483,7 +483,8 @@ export function IndicadoresTab() {
       periodoAnterior: comparar ? periodoAnterior(intervalo.de, intervalo.ate) : null,
       filtros: {
         empresa,
-        vendedores,
+        vendedores: labelsVendSelecionados,
+
         modelos,
         cores,
         tamanhos,
@@ -1635,8 +1636,9 @@ export function IndicadoresTab() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="text-xs text-muted-foreground">
-            Bloco exclusivamente do PCP: os filtros de empresa, vendedor, modelo, cor, tamanho e situação não valem
-            aqui. Recorte pela entrada do pedido no período, prazos em dias úteis (com feriados).
+            Bloco exclusivamente do PCP: os filtros de empresa, modelo, cor, tamanho e situação não valem aqui. O
+            filtro de Vendedor vale e usa o vendedor cadastrado no PCP. Recorte pela entrada do pedido no período,
+            prazos em dias úteis (com feriados).
           </div>
           <div className="grid gap-2 md:grid-cols-5">
             <Kpi
@@ -2106,17 +2108,18 @@ export function IndicadoresTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">
-              Somente PCP <Badge variant="secondary">{data?.soPcp.length ?? 0}</Badge>
+              Somente PCP <Badge variant="secondary">{soPcpLista.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="mb-2 text-xs text-muted-foreground">
               Pedidos que existem no PCP e não na Olist. Sem item, preço ou cliente — por isso entram apenas como
-              lista e contagem, fora de faturamento, ticket médio, peças e rankings.
+              lista e contagem, fora de faturamento, ticket médio, peças e rankings. O filtro de Vendedor usa o
+              vendedor cadastrado no PCP.
             </div>
             <div className="max-h-56 overflow-auto text-xs">
               <div className="flex flex-wrap gap-1">
-                {(data?.soPcp ?? []).map((num) => (
+                {soPcpLista.map((num) => (
                   <Badge key={num} variant="outline" className="tabular-nums">
                     {num}
                   </Badge>
