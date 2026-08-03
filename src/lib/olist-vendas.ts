@@ -111,12 +111,16 @@ export function normalizarVendedor(bruto: unknown): string {
   return achou ?? "Outros";
 }
 
-/** Desconto do pedido: "13%" → percentual; "0,00" → valor em reais. */
+/** Desconto do pedido: número nativo → valor direto; "13%" → percentual; "0,00" → valor em reais. */
 export function parseDesconto(v: unknown): {
   desconto_valor: number | null;
   desconto_percentual: number | null;
   desconto_original: string | null;
 } {
+  if (typeof v === "number") {
+    if (!Number.isFinite(v)) return { desconto_valor: null, desconto_percentual: null, desconto_original: null };
+    return { desconto_valor: v, desconto_percentual: null, desconto_original: String(v) };
+  }
   const s = String(v ?? "").trim();
   if (!s) return { desconto_valor: null, desconto_percentual: null, desconto_original: null };
   if (s.includes("%")) {
@@ -124,6 +128,7 @@ export function parseDesconto(v: unknown): {
   }
   return { desconto_valor: num(s), desconto_percentual: null, desconto_original: s };
 }
+
 
 function campo(row: Record<string, unknown>, alvos: string[]): unknown {
   const keys = Object.keys(row);
