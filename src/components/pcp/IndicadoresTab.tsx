@@ -59,7 +59,16 @@ import {
   type EscopoIndicadores,
   pedidosJuffStore,
 } from "@/lib/indicadores-olist";
+import {
+  parseProdutoStore,
+  rankingStore,
+  composicaoStore,
+  descricoesForaPadrao,
+  type DimRankingStore,
+  type ItemStoreCalc,
+} from "@/lib/indicadores-store";
 import { useFeriados } from "@/hooks/use-feriados";
+
 import { useProfilesMap } from "@/hooks/use-profiles-map";
 import { abrirIndicadoresParaImpressao } from "@/lib/indicadores-pdf";
 import {
@@ -247,6 +256,16 @@ const RANKINGS: { dim: DimRanking; titulo: string }[] = [
   { dim: "peca", titulo: "Peças mais vendidas (modelo · cor · tamanho)" },
 ];
 
+/* Rankings da aba Juff Store: modelo vem do parse próprio, não do de-para. */
+const RANKINGS_STORE: { dimStore: DimRankingStore; dim: DimRanking; titulo: string }[] = [
+  { dimStore: "modelo_base", dim: "modelo", titulo: "Modelos mais vendidos" },
+  { dimStore: "estampa", dim: "modelo", titulo: "Estampas mais vendidas" },
+  { dimStore: "cor", dim: "cor", titulo: "Cores mais vendidas" },
+  { dimStore: "tamanho", dim: "tamanho", titulo: "Tamanhos mais vendidos" },
+  { dimStore: "peca", dim: "peca", titulo: "Peças mais vendidas (modelo · cor · tamanho)" },
+];
+
+
 /* ------------------------------------------------------------------ */
 
 export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicadores } = {}) {
@@ -261,6 +280,10 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   const [tamanhos, setTamanhos] = useState<string[]>([]);
   const [situacoes, setSituacoes] = useState<string[]>([]);
   const [grupos, setGrupos] = useState<Grupo[]>(["casados", "so_olist"]);
+  /* Filtros exclusivos da Juff Store. */
+  const [tipoPeca, setTipoPeca] = useState<"todas" | "lisas" | "estampadas">("todas");
+  const [somenteOutlet, setSomenteOutlet] = useState(false);
+
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["indicadores-olist", "base"],
@@ -350,11 +373,53 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   const base = useMemo(() => {
     const todos = data?.calc ?? [];
     const store = data?.pedidosStore ?? new Set<string>();
-    return todos.filter((p) => (escopo === "store" ? store.has(p.numero_pedido) : !store.has(p.numero_pedido)));
-  }, [data, escopo]);
+    const doEscopo = todos.filter((p) =>
+      escopo === "store" ? store.has(p.numero_pedido) : !store.has(p.numero_pedido),
+    );
+    if (escopo !== "store") return doEscopo;
+
+    /* Na Store o modelo/cor/tamanho vêm do parse próprio (nada de olist_produto_map).
+       O parse é só classificação: qtd, subtotal e descontos ficam idênticos. */
+    const out: typeof doEscopo = [];
+    for (const p of doEscopo) {
+      const itens = p.itens
+        .map((i) => {
+          const ps = parseProdutoStore(i.descricao_original ?? i.produto_olist);
+          const item: ItemStoreCalc = {
+            ...i,
+            store: ps,
+            modelo: i.is_servico ? i.modelo : (ps.modelo_base ?? "Não classificado"),
+            cor: ps.cor ?? i.cor,
+            tamanho: ps.tamanho ?? i.tamanho,
+          };
+          return item;
+        })
+        .filter((i) => {
+          if (i.is_servico) return true;
+          if (somenteOutlet && !i.store.is_outlet) return false;
+          if (tipoPeca === "lisas" && i.store.tipo_peca !== "LISA") return false;
+          if (tipoPeca === "estampadas" && i.store.tipo_peca !== "ESTAMPADA") return false;
+          return true;
+        });
+      if (itens.length === 0) continue;
+      const subtotal = itens.reduce((s, i) => s + i.subtotal, 0);
+      const fator = p.subtotal ? subtotal / p.subtotal : 1;
+      const desconto_pedido = p.desconto_pedido * fator;
+      out.push({
+        ...p,
+        itens,
+        subtotal,
+        desconto_pedido,
+        liquido: subtotal - desconto_pedido,
+        pecas: itens.filter((i) => !i.is_servico).reduce((s, i) => s + i.qtd, 0),
+      });
+    }
+    return out;
+  }, [data, escopo, tipoPeca, somenteOutlet]);
 
   /* Novo/recorrente é medido só contra o histórico do próprio escopo. */
   const primeiraCompra = useMemo(() => primeiraCompraPorCliente(base), [base]);
+
 
   const opcoesVend: OpcaoVendedor[] = useMemo(
     () => opcoesVendedores(base, data?.pcpLista ?? []),
@@ -522,7 +587,11 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
     };
   }, [soPcpRegs, soPcpLista]);
 
-
+  /* ---- Juff Store: composição e diagnóstico de descrição (só classificação) ---- */
+  const ehStore = escopo === "store";
+  const composicao = useMemo(() => (ehStore ? composicaoStore(atuais) : null), [ehStore, atuais]);
+  const foraPadrao = useMemo(() => (ehStore ? descricoesForaPadrao(atuais) : []), [ehStore, atuais]);
+  const rankEstampas = useMemo(() => (ehStore ? rankingStore(atuais, "estampa") : []), [ehStore, atuais]);
 
 
   /* ---- Detalhamento (drill-down), somente leitura ---- */
@@ -566,6 +635,9 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       vendidoProduzido: soPcpAtivo ? vxp : undefined,
       producao: soPcpAtivo ? prod : undefined,
       saude: soPcpAtivo ? saude : undefined,
+      composicaoStore: composicao ?? undefined,
+      rankingEstampas: ehStore ? rankEstampas : undefined,
+
     });
   };
 
@@ -654,6 +726,25 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
           <MultiSelect label="Cor" opcoes={opcoes.cores} valor={cores} onChange={setCores} />
           <MultiSelect label="Tamanho" opcoes={opcoes.tamanhos} valor={tamanhos} onChange={setTamanhos} />
           <MultiSelect label="Situação" opcoes={opcoes.situacoes} valor={situacoes} onChange={setSituacoes} />
+          {ehStore && (
+            <>
+              <Select value={tipoPeca} onValueChange={(v) => setTipoPeca(v as typeof tipoPeca)}>
+                <SelectTrigger className="h-9 w-[150px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as peças</SelectItem>
+                  <SelectItem value="lisas">Lisas</SelectItem>
+                  <SelectItem value="estampadas">Estampadas</SelectItem>
+                </SelectContent>
+              </Select>
+              <label className="flex cursor-pointer items-center gap-1 pl-1 text-xs">
+                <Checkbox checked={somenteOutlet} onCheckedChange={(c) => setSomenteOutlet(c === true)} />
+                Somente Outlet
+              </label>
+            </>
+          )}
+
           {soPcpAtivo && (
           <div className="flex flex-wrap items-center gap-2 pl-2">
             {GRUPOS.map((g) => (
@@ -777,6 +868,46 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
         />
       </div>
 
+      {/* ---------------- Composição Juff Store ---------------- */}
+      {composicao && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Composição Juff Store</CardTitle>
+            <div className="text-xs text-muted-foreground">
+              Kit Outlet é peça lisa de ponta de estoque: entra nas Lisas e aparece também como recorte próprio.
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid gap-2 md:grid-cols-2">
+              {([
+                { t: "Lisas (inclui Outlet)", d: composicao.lisas },
+                { t: "Estampadas", d: composicao.estampadas },
+              ] as const).map((b) => (
+                <div key={b.t} className="rounded-md border p-3">
+                  <div className="text-xs font-semibold">{b.t}</div>
+                  <div className="mt-1 text-lg font-semibold tabular-nums">{fmtMoeda(b.d.faturamento)}</div>
+                  <div className="text-xs text-muted-foreground tabular-nums">
+                    {b.d.percFaturamento.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% da receita ·{" "}
+                    {fmtNum(b.d.pecas)} peças · {fmtNum(b.d.pedidos)} pedidos
+                  </div>
+                  <div className="text-xs text-muted-foreground tabular-nums">
+                    Ticket médio {fmtMoeda(b.d.ticket)} · preço médio/peça {fmtMoeda(b.d.precoMedio)}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-md border border-dashed p-3">
+              <div className="text-xs font-semibold">Outlet — recorte das Lisas</div>
+              <div className="mt-1 text-lg font-semibold tabular-nums">{fmtMoeda(composicao.outlet.faturamento)}</div>
+              <div className="text-xs text-muted-foreground tabular-nums">
+                {composicao.outlet.percFaturamento.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% da receita do
+                período · {fmtNum(composicao.outlet.pecas)} peças · preço médio/peça{" "}
+                {fmtMoeda(composicao.outlet.precoMedio)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ---------------- Bloco 12 — Rankings (prioritário) ---------------- */}
       <Card className="border-2">
@@ -784,20 +915,35 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
           <CardTitle className="text-base">Rankings</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-2">
-          {RANKINGS.map((cfg) => (
-            <RankingCard
-              key={cfg.dim}
-              titulo={cfg.titulo}
-              dim={cfg.dim}
-              atuais={ranking(atuais, cfg.dim)}
-              anteriores={comparar ? ranking(anteriores, cfg.dim) : null}
-              pedidos={atuais}
-              subtitulo={subOlist}
-              onDrill={abrirDrill}
-            />
-          ))}
+          {ehStore
+            ? RANKINGS_STORE.map((cfg) => (
+                <RankingCard
+                  key={cfg.dimStore}
+                  titulo={cfg.titulo}
+                  dim={cfg.dim}
+                  dimStore={cfg.dimStore}
+                  atuais={rankingStore(atuais, cfg.dimStore)}
+                  anteriores={comparar ? rankingStore(anteriores, cfg.dimStore) : null}
+                  pedidos={atuais}
+                  subtitulo={subOlist}
+                  onDrill={abrirDrill}
+                />
+              ))
+            : RANKINGS.map((cfg) => (
+                <RankingCard
+                  key={cfg.dim}
+                  titulo={cfg.titulo}
+                  dim={cfg.dim}
+                  atuais={ranking(atuais, cfg.dim)}
+                  anteriores={comparar ? ranking(anteriores, cfg.dim) : null}
+                  pedidos={atuais}
+                  subtitulo={subOlist}
+                  onDrill={abrirDrill}
+                />
+              ))}
         </CardContent>
       </Card>
+
 
       <div className="grid gap-4 lg:grid-cols-2">
         <GradeCard
@@ -2274,7 +2420,48 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
         </Card>
       )}
 
+      {ehStore && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Descrições fora do padrão</CardTitle>
+            <div className="text-xs text-muted-foreground">
+              Informativo. Esses itens contam normalmente no faturamento e nas peças — o bloco existe para corrigir o
+              cadastro na Olist.
+            </div>
+          </CardHeader>
+          <CardContent>
+            {foraPadrao.length === 0 ? (
+              <div className="text-xs text-muted-foreground">Todas as descrições do período foram reconhecidas.</div>
+            ) : (
+              <div className="max-h-80 overflow-auto">
+                <table className="tbl-congelada w-full text-xs">
+                  <thead>
+                    <tr>
+                      <th className="px-2 py-1 text-left">Descrição na Olist</th>
+                      <th className="px-2 py-1 text-left">Motivo</th>
+                      <th className="px-2 py-1 text-right">Linhas</th>
+                      <th className="px-2 py-1 text-right">Peças</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {foraPadrao.map((f) => (
+                      <tr key={f.descricao} className="border-t">
+                        <td className="px-2 py-1">{f.descricao}</td>
+                        <td className="px-2 py-1">{f.motivo}</td>
+                        <td className="px-2 py-1 text-right tabular-nums">{fmtNum(f.linhas)}</td>
+                        <td className="px-2 py-1 text-right tabular-nums">{fmtNum(f.pecas)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <IndicadorDrillDialog payload={drill} onOpenChange={(o) => !o && setDrill(null)} />
+
     </div>
 
   );
@@ -2285,6 +2472,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
 function RankingCard({
   titulo,
   dim,
+  dimStore,
   atuais,
   anteriores,
   pedidos,
@@ -2293,6 +2481,8 @@ function RankingCard({
 }: {
   titulo: string;
   dim: DimRanking;
+  /** Quando presente, a chave do ranking vem do parse da Juff Store. */
+  dimStore?: DimRankingStore;
   atuais: ReturnType<typeof ranking>;
   anteriores: ReturnType<typeof ranking> | null;
   pedidos: PedidoFiltrado[];
@@ -2300,11 +2490,26 @@ function RankingCard({
   onDrill: (p: DrillPayload) => void;
 }) {
   const filtroDim = (chave: string) => (i: ItemCalc) => {
+    if (dimStore) {
+      const s = (i as ItemStoreCalc).store ?? parseProdutoStore(i.descricao_original ?? i.produto_olist);
+      if (dimStore === "modelo_base") return (s.modelo_base ?? "Não classificado") === chave;
+      if (dimStore === "estampa")
+        return s.tipo_peca === "ESTAMPADA" && (s.estampa ?? "Não classificado") === chave;
+      if (dimStore === "cor") return (s.cor ?? i.cor ?? "Não classificado") === chave;
+      if (dimStore === "tamanho") return (s.tamanho ?? i.tamanho ?? "Não classificado") === chave;
+      const marca = s.tipo_peca === "LISA" ? "Lisa" : "Estampada";
+      return (
+        `${s.modelo_base ?? "Não classificado"} \u00b7 ${s.cor ?? i.cor ?? "—"} \u00b7 ${
+          s.tamanho ?? i.tamanho ?? "—"
+        } (${marca})` === chave
+      );
+    }
     if (dim === "modelo") return i.modelo === chave;
     if (dim === "cor") return i.cor === chave;
     if (dim === "tamanho") return i.tamanho === chave;
     return `${i.modelo} \u00b7 ${i.cor} \u00b7 ${i.tamanho}` === chave;
   };
+
   const [ordem, setOrdem] = useState<OrdemRanking>("pecas");
   const [limite, setLimite] = useState<string>("10");
 

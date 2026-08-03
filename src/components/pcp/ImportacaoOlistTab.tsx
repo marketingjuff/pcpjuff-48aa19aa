@@ -127,7 +127,9 @@ export function ImportacaoOlistTab() {
 
   const resumo = useMemo(() => {
     if (!previa) return null;
-    const numeros = previa.pedidos.map((p) => p.numero_pedido);
+    /* Pedido Juff Store é e-commerce: nunca passa pelo PCP, então fica fora da conferência. */
+    const setStore = new Set(previa.pedidosStore);
+    const numeros = previa.pedidos.map((p) => p.numero_pedido).filter((n) => !setStore.has(n));
     const casam = numeros.filter((n) => setPcp.has(n));
     const soOlist = numeros.filter((n) => !setPcp.has(n));
     const naLista = numeros.filter((n) => setExcluidos.has(n));
@@ -137,6 +139,7 @@ export function ImportacaoOlistTab() {
     const pecas = previa.itens.filter((i) => !i.is_servico).reduce((s, i) => s + i.qtd, 0);
     return { casam, soOlist, naLista, trocaEmpresa, pecas };
   }, [previa, setPcp, setExcluidos, empresaPorPedido, empresa]);
+
 
   async function gerarPrevia(f: File) {
     if (!empresa) return;
@@ -285,6 +288,34 @@ export function ImportacaoOlistTab() {
                 <div className="font-semibold tabular-nums">{resumo.naLista.length}</div>
               </div>
             </div>
+
+
+            {previa.store.pedidos > 0 && (
+              <div className="rounded-md border border-dashed px-3 py-2">
+                <div className="text-xs font-medium">Juff Store (e-commerce)</div>
+                <div className="mt-1 text-xs text-muted-foreground tabular-nums">
+                  {previa.store.pedidos} pedido(s) · {previa.store.linhas} linha(s) · {previa.store.pecas} peça(s).
+                  Esses pedidos não passam pelo PCP e não exigem de-para: ficam fora da conferência acima e dos avisos de
+                  mapeamento.
+                </div>
+                {previa.store.foraPadrao.length > 0 && (
+                  <div className="mt-2">
+                    <div className="text-xs font-medium">
+                      {previa.store.foraPadrao.length} descrição(ões) fora do padrão (informativo)
+                    </div>
+                    <ul className="mt-1 max-h-40 list-disc space-y-0.5 overflow-auto pl-5 text-xs text-muted-foreground">
+                      {previa.store.foraPadrao.map((f) => (
+                        <li key={f.descricao}>
+                          {f.descricao} — {f.motivo}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+
 
             {previa.produtosSemMapeamento.length > 0 && (
               <Alert variant="destructive">
