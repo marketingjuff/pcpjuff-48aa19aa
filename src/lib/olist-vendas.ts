@@ -383,8 +383,6 @@ export async function parseVendasOlist(
     pedidosDescontoSuspeito,
   };
 
-  };
-
 }
 
 /* ------------------------------------------------------------------ */
