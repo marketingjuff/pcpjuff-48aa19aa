@@ -84,67 +84,45 @@ function statusPecas(solicitadas: PecaSolicitada[], fallback?: string | null): "
   return solicitadas.some((s) => (Number(s.qtd_enviada) || 0) < (Number(s.qtd) || 0)) ? "incompleto" : "completo";
 }
 
-export function PecasCompletadasPanel({ pedido }: Props) {
+export function PecasCompletadasPanel({ pedido, onEditarPecas, onAfterSave }: Props) {
   const raw = pedido?.pecas_completadas_log as unknown;
   const log: LogItem[] = Array.isArray(raw) ? (raw as LogItem[]) : [];
   const qc = useQueryClient();
-  const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [editQtd, setEditQtd] = useState<number>(0);
-  const [editObs, setEditObs] = useState<string>("");
 
   const salvar = useMutation({
     mutationFn: async (novoLog: LogItem[]) => {
-      if (!pedido) return;
+      if (!pedido) return null;
       const solicitadas = ((pedido.pecas_solicitadas as PecaSolicitada[] | null) ?? []).slice();
       const novaSolic = recomputeEnviadas(solicitadas, log, novoLog);
+      const novoStatus = statusPecas(novaSolic, pedido.status_pecas);
       const { error } = await supabase
         .from("pedidos" as any)
         .update({
           pecas_completadas_log: novoLog as any,
           pecas_solicitadas: novaSolic as any,
-          status_pecas: statusPecas(novaSolic, pedido.status_pecas),
+          status_pecas: novoStatus,
         })
         .eq("id", pedido.id);
       if (error) throw error;
+      return { pecas_solicitadas: novaSolic, status_pecas: novoStatus };
     },
-    onSuccess: () => {
+    onSuccess: (patch) => {
       qc.invalidateQueries({ queryKey: ["pedidos"] });
       qc.invalidateQueries({ queryKey: ["pedidos-falta"] });
       qc.invalidateQueries({ queryKey: ["pedidos-cop-saldos"] });
-      toast.success("Baixa corrigida.");
-      setEditIdx(null);
+      toast.success("Baixa revertida.");
+      if (patch) onAfterSave?.(patch);
     },
-    onError: (e: any) => toast.error(e.message ?? "Erro ao corrigir."),
+    onError: (e: any) => toast.error(e.message ?? "Erro ao reverter."),
   });
 
   if (!pedido || log.length === 0) return null;
 
-  // Ordena por data desc mantendo o índice original para editar/reverter.
+  // Ordena por data desc mantendo o índice original para reverter.
   const ordenado = log
     .map((l, idx) => ({ l, idx }))
     .sort((a, b) => (b.l.em || "").localeCompare(a.l.em || ""));
 
-  function iniciarEdicao(idx: number) {
-    const item = log[idx];
-    setEditIdx(idx);
-    setEditQtd(Number(item.qtd) || 0);
-    setEditObs(item.observacao || "");
-  }
-  function cancelarEdicao() {
-    setEditIdx(null);
-  }
-  function confirmarEdicao(idx: number) {
-    const novo = log.slice();
-    const q = Math.max(0, Math.floor(Number(editQtd) || 0));
-    if (q <= 0) {
-      // qtd 0 = reverter baixa
-      novo.splice(idx, 1);
-    } else {
-      const atual = novo[idx] as any;
-      novo[idx] = { ...atual, qtd: q, observacao: editObs || null } as LogItem;
-    }
-    salvar.mutate(novo);
-  }
   function reverter(idx: number) {
     const novo = log.slice();
     novo.splice(idx, 1);
@@ -156,120 +134,63 @@ export function PecasCompletadasPanel({ pedido }: Props) {
       <div className="text-xs font-semibold uppercase tracking-wider text-emerald-900 mb-1 flex items-center justify-between">
         <span>Peças completadas pelo COP ({log.length})</span>
         <span className="text-[10px] font-normal normal-case text-emerald-700">
-          Lápis edita; seta reverte a baixa.
+          Lápis abre a edição de peças; seta reverte a baixa.
         </span>
       </div>
       <ul className="text-xs space-y-1">
-        {ordenado.map(({ l, idx }) => {
-          const isEdit = editIdx === idx;
-          return (
-            <li key={idx} className="text-emerald-900 flex items-start gap-2">
-              <div className="flex-1">
-                <span className="font-mono">{new Date(l.em).toLocaleString("pt-BR")}</span>
-                {" — "}
-                {isEdit ? (
-                  <span className="inline-flex items-center gap-1 align-middle">
-                    <Input
-                      type="number"
-                      min={0}
-                      className="h-6 w-16 text-center px-1 inline-block"
-                      value={editQtd || ""}
-                      onChange={(ev) => setEditQtd(Number(ev.target.value) || 0)}
-                    />
-                    <span>× {l.modelo} · {l.cor} · {l.tamanho}</span>
-                  </span>
-                ) : (
-                  <>
-                    <b>{l.qtd}×</b> {l.modelo} · {l.cor} · {l.tamanho}
-                  </>
-                )}
-                {l.cop_numero != null && (
-                  <> {" "}<span className="text-emerald-700">(COP {rotuloCop(l.cop_numero, l.cop_letra ?? null)})</span></>
-                )}
-                {isEdit ? (
-                  <div className="mt-1">
-                    <Textarea
-                      className="text-xs min-h-[40px]"
-                      placeholder="Observação (opcional)"
-                      value={editObs}
-                      onChange={(ev) => setEditObs(ev.target.value)}
-                    />
-                  </div>
-                ) : (
-                  l.observacao && <> {" — "}<i className="text-emerald-700">{l.observacao}</i></>
-                )}
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                {isEdit ? (
-                  <>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 text-emerald-700 hover:bg-emerald-100"
-                      onClick={() => confirmarEdicao(idx)}
-                      disabled={salvar.isPending}
-                      title="Salvar"
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6"
-                      onClick={cancelarEdicao}
-                      title="Cancelar"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 text-emerald-800 hover:bg-emerald-100"
-                      onClick={() => iniciarEdicao(idx)}
-                      title="Corrigir"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6 text-amber-700 hover:bg-amber-100"
-                          title="Reverter baixa"
-                        >
-                          <Undo2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Reverter baixa do COP?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta baixa de <b>{l.qtd}× {l.modelo} · {l.cor} · {l.tamanho}</b> será revertida,
-                            voltando como pendência incompleta no COP.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => reverter(idx)}>
-                            Reverter baixa
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </>
-                )}
-              </div>
-            </li>
-          );
-        })}
+        {ordenado.map(({ l, idx }) => (
+          <li key={idx} className="text-emerald-900 flex items-start gap-2">
+            <div className="flex-1">
+              <span className="font-mono">{new Date(l.em).toLocaleString("pt-BR")}</span>
+              {" — "}
+              <b>{l.qtd}×</b> {l.modelo} · {l.cor} · {l.tamanho}
+              {l.cop_numero != null && (
+                <> {" "}<span className="text-emerald-700">(COP {rotuloCop(l.cop_numero, l.cop_letra ?? null)})</span></>
+              )}
+              {l.observacao && <> {" — "}<i className="text-emerald-700">{l.observacao}</i></>}
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 text-emerald-800 hover:bg-emerald-100"
+                onClick={() => onEditarPecas?.()}
+                title="Editar peças do pedido"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6 text-amber-700 hover:bg-amber-100"
+                    title="Reverter baixa"
+                  >
+                    <Undo2 className="h-3.5 w-3.5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reverter baixa do COP?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta baixa de <b>{l.qtd}× {l.modelo} · {l.cor} · {l.tamanho}</b> será revertida,
+                      voltando como pendência incompleta no COP.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => reverter(idx)}>
+                      Reverter baixa
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </li>
+        ))}
       </ul>
     </div>
   );
