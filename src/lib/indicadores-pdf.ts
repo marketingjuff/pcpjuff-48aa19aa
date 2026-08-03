@@ -306,7 +306,7 @@ ${d.vendidoProduzido ? ((vxp) => bloco(
       )}<td class="n">${esc(fmtPerc(vxp.total.difPerc))}</td></tr>`,
     ],
   ),
-)})(d.vendidoProduzido) : ""}
+))(d.vendidoProduzido) : ""}
 ${d.producao ? ((p) => bloco(
   "Produção e prazo (somente PCP)",
   "Bloco exclusivamente PCP: não sofre recorte por empresa, modelo, cor, tamanho ou situação. O filtro de Vendedor vale e usa o vendedor cadastrado no PCP. Prazos em dias úteis, com feriados.",
@@ -363,7 +363,7 @@ ${d.producao ? ((p) => bloco(
       p.correcoesPorAba.map((c) => `<tr><td class="l">${esc(c.aba)}</td>${num(c.qtd)}</tr>`),
       "Nenhuma correção no período.",
     ),
-)})(d.producao) : ""}
+))(d.producao) : ""}
 ${d.saude ? ((sd) => bloco(
   "Saúde do cadastro",
   "Diagnóstico de cadastro — informativo, sem semântica de erro.",
@@ -388,7 +388,7 @@ ${d.saude ? ((sd) => bloco(
         ),
       "Nenhuma divergência.",
     ),
-)})(d.saude) : ""}
+))(d.saude) : ""}
 <footer class="pe">Painel de Indicadores gerado em ${esc(agoraBR())} por ${esc(gerador)}</footer>
 `;
 }
