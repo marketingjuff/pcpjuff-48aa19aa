@@ -33,6 +33,16 @@ export interface ItemOlistParsed {
   is_servico: boolean;
 }
 
+/** Recorte informativo dos itens "Juff Store" encontrados na importação. */
+export interface ResumoStoreImport {
+  pedidos: number;
+  linhas: number;
+  pecas: number;
+  descricoes: string[];
+  /** Descrições que o parser da Store não reconheceu por completo. */
+  foraPadrao: { descricao: string; motivo: string }[];
+}
+
 export interface ResultadoImportacaoVendas {
   arquivosLidos: number;
   totalLinhas: number;
@@ -41,7 +51,11 @@ export interface ResultadoImportacaoVendas {
   produtosSemMapeamento: string[];
   servicos: string[];
   linhasIgnoradas: { arquivo: string; linha: number; motivo: string }[];
+  /** Pedidos com ao menos um item Juff Store — ficam fora da conferência com o PCP. */
+  pedidosStore: string[];
+  store: ResumoStoreImport;
 }
+
 
 function semAcento(s: string) {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
