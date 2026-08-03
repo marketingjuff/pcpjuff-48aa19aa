@@ -749,15 +749,25 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                   value={pecasSolicitadas}
                   pecasCompletadasLog={selected?.pecas_completadas_log ?? null}
                   onSave={salvarPecasSolicitadas}
-                  readOnly={tudoEnviado}
                   limite={Number(form.qtd ?? selected?.qtd ?? 0) || 0}
+                  limiteApenasAviso={temBaixaRegistrada}
                   onLiberarCompleto={liberarParaCompleto}
                 />
               </div>
             )}
 
             <div className="sm:col-span-2 lg:col-span-4">
-              <PecasCompletadasPanel pedido={selected ?? null} />
+              <PecasCompletadasPanel
+                pedido={selected ?? null}
+                onEditarPecas={() => setSolicitarOpen(true)}
+                onAfterSave={(patch) =>
+                  setForm((f) => ({
+                    ...f,
+                    pecas_solicitadas: patch.pecas_solicitadas as any,
+                    status_pecas: patch.status_pecas,
+                  }))
+                }
+              />
             </div>
 
 
