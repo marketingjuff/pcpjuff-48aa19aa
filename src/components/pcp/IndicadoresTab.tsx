@@ -1461,6 +1461,7 @@ export function IndicadoresTab() {
               </tbody>
             </table>
           </div>
+          )}
         </CardContent>
       </Card>
 
