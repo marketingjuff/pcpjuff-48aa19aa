@@ -172,6 +172,45 @@ function corpoHtml(d: IndicadoresPdfDados, gerador: string): string {
 
 ${bloco("Resumo", null, kpis(d))}
 
+${d.composicaoStore ? ((c) => bloco(
+  "Composição Juff Store",
+  "Kit Outlet é peça lisa de ponta de estoque: entra nas Lisas e aparece também como recorte próprio.",
+  tabela(
+    ["Tipo", "Faturamento", "% receita", "Peças", "Pedidos", "Ticket médio", "Preço médio/peça"],
+    [
+      `<tr><td class="l">Lisas</td>${moeda(c.lisas.faturamento)}${perc(c.lisas.percFaturamento)}${num(
+        c.lisas.pecas,
+      )}${num(c.lisas.pedidos)}${moeda(c.lisas.ticket)}${moeda(c.lisas.precoMedio)}</tr>`,
+      `<tr><td class="l">Estampadas</td>${moeda(c.estampadas.faturamento)}${perc(
+        c.estampadas.percFaturamento,
+      )}${num(c.estampadas.pecas)}${num(c.estampadas.pedidos)}${moeda(c.estampadas.ticket)}${moeda(
+        c.estampadas.precoMedio,
+      )}</tr>`,
+      `<tr><td class="l">Outlet (dentro das Lisas)</td>${moeda(c.outlet.faturamento)}${perc(
+        c.outlet.percFaturamento,
+      )}${num(c.outlet.pecas)}${num(c.outlet.pedidos)}<td class="n">—</td>${moeda(c.outlet.precoMedio)}</tr>`,
+    ],
+  ),
+))(d.composicaoStore) : ""}
+
+${d.rankingEstampas ? ((linhas) => bloco(
+  "Estampas mais vendidas",
+  "Somente peças estampadas.",
+  tabela(
+    ["#", "Estampa", "Peças", "% peças", "Faturamento", "Pedidos"],
+    linhas
+      .slice(0, 20)
+      .map(
+        (l, i) =>
+          `<tr><td class="n">${i + 1}</td><td class="l">${esc(l.chave)}</td>${num(l.pecas)}${perc(
+            l.percPecas,
+          )}${moeda(l.faturamento)}${num(l.pedidos)}</tr>`,
+      ),
+  ),
+))(d.rankingEstampas) : ""}
+
+
+
 ${bloco(
   "Rankings",
   "Ordenados por peças; participação e faturamento no período.",
