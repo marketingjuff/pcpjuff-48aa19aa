@@ -162,10 +162,14 @@
   * {
     border-color: var(--color-border);
   }
-  html,
-  body {
+  html {
     overflow-x: hidden;
   }
+  body {
+    /* clip (não hidden) para não criar contexto de rolagem e quebrar position: sticky */
+    overflow-x: clip;
+  }
+
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
