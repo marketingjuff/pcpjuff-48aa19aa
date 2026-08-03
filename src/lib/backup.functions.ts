@@ -27,20 +27,19 @@ const TABLES = [
 ] as const;
 type TableName = (typeof TABLES)[number];
 
-async function assertAdminOrGestor(supabase: any, userId: string) {
-  const { data, error } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId)
-    .in("role", ["admin", "gestor"]);
+async function assertAdmin(supabase: any, userId: string) {
+  const { data, error } = await supabase.rpc("has_role", {
+    _user_id: userId,
+    _role: "admin",
+  });
   if (error) throw new Error(error.message);
-  if (!data || data.length === 0) throw new Error("Forbidden: admin or gestor required");
+  if (!data) throw new Error("Forbidden: admin required");
 }
 
 export const exportBackup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdminOrGestor(context.supabase, context.userId);
+    await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
     const result: Record<string, any[]> = {};
