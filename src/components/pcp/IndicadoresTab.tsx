@@ -1415,6 +1415,7 @@ export function IndicadoresTab() {
               }
             />
           </div>
+          {escopo === "custom" && (
           <div className="max-h-72 overflow-auto">
             <table className="tbl-congelada w-full text-xs">
               <thead>
