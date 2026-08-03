@@ -839,6 +839,46 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
         />
       </div>
 
+      {/* ---------------- Composição Juff Store ---------------- */}
+      {composicao && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Composição Juff Store</CardTitle>
+            <div className="text-xs text-muted-foreground">
+              Kit Outlet é peça lisa de ponta de estoque: entra nas Lisas e aparece também como recorte próprio.
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid gap-2 md:grid-cols-2">
+              {([
+                { t: "Lisas (inclui Outlet)", d: composicao.lisas },
+                { t: "Estampadas", d: composicao.estampadas },
+              ] as const).map((b) => (
+                <div key={b.t} className="rounded-md border p-3">
+                  <div className="text-xs font-semibold">{b.t}</div>
+                  <div className="mt-1 text-lg font-semibold tabular-nums">{fmtMoeda(b.d.faturamento)}</div>
+                  <div className="text-xs text-muted-foreground tabular-nums">
+                    {b.d.percFaturamento.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% da receita ·{" "}
+                    {fmtNum(b.d.pecas)} peças · {fmtNum(b.d.pedidos)} pedidos
+                  </div>
+                  <div className="text-xs text-muted-foreground tabular-nums">
+                    Ticket médio {fmtMoeda(b.d.ticket)} · preço médio/peça {fmtMoeda(b.d.precoMedio)}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-md border border-dashed p-3">
+              <div className="text-xs font-semibold">Outlet — recorte das Lisas</div>
+              <div className="mt-1 text-lg font-semibold tabular-nums">{fmtMoeda(composicao.outlet.faturamento)}</div>
+              <div className="text-xs text-muted-foreground tabular-nums">
+                {composicao.outlet.percFaturamento.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% da receita do
+                período · {fmtNum(composicao.outlet.pecas)} peças · preço médio/peça{" "}
+                {fmtMoeda(composicao.outlet.precoMedio)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ---------------- Bloco 12 — Rankings (prioritário) ---------------- */}
       <Card className="border-2">
@@ -846,20 +886,35 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
           <CardTitle className="text-base">Rankings</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-2">
-          {RANKINGS.map((cfg) => (
-            <RankingCard
-              key={cfg.dim}
-              titulo={cfg.titulo}
-              dim={cfg.dim}
-              atuais={ranking(atuais, cfg.dim)}
-              anteriores={comparar ? ranking(anteriores, cfg.dim) : null}
-              pedidos={atuais}
-              subtitulo={subOlist}
-              onDrill={abrirDrill}
-            />
-          ))}
+          {ehStore
+            ? RANKINGS_STORE.map((cfg) => (
+                <RankingCard
+                  key={cfg.dimStore}
+                  titulo={cfg.titulo}
+                  dim={cfg.dim}
+                  dimStore={cfg.dimStore}
+                  atuais={rankingStore(atuais, cfg.dimStore)}
+                  anteriores={comparar ? rankingStore(anteriores, cfg.dimStore) : null}
+                  pedidos={atuais}
+                  subtitulo={subOlist}
+                  onDrill={abrirDrill}
+                />
+              ))
+            : RANKINGS.map((cfg) => (
+                <RankingCard
+                  key={cfg.dim}
+                  titulo={cfg.titulo}
+                  dim={cfg.dim}
+                  atuais={ranking(atuais, cfg.dim)}
+                  anteriores={comparar ? ranking(anteriores, cfg.dim) : null}
+                  pedidos={atuais}
+                  subtitulo={subOlist}
+                  onDrill={abrirDrill}
+                />
+              ))}
         </CardContent>
       </Card>
+
 
       <div className="grid gap-4 lg:grid-cols-2">
         <GradeCard
