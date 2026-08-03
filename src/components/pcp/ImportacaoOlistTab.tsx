@@ -286,7 +286,9 @@ export function ImportacaoOlistTab() {
               <div className="rounded-md border px-3 py-2">
                 <div className="text-[11px] text-muted-foreground">Na lista de excluídos</div>
                 <div className="font-semibold tabular-nums">{resumo.naLista.length}</div>
+              </div>
             </div>
+
 
             {previa.store.pedidos > 0 && (
               <div className="rounded-md border border-dashed px-3 py-2">
