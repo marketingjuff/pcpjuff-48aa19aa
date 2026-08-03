@@ -1,7 +1,10 @@
 import * as XLSX from "xlsx";
 import JSZip from "jszip";
 import { parseProduto, type EmpresaOlist } from "@/lib/estoque-olist";
+import { isItemJuffStore } from "@/lib/indicadores-olist";
+import { parseProdutoStore } from "@/lib/indicadores-store";
 import { VENDEDORES } from "@/lib/pedidos";
+
 
 export type { EmpresaOlist };
 
