@@ -21,8 +21,6 @@ import { FinalizadosTab } from "@/components/pcp/FinalizadosTab";
 import { ExpedicaoTab } from "@/components/pcp/ExpedicaoTab";
 import { RetrabalhoTab } from "@/components/pcp/RetrabalhoTab";
 import { HistoricoTab } from "@/components/pcp/HistoricoTab";
-import { ImportacaoOlistTab } from "@/components/pcp/ImportacaoOlistTab";
-import { IndicadoresTab } from "@/components/pcp/IndicadoresTab";
 import { DirtyFormProvider } from "@/components/pcp/dirty-form-context";
 import { fecharEpisodiosResolvidos } from "@/lib/pedidos";
 import { MacroSwitch } from "@/routes/_authenticated/cop";
@@ -43,6 +41,13 @@ function AppHome() {
   );
 }
 
+/** Abas que saíram do PCP e agora vivem no módulo KPI. */
+const KPI_REDIRECT: Record<string, string> = {
+  indicadores: "custom",
+  indicadores_store: "store",
+  importolist: "importolist",
+};
+
 function AppHomeInner() {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -51,11 +56,22 @@ function AppHomeInner() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(search.pedidoId ?? null);
 
+  // Links e a última aba salva podem apontar para as abas migradas para /kpi.
+  const kpiAlvo =
+    KPI_REDIRECT[search.tab ?? ""] ??
+    (typeof window !== "undefined" ? KPI_REDIRECT[window.localStorage.getItem("pcp:tab") ?? ""] : undefined);
   useEffect(() => {
-    if (search.tab) setTab(search.tab);
+    if (!kpiAlvo) return;
+    if (typeof window !== "undefined") window.localStorage.removeItem("pcp:tab");
+    navigate({ to: "/kpi", search: { tab: kpiAlvo } as any, replace: true });
+  }, [kpiAlvo, navigate]);
+
+  useEffect(() => {
+    if (search.tab && !KPI_REDIRECT[search.tab]) setTab(search.tab);
     if (search.pedidoId) setSelectedId(search.pedidoId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.tab, search.pedidoId]);
+
   const isAdmin = useIsAdmin();
   const { data: myRoles = [] } = useMyRoles();
   const isGestor = myRoles.some((r) => r.role === "gestor");
@@ -166,9 +182,6 @@ function AppHomeInner() {
     ...((isManager || canSee("finalizados")) ? [{ value: "fin", label: "Finalizados" }] : []),
     ...(isManager ? [{ value: "retrab", label: "Retrabalho" }] : []),
     ...(isAdmin ? [{ value: "historico", label: "Histórico PCP" }] : []),
-    ...(isAdmin ? [{ value: "importolist", label: "Importação Olist" }] : []),
-    ...(isAdmin ? [{ value: "indicadores", label: "Indicadores Juff Custom" }] : []),
-    ...(isAdmin ? [{ value: "indicadores_store", label: "Indicadores Juff Store" }] : []),
   ];
   const activeTabLabel = tabs.find((t) => t.value === tab)?.label ?? "";
 
@@ -310,21 +323,6 @@ function AppHomeInner() {
           {isAdmin && (
             <TabsContent value="historico" forceMount hidden={tab !== "historico"}>
               <HistoricoTab />
-            </TabsContent>
-          )}
-          {isAdmin && (
-            <TabsContent value="importolist" forceMount hidden={tab !== "importolist"}>
-              <ImportacaoOlistTab />
-            </TabsContent>
-          )}
-          {isAdmin && tab === "indicadores" && (
-            <TabsContent value="indicadores">
-              <IndicadoresTab escopo="custom" />
-            </TabsContent>
-          )}
-          {isAdmin && tab === "indicadores_store" && (
-            <TabsContent value="indicadores_store">
-              <IndicadoresTab escopo="store" />
             </TabsContent>
           )}
 

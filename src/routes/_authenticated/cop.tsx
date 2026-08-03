@@ -178,10 +178,11 @@ function CopHome() {
   );
 }
 
-export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" }) {
+export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" | "kpi" }) {
   const navigate = useNavigate();
   const canAccessCop = useCanAccessCop();
   const canAccessMap = useCanAccessMap();
+  const isAdminMacro = useIsAdmin();
   const baseBtn = "px-6 py-2 rounded font-bold text-base transition-colors";
   const pcpActive = active === "pcp"
     ? "bg-blue-600 text-white"
@@ -191,6 +192,9 @@ export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" }) {
     : "hover:bg-accent text-foreground";
   const mapActive = active === "map"
     ? "bg-yellow-500 text-white"
+    : "hover:bg-accent text-foreground";
+  const kpiActive = active === "kpi"
+    ? "bg-purple-600 text-white"
     : "hover:bg-accent text-foreground";
   return (
     <div className="inline-flex rounded-md border bg-card p-1">
@@ -217,6 +221,15 @@ export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" }) {
           className={`${baseBtn} ${mapActive}`}
         >
           MAP
+        </button>
+      )}
+      {isAdminMacro && (
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/kpi" })}
+          className={`${baseBtn} ${kpiActive}`}
+        >
+          KPI
         </button>
       )}
     </div>
