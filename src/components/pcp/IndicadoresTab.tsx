@@ -270,6 +270,10 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   const [tamanhos, setTamanhos] = useState<string[]>([]);
   const [situacoes, setSituacoes] = useState<string[]>([]);
   const [grupos, setGrupos] = useState<Grupo[]>(["casados", "so_olist"]);
+  /* Filtros exclusivos da Juff Store. */
+  const [tipoPeca, setTipoPeca] = useState<"todas" | "lisas" | "estampadas">("todas");
+  const [somenteOutlet, setSomenteOutlet] = useState(false);
+
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["indicadores-olist", "base"],
