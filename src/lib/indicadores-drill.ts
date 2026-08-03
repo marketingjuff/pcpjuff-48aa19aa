@@ -375,6 +375,11 @@ const idsPcp = (r: PcpDrill) => {
   };
 };
 
+/** Nota de rodapé sobre a regra de casamento (base + letra do parcial). */
+export const NOTA_CASAMENTO =
+  "Casamento Olist ↔ PCP pela base do número: um pedido parcial do PCP (3996A, 3996B) pertence ao pedido 3996 da Olist. Parciais aparecem marcados com *. Aqui: pedidos da Olist sem nenhum parcial no PCP.";
+
+
 const COL_PCP_ID: DrillColuna[] = [
   { chave: "pedido", label: "Registro PCP", tipo: "texto" },
   { chave: "pedido_olist", label: "Pedido Olist", tipo: "texto" },
