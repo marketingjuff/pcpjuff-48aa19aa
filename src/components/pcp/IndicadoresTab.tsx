@@ -1260,9 +1260,66 @@ export function IndicadoresTab() {
             O frete é apresentado separadamente e nunca é somado ao faturamento. A UF vem do PCP.
           </div>
           <div className="grid gap-2 md:grid-cols-3">
-            <Kpi titulo="Frete total" valor={fmtMoeda(frete.total)} varPerc={null} comparar={false} />
-            <Kpi titulo="Frete médio/pedido" valor={fmtMoeda(frete.medio)} varPerc={null} comparar={false} />
-            <Kpi titulo="Pedidos com frete" valor={`${frete.percComFrete.toFixed(1)}%`} varPerc={null} comparar={false} />
+            <Kpi
+              titulo="Frete total"
+              valor={fmtMoeda(frete.total)}
+              varPerc={null}
+              comparar={false}
+              onDrill={() =>
+                abrirDrill(
+                  drillPedidos(atuais, {
+                    titulo: "Frete total",
+                    subtitulo: subOlist,
+                    nota: "O frete nunca é somado ao faturamento. UF vem do PCP.",
+                    indicadorLabel: fmtMoeda(frete.total),
+                    indicadorValor: frete.total,
+                    campo: "frete",
+                    ufPorPedido: data?.ufPorPedido ?? new Map(),
+                  }),
+                )
+              }
+            />
+            <Kpi
+              titulo="Frete médio/pedido"
+              valor={fmtMoeda(frete.medio)}
+              varPerc={null}
+              comparar={false}
+              onDrill={() =>
+                abrirDrill(
+                  drillPedidos(atuais, {
+                    titulo: "Frete médio por pedido",
+                    subtitulo: subOlist,
+                    indicadorLabel: fmtMoeda(frete.medio),
+                    indicadorValor: frete.medio,
+                    campo: "frete",
+                    media: true,
+                    ufPorPedido: data?.ufPorPedido ?? new Map(),
+                  }),
+                )
+              }
+            />
+            <Kpi
+              titulo="Pedidos com frete"
+              valor={`${frete.percComFrete.toFixed(1)}%`}
+              varPerc={null}
+              comparar={false}
+              onDrill={() =>
+                abrirDrill(
+                  drillPedidos(
+                    atuais.filter((p) => Number(p.frete ?? 0) > 0),
+                    {
+                      titulo: "Pedidos com frete",
+                      subtitulo: subOlist,
+                      nota: `${frete.percComFrete.toFixed(1)}% dos pedidos do período têm frete maior que zero.`,
+                      indicadorLabel: `${frete.percComFrete.toFixed(1)}%`,
+                      indicadorValor: null,
+                      campo: "linhas",
+                      ufPorPedido: data?.ufPorPedido ?? new Map(),
+                    },
+                  ),
+                )
+              }
+            />
           </div>
           <div className="max-h-72 overflow-auto">
             <table className="tbl-congelada w-full text-xs">
@@ -1275,14 +1332,37 @@ export function IndicadoresTab() {
                 </tr>
               </thead>
               <tbody>
-                {frete.porUf.map((u) => (
-                  <tr key={u.uf} className="border-t">
-                    <td className="px-2 py-1">{u.uf}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(u.pedidos)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(u.pecas)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(u.frete)}</td>
-                  </tr>
-                ))}
+                {frete.porUf.map((u) => {
+                  const mapaUf = data?.ufPorPedido ?? new Map();
+                  const linhasUf = atuais.filter((p) => (mapaUf.get(p.numero_pedido) ?? "—") === u.uf);
+                  const cel = (valor: number, label: string, campo: "linhas" | "pecas" | "frete", titulo: string) => (
+                    <td className="px-2 py-1 text-right tabular-nums">
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillPedidos(linhasUf, {
+                            titulo,
+                            subtitulo: `UF ${u.uf} · ${subOlist}`,
+                            indicadorLabel: label,
+                            indicadorValor: valor,
+                            campo,
+                            ufPorPedido: mapaUf,
+                          })
+                        }
+                      >
+                        {label}
+                      </ValorDrill>
+                    </td>
+                  );
+                  return (
+                    <tr key={u.uf} className="border-t">
+                      <td className="px-2 py-1">{u.uf}</td>
+                      {cel(u.pedidos, fmtNum(u.pedidos), "linhas", `Pedidos — ${u.uf}`)}
+                      {cel(u.pecas, fmtNum(u.pecas), "pecas", `Peças — ${u.uf}`)}
+                      {cel(u.frete, fmtMoeda(u.frete), "frete", `Frete — ${u.uf}`)}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -1322,16 +1402,45 @@ export function IndicadoresTab() {
                 </tr>
               </thead>
               <tbody>
-                {ufLinhas.map((u) => (
-                  <tr key={u.uf} className="border-t">
-                    <td className="px-2 py-1">{u.uf}</td>
-                    <td className="px-2 py-1 text-right font-semibold tabular-nums">{fmtMoeda(u.faturamento)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{u.perc.toFixed(1)}%</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(u.pedidos)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtNum(u.pecas)}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(u.frete)}</td>
-                  </tr>
-                ))}
+                {ufLinhas.map((u) => {
+                  const mapaUf = data?.ufPorPedido ?? new Map();
+                  const linhasUf = atuais.filter((p) => (mapaUf.get(p.numero_pedido) ?? "—") === u.uf);
+                  const cel = (
+                    valor: number,
+                    label: string,
+                    campo: "faturamento" | "linhas" | "pecas" | "frete",
+                    titulo: string,
+                    className = "",
+                  ) => (
+                    <td className={`px-2 py-1 text-right tabular-nums ${className}`}>
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillPedidos(linhasUf, {
+                            titulo,
+                            subtitulo: `UF ${u.uf} · ${subOlist}`,
+                            indicadorLabel: label,
+                            indicadorValor: valor,
+                            campo,
+                            ufPorPedido: mapaUf,
+                          })
+                        }
+                      >
+                        {label}
+                      </ValorDrill>
+                    </td>
+                  );
+                  return (
+                    <tr key={u.uf} className="border-t">
+                      <td className="px-2 py-1">{u.uf}</td>
+                      {cel(u.faturamento, fmtMoeda(u.faturamento), "faturamento", `Faturamento — ${u.uf}`, "font-semibold")}
+                      <td className="px-2 py-1 text-right tabular-nums">{u.perc.toFixed(1)}%</td>
+                      {cel(u.pedidos, fmtNum(u.pedidos), "linhas", `Pedidos — ${u.uf}`)}
+                      {cel(u.pecas, fmtNum(u.pecas), "pecas", `Peças — ${u.uf}`)}
+                      {cel(u.frete, fmtMoeda(u.frete), "frete", `Frete — ${u.uf}`)}
+                    </tr>
+                  );
+                })}
                 {ufLinhas.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-2 py-4 text-center text-muted-foreground">
