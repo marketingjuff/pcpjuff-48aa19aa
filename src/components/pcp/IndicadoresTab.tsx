@@ -577,7 +577,7 @@ export function IndicadoresTab() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <MultiSelect label="Vendedor" opcoes={opcoes.vendedores} valor={vendedores} onChange={setVendedores} />
+          <MultiSelect label="Vendedor" opcoes={opcoesVendMulti} valor={vendedores} onChange={setVendedores} />
           <MultiSelect label="Modelo" opcoes={opcoes.modelos} valor={modelos} onChange={setModelos} />
           <MultiSelect label="Cor" opcoes={opcoes.cores} valor={cores} onChange={setCores} />
           <MultiSelect label="Tamanho" opcoes={opcoes.tamanhos} valor={tamanhos} onChange={setTamanhos} />
