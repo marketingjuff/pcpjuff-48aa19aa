@@ -127,7 +127,9 @@ export function ImportacaoOlistTab() {
 
   const resumo = useMemo(() => {
     if (!previa) return null;
-    const numeros = previa.pedidos.map((p) => p.numero_pedido);
+    /* Pedido Juff Store é e-commerce: nunca passa pelo PCP, então fica fora da conferência. */
+    const setStore = new Set(previa.pedidosStore);
+    const numeros = previa.pedidos.map((p) => p.numero_pedido).filter((n) => !setStore.has(n));
     const casam = numeros.filter((n) => setPcp.has(n));
     const soOlist = numeros.filter((n) => !setPcp.has(n));
     const naLista = numeros.filter((n) => setExcluidos.has(n));
@@ -137,6 +139,7 @@ export function ImportacaoOlistTab() {
     const pecas = previa.itens.filter((i) => !i.is_servico).reduce((s, i) => s + i.qtd, 0);
     return { casam, soOlist, naLista, trocaEmpresa, pecas };
   }, [previa, setPcp, setExcluidos, empresaPorPedido, empresa]);
+
 
   async function gerarPrevia(f: File) {
     if (!empresa) return;
