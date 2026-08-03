@@ -54,6 +54,8 @@ import {
   type OrdemRanking,
   type PcpDb,
   type PedidoDb,
+  type PedidoFiltrado,
+  type ItemCalc,
 } from "@/lib/indicadores-olist";
 import { useFeriados } from "@/hooks/use-feriados";
 import { useProfilesMap } from "@/hooks/use-profiles-map";
