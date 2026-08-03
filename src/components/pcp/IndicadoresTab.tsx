@@ -59,7 +59,16 @@ import {
   type EscopoIndicadores,
   pedidosJuffStore,
 } from "@/lib/indicadores-olist";
+import {
+  parseProdutoStore,
+  rankingStore,
+  composicaoStore,
+  descricoesForaPadrao,
+  type DimRankingStore,
+  type ItemStoreCalc,
+} from "@/lib/indicadores-store";
 import { useFeriados } from "@/hooks/use-feriados";
+
 import { useProfilesMap } from "@/hooks/use-profiles-map";
 import { abrirIndicadoresParaImpressao } from "@/lib/indicadores-pdf";
 import {
