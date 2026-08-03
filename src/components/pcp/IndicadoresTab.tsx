@@ -515,7 +515,7 @@ export function IndicadoresTab() {
   return (
     <div className="space-y-4">
       {/* ---------------- Filtros ---------------- */}
-      <div className="sticky top-0 z-20 -mx-1 space-y-2 rounded-md border bg-background/95 p-3 backdrop-blur">
+      <div className="sticky top-[68px] z-20 -mx-1 space-y-2 rounded-md border bg-background/95 p-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex flex-wrap items-center gap-2">
           <Select
             value={preset}
