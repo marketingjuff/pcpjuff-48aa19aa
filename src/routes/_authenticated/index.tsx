@@ -167,7 +167,8 @@ function AppHomeInner() {
     ...(isManager ? [{ value: "retrab", label: "Retrabalho" }] : []),
     ...(isAdmin ? [{ value: "historico", label: "Histórico PCP" }] : []),
     ...(isAdmin ? [{ value: "importolist", label: "Importação Olist" }] : []),
-    ...(isAdmin ? [{ value: "indicadores", label: "Indicadores" }] : []),
+    ...(isAdmin ? [{ value: "indicadores", label: "Indicadores Juff Custom" }] : []),
+    ...(isAdmin ? [{ value: "indicadores_store", label: "Indicadores Juff Store" }] : []),
   ];
   const activeTabLabel = tabs.find((t) => t.value === tab)?.label ?? "";
 
