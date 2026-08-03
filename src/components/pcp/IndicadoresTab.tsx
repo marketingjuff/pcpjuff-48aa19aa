@@ -457,6 +457,16 @@ export function IndicadoresTab() {
   );
 
   const mostraSoPcp = grupos.includes("so_pcp");
+  const soPcpLista = useMemo(() => {
+    const lista = data?.soPcp ?? [];
+    if (vendedores.length === 0) return lista;
+    const porNumero = new Map((data?.pcpLista ?? []).map((r) => [String(r.pedido_olist ?? "").trim(), r]));
+    return lista.filter((num) => {
+      const reg = porNumero.get(String(num).trim());
+      return reg ? pcpNoRecorteVendedor(reg, vendedores) : false;
+    });
+  }, [data, vendedores]);
+
 
   /* ---- Detalhamento (drill-down), somente leitura ---- */
   const nomes = useProfilesMap();
