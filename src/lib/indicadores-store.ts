@@ -141,8 +141,7 @@ function calcular(bruto: string): ProdutoStore {
   }
   if (!res.modelo_base) {
     res.ok = false;
-    res.motivo = res.motivo ?? "Modelo não reconhecido";
-    if (res.motivo !== "Modelo não reconhecido") res.motivo = "Modelo não reconhecido";
+    res.motivo = res.motivo ? `${res.motivo} · Modelo não reconhecido` : "Modelo não reconhecido";
   }
 
   // 7. estampa (só para peça estampada)
