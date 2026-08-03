@@ -326,8 +326,9 @@ export function ImportacaoOlistTab() {
               </div>
             )}
 
-
+            {previa.store.pedidos > 0 && (
               <div className="rounded-md border border-dashed px-3 py-2">
+
                 <div className="text-xs font-medium">Juff Store (e-commerce)</div>
                 <div className="mt-1 text-xs text-muted-foreground tabular-nums">
                   {previa.store.pedidos} pedido(s) · {previa.store.linhas} linha(s) · {previa.store.pecas} peça(s).
