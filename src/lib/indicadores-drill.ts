@@ -23,6 +23,8 @@ import {
   type PedidoFiltrado,
 } from "@/lib/indicadores-olist";
 import { resolveNome } from "@/hooks/use-profiles-map";
+import { basePedidoOlist, sufixoParcial } from "@/lib/pedido-olist-match";
+
 
 /* ------------------------------------------------------------------ */
 /* Contrato                                                            */
