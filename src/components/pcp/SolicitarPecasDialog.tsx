@@ -30,6 +30,8 @@ interface Props {
   readOnly?: boolean;
   /** Quantidade máxima de peças permitida (qtd do vendedor). */
   limite?: number;
+  /** Quando true, o limite do vendedor é apenas aviso (não capa nem bloqueia o salvamento). */
+  limiteApenasAviso?: boolean;
   /** Libera para completo: apaga a solicitação e marca o pedido como completo. */
   onLiberarCompleto?: () => void | Promise<void>;
 }
@@ -111,7 +113,7 @@ function desagrupar(grupos: GrupoLinha[]): PecaSolicitada[] {
 }
 
 
-export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletadasLog, onSave, readOnly = false, limite, onLiberarCompleto }: Props) {
+export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletadasLog, onSave, readOnly = false, limite, limiteApenasAviso = false, onLiberarCompleto }: Props) {
   const [grupos, setGrupos] = useState<GrupoLinha[]>(() => agrupar(value, pecasCompletadasLog));
   const [saving, setSaving] = useState(false);
 
@@ -138,7 +140,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
     setGrupos((arr) => arr.map((g, idx) => {
       if (idx !== i) return g;
       const valor = Math.max(0, n);
-      if (typeof limite === "number" && limite > 0) {
+      if (typeof limite === "number" && limite > 0 && !limiteApenasAviso) {
         const outros = totalAtual(arr, i, tam);
         const permitido = Math.max(0, limite - outros);
         return { ...g, qtd: { ...g.qtd, [tam]: Math.min(valor, permitido) } };
@@ -168,7 +170,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
   const excedeLimite = typeof limite === "number" && limite > 0 && totals.sol > limite;
 
   async function handleSave() {
-    if (excedeLimite) return;
+    if (excedeLimite && !limiteApenasAviso) return;
     setSaving(true);
     try {
       await onSave(desagrupar(grupos));
@@ -312,13 +314,19 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
           )}
 
           <div className="flex flex-wrap gap-3 pt-2 text-xs text-muted-foreground items-center">
-            <span>Total solicitado: <span className={`font-semibold tabular-nums ${excedeLimite ? "text-red-600" : "text-foreground"}`}>{totals.sol}{typeof limite === "number" && limite > 0 ? `/${limite} (vendedor)` : ""}</span></span>
+            <span>Total solicitado: <span className={`font-semibold tabular-nums ${excedeLimite ? (limiteApenasAviso ? "text-amber-600" : "text-red-600") : "text-foreground"}`}>{totals.sol}{typeof limite === "number" && limite > 0 ? `/${limite} (vendedor)` : ""}</span></span>
             <span>Total enviado: <span className="font-semibold tabular-nums text-foreground">{totals.env}</span></span>
             <span>Pendente: <span className="font-semibold tabular-nums text-foreground">{totals.pend}</span></span>
             {excedeLimite && (
-              <span className="text-red-600">
-                Ultrapassa a quantidade do vendedor ({limite}).
-              </span>
+              limiteApenasAviso ? (
+                <span className="text-amber-600">
+                  Total acima da quantidade do vendedor ({limite}) — permitido porque este pedido já teve peças entregues pelo COP.
+                </span>
+              ) : (
+                <span className="text-red-600">
+                  Ultrapassa a quantidade do vendedor ({limite}).
+                </span>
+              )
             )}
           </div>
         </div>
@@ -366,7 +374,7 @@ export function SolicitarPecasDialog({ open, onOpenChange, value, pecasCompletad
             <Button
               type="button"
               onClick={handleSave}
-              disabled={saving || excedeLimite}
+              disabled={saving || (excedeLimite && !limiteApenasAviso)}
             >
               {saving ? "Salvando..." : "Salvar"}
             </Button>
