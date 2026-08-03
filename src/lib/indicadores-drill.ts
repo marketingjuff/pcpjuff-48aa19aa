@@ -357,12 +357,32 @@ const dias = (a: string | null | undefined, b: string | null | undefined, feriad
 
 const idPcp = (r: PcpDrill) => txt(r.pedido_olist) ?? "—";
 
+/**
+ * Uma linha por parcial (dado real de produção) + a que pedido da Olist ela
+ * pertence. Parcial recebe marcador visual.
+ */
+const idsPcp = (r: PcpDrill) => {
+  const registro = idPcp(r);
+  const base = basePedidoOlist(r.pedido_olist);
+  const parcial = sufixoParcial(r.pedido_olist) !== "";
+  return {
+    pedido: parcial ? `${registro} *` : registro,
+    pedido_olist: base || "—",
+  };
+};
+
+const COL_PCP_ID: DrillColuna[] = [
+  { chave: "pedido", label: "Registro PCP", tipo: "texto" },
+  { chave: "pedido_olist", label: "Pedido Olist", tipo: "texto" },
+];
+
 const COL_PCP_BASE: DrillColuna[] = [
-  { chave: "pedido", label: "Pedido Olist", tipo: "texto" },
+  ...COL_PCP_ID,
   { chave: "orcamento", label: "Orçamento", tipo: "texto" },
   { chave: "vendedor", label: "Vendedor", tipo: "texto" },
   { chave: "tipo_estampa", label: "Tipo estampa", tipo: "texto" },
 ];
+
 
 /** KPI "Pedidos no período". */
 export function drillPcpPedidos(
