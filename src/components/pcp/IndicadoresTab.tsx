@@ -442,9 +442,13 @@ export function IndicadoresTab() {
   const pcpPeriodo = useMemo(
     () =>
       (data?.pcpLista ?? []).filter(
-        (r) => r.entrada_pedido && r.entrada_pedido >= intervalo.de && r.entrada_pedido <= intervalo.ate,
+        (r) =>
+          r.entrada_pedido &&
+          r.entrada_pedido >= intervalo.de &&
+          r.entrada_pedido <= intervalo.ate &&
+          pcpNoRecorteVendedor(r, vendedores),
       ),
-    [data, intervalo],
+    [data, intervalo, vendedores],
   );
   const prod = useMemo(() => produtividadePcp(pcpPeriodo, feriados), [pcpPeriodo, feriados]);
   const saude = useMemo(
