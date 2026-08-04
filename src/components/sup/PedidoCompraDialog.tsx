@@ -155,7 +155,9 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         .maybeSingle();
       hist = (data?.id as string | undefined) ?? null;
     }
-    return { preco: n(vinc?.preco_tabela), unidade: prod?.unidade ?? "unidade", hist };
+    const preco = vinc?.preco_tabela != null ? n(vinc.preco_tabela) : n((prod as any)?.preco_referencia);
+    return { preco, unidade: prod?.unidade ?? "unidade", hist };
+
   }
 
   function addLinha() {
