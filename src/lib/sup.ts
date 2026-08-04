@@ -94,12 +94,20 @@ export type SupFornecedor = {
   created_at?: string;
 };
 
+export type SupDepartamento = {
+  id: string;
+  nome: string;
+  ativo: boolean;
+  created_at?: string;
+};
+
 export type SupProduto = {
   id: string;
   fornecedor_id: string | null;
   nome: string;
 
   categoria: string | null;
+  departamento: string | null;
   unidade: string;
   especificacao: string | null;
   preco_referencia: number | null;

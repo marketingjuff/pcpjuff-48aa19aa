@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Plus, Pencil, Copy, TrendingDown, TrendingUp } from "lucide-react";
 import { SortTh, useTableSort } from "@/components/shared/sortable";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
+import { useSupDepartamentos } from "@/components/sup/DepartamentosTab";
 import {
   SUP_UNIDADES, fmtMoeda, n, variacaoPercentual,
   type SupFornecedorProduto, type SupPrecoHistorico, type SupProduto,
@@ -81,7 +82,7 @@ export async function aplicarPrecoTabela(args: {
 type ProdForm = {
   id?: string;
   nome: string;
-  categoria: string;
+  departamento: string;
   unidade: string;
   especificacao: string;
   ativo: boolean;
@@ -93,7 +94,7 @@ type ProdForm = {
 };
 
 const formVazio = (): ProdForm => ({
-  nome: "", categoria: "", unidade: "unidade", especificacao: "", ativo: true,
+  nome: "", departamento: "", unidade: "unidade", especificacao: "", ativo: true,
   preco: "", qtd_min: "", prazo: "", motivo: "", arquivo: null,
 });
 
@@ -109,6 +110,7 @@ const toNum = (s: string) => {
 export function ProdutosTab() {
   const qc = useQueryClient();
   const { data: produtos = [], isLoading } = useSupProdutos();
+  const { data: departamentos = [] } = useSupDepartamentos();
   const { data: fornecedores = [] } = useSupFornecedores();
   const { data: vinculos = [] } = useSupFornecedorProdutos();
 
@@ -155,12 +157,12 @@ export function ProdutosTab() {
     const b = norm(busca);
     return produtos
       .filter((p) => p.fornecedor_id === fornId)
-      .filter((p) => !b || [p.nome, p.categoria, p.especificacao].some((v) => (v ?? "").toLowerCase().includes(b)));
+      .filter((p) => !b || [p.nome, p.departamento, p.especificacao].some((v) => (v ?? "").toLowerCase().includes(b)));
   }, [produtos, fornId, busca]);
 
   const { rows: ordenados, sortKey, sortDir, toggle } = useTableSort(filtrados, {
     nome: (r) => r.nome,
-    categoria: (r) => r.categoria,
+    departamento: (r) => r.departamento,
     unidade: (r) => r.unidade,
     preco: (r) => vinculoDoProduto(r.id)?.preco_tabela ?? -1,
     qtd_min: (r) => vinculoDoProduto(r.id)?.quantidade_minima ?? -1,
@@ -213,7 +215,7 @@ export function ProdutosTab() {
 
       const base = {
         nome: f.nome.trim(),
-        categoria: f.categoria.trim() || null,
+        departamento: f.departamento.trim() || null,
         unidade: f.unidade || "unidade",
         especificacao: f.especificacao.trim() || null,
         preco_referencia: preco,
@@ -315,7 +317,7 @@ export function ProdutosTab() {
         .from("sup_produtos")
         .insert({
           nome: p.nome,
-          categoria: p.categoria,
+          departamento: p.departamento,
           unidade: p.unidade,
           especificacao: p.especificacao,
           preco_referencia: null,
@@ -355,7 +357,7 @@ export function ProdutosTab() {
     setForm({
       id: p.id,
       nome: p.nome,
-      categoria: p.categoria ?? "",
+      departamento: p.departamento ?? "",
       unidade: p.unidade,
       especificacao: p.especificacao ?? "",
       ativo: p.ativo,
@@ -415,7 +417,7 @@ export function ProdutosTab() {
             <Label className="text-xs">
               {fornecedorSel ? `Produtos de ${fornecedorSel.nome_fantasia || fornecedorSel.razao_social}` : "Produtos"}
             </Label>
-            <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nome, categoria, especificação…" className="h-9" disabled={!fornId} />
+            <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nome, departamento, especificação…" className="h-9" disabled={!fornId} />
           </div>
           <Button className="h-9 bg-teal-600 hover:bg-teal-700 text-white" disabled={!fornId} onClick={abrirNovo}>
             <Plus className="h-4 w-4 mr-1" /> Novo produto
@@ -427,7 +429,7 @@ export function ProdutosTab() {
             <thead className="bg-muted/40">
               <tr className="text-xs">
                 <SortTh label="Produto" sortKey="nome" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
-                <SortTh label="Categoria" sortKey="categoria" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
+                <SortTh label="Departamento" sortKey="departamento" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
                 <SortTh label="Unidade" sortKey="unidade" current={sortKey} dir={sortDir} onSort={toggle} />
                 <SortTh label="Preço de tabela" sortKey="preco" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
                 <SortTh label="Qtd. mínima" sortKey="qtd_min" current={sortKey} dir={sortDir} onSort={toggle} />
@@ -452,7 +454,7 @@ export function ProdutosTab() {
                     onClick={() => setSelId(p.id)}
                   >
                     <td className="p-1.5 font-medium">{p.nome}</td>
-                    <td className="p-1.5">{p.categoria ?? "—"}</td>
+                    <td className="p-1.5">{p.departamento ?? "—"}</td>
                     <td className="p-1.5 text-center">{p.unidade}</td>
                     <td className="p-1.5 text-right font-semibold tabular-nums">{v?.preco_tabela == null ? "—" : fmtMoeda(v.preco_tabela)}</td>
                     <td className="p-1.5 text-center tabular-nums">{v?.quantidade_minima ?? "—"}</td>
@@ -545,8 +547,19 @@ export function ProdutosTab() {
               <Input value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} className="h-9" />
             </div>
             <div>
-              <Label className="text-xs">Categoria</Label>
-              <Input value={form.categoria} onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))} className="h-9" />
+              <Label className="text-xs">Departamento</Label>
+              <Select value={form.departamento || "__none__"} onValueChange={(v) => setForm((f) => ({ ...f, departamento: v === "__none__" ? "" : v }))}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">—</SelectItem>
+                  {departamentos.filter((d) => d.ativo || d.nome === form.departamento).map((d) => (
+                    <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>
+                  ))}
+                  {form.departamento && !departamentos.some((d) => d.nome === form.departamento) && (
+                    <SelectItem value={form.departamento}>{form.departamento}</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label className="text-xs">Unidade *</Label>
