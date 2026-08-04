@@ -16,7 +16,7 @@ import { ArrowLeft, Trash2, Plus, Download, Upload, KeyRound, ArrowUp, ArrowDown
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 import { toast } from "sonner";
-import { useMyRoles, useCanAccessCop, useCanAccessMap } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessCop, useCanAccessMap, useCanAccessSup } from "@/hooks/use-role";
 import {
   createUserAccount,
   listUsers,
@@ -47,10 +47,11 @@ import {
 } from "@/hooks/use-color-settings";
 import { CopConfigPanel } from "@/components/cop/CopConfigPanel";
 import { MapConfigPanel } from "@/components/map/MapConfigPanel";
+import { SupConfigPanel } from "@/components/sup/SupConfigPanel";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   validateSearch: (s: Record<string, unknown>) => ({
-    area: (s.area === "cop" ? "cop" : s.area === "map" ? "map" : "pcp") as "pcp" | "cop" | "map",
+    area: (s.area === "cop" ? "cop" : s.area === "map" ? "map" : s.area === "sup" ? "sup" : "pcp") as "pcp" | "cop" | "map" | "sup",
   }),
   component: ConfiguracoesPage,
 });
@@ -64,6 +65,7 @@ function ConfiguracoesPage() {
   const isGestor = roles.some((r) => r.role === "gestor");
   const canAccessCop = useCanAccessCop();
   const canAccessMap = useCanAccessMap();
+  const canAccessSup = useCanAccessSup();
   const canAccess = isAdmin || isGestor;
   const { area } = Route.useSearch();
 
@@ -78,7 +80,7 @@ function ConfiguracoesPage() {
     return <div className="p-8 text-sm text-muted-foreground">Carregando…</div>;
   }
 
-  function setArea(a: "pcp" | "cop" | "map") {
+  function setArea(a: "pcp" | "cop" | "map" | "sup") {
     navigate({ to: "/configuracoes", search: { area: a } });
   }
 
@@ -87,16 +89,17 @@ function ConfiguracoesPage() {
       <header className="border-b bg-card sticky top-0 z-30">
         <div className="container mx-auto flex items-center justify-between gap-2 px-3 py-2 sm:px-4 sm:py-3">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <Link to={area === "cop" ? "/cop" : area === "map" ? "/map" : "/"}>
+            <Link to={area === "cop" ? "/cop" : area === "map" ? "/map" : area === "sup" ? "/sup" : "/"}>
               <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Voltar</span></Button>
             </Link>
             <h1 className="text-base sm:text-lg font-semibold truncate">Configurações</h1>
           </div>
-          {(canAccessCop || canAccessMap) && (
+          {(canAccessCop || canAccessMap || canAccessSup) && (
             <div className="inline-flex rounded-md border bg-card p-0.5 text-xs">
               <button type="button" onClick={() => setArea("pcp")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "pcp" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}>PCP</button>
               {canAccessCop && <button type="button" onClick={() => setArea("cop")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "cop" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}>COP</button>}
               {canAccessMap && <button type="button" onClick={() => setArea("map")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "map" ? "bg-yellow-500 text-white" : "hover:bg-accent"}`}>MAP</button>}
+              {canAccessSup && <button type="button" onClick={() => setArea("sup")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "sup" ? "bg-teal-600 text-white" : "hover:bg-accent"}`}>SUP</button>}
             </div>
           )}
         </div>
@@ -106,6 +109,8 @@ function ConfiguracoesPage() {
           <CopConfigPanel />
         ) : area === "map" && canAccessMap ? (
           <MapConfigPanel />
+        ) : area === "sup" && canAccessSup ? (
+          <SupConfigPanel />
         ) : (
           <Tabs defaultValue={isAdmin ? "feriados" : "listas"}>
             <TabsList className="mb-6 flex flex-wrap h-auto w-full sm:w-auto">

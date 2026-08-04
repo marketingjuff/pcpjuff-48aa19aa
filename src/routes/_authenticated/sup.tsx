@@ -8,13 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMyRoles, useCanAccessSup, useIsAdmin } from "@/hooks/use-role";
 import { MacroSwitch } from "@/routes/_authenticated/cop";
-import { FornecedoresTab } from "@/components/sup/FornecedoresTab";
 import { ProdutosTab } from "@/components/sup/ProdutosTab";
 import { PedidosCompraTab } from "@/components/sup/PedidosCompraTab";
 import { ComissoesTab } from "@/components/sup/ComissoesTab";
 import { DashboardSupTab } from "@/components/sup/DashboardSupTab";
 import { AlteracoesPrecoTab } from "@/components/sup/AlteracoesPrecoTab";
-import { SupConfigTab } from "@/components/sup/SupConfigTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sup")({
@@ -37,7 +35,6 @@ export const Route = createFileRoute("/_authenticated/sup")({
 });
 
 const BASE_TABS = [
-  { value: "fornecedores", label: "Fornecedores" },
   { value: "produtos", label: "Produtos" },
   { value: "pedidos", label: "Pedidos de Compra" },
   { value: "comissoes", label: "Comissões" },
@@ -51,13 +48,15 @@ function SupHome() {
   const isAdmin = useIsAdmin();
   const { isLoading } = useMyRoles();
   const TABS = isAdmin
-    ? [...BASE_TABS, { value: "alteracoes-preco", label: "Alterações de Preço" }, { value: "config", label: "Configurações SUP" }]
+    ? [...BASE_TABS, { value: "alteracoes-preco", label: "Alterações de Preço" }]
     : BASE_TABS;
   const search = Route.useSearch();
   const [tab, setTabState] = useState(() => {
-    if (search.tab) return search.tab;
+    const valid = (t: string | null) =>
+      t && ["produtos", "pedidos", "comissoes", "dashboard", "alteracoes-preco"].includes(t) ? t : null;
+    if (valid(search.tab ?? null)) return search.tab as string;
     if (typeof window !== "undefined") {
-      const saved = window.localStorage.getItem("sup:tab");
+      const saved = valid(window.localStorage.getItem("sup:tab"));
       if (saved) return saved;
     }
     return "pedidos";
@@ -124,9 +123,6 @@ function SupHome() {
             ))}
           </TabsList>
 
-          <TabsContent value="fornecedores" forceMount hidden={tab !== "fornecedores"}>
-            <FornecedoresTab />
-          </TabsContent>
           <TabsContent value="produtos" forceMount hidden={tab !== "produtos"}>
             <ProdutosTab />
           </TabsContent>
@@ -143,9 +139,6 @@ function SupHome() {
             <>
               <TabsContent value="alteracoes-preco" forceMount hidden={tab !== "alteracoes-preco"}>
                 <AlteracoesPrecoTab />
-              </TabsContent>
-              <TabsContent value="config" forceMount hidden={tab !== "config"}>
-                <SupConfigTab />
               </TabsContent>
             </>
           )}
