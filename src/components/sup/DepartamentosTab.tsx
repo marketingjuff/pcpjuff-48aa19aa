@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Pencil, Plus } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import type { SupDepartamento } from "@/lib/sup";
 
 export function useSupDepartamentos() {
@@ -29,6 +30,21 @@ export function DepartamentosTab() {
   const { data: rows = [], isLoading } = useSupDepartamentos();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Partial<SupDepartamento>>({ nome: "", ativo: true });
+  const [excluir, setExcluir] = useState<SupDepartamento | null>(null);
+
+  const remover = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any).from("sup_departamentos").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sup-departamentos"] });
+      toast.success("Departamento excluído.");
+      setExcluir(null);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao excluir."),
+  });
+
 
   const salvar = useMutation({
     mutationFn: async (f: Partial<SupDepartamento>) => {
