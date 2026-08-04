@@ -262,8 +262,10 @@ export function ProdutosTab() {
                 <SortTh label="Produto" sortKey="nome" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
                 <SortTh label="Categoria" sortKey="categoria" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
                 <SortTh label="Unidade" sortKey="unidade" current={sortKey} dir={sortDir} onSort={toggle} />
+                <SortTh label="Preço cadastro" sortKey="preco_referencia" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
                 <SortTh label="Situação" sortKey="ativo" current={sortKey} dir={sortDir} onSort={toggle} />
                 <th className="p-1.5 w-10"></th>
+
               </tr>
             </thead>
             <tbody>
