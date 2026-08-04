@@ -1963,6 +1963,7 @@ export type Database = {
           previsao_entrega: string | null
           responsavel_id: string | null
           status: string
+          status_pre_cancelamento: string | null
           updated_at: string
         }
         Insert: {
@@ -1989,6 +1990,7 @@ export type Database = {
           previsao_entrega?: string | null
           responsavel_id?: string | null
           status?: string
+          status_pre_cancelamento?: string | null
           updated_at?: string
         }
         Update: {
@@ -2015,6 +2017,7 @@ export type Database = {
           previsao_entrega?: string | null
           responsavel_id?: string | null
           status?: string
+          status_pre_cancelamento?: string | null
           updated_at?: string
         }
         Relationships: [
