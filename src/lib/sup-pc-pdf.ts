@@ -66,10 +66,11 @@ export function abrirPdfPedidoCompra(args: {
 <header>
   <img src="${esc(logoJuff.url)}" alt="Juff" />
   <div>
-    <div class="t1">Pedido de Compra ${esc(pedido.numero ?? "(rascunho)")}</div>
+    <div class="t1">${orcamento ? `Pedido de Orçamento ${esc(pedido.numero ?? "")}` : `Pedido de Compra ${esc(pedido.numero ?? "(rascunho)")}`}</div>
     <div class="t2">Empresa: <b>${esc(SUP_EMPRESA_LABEL[(pedido.empresa as "joke" | "juff")] ?? pedido.empresa)}</b></div>
   </div>
 </header>
+${orcamento ? `<div style="font-size:10pt;margin-bottom:4mm">Solicitamos a cotação dos itens abaixo. Favor informar preço unitário, prazo de entrega e condição de pagamento.</div>` : ""}
 <div class="grid2">
   <div class="box">
     <div><b>Fornecedor:</b> ${esc(fornecedor?.razao_social ?? "—")}</div>
@@ -80,19 +81,16 @@ export function abrirPdfPedidoCompra(args: {
   </div>
   <div class="box">
     <div><b>Data do pedido:</b> ${esc(fmtDataBR(pedido.data_pedido))}</div>
-    <div><b>Previsão de entrega:</b> ${esc(fmtDataBR(pedido.previsao_entrega))}</div>
-    <div><b>Condição de pagamento:</b> ${esc(condicao)}</div>
-    
   </div>
 </div>
 <table class="itens">
-  <thead><tr><th class="num">#</th><th>Produto</th><th class="num">Qtd</th><th class="num">Un.</th><th class="num">Preço</th><th class="num">Subtotal</th></tr></thead>
+  <thead><tr><th class="num">#</th><th>Produto</th><th class="num">Qtd</th><th class="num">Un.</th>${orcamento ? "" : `<th class="num">Preço</th><th class="num">Subtotal</th>`}</tr></thead>
   <tbody>${linhas}</tbody>
-  <tfoot>
+  ${orcamento ? "" : `<tfoot>
     <tr><td colspan="5" style="text-align:right">Total dos itens</td><td class="num">${esc(fmtMoeda(subtotal))}</td></tr>
     <tr><td colspan="5" style="text-align:right">Frete</td><td class="num">${esc(fmtMoeda(pedido.frete_valor))}</td></tr>
     <tr><td colspan="5" style="text-align:right">Total geral</td><td class="num">${esc(fmtMoeda(subtotal + n(pedido.frete_valor)))}</td></tr>
-  </tfoot>
+  </tfoot>`}
 </table>
 <div class="obs"><b>Observações:</b>
 ${esc(pedido.observacoes ?? "")}</div>
