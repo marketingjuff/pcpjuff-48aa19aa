@@ -14,24 +14,27 @@ export function abrirPdfPedidoCompra(args: {
   fornecedor: SupFornecedor | null;
   itens: SupPedidoItem[];
   produtos: SupProduto[];
+  modo?: "pedido" | "orcamento";
 }) {
   const { pedido, fornecedor, itens, produtos } = args;
+  const modo = args.modo ?? "pedido";
+  const orcamento = modo === "orcamento";
   const nomeProduto = (id: string) => produtos.find((p) => p.id === id)?.nome ?? "—";
   const subtotal = subtotalNegociado(itens);
-  const titulo = `PedidoCompra-${pedido.numero ?? "rascunho"}`;
-  const condicao = pedido.condicao_pagamento === "Outros"
-    ? (pedido.condicao_pagamento_outros ?? "Outros")
-    : (pedido.condicao_pagamento ?? "—");
+  const titulo = orcamento
+    ? `PedidoOrcamento-${pedido.numero ?? "s-numero"}`
+    : `PedidoCompra-${pedido.numero ?? "rascunho"}`;
 
+  const nCols = orcamento ? 4 : 6;
   const linhas = itens.length === 0
-    ? `<tr><td colspan="5" style="text-align:center">Sem itens</td></tr>`
+    ? `<tr><td colspan="${nCols}" style="text-align:center">Sem itens</td></tr>`
     : itens.map((i, idx) => `<tr>
         <td class="num">${idx + 1}</td>
         <td>${esc(nomeProduto(i.produto_id))}</td>
         <td class="num">${esc(fmtQtd(i.quantidade))}</td>
         <td class="num">${esc(i.unidade)}</td>
-        <td class="num">${esc(fmtMoeda(i.preco_negociado))}</td>
-        <td class="num">${esc(fmtMoeda(n(i.preco_negociado) * n(i.quantidade)))}</td>
+        ${orcamento ? "" : `<td class="num">${esc(fmtMoeda(i.preco_negociado))}</td>
+        <td class="num">${esc(fmtMoeda(n(i.preco_negociado) * n(i.quantidade)))}</td>`}
       </tr>`).join("");
 
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8" />
