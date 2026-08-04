@@ -10,20 +10,21 @@ import { DateInputBR } from "@/components/ui/date-input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Scissors, Send, RefreshCw, Trash2, Undo2, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, X, Scissors, Send, RefreshCw, Trash2, Undo2, ArrowUp, ArrowDown, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopStatus, type Oficina,
-  COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, subtrairPecas,
+  COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, subtrairPecas, somarPecas,
   calcularStatusCorte, getRecebida, rotuloCop, rotuloCopObj, numeroBaseCop, colunasTamanhos,
 
 } from "@/lib/cop";
 
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { DivisaoCorteDialog } from "./DivisaoCorteDialog";
-import { useCanAccessCop } from "@/hooks/use-role";
+import { CorrigirDivisoesDialog, type DivisaoCorrompida } from "./CorrigirDivisoesDialog";
+import { useCanAccessCop, useIsAdmin } from "@/hooks/use-role";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
