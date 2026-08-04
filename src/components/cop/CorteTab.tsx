@@ -463,6 +463,16 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
           <Button variant="outline" size="icon" onClick={() => qc.invalidateQueries({ queryKey: ["cops"] })} title="Recarregar">
             <RefreshCw className="h-4 w-4" />
           </Button>
+          {isAdminReal && divisoesCorrompidas.length > 0 && (
+            <Button
+              variant="outline"
+              className="border-amber-400 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+              onClick={() => setShowCorrigirDivisoes(true)}
+            >
+              <AlertTriangle className="h-4 w-4 mr-1" />
+              Corrigir divisões duplicadas ({divisoesCorrompidas.length})
+            </Button>
+          )}
           <div className="flex items-center gap-2">
             <Label className="text-xs">Status:</Label>
             <Select value={statusFiltro} onValueChange={setStatusFiltro}>
@@ -764,7 +774,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
         <DivisaoCorteDialog
           open={showDivisao}
           onOpenChange={setShowDivisao}
-          pecas={selected.pecas || []}
+          pecas={baseGrade}
           onConfirm={handleDivisao}
         />
       )}
