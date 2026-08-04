@@ -131,11 +131,11 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
 
   const produtosDoFornecedor = useMemo(() => {
     if (!head.fornecedor_id) return [];
-    const ids = new Set(vinculos.filter((v) => v.fornecedor_id === head.fornecedor_id).map((v) => v.produto_id));
-    const doForn = produtos.filter((p) => ids.has(p.id));
-    const outros = produtos.filter((p) => !ids.has(p.id) && p.ativo);
-    return [...doForn, ...outros];
-  }, [produtos, vinculos, head.fornecedor_id]);
+    return produtos
+      .filter((p) => p.fornecedor_id === head.fornecedor_id && p.ativo)
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  }, [produtos, head.fornecedor_id]);
+
 
   function set<K extends keyof SupPedidoCompra>(k: K, v: SupPedidoCompra[K]) {
     setHead((h) => ({ ...h, [k]: v }));
