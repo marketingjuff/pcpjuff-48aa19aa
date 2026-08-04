@@ -358,6 +358,45 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
     onError: (e: any) => toast.error(e.message ?? "Erro ao cancelar."),
   });
 
+  const reabrir = useMutation({
+    mutationFn: async () => {
+      if (!pedidoId) throw new Error("Pedido não encontrado.");
+      const novo = (head.status_pre_cancelamento ?? "rascunho") as string;
+      const { error } = await (supabase as any)
+        .from("sup_pedidos_compra")
+        .update({ status: novo, cancelado_em: null, cancelado_motivo: null, status_pre_cancelamento: null })
+        .eq("id", pedidoId);
+      if (error) throw error;
+      return novo;
+    },
+    onSuccess: (novo) => {
+      setHead((h) => ({ ...h, status: novo, cancelado_em: null, cancelado_motivo: null, status_pre_cancelamento: null }));
+      qc.invalidateQueries({ queryKey: ["sup-pedidos"] });
+      qc.invalidateQueries({ queryKey: ["sup-pedido", pedidoId] });
+      toast.success("Pedido reaberto.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao reabrir pedido."),
+  });
+
+  const desfazerEnvio = useMutation({
+    mutationFn: async () => {
+      if (!pedidoId) throw new Error("Pedido não encontrado.");
+      const { error } = await (supabase as any)
+        .from("sup_pedidos_compra")
+        .update({ status: "rascunho" })
+        .eq("id", pedidoId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setHead((h) => ({ ...h, status: "rascunho" }));
+      qc.invalidateQueries({ queryKey: ["sup-pedidos"] });
+      qc.invalidateQueries({ queryKey: ["sup-pedido", pedidoId] });
+      toast.success("Envio desfeito. O pedido voltou para rascunho.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao desfazer envio."),
+  });
+
+
   function gerarPdf() {
     const fornecedor = fornecedores.find((f) => f.id === head.fornecedor_id) ?? null;
     abrirPdfPedidoCompra({
