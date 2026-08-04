@@ -277,7 +277,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         frete_valor: n(head.frete_valor),
         desconto_global_tipo: head.desconto_global_tipo ?? "valor",
         desconto_global_valor: n(head.desconto_global_valor),
-        nota_fiscal_numero: head.nota_fiscal_numero || null,
+        
         observacoes: head.observacoes || null,
       };
 
@@ -429,9 +429,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
             <Input type="date" value={head.previsao_entrega ?? ""} onChange={(e) => set("previsao_entrega", e.target.value)} className="h-9" disabled={bloqueado} />
           </div>
           <div>
-            <Label className="text-xs">Nota fiscal</Label>
-            <Input value={head.nota_fiscal_numero ?? ""} onChange={(e) => set("nota_fiscal_numero", e.target.value)} className="h-9" disabled={bloqueado} />
-          </div>
+
           <div>
             <Label className="text-xs">Frete (R$)</Label>
             <Input type="number" step="0.01" min={0} value={head.frete_valor ?? 0}
