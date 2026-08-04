@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsAdmin } from "@/hooks/use-role";
 import { FornecedoresTab } from "@/components/sup/FornecedoresTab";
+import { DepartamentosTab } from "@/components/sup/DepartamentosTab";
 import { SupConfigTab } from "@/components/sup/SupConfigTab";
 
 export function SupConfigPanel() {
@@ -9,9 +10,11 @@ export function SupConfigPanel() {
     <Tabs defaultValue="fornecedores">
       <TabsList className="mb-6 flex flex-wrap h-auto w-full sm:w-auto">
         <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
+        <TabsTrigger value="departamentos">Departamentos</TabsTrigger>
         {isAdmin && <TabsTrigger value="regras">Regras e comissionados</TabsTrigger>}
       </TabsList>
       <TabsContent value="fornecedores"><FornecedoresTab /></TabsContent>
+      <TabsContent value="departamentos"><DepartamentosTab /></TabsContent>
       {isAdmin && <TabsContent value="regras"><SupConfigTab /></TabsContent>}
     </Tabs>
   );

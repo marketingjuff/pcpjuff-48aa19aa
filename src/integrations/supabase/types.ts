@@ -1683,6 +1683,33 @@ export type Database = {
         }
         Relationships: []
       }
+      sup_departamentos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sup_fornecedor_produtos: {
         Row: {
           ativo: boolean
@@ -2066,6 +2093,7 @@ export type Database = {
           categoria: string | null
           created_at: string
           created_by: string | null
+          departamento: string | null
           especificacao: string | null
           fornecedor_id: string | null
           id: string
@@ -2079,6 +2107,7 @@ export type Database = {
           categoria?: string | null
           created_at?: string
           created_by?: string | null
+          departamento?: string | null
           especificacao?: string | null
           fornecedor_id?: string | null
           id?: string
@@ -2092,6 +2121,7 @@ export type Database = {
           categoria?: string | null
           created_at?: string
           created_by?: string | null
+          departamento?: string | null
           especificacao?: string | null
           fornecedor_id?: string | null
           id?: string
