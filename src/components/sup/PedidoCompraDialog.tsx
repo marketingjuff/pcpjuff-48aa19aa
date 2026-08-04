@@ -397,10 +397,11 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
   });
 
 
-  function gerarPdf() {
-    const fornecedor = fornecedores.find((f) => f.id === head.fornecedor_id) ?? null;
+  function gerarPdf(modo: "pedido" | "orcamento" = "pedido", pedidoHead?: Partial<SupPedidoCompra>) {
+    const base = pedidoHead ?? head;
+    const fornecedor = fornecedores.find((f) => f.id === base.fornecedor_id) ?? null;
     abrirPdfPedidoCompra({
-      pedido: { ...(head as SupPedidoCompra) },
+      pedido: { ...(base as SupPedidoCompra) },
       fornecedor,
       itens: linhas.map((l, i) => ({
         id: l.id ?? `tmp-${i}`,
@@ -415,8 +416,38 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         ordem: i,
       })),
       produtos,
+      modo,
     });
   }
+
+  async function gerarPdfOrcamento() {
+    if (!pedidoId) {
+      toast.error("Salve o pedido antes de gerar o orçamento.");
+      return;
+    }
+    if (head.numero) {
+      gerarPdf("orcamento");
+      return;
+    }
+    try {
+      const { data, error } = await (supabase as any).rpc("sup_proximo_numero_pc", { p_data: head.data_pedido });
+      if (error) throw error;
+      const numero = data as string;
+      const { error: upErr } = await (supabase as any)
+        .from("sup_pedidos_compra")
+        .update({ numero })
+        .eq("id", pedidoId);
+      if (upErr) throw upErr;
+      const novoHead = { ...head, numero };
+      setHead(novoHead);
+      qc.invalidateQueries({ queryKey: ["sup-pedidos"] });
+      qc.invalidateQueries({ queryKey: ["sup-pedido", pedidoId] });
+      gerarPdf("orcamento", novoHead);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao gerar o número do pedido.");
+    }
+  }
+
 
   const proximos = SUP_FLUXO[status] ?? [];
 
@@ -654,7 +685,10 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         )}
 
         <DialogFooter className="flex-wrap gap-2">
-          <Button variant="outline" onClick={gerarPdf} disabled={!head.fornecedor_id}>
+          <Button variant="outline" onClick={() => void gerarPdfOrcamento()} disabled={!head.fornecedor_id}>
+            <FileDown className="h-4 w-4 mr-1" /> PDF de orçamento
+          </Button>
+          <Button variant="outline" onClick={() => gerarPdf("pedido")} disabled={!head.fornecedor_id}>
             <FileDown className="h-4 w-4 mr-1" /> PDF do pedido
           </Button>
           {!bloqueado && pedidoId && (
