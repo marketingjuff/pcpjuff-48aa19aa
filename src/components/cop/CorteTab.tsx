@@ -306,7 +306,13 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
 
   async function handleDivisao(movidas: CopPeca[]) {
     if (!selected) return;
-    const restante = subtrairPecas(selected.pecas || [], movidas);
+    const base = desagrupar(grupos);
+    const restante = subtrairPecas(base, movidas);
+    const erroRec = validarPecasContraRecebidas(restante);
+    if (erroRec) {
+      toast.error(erroRec);
+      throw new Error(erroRec);
+    }
     // Cria filho
     const { data: filho, error: e1 } = await supabase.from("cops" as any).insert({
       status: "Aguardando Risco",
@@ -320,8 +326,78 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
       corte_dividido: true,
     }).eq("id", selected.id);
     if (e2) { toast.error(e2.message); return; }
+    setGrupos(agrupar(restante));
     qc.invalidateQueries({ queryKey: ["cops"] });
     toast.success(`COP filho ${formatCopNumero((filho as any).numero)} criado.`);
+  }
+
+  /** Base atual da grade (inclui edições ainda não salvas). */
+  const baseGrade = useMemo(() => desagrupar(grupos), [grupos]);
+
+  /** COPs pais que ficaram com as peças já movidas para os filhos. */
+  const divisoesCorrompidas = useMemo<DivisaoCorrompida[]>(() => {
+    const out: DivisaoCorrompida[] = [];
+    for (const pai of cops) {
+      if (!pai.corte_dividido) continue;
+      const filhos = cops.filter((c) => c.cop_pai_id === pai.id);
+      if (filhos.length === 0) continue;
+      const atuais = (pai.pecas ?? []).filter((p) => Number(p.qtd) > 0);
+      const nosFilhos = filhos.reduce<CopPeca[]>((acc, f) => somarPecas(acc, f.pecas ?? []), []);
+      if (nosFilhos.length === 0) continue;
+      const contido = nosFilhos.every((f) => {
+        const linha = atuais.find((p) => p.modelo === f.modelo && p.cor === f.cor && p.tamanho === f.tamanho);
+        return !!linha && Number(linha.qtd) >= Number(f.qtd);
+      });
+      if (!contido) continue;
+      const resultado = subtrairPecas(atuais, nosFilhos);
+      out.push({
+        pai,
+        filhos,
+        rotuloPai: rotuloCopObj(pai, cops),
+        rotulosFilhos: filhos.map((f) => rotuloCopObj(f, cops)),
+        atuais,
+        nosFilhos,
+        resultado,
+        totalAtual: totalPecasCop(atuais),
+        totalFilhos: totalPecasCop(nosFilhos),
+        totalResultado: totalPecasCop(resultado),
+      });
+    }
+    return out;
+  }, [cops]);
+
+  async function handleCorrigirDivisoes() {
+    let corrigidos = 0;
+    let pecasRemovidas = 0;
+    const pulados: string[] = [];
+
+    for (const it of divisoesCorrompidas) {
+      // Valida contra o já recebido daquele COP
+      let erro: string | null = null;
+      for (const r of (it.pai.pecas_recebidas ?? [])) {
+        const linha = it.resultado.find((p) => p.modelo === r.modelo && p.cor === r.cor && p.tamanho === r.tamanho);
+        const novo = linha?.qtd ?? 0;
+        if (novo < r.qtd_recebida) {
+          erro = `${it.rotuloPai}: ${r.modelo}·${r.cor}·${r.tamanho} ficaria ${novo} (já recebido: ${r.qtd_recebida}).`;
+          break;
+        }
+      }
+      if (erro) { pulados.push(erro); continue; }
+
+      const { error } = await supabase.from("cops" as any)
+        .update({ pecas: it.resultado as any })
+        .eq("id", it.pai.id);
+      if (error) { pulados.push(`${it.rotuloPai}: ${error.message}`); continue; }
+
+      corrigidos++;
+      pecasRemovidas += it.totalFilhos;
+      if (selectedId && it.pai.id === selectedId) setGrupos(agrupar(it.resultado));
+    }
+
+    qc.invalidateQueries({ queryKey: ["cops"] });
+    if (corrigidos > 0) toast.success(`${corrigidos} COP(s) corrigido(s), ${pecasRemovidas} peças removidas.`);
+    if (pulados.length > 0) toast.error(`COPs não corrigidos: ${pulados.join(" | ")}`);
+    setShowCorrigirDivisoes(false);
   }
 
   // Par de irmãos (para enunciado "0001 (0001/0047)")
