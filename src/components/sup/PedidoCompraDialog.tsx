@@ -83,6 +83,8 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
   });
 
   const [head, setHead] = useState<Partial<SupPedidoCompra>>({});
+  const [trocaFornecedor, setTrocaFornecedor] = useState<string | null>(null);
+
   const [linhas, setLinhas] = useState<ItemLinha[]>([]);
   const [removidos, setRemovidos] = useState<string[]>([]);
   const [motivoCancelar, setMotivoCancelar] = useState("");
@@ -131,15 +133,35 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
 
   const produtosDoFornecedor = useMemo(() => {
     if (!head.fornecedor_id) return [];
-    const ids = new Set(vinculos.filter((v) => v.fornecedor_id === head.fornecedor_id).map((v) => v.produto_id));
-    const doForn = produtos.filter((p) => ids.has(p.id));
-    const outros = produtos.filter((p) => !ids.has(p.id) && p.ativo);
-    return [...doForn, ...outros];
-  }, [produtos, vinculos, head.fornecedor_id]);
+    return produtos
+      .filter((p) => p.fornecedor_id === head.fornecedor_id && p.ativo)
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  }, [produtos, head.fornecedor_id]);
+
 
   function set<K extends keyof SupPedidoCompra>(k: K, v: SupPedidoCompra[K]) {
     setHead((h) => ({ ...h, [k]: v }));
   }
+
+  function pedirTrocaFornecedor(v: string) {
+    if (v === head.fornecedor_id) return;
+    if (linhas.some((l) => l.produto_id)) {
+      setTrocaFornecedor(v);
+      return;
+    }
+    set("fornecedor_id", v);
+  }
+
+  function confirmarTrocaFornecedor() {
+    if (!trocaFornecedor) return;
+    set("fornecedor_id", trocaFornecedor);
+    setLinhas([{
+      produto_id: "", quantidade: 1, unidade: "unidade",
+      preco_tabela: 0, preco_negociado: 0, preco_historico_id: null, quantidade_recebida: 0,
+    }]);
+    setTrocaFornecedor(null);
+  }
+
 
   async function precoTabelaAtual(produto_id: string): Promise<{ preco: number; unidade: string; hist: string | null }> {
     const prod = produtos.find((p) => p.id === produto_id);
@@ -351,7 +373,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           </div>
           <div className="md:col-span-2">
             <Label className="text-xs">Fornecedor *</Label>
-            <Select value={head.fornecedor_id ?? ""} onValueChange={(v) => set("fornecedor_id", v)} disabled={bloqueado}>
+            <Select value={head.fornecedor_id ?? ""} onValueChange={pedirTrocaFornecedor} disabled={bloqueado}>
               <SelectTrigger className="h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
                 {fornecedores.filter((f) => f.ativo || f.id === head.fornecedor_id).map((f) => (
@@ -360,6 +382,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
               </SelectContent>
             </Select>
           </div>
+
           <div>
             <Label className="text-xs">Data do pedido *</Label>
             <Input type="date" value={head.data_pedido ?? ""} onChange={(e) => set("data_pedido", e.target.value)} className="h-9" disabled={bloqueado} />
@@ -461,12 +484,19 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
               ) : linhas.map((l, i) => (
                 <tr key={l.id ?? `n-${i}`} className="border-t">
                   <td className="p-1.5">
-                    <Select value={l.produto_id} onValueChange={(v) => void trocarProduto(i, v)} disabled={bloqueado}>
-                      <SelectTrigger className="h-8"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <Select value={l.produto_id} onValueChange={(v) => void trocarProduto(i, v)} disabled={bloqueado || !head.fornecedor_id}>
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder={head.fornecedor_id ? "Selecione" : "Escolha o fornecedor primeiro"} />
+                      </SelectTrigger>
                       <SelectContent>
-                        {produtosDoFornecedor.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+                        {produtosDoFornecedor.length === 0 ? (
+                          <SelectItem value="__sem__" disabled>
+                            Este fornecedor não tem produtos cadastrados. Cadastre na aba Produtos.
+                          </SelectItem>
+                        ) : produtosDoFornecedor.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
                       </SelectContent>
                     </Select>
+
                   </td>
                   <td className="p-1.5">
                     <Input type="number" step="0.001" min={0} value={l.quantidade}
@@ -568,7 +598,23 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           ))}
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={!!trocaFornecedor} onOpenChange={(o) => { if (!o) setTrocaFornecedor(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Trocar fornecedor?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Os produtos já lançados pertencem ao fornecedor anterior e serão removidos do pedido. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmarTrocaFornecedor}>Continuar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
+
   );
 }
 

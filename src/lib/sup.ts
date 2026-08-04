@@ -96,7 +96,9 @@ export type SupFornecedor = {
 
 export type SupProduto = {
   id: string;
+  fornecedor_id: string | null;
   nome: string;
+
   categoria: string | null;
   unidade: string;
   especificacao: string | null;
