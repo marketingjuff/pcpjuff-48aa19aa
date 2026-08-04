@@ -100,9 +100,11 @@ export type SupProduto = {
   categoria: string | null;
   unidade: string;
   especificacao: string | null;
+  preco_referencia: number | null;
   ativo: boolean;
   created_at?: string;
 };
+
 
 export type SupFornecedorProduto = {
   id: string;
