@@ -83,6 +83,8 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
   });
 
   const [head, setHead] = useState<Partial<SupPedidoCompra>>({});
+  const [trocaFornecedor, setTrocaFornecedor] = useState<string | null>(null);
+
   const [linhas, setLinhas] = useState<ItemLinha[]>([]);
   const [removidos, setRemovidos] = useState<string[]>([]);
   const [motivoCancelar, setMotivoCancelar] = useState("");
@@ -140,6 +142,26 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
   function set<K extends keyof SupPedidoCompra>(k: K, v: SupPedidoCompra[K]) {
     setHead((h) => ({ ...h, [k]: v }));
   }
+
+  function pedirTrocaFornecedor(v: string) {
+    if (v === head.fornecedor_id) return;
+    if (linhas.some((l) => l.produto_id)) {
+      setTrocaFornecedor(v);
+      return;
+    }
+    set("fornecedor_id", v);
+  }
+
+  function confirmarTrocaFornecedor() {
+    if (!trocaFornecedor) return;
+    set("fornecedor_id", trocaFornecedor);
+    setLinhas([{
+      produto_id: "", quantidade: 1, unidade: "unidade",
+      preco_tabela: 0, preco_negociado: 0, preco_historico_id: null, quantidade_recebida: 0,
+    }]);
+    setTrocaFornecedor(null);
+  }
+
 
   async function precoTabelaAtual(produto_id: string): Promise<{ preco: number; unidade: string; hist: string | null }> {
     const prod = produtos.find((p) => p.id === produto_id);
@@ -351,7 +373,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           </div>
           <div className="md:col-span-2">
             <Label className="text-xs">Fornecedor *</Label>
-            <Select value={head.fornecedor_id ?? ""} onValueChange={(v) => set("fornecedor_id", v)} disabled={bloqueado}>
+            <Select value={head.fornecedor_id ?? ""} onValueChange={pedirTrocaFornecedor} disabled={bloqueado}>
               <SelectTrigger className="h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
                 {fornecedores.filter((f) => f.ativo || f.id === head.fornecedor_id).map((f) => (
@@ -360,6 +382,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
               </SelectContent>
             </Select>
           </div>
+
           <div>
             <Label className="text-xs">Data do pedido *</Label>
             <Input type="date" value={head.data_pedido ?? ""} onChange={(e) => set("data_pedido", e.target.value)} className="h-9" disabled={bloqueado} />
