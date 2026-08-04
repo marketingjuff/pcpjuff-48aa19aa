@@ -153,6 +153,27 @@ export function DepartamentosTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!excluir} onOpenChange={(o) => !o && setExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir departamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Excluir "{excluir?.nome}"? Produtos já cadastrados com esse departamento mantêm o texto atual.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+              disabled={remover.isPending}
+              onClick={(e) => { e.preventDefault(); if (excluir) remover.mutate(excluir.id); }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
