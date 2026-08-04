@@ -685,7 +685,10 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         )}
 
         <DialogFooter className="flex-wrap gap-2">
-          <Button variant="outline" onClick={gerarPdf} disabled={!head.fornecedor_id}>
+          <Button variant="outline" onClick={() => void gerarPdfOrcamento()} disabled={!head.fornecedor_id}>
+            <FileDown className="h-4 w-4 mr-1" /> PDF de orçamento
+          </Button>
+          <Button variant="outline" onClick={() => gerarPdf("pedido")} disabled={!head.fornecedor_id}>
             <FileDown className="h-4 w-4 mr-1" /> PDF do pedido
           </Button>
           {!bloqueado && pedidoId && (
