@@ -779,6 +779,15 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
         />
       )}
 
+      <CorrigirDivisoesDialog
+        open={showCorrigirDivisoes}
+        onOpenChange={setShowCorrigirDivisoes}
+        itens={divisoesCorrompidas}
+        onConfirm={handleCorrigirDivisoes}
+      />
+
+
+
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
