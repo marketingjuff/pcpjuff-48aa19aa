@@ -101,6 +101,7 @@ export function ProdutosTab() {
     nome: (r) => r.nome,
     categoria: (r) => r.categoria,
     unidade: (r) => r.unidade,
+    preco_referencia: (r) => r.preco_referencia ?? -1,
     ativo: (r) => (r.ativo ? 1 : 0),
   }, { key: "nome" });
 
@@ -129,13 +130,19 @@ export function ProdutosTab() {
   const salvarProduto = useMutation({
     mutationFn: async (f: Partial<SupProduto>) => {
       if (!f.nome?.trim()) throw new Error("Informe o nome do produto.");
+      const precoRef = String((f as any).preco_referencia ?? "").trim().replace(",", ".");
       const payload = {
         nome: f.nome.trim(),
         categoria: f.categoria || null,
         unidade: f.unidade || "unidade",
         especificacao: f.especificacao || null,
+        preco_referencia: precoRef === "" ? null : Number(precoRef),
         ativo: f.ativo ?? true,
       };
+      if (payload.preco_referencia != null && !Number.isFinite(payload.preco_referencia)) {
+        throw new Error("Informe um preço de cadastro válido.");
+      }
+
       if (f.id) {
         const { error } = await (supabase as any).from("sup_produtos").update(payload).eq("id", f.id);
         if (error) throw error;
@@ -256,15 +263,17 @@ export function ProdutosTab() {
                 <SortTh label="Produto" sortKey="nome" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
                 <SortTh label="Categoria" sortKey="categoria" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
                 <SortTh label="Unidade" sortKey="unidade" current={sortKey} dir={sortDir} onSort={toggle} />
+                <SortTh label="Preço cadastro" sortKey="preco_referencia" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
                 <SortTh label="Situação" sortKey="ativo" current={sortKey} dir={sortDir} onSort={toggle} />
                 <th className="p-1.5 w-10"></th>
+
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">Carregando…</td></tr>
+                <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">Carregando…</td></tr>
               ) : ordenados.length === 0 ? (
-                <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">Nenhum produto.</td></tr>
+                <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">Nenhum produto.</td></tr>
               ) : ordenados.map((p) => (
                 <tr
                   key={p.id}
@@ -274,6 +283,7 @@ export function ProdutosTab() {
                   <td className="p-1.5 font-medium">{p.nome}</td>
                   <td className="p-1.5">{p.categoria ?? "—"}</td>
                   <td className="p-1.5 text-center">{p.unidade}</td>
+                  <td className="p-1.5 text-right font-semibold tabular-nums">{p.preco_referencia == null ? "—" : fmtMoeda(p.preco_referencia)}</td>
                   <td className="p-1.5 text-center">
                     <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${p.ativo ? "bg-teal-100 text-teal-900" : "bg-muted text-muted-foreground"}`}>
                       {p.ativo ? "Ativo" : "Inativo"}
@@ -301,7 +311,8 @@ export function ProdutosTab() {
             <div className="rounded-md border bg-card p-3">
               <div className="font-semibold">{sel.nome}</div>
               <div className="text-xs text-muted-foreground">
-                {sel.categoria ?? "sem categoria"} · unidade {sel.unidade}
+                {sel.categoria ?? "sem categoria"} · unidade {sel.unidade} · preço de cadastro{" "}
+                <b className="tabular-nums">{sel.preco_referencia == null ? "—" : fmtMoeda(sel.preco_referencia)}</b>
                 {sel.especificacao ? ` · ${sel.especificacao}` : ""}
               </div>
             </div>
@@ -416,6 +427,17 @@ export function ProdutosTab() {
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>{SUP_UNIDADES.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Preço de cadastro (por unidade)</Label>
+              <Input
+                type="number" step="0.01" min={0}
+                value={(prodForm as any).preco_referencia ?? ""}
+                onChange={(e) => setProdForm((f) => ({ ...f, preco_referencia: e.target.value === "" ? null : Number(e.target.value) } as any))}
+                className="h-9 text-right"
+                placeholder="0,00"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Referência de tabela usada quando o fornecedor não tem preço cadastrado.</p>
             </div>
             <div className="col-span-2">
               <Label className="text-xs">Especificação</Label>

@@ -2069,6 +2069,7 @@ export type Database = {
           especificacao: string | null
           id: string
           nome: string
+          preco_referencia: number | null
           unidade: string
           updated_at: string
         }
@@ -2080,6 +2081,7 @@ export type Database = {
           especificacao?: string | null
           id?: string
           nome: string
+          preco_referencia?: number | null
           unidade?: string
           updated_at?: string
         }
@@ -2091,6 +2093,7 @@ export type Database = {
           especificacao?: string | null
           id?: string
           nome?: string
+          preco_referencia?: number | null
           unidade?: string
           updated_at?: string
         }
