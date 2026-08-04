@@ -14,15 +14,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FileDown, Plus, Trash2 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-role";
+import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { useSupFornecedorProdutos, useSupProdutos } from "@/components/sup/ProdutosTab";
 import { abrirPdfPedidoCompra } from "@/lib/sup-pc-pdf";
 import {
   SUP_CONDICOES_PAGAMENTO, SUP_EMPRESAS, SUP_EMPRESA_LABEL, SUP_FLUXO,
-  SUP_STATUS_CLASSE, SUP_STATUS_LABEL, calcTotaisPedido, economiaItem, fmtMoeda, n,
+  SUP_STATUS_CLASSE, SUP_STATUS_LABEL, addDias, calcTotaisPedido, economiaItem, fmtMoeda, n,
   statusPorRecebimento, type SupComissionado, type SupConfig, type SupPedidoCompra,
   type SupPedidoItem, type SupStatusPc,
 } from "@/lib/sup";
+
 
 type ItemLinha = {
   id?: string;
@@ -139,8 +141,27 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
   }, [produtos, head.fornecedor_id]);
 
 
+  const fornecedorSel = useMemo(
+    () => fornecedores.find((f) => f.id === head.fornecedor_id) ?? null,
+    [fornecedores, head.fornecedor_id],
+  );
+
   function set<K extends keyof SupPedidoCompra>(k: K, v: SupPedidoCompra[K]) {
     setHead((h) => ({ ...h, [k]: v }));
+  }
+
+  /** Preenche padrões do cadastro do fornecedor. Só na ação de escolher/trocar. */
+  function aplicarPadroesFornecedor(fornecedor_id: string) {
+    const f = fornecedores.find((x) => x.id === fornecedor_id);
+    if (!f) return;
+    setHead((h) => {
+      const patch: Partial<SupPedidoCompra> = {};
+      if (f.condicao_pagamento_padrao) patch.condicao_pagamento = f.condicao_pagamento_padrao;
+      if (f.prazo_entrega_padrao_dias != null && h.data_pedido) {
+        patch.previsao_entrega = addDias(h.data_pedido, f.prazo_entrega_padrao_dias);
+      }
+      return { ...h, ...patch };
+    });
   }
 
   function pedirTrocaFornecedor(v: string) {
@@ -150,17 +171,20 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
       return;
     }
     set("fornecedor_id", v);
+    aplicarPadroesFornecedor(v);
   }
 
   function confirmarTrocaFornecedor() {
     if (!trocaFornecedor) return;
     set("fornecedor_id", trocaFornecedor);
+    aplicarPadroesFornecedor(trocaFornecedor);
     setLinhas([{
       produto_id: "", quantidade: 1, unidade: "unidade",
       preco_tabela: 0, preco_negociado: 0, preco_historico_id: null, quantidade_recebida: 0,
     }]);
     setTrocaFornecedor(null);
   }
+
 
 
   async function precoTabelaAtual(produto_id: string): Promise<{ preco: number; unidade: string; hist: string | null }> {
