@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { SortTh, useTableSort } from "@/components/shared/sortable";
+import { Combobox } from "@/components/shared/combobox";
+
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { PedidoCompraDialog } from "@/components/sup/PedidoCompraDialog";
 import {
@@ -88,7 +90,7 @@ export function PedidosCompraTab({ pcId, fornecedorId }: Props) {
         if (forn !== "todos" && p.fornecedor_id !== forn) return false;
         if (de && p.data_pedido < de) return false;
         if (ate && p.data_pedido > ate) return false;
-        if (b && !`${p.numero ?? ""} ${nomeForn(p.fornecedor_id)} ${p.nota_fiscal_numero ?? ""}`.toLowerCase().includes(b)) return false;
+        if (b && !`${p.numero ?? ""} ${nomeForn(p.fornecedor_id)}`.toLowerCase().includes(b)) return false;
         return true;
       })
       .map((p) => {
@@ -150,14 +152,22 @@ export function PedidosCompraTab({ pcId, fornecedorId }: Props) {
         </div>
         <div className="w-56">
           <Label className="text-xs">Fornecedor</Label>
-          <Select value={forn} onValueChange={setForn}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
-              {fornecedores.map((f) => <SelectItem key={f.id} value={f.id}>{f.razao_social}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <Combobox
+            value={forn}
+            onChange={setForn}
+            options={[
+              { value: "todos", label: "Todos" },
+              ...fornecedores.map((f) => ({
+                value: f.id,
+                label: f.razao_social,
+                hint: f.nome_fantasia ?? undefined,
+              })),
+            ]}
+            placeholder="Todos"
+            searchPlaceholder="Buscar fornecedor…"
+          />
         </div>
+
         <div className="w-36">
           <Label className="text-xs">De</Label>
           <Input type="date" value={de} onChange={(e) => setDe(e.target.value)} className="h-9" />
@@ -168,7 +178,7 @@ export function PedidosCompraTab({ pcId, fornecedorId }: Props) {
         </div>
         <div className="w-48">
           <Label className="text-xs">Busca</Label>
-          <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nº PC, fornecedor, NF" className="h-9" />
+          <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nº PC, fornecedor" className="h-9" />
         </div>
         <div className="ml-auto">
           <Button className="h-9 bg-teal-600 hover:bg-teal-700 text-white" onClick={() => setNovoOpen(true)}>

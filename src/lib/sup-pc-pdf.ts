@@ -79,7 +79,7 @@ export function abrirPdfPedidoCompra(args: {
     <div><b>Data do pedido:</b> ${esc(fmtDataBR(pedido.data_pedido))}</div>
     <div><b>Previsão de entrega:</b> ${esc(fmtDataBR(pedido.previsao_entrega))}</div>
     <div><b>Condição de pagamento:</b> ${esc(condicao)}</div>
-    <div><b>Nota fiscal:</b> ${esc(pedido.nota_fiscal_numero ?? "—")}</div>
+    
   </div>
 </div>
 <table class="itens">
