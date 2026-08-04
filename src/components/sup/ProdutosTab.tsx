@@ -398,7 +398,7 @@ export function ProdutosTab() {
               className={`w-full text-left px-3 py-2 border-b last:border-b-0 hover:bg-muted/20 ${fornId === f.id ? "bg-teal-50" : ""}`}
             >
               <div className="text-[13px] font-medium flex items-center justify-between gap-2">
-                <span className="truncate">{f.razao_social}</span>
+                <span className="truncate">{f.nome_fantasia || f.razao_social}</span>
                 <span className="text-[11px] text-muted-foreground whitespace-nowrap tabular-nums">
                   {contagem.get(f.id) ?? 0} produtos
                 </span>
@@ -413,7 +413,7 @@ export function ProdutosTab() {
         <div className="flex items-end gap-2">
           <div className="flex-1">
             <Label className="text-xs">
-              {fornecedorSel ? `Produtos de ${fornecedorSel.razao_social}` : "Produtos"}
+              {fornecedorSel ? `Produtos de ${fornecedorSel.nome_fantasia || fornecedorSel.razao_social}` : "Produtos"}
             </Label>
             <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nome, categoria, especificação…" className="h-9" disabled={!fornId} />
           </div>
@@ -536,7 +536,7 @@ export function ProdutosTab() {
         <DialogContent className="max-w-[660px]">
           <DialogHeader>
             <DialogTitle>
-              {(form.id ? "Editar produto" : "Novo produto") + (fornecedorSel ? ` — ${fornecedorSel.razao_social}` : "")}
+              {(form.id ? "Editar produto" : "Novo produto") + (fornecedorSel ? ` — ${fornecedorSel.nome_fantasia || fornecedorSel.razao_social}` : "")}
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-3 gap-3">
@@ -614,7 +614,7 @@ export function ProdutosTab() {
                 <SelectTrigger className="h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
                   {fornecedores.filter((f) => f.ativo && f.id !== copiarAlvo?.fornecedor_id).map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.razao_social}</SelectItem>
+                    <SelectItem key={f.id} value={f.id}>{f.nome_fantasia || f.razao_social}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
