@@ -598,7 +598,23 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           ))}
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={!!trocaFornecedor} onOpenChange={(o) => { if (!o) setTrocaFornecedor(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Trocar fornecedor?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Os produtos já lançados pertencem ao fornecedor anterior e serão removidos do pedido. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmarTrocaFornecedor}>Continuar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
+
   );
 }
 
