@@ -339,7 +339,13 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
       if (!motivoCancelar.trim()) throw new Error("Informe o motivo do cancelamento.");
       const { error } = await (supabase as any)
         .from("sup_pedidos_compra")
-        .update({ status: "cancelado", cancelado_em: new Date().toISOString(), cancelado_motivo: motivoCancelar.trim() })
+        .update({
+          status: "cancelado",
+          status_pre_cancelamento: (head.status ?? "rascunho") as string,
+          cancelado_em: new Date().toISOString(),
+          cancelado_motivo: motivoCancelar.trim(),
+        })
+
         .eq("id", pedidoId);
       if (error) throw error;
     },
@@ -397,15 +403,18 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           </div>
           <div className="md:col-span-2">
             <Label className="text-xs">Fornecedor *</Label>
-            <Select value={head.fornecedor_id ?? ""} onValueChange={pedirTrocaFornecedor} disabled={bloqueado}>
-              <SelectTrigger className="h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                {fornecedores.filter((f) => f.ativo || f.id === head.fornecedor_id).map((f) => (
-                  <SelectItem key={f.id} value={f.id}>{f.razao_social}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={head.fornecedor_id ?? ""}
+              onChange={pedirTrocaFornecedor}
+              disabled={bloqueado}
+              placeholder="Selecione"
+              searchPlaceholder="Buscar fornecedor…"
+              options={fornecedores
+                .filter((f) => f.ativo || f.id === head.fornecedor_id)
+                .map((f) => ({ value: f.id, label: f.razao_social, hint: f.nome_fantasia ?? undefined }))}
+            />
           </div>
+
 
           <div>
             <Label className="text-xs">Data do pedido *</Label>
