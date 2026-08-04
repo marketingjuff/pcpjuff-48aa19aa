@@ -129,13 +129,19 @@ export function ProdutosTab() {
   const salvarProduto = useMutation({
     mutationFn: async (f: Partial<SupProduto>) => {
       if (!f.nome?.trim()) throw new Error("Informe o nome do produto.");
+      const precoRef = String((f as any).preco_referencia ?? "").trim().replace(",", ".");
       const payload = {
         nome: f.nome.trim(),
         categoria: f.categoria || null,
         unidade: f.unidade || "unidade",
         especificacao: f.especificacao || null,
+        preco_referencia: precoRef === "" ? null : Number(precoRef),
         ativo: f.ativo ?? true,
       };
+      if (payload.preco_referencia != null && !Number.isFinite(payload.preco_referencia)) {
+        throw new Error("Informe um preço de cadastro válido.");
+      }
+
       if (f.id) {
         const { error } = await (supabase as any).from("sup_produtos").update(payload).eq("id", f.id);
         if (error) throw error;
