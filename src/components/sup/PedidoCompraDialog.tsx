@@ -484,12 +484,19 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
               ) : linhas.map((l, i) => (
                 <tr key={l.id ?? `n-${i}`} className="border-t">
                   <td className="p-1.5">
-                    <Select value={l.produto_id} onValueChange={(v) => void trocarProduto(i, v)} disabled={bloqueado}>
-                      <SelectTrigger className="h-8"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <Select value={l.produto_id} onValueChange={(v) => void trocarProduto(i, v)} disabled={bloqueado || !head.fornecedor_id}>
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder={head.fornecedor_id ? "Selecione" : "Escolha o fornecedor primeiro"} />
+                      </SelectTrigger>
                       <SelectContent>
-                        {produtosDoFornecedor.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+                        {produtosDoFornecedor.length === 0 ? (
+                          <SelectItem value="__sem__" disabled>
+                            Este fornecedor não tem produtos cadastrados. Cadastre na aba Produtos.
+                          </SelectItem>
+                        ) : produtosDoFornecedor.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
                       </SelectContent>
                     </Select>
+
                   </td>
                   <td className="p-1.5">
                     <Input type="number" step="0.001" min={0} value={l.quantidade}
