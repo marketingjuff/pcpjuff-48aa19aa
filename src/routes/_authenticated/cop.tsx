@@ -6,7 +6,7 @@ import { LogOut, Settings } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMyRoles, useCanAccessCop, useCanAccessMap, useIsAdmin } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessCop, useCanAccessMap, useCanAccessSup, useIsAdmin } from "@/hooks/use-role";
 import { CorteTab } from "@/components/cop/CorteTab";
 import { RomaneioTab } from "@/components/cop/RomaneioTab";
 import { DisponivelTab } from "@/components/cop/DisponivelTab";
@@ -178,10 +178,11 @@ function CopHome() {
   );
 }
 
-export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" | "kpi" }) {
+export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" | "sup" | "kpi" }) {
   const navigate = useNavigate();
   const canAccessCop = useCanAccessCop();
   const canAccessMap = useCanAccessMap();
+  const canAccessSup = useCanAccessSup();
   const isAdminMacro = useIsAdmin();
   const baseBtn = "px-6 py-2 rounded font-bold text-base transition-colors";
   const pcpActive = active === "pcp"
@@ -192,6 +193,9 @@ export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" | "kpi" 
     : "hover:bg-accent text-foreground";
   const mapActive = active === "map"
     ? "bg-yellow-500 text-white"
+    : "hover:bg-accent text-foreground";
+  const supActive = active === "sup"
+    ? "bg-teal-500 text-white"
     : "hover:bg-accent text-foreground";
   const kpiActive = active === "kpi"
     ? "bg-purple-600 text-white"
@@ -221,6 +225,15 @@ export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" | "kpi" 
           className={`${baseBtn} ${mapActive}`}
         >
           MAP
+        </button>
+      )}
+      {canAccessSup && (
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/sup" })}
+          className={`${baseBtn} ${supActive}`}
+        >
+          SUP
         </button>
       )}
       {isAdminMacro && (

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedSupRouteImport } from './routes/_authenticated/sup'
 import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/map'
 import { Route as AuthenticatedKpiRouteImport } from './routes/_authenticated/kpi'
 import { Route as AuthenticatedCopRouteImport } from './routes/_authenticated/cop'
@@ -29,6 +30,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSupRoute = AuthenticatedSupRouteImport.update({
+  id: '/sup',
+  path: '/sup',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMapRoute = AuthenticatedMapRouteImport.update({
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/cop': typeof AuthenticatedCopRoute
   '/kpi': typeof AuthenticatedKpiRoute
   '/map': typeof AuthenticatedMapRoute
+  '/sup': typeof AuthenticatedSupRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/cop': typeof AuthenticatedCopRoute
   '/kpi': typeof AuthenticatedKpiRoute
   '/map': typeof AuthenticatedMapRoute
+  '/sup': typeof AuthenticatedSupRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
@@ -77,13 +85,21 @@ export interface FileRoutesById {
   '/_authenticated/cop': typeof AuthenticatedCopRoute
   '/_authenticated/kpi': typeof AuthenticatedKpiRoute
   '/_authenticated/map': typeof AuthenticatedMapRoute
+  '/_authenticated/sup': typeof AuthenticatedSupRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/configuracoes' | '/cop' | '/kpi' | '/map'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/configuracoes'
+    | '/cop'
+    | '/kpi'
+    | '/map'
+    | '/sup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/configuracoes' | '/cop' | '/kpi' | '/map' | '/'
+  to: '/auth' | '/configuracoes' | '/cop' | '/kpi' | '/map' | '/sup' | '/'
   id:
     | '__root__'
     | '/_authenticated'
@@ -92,6 +108,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cop'
     | '/_authenticated/kpi'
     | '/_authenticated/map'
+    | '/_authenticated/sup'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
@@ -121,6 +138,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/sup': {
+      id: '/_authenticated/sup'
+      path: '/sup'
+      fullPath: '/sup'
+      preLoaderRoute: typeof AuthenticatedSupRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/map': {
@@ -159,6 +183,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCopRoute: typeof AuthenticatedCopRoute
   AuthenticatedKpiRoute: typeof AuthenticatedKpiRoute
   AuthenticatedMapRoute: typeof AuthenticatedMapRoute
+  AuthenticatedSupRoute: typeof AuthenticatedSupRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -167,6 +192,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCopRoute: AuthenticatedCopRoute,
   AuthenticatedKpiRoute: AuthenticatedKpiRoute,
   AuthenticatedMapRoute: AuthenticatedMapRoute,
+  AuthenticatedSupRoute: AuthenticatedSupRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
@@ -180,13 +206,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
