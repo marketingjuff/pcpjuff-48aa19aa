@@ -759,3 +759,12 @@ function Linha({ label, valor, forte, classe }: { label: string; valor: string; 
     </div>
   );
 }
+
+function Dado({ label, valor }: { label: string; valor?: string | null }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="font-medium break-words">{valor && valor.trim() ? valor : "—"}</div>
+    </div>
+  );
+}
