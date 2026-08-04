@@ -526,6 +526,30 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           </div>
         </div>
 
+        {fornecedorSel && (
+          <div className="rounded-md border bg-muted/30 p-2 text-xs grid grid-cols-2 md:grid-cols-4 gap-2">
+            <Dado label="CNPJ/CPF" valor={fornecedorSel.documento} />
+            <Dado label="Categoria" valor={fornecedorSel.categoria} />
+            <Dado
+              label="Contato"
+              valor={[fornecedorSel.contato_nome, fornecedorSel.contato_telefone, fornecedorSel.contato_email]
+                .filter(Boolean).join(" · ") || null}
+            />
+            <Dado label="Cidade/UF" valor={[fornecedorSel.cidade, fornecedorSel.uf].filter(Boolean).join("/") || null} />
+            <Dado label="Condição de pagamento padrão" valor={fornecedorSel.condicao_pagamento_padrao} />
+            <Dado
+              label="Prazo de entrega padrão"
+              valor={fornecedorSel.prazo_entrega_padrao_dias != null ? `${fornecedorSel.prazo_entrega_padrao_dias} dias` : null}
+            />
+            {fornecedorSel.observacoes && (
+              <div className="col-span-2 md:col-span-4">
+                <Dado label="Observações do fornecedor" valor={fornecedorSel.observacoes} />
+              </div>
+            )}
+          </div>
+        )}
+
+
         <div className="rounded-md border overflow-hidden mt-1">
           <div className="px-3 py-2 bg-muted/40 flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider">Itens</span>
