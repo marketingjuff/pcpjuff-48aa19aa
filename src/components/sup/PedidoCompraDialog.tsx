@@ -14,15 +14,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FileDown, Plus, Trash2 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-role";
+import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { useSupFornecedorProdutos, useSupProdutos } from "@/components/sup/ProdutosTab";
 import { abrirPdfPedidoCompra } from "@/lib/sup-pc-pdf";
 import {
   SUP_CONDICOES_PAGAMENTO, SUP_EMPRESAS, SUP_EMPRESA_LABEL, SUP_FLUXO,
-  SUP_STATUS_CLASSE, SUP_STATUS_LABEL, calcTotaisPedido, economiaItem, fmtMoeda, n,
+  SUP_STATUS_CLASSE, SUP_STATUS_LABEL, addDias, calcTotaisPedido, economiaItem, fmtMoeda, n,
   statusPorRecebimento, type SupComissionado, type SupConfig, type SupPedidoCompra,
   type SupPedidoItem, type SupStatusPc,
 } from "@/lib/sup";
+
 
 type ItemLinha = {
   id?: string;
@@ -139,8 +141,27 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
   }, [produtos, head.fornecedor_id]);
 
 
+  const fornecedorSel = useMemo(
+    () => fornecedores.find((f) => f.id === head.fornecedor_id) ?? null,
+    [fornecedores, head.fornecedor_id],
+  );
+
   function set<K extends keyof SupPedidoCompra>(k: K, v: SupPedidoCompra[K]) {
     setHead((h) => ({ ...h, [k]: v }));
+  }
+
+  /** Preenche padrões do cadastro do fornecedor. Só na ação de escolher/trocar. */
+  function aplicarPadroesFornecedor(fornecedor_id: string) {
+    const f = fornecedores.find((x) => x.id === fornecedor_id);
+    if (!f) return;
+    setHead((h) => {
+      const patch: Partial<SupPedidoCompra> = {};
+      if (f.condicao_pagamento_padrao) patch.condicao_pagamento = f.condicao_pagamento_padrao;
+      if (f.prazo_entrega_padrao_dias != null && h.data_pedido) {
+        patch.previsao_entrega = addDias(h.data_pedido, f.prazo_entrega_padrao_dias);
+      }
+      return { ...h, ...patch };
+    });
   }
 
   function pedirTrocaFornecedor(v: string) {
@@ -150,17 +171,20 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
       return;
     }
     set("fornecedor_id", v);
+    aplicarPadroesFornecedor(v);
   }
 
   function confirmarTrocaFornecedor() {
     if (!trocaFornecedor) return;
     set("fornecedor_id", trocaFornecedor);
+    aplicarPadroesFornecedor(trocaFornecedor);
     setLinhas([{
       produto_id: "", quantidade: 1, unidade: "unidade",
       preco_tabela: 0, preco_negociado: 0, preco_historico_id: null, quantidade_recebida: 0,
     }]);
     setTrocaFornecedor(null);
   }
+
 
 
   async function precoTabelaAtual(produto_id: string): Promise<{ preco: number; unidade: string; hist: string | null }> {
@@ -253,7 +277,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         frete_valor: n(head.frete_valor),
         desconto_global_tipo: head.desconto_global_tipo ?? "valor",
         desconto_global_valor: n(head.desconto_global_valor),
-        nota_fiscal_numero: head.nota_fiscal_numero || null,
+        
         observacoes: head.observacoes || null,
       };
 
@@ -315,7 +339,13 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
       if (!motivoCancelar.trim()) throw new Error("Informe o motivo do cancelamento.");
       const { error } = await (supabase as any)
         .from("sup_pedidos_compra")
-        .update({ status: "cancelado", cancelado_em: new Date().toISOString(), cancelado_motivo: motivoCancelar.trim() })
+        .update({
+          status: "cancelado",
+          status_pre_cancelamento: (head.status ?? "rascunho") as string,
+          cancelado_em: new Date().toISOString(),
+          cancelado_motivo: motivoCancelar.trim(),
+        })
+
         .eq("id", pedidoId);
       if (error) throw error;
     },
@@ -327,6 +357,45 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao cancelar."),
   });
+
+  const reabrir = useMutation({
+    mutationFn: async () => {
+      if (!pedidoId) throw new Error("Pedido não encontrado.");
+      const novo = (head.status_pre_cancelamento ?? "rascunho") as string;
+      const { error } = await (supabase as any)
+        .from("sup_pedidos_compra")
+        .update({ status: novo, cancelado_em: null, cancelado_motivo: null, status_pre_cancelamento: null })
+        .eq("id", pedidoId);
+      if (error) throw error;
+      return novo;
+    },
+    onSuccess: (novo) => {
+      setHead((h) => ({ ...h, status: novo, cancelado_em: null, cancelado_motivo: null, status_pre_cancelamento: null }));
+      qc.invalidateQueries({ queryKey: ["sup-pedidos"] });
+      qc.invalidateQueries({ queryKey: ["sup-pedido", pedidoId] });
+      toast.success("Pedido reaberto.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao reabrir pedido."),
+  });
+
+  const desfazerEnvio = useMutation({
+    mutationFn: async () => {
+      if (!pedidoId) throw new Error("Pedido não encontrado.");
+      const { error } = await (supabase as any)
+        .from("sup_pedidos_compra")
+        .update({ status: "rascunho" })
+        .eq("id", pedidoId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setHead((h) => ({ ...h, status: "rascunho" }));
+      qc.invalidateQueries({ queryKey: ["sup-pedidos"] });
+      qc.invalidateQueries({ queryKey: ["sup-pedido", pedidoId] });
+      toast.success("Envio desfeito. O pedido voltou para rascunho.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao desfazer envio."),
+  });
+
 
   function gerarPdf() {
     const fornecedor = fornecedores.find((f) => f.id === head.fornecedor_id) ?? null;
@@ -373,15 +442,18 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           </div>
           <div className="md:col-span-2">
             <Label className="text-xs">Fornecedor *</Label>
-            <Select value={head.fornecedor_id ?? ""} onValueChange={pedirTrocaFornecedor} disabled={bloqueado}>
-              <SelectTrigger className="h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                {fornecedores.filter((f) => f.ativo || f.id === head.fornecedor_id).map((f) => (
-                  <SelectItem key={f.id} value={f.id}>{f.razao_social}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={head.fornecedor_id ?? ""}
+              onChange={pedirTrocaFornecedor}
+              disabled={bloqueado}
+              placeholder="Selecione"
+              searchPlaceholder="Buscar fornecedor…"
+              options={fornecedores
+                .filter((f) => f.ativo || f.id === head.fornecedor_id)
+                .map((f) => ({ value: f.id, label: f.razao_social, hint: f.nome_fantasia ?? undefined }))}
+            />
           </div>
+
 
           <div>
             <Label className="text-xs">Data do pedido *</Label>
@@ -405,10 +477,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
             <Input type="date" value={head.previsao_entrega ?? ""} onChange={(e) => set("previsao_entrega", e.target.value)} className="h-9" disabled={bloqueado} />
           </div>
           <div>
-            <Label className="text-xs">Nota fiscal</Label>
-            <Input value={head.nota_fiscal_numero ?? ""} onChange={(e) => set("nota_fiscal_numero", e.target.value)} className="h-9" disabled={bloqueado} />
-          </div>
-          <div>
+
             <Label className="text-xs">Frete (R$)</Label>
             <Input type="number" step="0.01" min={0} value={head.frete_valor ?? 0}
               onChange={(e) => set("frete_valor", Number(e.target.value))} className="h-9" disabled={bloqueado} />
@@ -456,6 +525,30 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
               onChange={(e) => set("comissao_percentual", Number(e.target.value))} className="h-9" disabled={bloqueado || !isAdmin} />
           </div>
         </div>
+
+        {fornecedorSel && (
+          <div className="rounded-md border bg-muted/30 p-2 text-xs grid grid-cols-2 md:grid-cols-4 gap-2">
+            <Dado label="CNPJ/CPF" valor={fornecedorSel.documento} />
+            <Dado label="Categoria" valor={fornecedorSel.categoria} />
+            <Dado
+              label="Contato"
+              valor={[fornecedorSel.contato_nome, fornecedorSel.contato_telefone, fornecedorSel.contato_email]
+                .filter(Boolean).join(" · ") || null}
+            />
+            <Dado label="Cidade/UF" valor={[fornecedorSel.cidade, fornecedorSel.uf].filter(Boolean).join("/") || null} />
+            <Dado label="Condição de pagamento padrão" valor={fornecedorSel.condicao_pagamento_padrao} />
+            <Dado
+              label="Prazo de entrega padrão"
+              valor={fornecedorSel.prazo_entrega_padrao_dias != null ? `${fornecedorSel.prazo_entrega_padrao_dias} dias` : null}
+            />
+            {fornecedorSel.observacoes && (
+              <div className="col-span-2 md:col-span-4">
+                <Dado label="Observações do fornecedor" valor={fornecedorSel.observacoes} />
+              </div>
+            )}
+          </div>
+        )}
+
 
         <div className="rounded-md border overflow-hidden mt-1">
           <div className="px-3 py-2 bg-muted/40 flex items-center justify-between">
@@ -584,7 +677,47 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
               </AlertDialogContent>
             </AlertDialog>
           )}
+          {cancelado && pedidoId && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-amber-700 border-amber-300">Reabrir pedido</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reabrir este pedido de compra?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O pedido volta ao status que tinha antes do cancelamento e passa a contar novamente nos
+                    totais e na apuração de comissão.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Voltar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => reabrir.mutate()}>Reabrir pedido</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          {status === "enviado" && pedidoId && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline">Desfazer envio</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Desfazer o envio deste pedido?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O pedido volta para Rascunho e pode ser editado normalmente. O número do PC já gerado é mantido.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Voltar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => desfazerEnvio.mutate()}>Desfazer envio</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <div className="flex-1" />
+
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
           {!bloqueado && (
             <Button className="bg-teal-600 hover:bg-teal-700 text-white" disabled={salvar.isPending} onClick={() => salvar.mutate({})}>
@@ -623,6 +756,15 @@ function Linha({ label, valor, forte, classe }: { label: string; valor: string; 
     <div className="flex items-center justify-between gap-2">
       <span className="text-muted-foreground">{label}</span>
       <span className={`tabular-nums ${forte ? "font-semibold" : ""} ${classe ?? ""}`}>{valor}</span>
+    </div>
+  );
+}
+
+function Dado({ label, valor }: { label: string; valor?: string | null }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="font-medium break-words">{valor && valor.trim() ? valor : "—"}</div>
     </div>
   );
 }

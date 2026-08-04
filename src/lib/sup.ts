@@ -163,7 +163,9 @@ export type SupPedidoCompra = {
   observacoes: string | null;
   cancelado_em: string | null;
   cancelado_motivo: string | null;
+  status_pre_cancelamento: string | null;
   created_at?: string;
+
 };
 
 export type SupPedidoItem = {
