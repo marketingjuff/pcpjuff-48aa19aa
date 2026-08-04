@@ -65,7 +65,9 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
   const qc = useQueryClient();
   const { etapaStyle, btnStyle } = useCopColorSettings();
   const isAdmin = useCanAccessCop();
+  const isAdminReal = useIsAdmin();
   const [confirmDelete, setConfirmDelete] = useState<Cop | null>(null);
+  const [showCorrigirDivisoes, setShowCorrigirDivisoes] = useState(false);
 
   const { data: cops = [], isLoading } = useQuery({
     queryKey: ["cops"],
