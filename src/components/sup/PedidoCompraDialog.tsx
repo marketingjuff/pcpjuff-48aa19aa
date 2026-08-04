@@ -677,7 +677,47 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
               </AlertDialogContent>
             </AlertDialog>
           )}
+          {cancelado && pedidoId && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-amber-700 border-amber-300">Reabrir pedido</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reabrir este pedido de compra?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O pedido volta ao status que tinha antes do cancelamento e passa a contar novamente nos
+                    totais e na apuração de comissão.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Voltar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => reabrir.mutate()}>Reabrir pedido</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          {status === "enviado" && pedidoId && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline">Desfazer envio</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Desfazer o envio deste pedido?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O pedido volta para Rascunho e pode ser editado normalmente. O número do PC já gerado é mantido.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Voltar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => desfazerEnvio.mutate()}>Desfazer envio</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <div className="flex-1" />
+
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
           {!bloqueado && (
             <Button className="bg-teal-600 hover:bg-teal-700 text-white" disabled={salvar.isPending} onClick={() => salvar.mutate({})}>
