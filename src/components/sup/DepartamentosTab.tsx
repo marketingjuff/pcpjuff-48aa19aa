@@ -96,7 +96,7 @@ export function DepartamentosTab() {
             <tr className="text-xs">
               <th className="p-1.5 font-medium text-left">Departamento</th>
               <th className="p-1.5 font-medium">Situação</th>
-              <th className="p-1.5 w-10"></th>
+              <th className="p-1.5 w-20"></th>
             </tr>
           </thead>
           <tbody>
@@ -112,9 +112,12 @@ export function DepartamentosTab() {
                     {d.ativo ? "Ativo" : "Inativo"}
                   </span>
                 </td>
-                <td className="p-1.5 text-center">
+                <td className="p-1.5 text-center whitespace-nowrap">
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setForm({ ...d }); setOpen(true); }} title="Editar">
                     <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-600 hover:text-rose-700" onClick={() => setExcluir(d)} title="Excluir">
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </td>
               </tr>
