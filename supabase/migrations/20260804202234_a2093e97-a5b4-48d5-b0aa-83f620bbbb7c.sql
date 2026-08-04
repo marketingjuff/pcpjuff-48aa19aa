@@ -1,0 +1,1 @@
+ALTER TABLE public.sup_produtos ADD COLUMN IF NOT EXISTS preco_referencia numeric;
