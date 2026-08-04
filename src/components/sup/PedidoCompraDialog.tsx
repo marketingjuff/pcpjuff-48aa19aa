@@ -430,7 +430,6 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           </div>
           <div>
 
-          <div>
             <Label className="text-xs">Frete (R$)</Label>
             <Input type="number" step="0.01" min={0} value={head.frete_valor ?? 0}
               onChange={(e) => set("frete_valor", Number(e.target.value))} className="h-9" disabled={bloqueado} />
