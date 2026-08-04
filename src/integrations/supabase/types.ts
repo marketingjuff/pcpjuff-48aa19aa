@@ -2067,6 +2067,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           especificacao: string | null
+          fornecedor_id: string | null
           id: string
           nome: string
           preco_referencia: number | null
@@ -2079,6 +2080,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           especificacao?: string | null
+          fornecedor_id?: string | null
           id?: string
           nome: string
           preco_referencia?: number | null
@@ -2091,13 +2093,22 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           especificacao?: string | null
+          fornecedor_id?: string | null
           id?: string
           nome?: string
           preco_referencia?: number | null
           unidade?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sup_produtos_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "sup_fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
