@@ -8,8 +8,9 @@ import { LogOut, Settings, Menu } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
-import type { AppArea } from "@/integrations/supabase/schema-extras";
+import { useIsAdmin, useMyRoles, useMinhasPermissoes, useAbasPermitidas } from "@/hooks/use-role";
+import { rotaInicial, type PermissaoKey } from "@/lib/permissoes";
+
 import type { Pedido } from "@/lib/pedidos";
 import { DadosInTab } from "@/components/pcp/DadosInTab";
 import { ArteTab } from "@/components/pcp/ArteTab";
@@ -73,13 +74,13 @@ function AppHomeInner() {
   }, [search.tab, search.pedidoId]);
 
   const isAdmin = useIsAdmin();
-  const { data: myRoles = [] } = useMyRoles();
+  const { data: myRoles = [], isLoading: rolesLoading } = useMyRoles();
   const isGestor = myRoles.some((r) => r.role === "gestor");
-  const areas = new Set<AppArea>(
-    (myRoles.flatMap((r) => (r.areas_extras ?? []) as AppArea[])),
-  );
-  const canSee = (a: AppArea) => isAdmin || areas.has(a);
+  const permissoes = useMinhasPermissoes();
+  const pode = (k: PermissaoKey) => permissoes.has(k);
+  const abasPcp = useAbasPermitidas("pcp");
   const isManager = isAdmin || isGestor;
+
 
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ["pedidos"],
@@ -171,19 +172,47 @@ function AppHomeInner() {
   }, [pedidos]);
 
   type TabDef = { value: string; label: string };
-  const tabs: TabDef[] = [
-    ...((isManager || canSee("dashboard")) ? [{ value: "dashboard", label: "Dashboard Master" }] : []),
-    ...((canSee("dados_in_vendedor") || canSee("dados_in_producao")) ? [{ value: "dados", label: "Dados In" }] : []),
-    ...(canSee("arte") ? [{ value: "arte", label: "Arte" }] : []),
-    ...(canSee("dtf") ? [{ value: "dtf", label: "DTF" }] : []),
-    ...(canSee("silk") ? [{ value: "silk", label: "Silk Screen" }] : []),
-    ...(canSee("acabamento") ? [{ value: "acab", label: "Acabamento" }] : []),
-    ...(canSee("expedicao") ? [{ value: "exp", label: "Expedição" }] : []),
-    ...((isManager || canSee("finalizados")) ? [{ value: "fin", label: "Finalizados" }] : []),
-    ...(isManager ? [{ value: "retrab", label: "Retrabalho" }] : []),
-    ...(isAdmin ? [{ value: "historico", label: "Histórico PCP" }] : []),
-  ];
+  const tabs: TabDef[] = [];
+  const vistos = new Set<string>();
+  for (const a of abasPcp) {
+    if (vistos.has(a.tabValue)) continue;
+    vistos.add(a.tabValue);
+    tabs.push({ value: a.tabValue, label: a.tabValue === "dados" ? "Dados In" : a.label });
+  }
+  if (isAdmin) tabs.push({ value: "historico", label: "Histórico PCP" });
   const activeTabLabel = tabs.find((t) => t.value === tab)?.label ?? "";
+
+  // Aba inválida (URL ou localStorage) cai na primeira aba permitida.
+  const primeiraAba = tabs[0]?.value;
+  useEffect(() => {
+    if (rolesLoading || !primeiraAba) return;
+    if (!tabs.some((t) => t.value === tab)) setTab(primeiraAba);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rolesLoading, primeiraAba, tab]);
+
+  // Sem nenhuma aba de PCP: manda para o primeiro módulo permitido.
+  const destino = rotaInicial(permissoes, isAdmin);
+  useEffect(() => {
+    if (rolesLoading || kpiAlvo) return;
+    if (tabs.length === 0 && destino !== "/") navigate({ to: destino as any, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rolesLoading, tabs.length, destino, kpiAlvo]);
+
+  if (!rolesLoading && !isAdmin && permissoes.size === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="max-w-sm text-center space-y-3">
+          <h1 className="font-display text-lg font-semibold">Sem permissões atribuídas</h1>
+          <p className="text-sm text-muted-foreground">
+            Sua conta ainda não tem acesso a nenhuma área do sistema. Fale com o administrador.
+          </p>
+          <Button variant="outline" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 mr-1" /> Sair
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   function pickTab(v: string) {
     setTab(v);
@@ -259,38 +288,38 @@ function AppHomeInner() {
             ))}
           </TabsList>
 
-          {(isManager || canSee("dashboard")) && (
+          {pode("pcp.dashboard") && (
             <TabsContent value="dashboard" forceMount hidden={tab !== "dashboard"}>
               <DashboardTab pedidos={pedidos} loading={isLoading} onEdit={(id) => goToTabWithPedido("dados", id)} onViewProgress={(id) => goToTabWithPedido("arte", id)} />
             </TabsContent>
           )}
-          {(canSee("dados_in_vendedor") || canSee("dados_in_producao")) && (
+          {(pode("pcp.dados_in_vendedor") || pode("pcp.dados_in_producao")) && (
             <TabsContent value="dados" forceMount hidden={tab !== "dados"}>
               <DadosInTab active={tab === "dados"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} onDelete={(id) => remove.mutate(id)} saving={upsert.isPending} />
             </TabsContent>
           )}
-          {canSee("arte") && (
+          {pode("pcp.arte") && (
             <TabsContent value="arte" forceMount hidden={tab !== "arte"}>
               <ArteTab active={tab === "arte"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} canManage={isManager} />
             </TabsContent>
           )}
-          {canSee("dtf") && (
+          {pode("pcp.dtf") && (
             <TabsContent value="dtf" forceMount hidden={tab !== "dtf"}>
               <DTFTab active={tab === "dtf"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} canManage={isManager} />
             </TabsContent>
           )}
-          {canSee("silk") && (
+          {pode("pcp.silk") && (
             <TabsContent value="silk" forceMount hidden={tab !== "silk"}>
               <SilkTab active={tab === "silk"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} canManage={isManager} />
             </TabsContent>
           )}
-          {canSee("acabamento") && (
+          {pode("pcp.acabamento") && (
             <TabsContent value="acab" forceMount hidden={tab !== "acab"}>
               <AcabamentoTab active={tab === "acab"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} canManage={isManager} />
             </TabsContent>
           )}
 
-          {canSee("expedicao") && (
+          {pode("pcp.expedicao") && (
             <TabsContent value="exp" forceMount hidden={tab !== "exp"}>
               <ExpedicaoTab
                 pedidos={pedidos}
@@ -306,16 +335,16 @@ function AppHomeInner() {
               />
             </TabsContent>
           )}
-          {(isManager || canSee("finalizados")) && (
+          {pode("pcp.finalizados") && (
             <TabsContent value="fin" forceMount hidden={tab !== "fin"}>
               <FinalizadosTab
                 pedidos={pedidos}
                 onReabrir={(id) => upsert.mutate({ id, finalizado_em: null, reaberto: true })}
-                canReabrir={isAdmin || (isGestor && canSee("expedicao"))}
+                canReabrir={isAdmin || (isGestor && pode("pcp.expedicao"))}
               />
             </TabsContent>
           )}
-          {isManager && (
+          {pode("pcp.retrabalho") && (
             <TabsContent value="retrab" forceMount hidden={tab !== "retrab"}>
               <RetrabalhoTab pedidos={pedidos} onSave={(p) => upsert.mutate(p)} />
             </TabsContent>

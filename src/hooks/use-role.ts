@@ -2,6 +2,17 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole, UserRoleRow } from "@/integrations/supabase/schema-extras";
+import {
+  MODULOS,
+  abasDoModulo,
+  normalizarPermissoes,
+  permissoesDoModulo,
+  todasPermissoes,
+  type AbaPermissao,
+  type ModuloKey,
+  type PermissaoKey,
+} from "@/lib/permissoes";
+
 
 export function useCurrentUser() {
   const [state, setState] = useState<{ userId: string | null; isLoading: boolean }>({
@@ -62,29 +73,55 @@ export function useHasArea(area: string) {
   );
 }
 
-export function useCanAccessCop() {
+/** Todas as permissões efetivas do usuário, já normalizadas. Admin recebe o catálogo inteiro. */
+export function useMinhasPermissoes(): Set<PermissaoKey> {
   const { data } = useMyRoles();
-  return (data ?? []).some(
-    (r) =>
-      r.role === "admin" ||
-      (r.role === "gestor" && (r.areas_extras ?? []).includes("cop")),
+  const rows = data ?? [];
+  if (rows.some((r) => r.role === "admin")) return new Set(todasPermissoes());
+  const out = new Set<PermissaoKey>();
+  for (const r of rows) {
+    normalizarPermissoes(r.areas_extras ?? [], r.role).forEach((k) => out.add(k));
+  }
+  return out;
+}
+
+/** Checa uma permissão específica. Admin sempre true. */
+export function usePode(key: PermissaoKey): boolean {
+  return useMinhasPermissoes().has(key);
+}
+
+/** Abas do módulo que este usuário pode ver, na ordem do catálogo. */
+export function useAbasPermitidas(modulo: ModuloKey): AbaPermissao[] {
+  const perms = useMinhasPermissoes();
+  return abasDoModulo(modulo).filter((a) => perms.has(a.key));
+}
+
+/** Módulos com pelo menos 1 aba permitida. */
+export function useModulosPermitidos(): ModuloKey[] {
+  const perms = useMinhasPermissoes();
+  return MODULOS.map((m) => m.key).filter((m) =>
+    permissoesDoModulo(m).some((k) => perms.has(k)),
   );
+}
+
+function useTemModulo(modulo: ModuloKey): boolean {
+  const perms = useMinhasPermissoes();
+  return permissoesDoModulo(modulo).some((k) => perms.has(k));
+}
+
+export function useCanAccessCop() {
+  return useTemModulo("cop");
 }
 
 export function useCanAccessMap() {
-  const { data } = useMyRoles();
-  return (data ?? []).some(
-    (r) =>
-      r.role === "admin" ||
-      (r.role === "gestor" && (r.areas_extras ?? []).includes("map")),
-  );
+  return useTemModulo("map");
 }
 
 export function useCanAccessSup() {
-  const { data } = useMyRoles();
-  return (data ?? []).some(
-    (r) =>
-      r.role === "admin" ||
-      (r.role === "gestor" && (r.areas_extras ?? []).includes("sup")),
-  );
+  return useTemModulo("sup");
 }
+
+export function useCanAccessKpi() {
+  return useTemModulo("kpi");
+}
+

@@ -35,9 +35,32 @@ import {
   sugestoesEstadoSP,
   type Sugestao,
 } from "@/lib/feriados-sugestoes";
-import type { AppRole, AppArea, Feriado } from "@/integrations/supabase/schema-extras";
-import { APP_AREAS_GESTOR, APP_AREAS_OPERADOR, APP_AREA_LABEL } from "@/integrations/supabase/schema-extras";
+import type { AppRole, Feriado } from "@/integrations/supabase/schema-extras";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  CATALOGO_PERMISSOES,
+  MODULOS,
+  PRESETS,
+  abasDoModulo,
+  labelDaPermissao,
+  normalizarPermissoes,
+  permissoesDoModulo,
+  type ModuloKey,
+  type PermissaoKey,
+  type Preset,
+} from "@/lib/permissoes";
 import {
   useColorSettings as useColorSettingsHook,
   DEFAULT_COLOR_SETTINGS as DEFAULT_COLOR_SETTINGS_CONST,
@@ -378,7 +401,7 @@ function UsuariosTab() {
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
   const [role, setRole] = useState<AppRole>("gestor");
-  const [areas, setAreas] = useState<AppArea[]>([]);
+  const [areas, setAreas] = useState<PermissaoKey[]>([]);
   const [editingName, setEditingName] = useState<{ id: string; nome: string } | null>(null);
   const [pwTarget, setPwTarget] = useState<{ id: string; email: string } | null>(null);
   const [pwValue, setPwValue] = useState("");
@@ -458,13 +481,7 @@ function UsuariosTab() {
             </Select>
           </div>
         </div>
-        {role !== "admin" && (
-          <AreasCheckboxes
-            value={areas}
-            onChange={setAreas}
-            options={role === "gestor" ? APP_AREAS_GESTOR : APP_AREAS_OPERADOR}
-          />
-        )}
+        {role !== "admin" && <PermissoesPanel value={areas} onChange={setAreas} />}
         <Button onClick={() => create.mutate()} disabled={create.isPending || !email || !password}>
           <Plus className="h-4 w-4 mr-1" /> Criar usuário
         </Button>
@@ -480,7 +497,9 @@ function UsuariosTab() {
             {isLoading ? <TableRow><TableCell colSpan={4}>Carregando…</TableCell></TableRow>
               : (users as any[]).map((u) => {
                 const currentRole = (u.roles?.[0]?.role ?? "operador") as AppRole;
-                const currentAreas = ((u.roles?.[0]?.areas_extras ?? []) as string[]) as AppArea[];
+                const currentAreas = Array.from(
+                  normalizarPermissoes((u.roles?.[0]?.areas_extras ?? []) as string[], currentRole),
+                );
                 return (
                   <TableRow key={u.id}>
                     <TableCell className="align-top">
@@ -516,11 +535,19 @@ function UsuariosTab() {
                           </SelectContent>
                         </Select>
                         {currentRole !== "admin" && (
-                          <AreasCheckboxes
-                            value={currentAreas}
-                            onChange={(next) => update.mutate({ userId: u.id, role: currentRole, areas_extras: next })}
-                            options={currentRole === "gestor" ? APP_AREAS_GESTOR : APP_AREAS_OPERADOR}
-                          />
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-8">
+                                Permissões ({currentAreas.length})
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="start" className="w-[26rem] max-h-[70vh] overflow-y-auto">
+                              <PermissoesPanel
+                                value={currentAreas}
+                                onChange={(next) => update.mutate({ userId: u.id, role: currentRole, areas_extras: next })}
+                              />
+                            </PopoverContent>
+                          </Popover>
                         )}
                       </div>
                     </TableCell>
@@ -579,23 +606,115 @@ function UsuariosTab() {
 }
 
 
-function AreasCheckboxes({ value, onChange, options }: { value: AppArea[]; onChange: (next: AppArea[]) => void; options: AppArea[] }) {
-  function toggle(a: AppArea, checked: boolean) {
-    const set = new Set(value);
-    if (checked) set.add(a); else set.delete(a);
-    onChange(options.filter((o) => set.has(o)));
+function PermissoesPanel({ value, onChange }: { value: PermissaoKey[]; onChange: (next: PermissaoKey[]) => void }) {
+  const marcadas = new Set(value);
+  const [abertos, setAbertos] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    for (const m of MODULOS) init[m.key] = permissoesDoModulo(m.key).some((k) => marcadas.has(k));
+    return init;
+  });
+  const [presetSel, setPresetSel] = useState("");
+  const [presetPend, setPresetPend] = useState<Preset | null>(null);
+
+  function aplicar(next: Set<PermissaoKey>) {
+    onChange(CATALOGO_PERMISSOES.filter((a) => next.has(a.key)).map((a) => a.key));
   }
+
+  function toggle(key: PermissaoKey, checked: boolean) {
+    const set = new Set(marcadas);
+    if (checked) set.add(key); else set.delete(key);
+    aplicar(set);
+  }
+
+  function toggleModulo(modulo: ModuloKey, checked: boolean) {
+    const set = new Set(marcadas);
+    for (const k of permissoesDoModulo(modulo)) {
+      if (checked) set.add(k); else set.delete(k);
+    }
+    aplicar(set);
+  }
+
   return (
-    <div className="grid grid-cols-2 gap-1.5 p-2 rounded-md border bg-muted/20">
-      {options.map((a) => (
-        <label key={a} className="flex items-center gap-2 text-xs cursor-pointer">
-          <Checkbox checked={value.includes(a)} onCheckedChange={(c) => toggle(a, !!c)} />
-          <span>{APP_AREA_LABEL[a]}</span>
-        </label>
-      ))}
+    <div className="space-y-2 rounded-md border bg-muted/20 p-2">
+      <div className="flex items-center gap-2">
+        <Select
+          value={presetSel}
+          onValueChange={(v) => {
+            setPresetSel(v);
+            setPresetPend(PRESETS.find((p) => p.id === v) ?? null);
+          }}
+        >
+          <SelectTrigger className="h-8 w-64 text-xs"><SelectValue placeholder="Aplicar preset…" /></SelectTrigger>
+          <SelectContent>
+            {PRESETS.map((p) => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <span className="text-xs text-muted-foreground">{value.length} aba(s) marcada(s)</span>
+      </div>
+
+      {MODULOS.map((m) => {
+        const keys = permissoesDoModulo(m.key);
+        const total = keys.length;
+        const sel = keys.filter((k) => marcadas.has(k)).length;
+        const aberto = abertos[m.key] ?? false;
+        return (
+          <Collapsible
+            key={m.key}
+            open={aberto}
+            onOpenChange={(o) => setAbertos((s) => ({ ...s, [m.key]: o }))}
+            className="rounded-md border bg-background"
+          >
+            <div className="flex items-center gap-2 px-2 py-1.5">
+              <Checkbox
+                checked={sel === total ? true : sel > 0 ? "indeterminate" : false}
+                onCheckedChange={() => toggleModulo(m.key, sel !== total)}
+                aria-label={`Marcar tudo de ${m.label}`}
+              />
+              <CollapsibleTrigger className="flex-1 text-left text-xs font-medium">
+                {m.label} <span className="text-muted-foreground">({sel} de {total})</span>
+              </CollapsibleTrigger>
+            </div>
+            <CollapsibleContent>
+              <div className="grid grid-cols-2 gap-1.5 px-2 pb-2">
+                {abasDoModulo(m.key).map((a) => (
+                  <label key={a.key} className="flex items-center gap-2 text-xs cursor-pointer">
+                    <Checkbox checked={marcadas.has(a.key)} onCheckedChange={(c) => toggle(a.key, !!c)} />
+                    <span>{a.label}</span>
+                  </label>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        );
+      })}
+
+      <AlertDialog open={!!presetPend} onOpenChange={(o) => { if (!o) { setPresetPend(null); setPresetSel(""); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aplicar preset?</AlertDialogTitle>
+            <AlertDialogDescription>
+              As permissões atuais deste usuário serão substituídas por:{" "}
+              <i>{(presetPend?.permissoes ?? []).map(labelDaPermissao).join(", ")}</i>. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setPresetPend(null); setPresetSel(""); }}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (presetPend) aplicar(new Set(presetPend.permissoes));
+                setPresetPend(null);
+                setPresetSel("");
+              }}
+            >
+              Aplicar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
 
 function BackupTab() {
   const exportFn = useServerFn(exportBackup);

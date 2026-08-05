@@ -6,7 +6,8 @@ import { LogOut, Settings } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMyRoles, useCanAccessCop, useCanAccessMap, useCanAccessSup, useIsAdmin } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessCop, useCanAccessMap, useCanAccessSup, useCanAccessKpi, useIsAdmin, useAbasPermitidas, useMinhasPermissoes } from "@/hooks/use-role";
+import { rotaInicial } from "@/lib/permissoes";
 import { CorteTab } from "@/components/cop/CorteTab";
 import { RomaneioTab } from "@/components/cop/RomaneioTab";
 import { DisponivelTab } from "@/components/cop/DisponivelTab";
@@ -19,7 +20,6 @@ import { HistoricoCopTab } from "@/components/cop/HistoricoCopTab";
 import { ControlePerdasTab } from "@/components/cop/ControlePerdasTab";
 import { AlimentacaoEstoqueTab } from "@/components/cop/AlimentacaoEstoqueTab";
 import { SaldoRealTab } from "@/components/cop/SaldoRealTab";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cop")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -30,28 +30,21 @@ export const Route = createFileRoute("/_authenticated/cop")({
   component: CopHome,
 });
 
-const BASE_TABS = [
-  { value: "dashboard", label: "Dashboard COP" },
-  { value: "disponivel", label: "Disponível" },
-  { value: "falta", label: "Falta por Pedido" },
-  { value: "oficinas-hoje", label: "Oficinas Hoje" },
-  { value: "corte", label: "Corte" },
-  { value: "romaneio", label: "Romaneio" },
-  { value: "pagamento", label: "Pagamentos" },
-  { value: "perdas", label: "Perdas" },
-  { value: "controle-perdas", label: "Controle de Perdas" },
-  { value: "alimentacao-estoque", label: "Alimentação Estoque Real" },
-  { value: "saldo-real", label: "Saldo Real Juff" },
-];
-
 
 function CopHome() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const canAccess = useCanAccessCop();
   const isAdmin = useIsAdmin();
-  const { isLoading } = useMyRoles();
-  const TABS = isAdmin ? [...BASE_TABS, { value: "historico", label: "Histórico COP" }] : BASE_TABS;
+  const { data: myRoles = [], isLoading } = useMyRoles();
+  const isGestor = myRoles.some((r) => r.role === "gestor");
+  const abas = useAbasPermitidas("cop");
+  const permissoes = useMinhasPermissoes();
+  const pode = (k: string) => permissoes.has(k);
+  const TABS = [
+    ...abas.map((a) => ({ value: a.tabValue, label: a.label })),
+    ...(isAdmin ? [{ value: "historico", label: "Histórico COP" }] : []),
+  ];
   const search = Route.useSearch();
   const [tab, setTabState] = useState(() => {
     if (search.tab) return search.tab;
@@ -73,12 +66,19 @@ function CopHome() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.tab, search.copId]);
 
+  const primeiraAba = TABS[0]?.value;
   useEffect(() => {
-    if (!isLoading && !canAccess) {
-      toast.error("COP é restrito a administradores e gestores autorizados.");
-      navigate({ to: "/", replace: true });
-    }
-  }, [canAccess, isLoading, navigate]);
+    if (isLoading || !primeiraAba) return;
+    if (!TABS.some((t) => t.value === tab)) setTab(primeiraAba);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, primeiraAba, tab]);
+
+  const destino = rotaInicial(permissoes, isAdmin);
+  useEffect(() => {
+    if (isLoading || canAccess) return;
+    navigate({ to: destino as any, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canAccess, isLoading, destino]);
 
   // Aplica o escopo do COP também no <body>, para diálogos renderizados em portal.
   useEffect(() => {
@@ -113,10 +113,12 @@ function CopHome() {
             <MacroSwitch active="cop" />
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes", search: { area: "cop" } as any })} aria-label="Configurações">
-              <Settings className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Configurações</span>
-            </Button>
+            {(isAdmin || isGestor) && (
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes", search: { area: "cop" } as any })} aria-label="Configurações">
+                <Settings className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Configurações</span>
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={handleLogout} aria-label="Sair">
               <LogOut className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Sair</span>
@@ -133,40 +135,62 @@ function CopHome() {
             ))}
           </TabsList>
 
+          {pode("cop.corte") && (
           <TabsContent value="corte" forceMount hidden={tab !== "corte"}>
             <CorteTab selectedId={copSelId} onSelect={setCopSelId} onChangeTab={setTab} />
           </TabsContent>
+          )}
+          {pode("cop.romaneio") && (
           <TabsContent value="romaneio" forceMount hidden={tab !== "romaneio"}>
             <RomaneioTab selectedId={copSelId} onSelect={setCopSelId} onChangeTab={setTab} />
           </TabsContent>
+          )}
+          {pode("cop.dashboard") && (
           <TabsContent value="dashboard" forceMount hidden={tab !== "dashboard"}>
             <DashboardCopTab />
           </TabsContent>
+          )}
+          {pode("cop.disponivel") && (
           <TabsContent value="disponivel" forceMount hidden={tab !== "disponivel"}>
             <DisponivelTab />
           </TabsContent>
+          )}
+          {pode("cop.alimentacao_estoque") && (
           <TabsContent value="alimentacao-estoque" forceMount hidden={tab !== "alimentacao-estoque"}>
             <AlimentacaoEstoqueTab />
           </TabsContent>
+          )}
+          {pode("cop.saldo_real") && (
           <TabsContent value="saldo-real" forceMount hidden={tab !== "saldo-real"}>
             <SaldoRealTab />
           </TabsContent>
+          )}
 
+          {pode("cop.falta") && (
           <TabsContent value="falta" forceMount hidden={tab !== "falta"}>
             <FaltaPorPedidoTab />
           </TabsContent>
+          )}
+          {pode("cop.oficinas_hoje") && (
           <TabsContent value="oficinas-hoje" forceMount hidden={tab !== "oficinas-hoje"}>
             <OficinasHojeTab />
           </TabsContent>
+          )}
+          {pode("cop.pagamento") && (
           <TabsContent value="pagamento" forceMount hidden={tab !== "pagamento"}>
             <PagamentoOficinasTab selectedId={copSelId} onSelect={setCopSelId} onChangeTab={setTab} />
           </TabsContent>
+          )}
+          {pode("cop.perdas") && (
           <TabsContent value="perdas" forceMount hidden={tab !== "perdas"}>
             <PerdasTab />
           </TabsContent>
+          )}
+          {pode("cop.controle_perdas") && (
           <TabsContent value="controle-perdas" forceMount hidden={tab !== "controle-perdas"}>
             <ControlePerdasTab />
           </TabsContent>
+          )}
           {isAdmin && (
             <TabsContent value="historico" forceMount hidden={tab !== "historico"}>
               <HistoricoCopTab />
@@ -183,7 +207,12 @@ export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" | "sup" 
   const canAccessCop = useCanAccessCop();
   const canAccessMap = useCanAccessMap();
   const canAccessSup = useCanAccessSup();
+  const canAccessKpi = useCanAccessKpi();
   const isAdminMacro = useIsAdmin();
+  const abasPcpMacro = useAbasPermitidas("pcp");
+  const canAccessPcp = isAdminMacro || abasPcpMacro.length > 0;
+  const totalModulos = [canAccessPcp, canAccessCop, canAccessMap, canAccessSup, canAccessKpi].filter(Boolean).length;
+  if (totalModulos <= 1) return null;
   const baseBtn = "px-6 py-2 rounded font-bold text-base transition-colors";
   const pcpActive = active === "pcp"
     ? "bg-blue-600 text-white"
@@ -202,13 +231,15 @@ export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" | "sup" 
     : "hover:bg-accent text-foreground";
   return (
     <div className="inline-flex rounded-md border bg-card p-1">
-      <button
-        type="button"
-        onClick={() => navigate({ to: "/" })}
-        className={`${baseBtn} ${pcpActive}`}
-      >
-        PCP
-      </button>
+      {canAccessPcp && (
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/" })}
+          className={`${baseBtn} ${pcpActive}`}
+        >
+          PCP
+        </button>
+      )}
       {canAccessCop && (
         <button
           type="button"
@@ -236,7 +267,7 @@ export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" | "sup" 
           SUP
         </button>
       )}
-      {isAdminMacro && (
+      {canAccessKpi && (
         <button
           type="button"
           onClick={() => navigate({ to: "/kpi" })}
