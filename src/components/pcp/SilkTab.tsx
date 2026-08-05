@@ -38,10 +38,11 @@ interface Props {
   active?: boolean;
   onNavigate?: (tab: string) => void;
   canManage?: boolean;
+  soLeitura?: boolean;
 }
 
-export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate, canManage = false }: Props) {
-  const readOnly = isReadOnly("silk", selected, canManage);
+export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate, canManage = false, soLeitura = false }: Props) {
+  const readOnly = isReadOnly("silk", selected, canManage, soLeitura);
 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
@@ -292,7 +293,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 </div>
               </div>
               <div className="flex justify-end gap-2 flex-wrap">
-                {canManage && !selected.finalizado_em && silkCompleto(selected) && (
+                {canManage && !soLeitura && !selected.finalizado_em && silkCompleto(selected) && (
                   <CorrigirEtapaButton
                     pedido={selected}
                     destino="arte"

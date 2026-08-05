@@ -37,10 +37,11 @@ interface Props {
   active?: boolean;
   onNavigate?: (tab: string) => void;
   canManage?: boolean;
+  soLeitura?: boolean;
 }
 
-export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate, canManage = false }: Props) {
-  const readOnly = isReadOnly("acabamento", selected, canManage);
+export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate, canManage = false, soLeitura = false }: Props) {
+  const readOnly = isReadOnly("acabamento", selected, canManage, soLeitura);
 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
@@ -248,7 +249,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             </div>
             </fieldset>
             <div className="flex justify-end gap-2 flex-wrap">
-              {canManage && !selected.finalizado_em && acabamentoCompleto(selected) && (() => {
+              {canManage && !soLeitura && !selected.finalizado_em && acabamentoCompleto(selected) && (() => {
                 const tipo = selected.tipo_estampa;
                 if (tipo === "DTF+Silk") {
                   return (

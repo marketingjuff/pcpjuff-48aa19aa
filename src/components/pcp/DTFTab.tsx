@@ -39,10 +39,11 @@ interface Props {
   active?: boolean;
   onNavigate?: (tab: string) => void;
   canManage?: boolean;
+  soLeitura?: boolean;
 }
 
-export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate, canManage = false }: Props) {
-  const readOnly = isReadOnly("dtf", selected, canManage);
+export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = true, onNavigate, canManage = false, soLeitura = false }: Props) {
+  const readOnly = isReadOnly("dtf", selected, canManage, soLeitura);
 
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
@@ -305,7 +306,7 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
                 </div>
               </div>
               <div className="flex justify-end gap-2 flex-wrap">
-                {canManage && !selected.finalizado_em && dtfCompleto(selected) && (
+                {canManage && !soLeitura && !selected.finalizado_em && dtfCompleto(selected) && (
                   <CorrigirEtapaButton
                     pedido={selected}
                     destino="arte"
