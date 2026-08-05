@@ -432,6 +432,9 @@ export function ProdutosTab() {
                 <SortTh label="Departamento" sortKey="departamento" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
                 <SortTh label="Unidade" sortKey="unidade" current={sortKey} dir={sortDir} onSort={toggle} />
                 <SortTh label="Preço de tabela" sortKey="preco" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
+                <SortTh label="Preço negociado" sortKey="negociado" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
+                <SortTh label="Grupo" sortKey="grupo" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
+                <SortTh label="Preço/un. ref." sortKey="por_ref" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
                 <SortTh label="Qtd. mínima" sortKey="qtd_min" current={sortKey} dir={sortDir} onSort={toggle} />
                 <SortTh label="Prazo" sortKey="prazo" current={sortKey} dir={sortDir} onSort={toggle} />
                 <SortTh label="Situação" sortKey="ativo" current={sortKey} dir={sortDir} onSort={toggle} />
@@ -440,13 +443,15 @@ export function ProdutosTab() {
             </thead>
             <tbody>
               {!fornId ? (
-                <tr><td colSpan={8} className="p-4 text-center text-muted-foreground">Selecione um fornecedor para ver e cadastrar os produtos dele.</td></tr>
+                <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">Selecione um fornecedor para ver e cadastrar os produtos dele.</td></tr>
               ) : isLoading ? (
-                <tr><td colSpan={8} className="p-4 text-center text-muted-foreground">Carregando…</td></tr>
+                <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">Carregando…</td></tr>
               ) : ordenados.length === 0 ? (
-                <tr><td colSpan={8} className="p-4 text-center text-muted-foreground">Nenhum produto cadastrado para este fornecedor.</td></tr>
+                <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">Nenhum produto cadastrado para este fornecedor.</td></tr>
               ) : ordenados.map((p) => {
                 const v = vinculoDoProduto(p.id);
+                const grupo = grupos.find((g) => g.id === p.grupo_id) ?? null;
+                const porRef = precoPorUnidadeRef(precoVigente(v), p.fator_conversao);
                 return (
                   <tr
                     key={p.id}
@@ -456,7 +461,14 @@ export function ProdutosTab() {
                     <td className="p-1.5 font-medium">{p.nome}</td>
                     <td className="p-1.5">{p.departamento ?? "—"}</td>
                     <td className="p-1.5 text-center">{p.unidade}</td>
-                    <td className="p-1.5 text-right font-semibold tabular-nums">{v?.preco_tabela == null ? "—" : fmtMoeda(v.preco_tabela)}</td>
+                    <td className="p-1.5 text-right tabular-nums">{v?.preco_tabela == null ? "—" : fmtMoeda(v.preco_tabela)}</td>
+                    <td className="p-1.5 text-right font-semibold tabular-nums text-teal-800">
+                      {v?.preco_negociado == null ? "—" : fmtMoeda(v.preco_negociado)}
+                    </td>
+                    <td className="p-1.5">{grupo ? grupo.nome : "—"}</td>
+                    <td className="p-1.5 text-right tabular-nums">
+                      {porRef == null || !grupo ? "—" : `${fmtMoeda(porRef)}/${grupo.unidade_referencia}`}
+                    </td>
                     <td className="p-1.5 text-center tabular-nums">{v?.quantidade_minima ?? "—"}</td>
                     <td className="p-1.5 text-center tabular-nums">{v?.prazo_entrega_dias == null ? "—" : `${v.prazo_entrega_dias} d`}</td>
                     <td className="p-1.5 text-center">
@@ -481,6 +493,7 @@ export function ProdutosTab() {
             </tbody>
           </table>
         </div>
+
 
         {sel && (
           <div className="rounded-md border bg-card overflow-hidden">
