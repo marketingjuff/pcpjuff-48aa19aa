@@ -347,15 +347,47 @@ export function ProdutosTab() {
       toast.error(e.message === "__DUP__" ? "Este fornecedor já tem um produto com esse nome." : (e.message ?? "Erro ao copiar produto.")),
   });
 
+  const criarGrupo = useMutation({
+    mutationFn: async () => {
+      if (!grupoForm.nome.trim()) throw new Error("Informe o nome do grupo.");
+      const { data, error } = await (supabase as any)
+        .from("sup_produto_grupos")
+        .insert({
+          nome: grupoForm.nome.trim(),
+          categoria: grupoForm.categoria.trim() || null,
+          unidade_referencia: grupoForm.unidade_referencia || "unidade",
+          ativo: true,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      return data.id as string;
+    },
+    onSuccess: (id) => {
+      qc.invalidateQueries({ queryKey: ["sup-produto-grupos"] });
+      setForm((f) => ({ ...f, grupo_id: id, fator_conversao: f.fator_conversao || "1" }));
+      setGrupoOpen(false);
+      toast.success("Grupo criado.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao criar grupo."),
+  });
+
+  function abrirNovoGrupo() {
+    setGrupoForm({ nome: "", categoria: "", unidade_referencia: "unidade" });
+    setGrupoOpen(true);
+  }
+
   function abrirNovo() {
     setForm(formVazio());
     setPrecoOriginal(null);
+    setNegociadoOriginal(null);
     setProdOpen(true);
   }
 
   function abrirEdicao(p: SupProduto) {
     const v = vinculoDoProduto(p.id);
     const preco = v?.preco_tabela ?? null;
+    const neg = v?.preco_negociado ?? null;
     setForm({
       id: p.id,
       nome: p.nome,
@@ -364,21 +396,40 @@ export function ProdutosTab() {
       especificacao: p.especificacao ?? "",
       ativo: p.ativo,
       preco: preco == null ? "" : String(preco),
+      preco_negociado: neg == null ? "" : String(neg),
+      grupo_id: p.grupo_id ?? "",
+      fator_conversao: p.fator_conversao == null ? "" : String(p.fator_conversao),
       qtd_min: v?.quantidade_minima == null ? "" : String(v.quantidade_minima),
       prazo: v?.prazo_entrega_dias == null ? "" : String(v.prazo_entrega_dias),
       motivo: "",
       arquivo: null,
     });
     setPrecoOriginal(preco);
+    setNegociadoOriginal(neg);
     setProdOpen(true);
   }
 
   const precoMudou = useMemo(() => {
     if (!form.id) return false;
-    const t = form.preco.trim().replace(",", ".");
-    const v = t === "" ? null : Number(t);
-    return n(v) !== n(precoOriginal);
-  }, [form.preco, form.id, precoOriginal]);
+    const val = (s: string) => {
+      const t = s.trim().replace(",", ".");
+      return t === "" ? null : Number(t);
+    };
+    return n(val(form.preco)) !== n(precoOriginal) || n(val(form.preco_negociado)) !== n(negociadoOriginal);
+  }, [form.preco, form.preco_negociado, form.id, precoOriginal, negociadoOriginal]);
+
+  const precoRefTexto = useMemo(() => {
+    const grupo = grupos.find((g) => g.id === form.grupo_id) ?? null;
+    if (!grupo) return null;
+    const vig = precoVigente({
+      preco_tabela: form.preco.trim().replace(",", "."),
+      preco_negociado: form.preco_negociado.trim().replace(",", "."),
+    });
+    const porRef = precoPorUnidadeRef(vig, form.fator_conversao.trim().replace(",", "."));
+    if (porRef == null) return `Grupo ${grupo.nome} — informe preço e fator para comparar por ${grupo.unidade_referencia}.`;
+    return `Equivale a ${fmtMoeda(porRef)} por ${grupo.unidade_referencia} (${grupo.nome}).`;
+  }, [grupos, form.grupo_id, form.preco, form.preco_negociado, form.fator_conversao]);
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4">
