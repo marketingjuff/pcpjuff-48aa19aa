@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
 import { PedidoMobileCard, Chip, QtdTotal, useSort, cmpDate, cmpNum, cmpText, SortableTh, Th, ReadOnlyField } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+import { FaixaSomenteLeitura } from "./DadosInTab";
 import { useColorSettings } from "@/hooks/use-color-settings";
 import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
 
