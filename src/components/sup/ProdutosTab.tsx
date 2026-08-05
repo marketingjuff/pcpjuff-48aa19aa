@@ -167,6 +167,9 @@ export function ProdutosTab() {
     departamento: (r) => r.departamento,
     unidade: (r) => r.unidade,
     preco: (r) => vinculoDoProduto(r.id)?.preco_tabela ?? -1,
+    negociado: (r) => vinculoDoProduto(r.id)?.preco_negociado ?? -1,
+    grupo: (r) => grupos.find((g) => g.id === r.grupo_id)?.nome ?? "",
+    por_ref: (r) => precoPorUnidadeRef(precoVigente(vinculoDoProduto(r.id)), r.fator_conversao) ?? -1,
     qtd_min: (r) => vinculoDoProduto(r.id)?.quantidade_minima ?? -1,
     prazo: (r) => vinculoDoProduto(r.id)?.prazo_entrega_dias ?? -1,
     ativo: (r) => (r.ativo ? 1 : 0),
@@ -189,6 +192,12 @@ export function ProdutosTab() {
       return (data ?? []) as SupPrecoHistorico[];
     },
   });
+
+  const historicoFiltrado = useMemo(
+    () => historico.filter((h) => histTipo === "todos" || (h.tipo ?? "tabela") === histTipo),
+    [historico, histTipo],
+  );
+
 
   function invalidarTudo() {
     qc.invalidateQueries({ queryKey: ["sup-produtos"] });
