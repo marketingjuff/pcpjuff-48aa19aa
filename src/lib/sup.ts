@@ -101,6 +101,15 @@ export type SupDepartamento = {
   created_at?: string;
 };
 
+export type SupProdutoGrupo = {
+  id: string;
+  nome: string;
+  categoria: string | null;
+  unidade_referencia: string;
+  ativo: boolean;
+  created_at?: string;
+};
+
 export type SupProduto = {
   id: string;
   fornecedor_id: string | null;
@@ -112,6 +121,8 @@ export type SupProduto = {
   especificacao: string | null;
   preco_referencia: number | null;
   ativo: boolean;
+  grupo_id: string | null;
+  fator_conversao: number | null;
   created_at?: string;
 };
 
@@ -121,6 +132,7 @@ export type SupFornecedorProduto = {
   fornecedor_id: string;
   produto_id: string;
   preco_tabela: number | null;
+  preco_negociado: number | null;
   quantidade_minima: number | null;
   prazo_entrega_dias: number | null;
   ativo: boolean;
@@ -132,6 +144,7 @@ export type SupPrecoHistorico = {
   preco_anterior: number | null;
   preco_novo: number;
   direcao: "alta" | "baixa" | "inicial";
+  tipo: "tabela" | "negociado";
   motivo: string | null;
   anexo_url: string | null;
   status_revisao: "pendente" | "revisada" | "contestada";
@@ -140,6 +153,7 @@ export type SupPrecoHistorico = {
   alterado_por: string | null;
   created_at: string;
 };
+
 
 export type SupPedidoCompra = {
   id: string;
@@ -336,4 +350,28 @@ export function variacaoPercentual(anterior: number | null | undefined, novo: nu
   const a = n(anterior);
   if (a <= 0) return null;
   return ((novo - a) / a) * 100;
+}
+
+// ---------------- Preço negociado / grupos de equivalência ----------------
+
+/** Preço convertido para a unidade de referência do grupo. */
+export function precoPorUnidadeRef(preco: unknown, fator_conversao: unknown): number | null {
+  const p = n(preco);
+  const f = n(fator_conversao);
+  if (p <= 0 || f <= 0) return null;
+  return p / f;
+}
+
+/** Preço vigente do cadastro: negociado quando houver, senão tabela. */
+export function precoVigente(v: { preco_tabela?: unknown; preco_negociado?: unknown } | null | undefined): number | null {
+  const neg = n(v?.preco_negociado);
+  if (neg > 0) return neg;
+  const tab = n(v?.preco_tabela);
+  return tab > 0 ? tab : null;
+}
+
+/** Variação percentual entre dois preços na mesma unidade. Negativo = economia. */
+export function variacaoPreco(anterior: number, atual: number): number | null {
+  if (anterior <= 0) return null;
+  return ((atual - anterior) / anterior) * 100;
 }

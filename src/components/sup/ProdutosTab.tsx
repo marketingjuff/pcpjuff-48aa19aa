@@ -11,12 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Pencil, Copy, TrendingDown, TrendingUp } from "lucide-react";
 import { SortTh, useTableSort } from "@/components/shared/sortable";
+import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { useSupDepartamentos } from "@/components/sup/DepartamentosTab";
 import {
-  SUP_UNIDADES, fmtMoeda, n, variacaoPercentual,
-  type SupFornecedorProduto, type SupPrecoHistorico, type SupProduto,
+  SUP_UNIDADES, fmtMoeda, n, variacaoPercentual, precoPorUnidadeRef, precoVigente,
+  type SupFornecedorProduto, type SupPrecoHistorico, type SupProduto, type SupProdutoGrupo,
 } from "@/lib/sup";
+
 
 export function useSupProdutos() {
   return useQuery({
@@ -62,6 +64,7 @@ export async function aplicarPrecoTabela(args: {
       preco_anterior: anterior,
       preco_novo,
       direcao,
+      tipo: "tabela",
       motivo: args.motivo || null,
       anexo_url: args.anexo_url || null,
       status_revisao,
@@ -79,6 +82,59 @@ export async function aplicarPrecoTabela(args: {
   return hist?.id as string | undefined;
 }
 
+/** Grupos de itens equivalentes (comparação entre fornecedores). */
+export function useSupProdutoGrupos() {
+  return useQuery({
+    queryKey: ["sup-produto-grupos"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("sup_produto_grupos").select("*").order("nome");
+      if (error) throw error;
+      return (data ?? []) as SupProdutoGrupo[];
+    },
+  });
+}
+
+/** Aplica preço negociado: grava histórico (tipo negociado) e atualiza o cadastro. */
+export async function aplicarPrecoNegociado(args: {
+  fornecedor_produto_id: string;
+  preco_anterior: number | null;
+  preco_novo: number;
+  motivo?: string | null;
+  anexo_url?: string | null;
+}) {
+  const { fornecedor_produto_id, preco_anterior, preco_novo } = args;
+  const anterior = preco_anterior == null || n(preco_anterior) === 0 ? null : n(preco_anterior);
+  const direcao: "alta" | "baixa" | "inicial" =
+    anterior == null ? "inicial" : preco_novo > anterior ? "alta" : "baixa";
+  const status_revisao = direcao === "alta" ? "pendente" : "revisada";
+  const { data: u } = await supabase.auth.getUser();
+
+  const { data: hist, error: e1 } = await (supabase as any)
+    .from("sup_preco_historico")
+    .insert({
+      fornecedor_produto_id,
+      preco_anterior: anterior,
+      preco_novo,
+      direcao,
+      tipo: "negociado",
+      motivo: args.motivo || null,
+      anexo_url: args.anexo_url || null,
+      status_revisao,
+      alterado_por: u.user?.id ?? null,
+    })
+    .select("id")
+    .single();
+  if (e1) throw e1;
+
+  const { error: e2 } = await (supabase as any)
+    .from("sup_fornecedor_produtos")
+    .update({ preco_negociado: preco_novo })
+    .eq("id", fornecedor_produto_id);
+  if (e2) throw e2;
+  return hist?.id as string | undefined;
+}
+
+
 type ProdForm = {
   id?: string;
   nome: string;
@@ -87,6 +143,9 @@ type ProdForm = {
   especificacao: string;
   ativo: boolean;
   preco: string;
+  preco_negociado: string;
+  grupo_id: string;
+  fator_conversao: string;
   qtd_min: string;
   prazo: string;
   motivo: string;
@@ -95,8 +154,10 @@ type ProdForm = {
 
 const formVazio = (): ProdForm => ({
   nome: "", departamento: "", unidade: "unidade", especificacao: "", ativo: true,
-  preco: "", qtd_min: "", prazo: "", motivo: "", arquivo: null,
+  preco: "", preco_negociado: "", grupo_id: "", fator_conversao: "",
+  qtd_min: "", prazo: "", motivo: "", arquivo: null,
 });
+
 
 const norm = (s: string) => s.trim().toLowerCase();
 const toNum = (s: string) => {
@@ -113,6 +174,8 @@ export function ProdutosTab() {
   const { data: departamentos = [] } = useSupDepartamentos();
   const { data: fornecedores = [] } = useSupFornecedores();
   const { data: vinculos = [] } = useSupFornecedorProdutos();
+  const { data: grupos = [] } = useSupProdutoGrupos();
+
 
   const [buscaForn, setBuscaForn] = useState("");
   const [mostrarInativos, setMostrarInativos] = useState(false);
@@ -124,10 +187,16 @@ export function ProdutosTab() {
   const [prodOpen, setProdOpen] = useState(false);
   const [form, setForm] = useState<ProdForm>(formVazio());
   const [precoOriginal, setPrecoOriginal] = useState<number | null>(null);
+  const [negociadoOriginal, setNegociadoOriginal] = useState<number | null>(null);
+  const [histTipo, setHistTipo] = useState("todos");
+
+  const [grupoOpen, setGrupoOpen] = useState(false);
+  const [grupoForm, setGrupoForm] = useState({ nome: "", categoria: "", unidade_referencia: "unidade" });
 
   const [copiarOpen, setCopiarOpen] = useState(false);
   const [copiarAlvo, setCopiarAlvo] = useState<SupProduto | null>(null);
   const [copiarDestino, setCopiarDestino] = useState("");
+
 
   const vinculoDoProduto = (produto_id: string) =>
     vinculos.find((v) => v.produto_id === produto_id) ?? null;
@@ -165,6 +234,9 @@ export function ProdutosTab() {
     departamento: (r) => r.departamento,
     unidade: (r) => r.unidade,
     preco: (r) => vinculoDoProduto(r.id)?.preco_tabela ?? -1,
+    negociado: (r) => vinculoDoProduto(r.id)?.preco_negociado ?? -1,
+    grupo: (r) => grupos.find((g) => g.id === r.grupo_id)?.nome ?? "",
+    por_ref: (r) => precoPorUnidadeRef(precoVigente(vinculoDoProduto(r.id)), r.fator_conversao) ?? -1,
     qtd_min: (r) => vinculoDoProduto(r.id)?.quantidade_minima ?? -1,
     prazo: (r) => vinculoDoProduto(r.id)?.prazo_entrega_dias ?? -1,
     ativo: (r) => (r.ativo ? 1 : 0),
@@ -188,6 +260,12 @@ export function ProdutosTab() {
     },
   });
 
+  const historicoFiltrado = useMemo(
+    () => historico.filter((h) => histTipo === "todos" || (h.tipo ?? "tabela") === histTipo),
+    [historico, histTipo],
+  );
+
+
   function invalidarTudo() {
     qc.invalidateQueries({ queryKey: ["sup-produtos"] });
     qc.invalidateQueries({ queryKey: ["sup-fornecedor-produtos"] });
@@ -209,9 +287,14 @@ export function ProdutosTab() {
         throw new Error("__DUP__");
       }
       const preco = toNum(f.preco);
+      const precoNeg = toNum(f.preco_negociado);
       const qtd_min = toNum(f.qtd_min);
       const prazoNum = toNum(f.prazo);
       const prazo = prazoNum == null ? null : Math.round(prazoNum);
+      const fator = f.grupo_id ? toNum(f.fator_conversao) : null;
+      if (f.grupo_id && (fator == null || fator <= 0)) {
+        throw new Error("Informe um fator de conversão maior que zero para o grupo escolhido.");
+      }
 
       const base = {
         nome: f.nome.trim(),
@@ -220,6 +303,8 @@ export function ProdutosTab() {
         especificacao: f.especificacao.trim() || null,
         preco_referencia: preco,
         ativo: f.ativo,
+        grupo_id: f.grupo_id || null,
+        fator_conversao: fator,
       };
 
       let anexo_url: string | null = null;
@@ -260,6 +345,15 @@ export function ProdutosTab() {
             anexo_url,
           });
         }
+        if (precoNeg != null) {
+          await aplicarPrecoNegociado({
+            fornecedor_produto_id: vinc.id,
+            preco_anterior: null,
+            preco_novo: precoNeg,
+            motivo: f.motivo || null,
+            anexo_url,
+          });
+        }
         return;
       }
 
@@ -295,6 +389,25 @@ export function ProdutosTab() {
           anexo_url,
         });
       }
+
+      const atualNeg = vinculo?.preco_negociado ?? null;
+      if (precoNeg != null && n(atualNeg) !== precoNeg) {
+        await aplicarPrecoNegociado({
+          fornecedor_produto_id: vinculoId!,
+          preco_anterior: atualNeg,
+          preco_novo: precoNeg,
+          motivo: f.motivo || null,
+          anexo_url,
+        });
+      }
+      if (precoNeg == null && atualNeg != null) {
+        const { error } = await (supabase as any)
+          .from("sup_fornecedor_produtos")
+          .update({ preco_negociado: null })
+          .eq("id", vinculoId);
+        if (error) throw error;
+      }
+
     },
     onSuccess: () => {
       invalidarTudo();
@@ -322,6 +435,8 @@ export function ProdutosTab() {
           especificacao: p.especificacao,
           preco_referencia: null,
           ativo: true,
+          grupo_id: p.grupo_id ?? null,
+          fator_conversao: p.fator_conversao ?? null,
           fornecedor_id: copiarDestino,
           created_by: u.user?.id ?? null,
         })
@@ -333,6 +448,7 @@ export function ProdutosTab() {
         .from("sup_fornecedor_produtos")
         .insert({ fornecedor_id: copiarDestino, produto_id: novo.id });
       if (e2) throw e2;
+
     },
     onSuccess: () => {
       invalidarTudo();
@@ -345,15 +461,47 @@ export function ProdutosTab() {
       toast.error(e.message === "__DUP__" ? "Este fornecedor já tem um produto com esse nome." : (e.message ?? "Erro ao copiar produto.")),
   });
 
+  const criarGrupo = useMutation({
+    mutationFn: async () => {
+      if (!grupoForm.nome.trim()) throw new Error("Informe o nome do grupo.");
+      const { data, error } = await (supabase as any)
+        .from("sup_produto_grupos")
+        .insert({
+          nome: grupoForm.nome.trim(),
+          categoria: grupoForm.categoria.trim() || null,
+          unidade_referencia: grupoForm.unidade_referencia || "unidade",
+          ativo: true,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      return data.id as string;
+    },
+    onSuccess: (id) => {
+      qc.invalidateQueries({ queryKey: ["sup-produto-grupos"] });
+      setForm((f) => ({ ...f, grupo_id: id, fator_conversao: f.fator_conversao || "1" }));
+      setGrupoOpen(false);
+      toast.success("Grupo criado.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao criar grupo."),
+  });
+
+  function abrirNovoGrupo() {
+    setGrupoForm({ nome: "", categoria: "", unidade_referencia: "unidade" });
+    setGrupoOpen(true);
+  }
+
   function abrirNovo() {
     setForm(formVazio());
     setPrecoOriginal(null);
+    setNegociadoOriginal(null);
     setProdOpen(true);
   }
 
   function abrirEdicao(p: SupProduto) {
     const v = vinculoDoProduto(p.id);
     const preco = v?.preco_tabela ?? null;
+    const neg = v?.preco_negociado ?? null;
     setForm({
       id: p.id,
       nome: p.nome,
@@ -362,21 +510,40 @@ export function ProdutosTab() {
       especificacao: p.especificacao ?? "",
       ativo: p.ativo,
       preco: preco == null ? "" : String(preco),
+      preco_negociado: neg == null ? "" : String(neg),
+      grupo_id: p.grupo_id ?? "",
+      fator_conversao: p.fator_conversao == null ? "" : String(p.fator_conversao),
       qtd_min: v?.quantidade_minima == null ? "" : String(v.quantidade_minima),
       prazo: v?.prazo_entrega_dias == null ? "" : String(v.prazo_entrega_dias),
       motivo: "",
       arquivo: null,
     });
     setPrecoOriginal(preco);
+    setNegociadoOriginal(neg);
     setProdOpen(true);
   }
 
   const precoMudou = useMemo(() => {
     if (!form.id) return false;
-    const t = form.preco.trim().replace(",", ".");
-    const v = t === "" ? null : Number(t);
-    return n(v) !== n(precoOriginal);
-  }, [form.preco, form.id, precoOriginal]);
+    const val = (s: string) => {
+      const t = s.trim().replace(",", ".");
+      return t === "" ? null : Number(t);
+    };
+    return n(val(form.preco)) !== n(precoOriginal) || n(val(form.preco_negociado)) !== n(negociadoOriginal);
+  }, [form.preco, form.preco_negociado, form.id, precoOriginal, negociadoOriginal]);
+
+  const precoRefTexto = useMemo(() => {
+    const grupo = grupos.find((g) => g.id === form.grupo_id) ?? null;
+    if (!grupo) return null;
+    const vig = precoVigente({
+      preco_tabela: form.preco.trim().replace(",", "."),
+      preco_negociado: form.preco_negociado.trim().replace(",", "."),
+    });
+    const porRef = precoPorUnidadeRef(vig, form.fator_conversao.trim().replace(",", "."));
+    if (porRef == null) return `Grupo ${grupo.nome} — informe preço e fator para comparar por ${grupo.unidade_referencia}.`;
+    return `Equivale a ${fmtMoeda(porRef)} por ${grupo.unidade_referencia} (${grupo.nome}).`;
+  }, [grupos, form.grupo_id, form.preco, form.preco_negociado, form.fator_conversao]);
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4">
@@ -432,6 +599,9 @@ export function ProdutosTab() {
                 <SortTh label="Departamento" sortKey="departamento" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
                 <SortTh label="Unidade" sortKey="unidade" current={sortKey} dir={sortDir} onSort={toggle} />
                 <SortTh label="Preço de tabela" sortKey="preco" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
+                <SortTh label="Preço negociado" sortKey="negociado" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
+                <SortTh label="Grupo" sortKey="grupo" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
+                <SortTh label="Preço/un. ref." sortKey="por_ref" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
                 <SortTh label="Qtd. mínima" sortKey="qtd_min" current={sortKey} dir={sortDir} onSort={toggle} />
                 <SortTh label="Prazo" sortKey="prazo" current={sortKey} dir={sortDir} onSort={toggle} />
                 <SortTh label="Situação" sortKey="ativo" current={sortKey} dir={sortDir} onSort={toggle} />
@@ -440,13 +610,15 @@ export function ProdutosTab() {
             </thead>
             <tbody>
               {!fornId ? (
-                <tr><td colSpan={8} className="p-4 text-center text-muted-foreground">Selecione um fornecedor para ver e cadastrar os produtos dele.</td></tr>
+                <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">Selecione um fornecedor para ver e cadastrar os produtos dele.</td></tr>
               ) : isLoading ? (
-                <tr><td colSpan={8} className="p-4 text-center text-muted-foreground">Carregando…</td></tr>
+                <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">Carregando…</td></tr>
               ) : ordenados.length === 0 ? (
-                <tr><td colSpan={8} className="p-4 text-center text-muted-foreground">Nenhum produto cadastrado para este fornecedor.</td></tr>
+                <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">Nenhum produto cadastrado para este fornecedor.</td></tr>
               ) : ordenados.map((p) => {
                 const v = vinculoDoProduto(p.id);
+                const grupo = grupos.find((g) => g.id === p.grupo_id) ?? null;
+                const porRef = precoPorUnidadeRef(precoVigente(v), p.fator_conversao);
                 return (
                   <tr
                     key={p.id}
@@ -456,7 +628,14 @@ export function ProdutosTab() {
                     <td className="p-1.5 font-medium">{p.nome}</td>
                     <td className="p-1.5">{p.departamento ?? "—"}</td>
                     <td className="p-1.5 text-center">{p.unidade}</td>
-                    <td className="p-1.5 text-right font-semibold tabular-nums">{v?.preco_tabela == null ? "—" : fmtMoeda(v.preco_tabela)}</td>
+                    <td className="p-1.5 text-right tabular-nums">{v?.preco_tabela == null ? "—" : fmtMoeda(v.preco_tabela)}</td>
+                    <td className="p-1.5 text-right font-semibold tabular-nums text-teal-800">
+                      {v?.preco_negociado == null ? "—" : fmtMoeda(v.preco_negociado)}
+                    </td>
+                    <td className="p-1.5">{grupo ? grupo.nome : "—"}</td>
+                    <td className="p-1.5 text-right tabular-nums">
+                      {porRef == null || !grupo ? "—" : `${fmtMoeda(porRef)}/${grupo.unidade_referencia}`}
+                    </td>
                     <td className="p-1.5 text-center tabular-nums">{v?.quantidade_minima ?? "—"}</td>
                     <td className="p-1.5 text-center tabular-nums">{v?.prazo_entrega_dias == null ? "—" : `${v.prazo_entrega_dias} d`}</td>
                     <td className="p-1.5 text-center">
@@ -482,16 +661,26 @@ export function ProdutosTab() {
           </table>
         </div>
 
+
         {sel && (
           <div className="rounded-md border bg-card overflow-hidden">
-            <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider bg-muted/40">
-              Histórico de preço — {sel.nome}
+            <div className="px-3 py-2 bg-muted/40 flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider">Histórico de preço — {sel.nome}</span>
+              <Select value={histTipo} onValueChange={setHistTipo}>
+                <SelectTrigger className="h-7 w-[190px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os preços</SelectItem>
+                  <SelectItem value="tabela">Somente tabela</SelectItem>
+                  <SelectItem value="negociado">Somente negociado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="max-h-[40vh] overflow-auto">
               <table className="w-full text-[12.5px]">
                 <thead className="bg-muted/20">
                   <tr className="text-xs">
                     <th className="p-1.5 text-left">Quando</th>
+                    <th className="p-1.5 text-center">Tipo</th>
                     <th className="p-1.5 text-right">De</th>
                     <th className="p-1.5 text-right">Para</th>
                     <th className="p-1.5 text-center">Variação</th>
@@ -500,13 +689,18 @@ export function ProdutosTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {historico.length === 0 ? (
-                    <tr><td colSpan={6} className="p-3 text-center text-muted-foreground">Sem histórico.</td></tr>
-                  ) : historico.map((h) => {
+                  {historicoFiltrado.length === 0 ? (
+                    <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">Sem histórico.</td></tr>
+                  ) : historicoFiltrado.map((h) => {
                     const varPct = variacaoPercentual(h.preco_anterior, n(h.preco_novo));
                     return (
                       <tr key={h.id} className="border-t">
                         <td className="p-1.5 whitespace-nowrap">{new Date(h.created_at).toLocaleString("pt-BR")}</td>
+                        <td className="p-1.5 text-center">
+                          <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${h.tipo === "negociado" ? "bg-teal-100 text-teal-900" : "bg-muted text-muted-foreground"}`}>
+                            {h.tipo === "negociado" ? "Negociado" : "Tabela"}
+                          </span>
+                        </td>
                         <td className="p-1.5 text-right tabular-nums">{h.preco_anterior == null ? "—" : fmtMoeda(h.preco_anterior)}</td>
                         <td className="p-1.5 text-right font-semibold tabular-nums">{fmtMoeda(h.preco_novo)}</td>
                         <td className="p-1.5 text-center">
@@ -532,10 +726,11 @@ export function ProdutosTab() {
             </div>
           </div>
         )}
+
       </div>
 
       <Dialog open={prodOpen} onOpenChange={setProdOpen}>
-        <DialogContent className="max-w-[660px]">
+        <DialogContent className="max-w-[720px]">
           <DialogHeader>
             <DialogTitle>
               {(form.id ? "Editar produto" : "Novo produto") + (fornecedorSel ? ` — ${fornecedorSel.nome_fantasia || fornecedorSel.razao_social}` : "")}
@@ -571,6 +766,45 @@ export function ProdutosTab() {
             <div>
               <Label className="text-xs">Preço de tabela</Label>
               <Input value={form.preco} onChange={(e) => setForm((f) => ({ ...f, preco: e.target.value }))} className="h-9 text-right" placeholder="0,00" />
+            </div>
+            <div>
+              <Label className="text-xs">Preço negociado</Label>
+              <Input value={form.preco_negociado} onChange={(e) => setForm((f) => ({ ...f, preco_negociado: e.target.value }))} className="h-9 text-right" placeholder="0,00" />
+            </div>
+            {precoRefTexto && (
+              <div className="col-span-3 -mt-1 text-[11px] text-teal-700">{precoRefTexto}</div>
+            )}
+            <div className="col-span-2">
+              <Label className="text-xs">Item equivalente (grupo)</Label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Combobox
+                    value={form.grupo_id || "__none__"}
+                    onChange={(v) => setForm((f) => ({ ...f, grupo_id: v === "__none__" ? "" : v, fator_conversao: v === "__none__" ? "" : (f.fator_conversao || "1") }))}
+                    options={[
+                      { value: "__none__", label: "— sem grupo —" },
+                      ...grupos.filter((g) => g.ativo || g.id === form.grupo_id).map((g) => ({ value: g.id, label: g.nome, hint: g.unidade_referencia })),
+                    ]}
+                    placeholder="Selecione o grupo"
+                  />
+                </div>
+                <Button type="button" variant="outline" className="h-9 whitespace-nowrap" onClick={abrirNovoGrupo}>
+                  <Plus className="h-4 w-4 mr-1" /> Criar novo grupo
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Fator de conversão</Label>
+              <Input
+                value={form.fator_conversao}
+                disabled={!form.grupo_id}
+                onChange={(e) => setForm((f) => ({ ...f, fator_conversao: e.target.value }))}
+                className="h-9 text-right"
+                placeholder="1"
+              />
+              <div className="text-[11px] text-muted-foreground mt-0.5">
+                Ex.: o produto é vendido em rolo e o grupo compara por metro — se o rolo tem 100 m, o fator é 100.
+              </div>
             </div>
             <div>
               <Label className="text-xs">Qtd. mínima</Label>
@@ -614,12 +848,40 @@ export function ProdutosTab() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={grupoOpen} onOpenChange={setGrupoOpen}>
+        <DialogContent className="max-w-[420px]">
+          <DialogHeader><DialogTitle>Novo grupo de itens equivalentes</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Nome *</Label>
+              <Input value={grupoForm.nome} onChange={(e) => setGrupoForm((g) => ({ ...g, nome: e.target.value }))} className="h-9" />
+            </div>
+            <div>
+              <Label className="text-xs">Unidade de referência *</Label>
+              <Select value={grupoForm.unidade_referencia} onValueChange={(v) => setGrupoForm((g) => ({ ...g, unidade_referencia: v }))}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>{SUP_UNIDADES.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Categoria</Label>
+              <Input value={grupoForm.categoria} onChange={(e) => setGrupoForm((g) => ({ ...g, categoria: e.target.value }))} className="h-9" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGrupoOpen(false)}>Cancelar</Button>
+            <Button className="bg-teal-600 hover:bg-teal-700 text-white" disabled={criarGrupo.isPending} onClick={() => criarGrupo.mutate()}>Criar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={copiarOpen} onOpenChange={setCopiarOpen}>
         <DialogContent className="max-w-[480px]">
           <DialogHeader><DialogTitle>Copiar para outro fornecedor</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="text-xs text-muted-foreground">
               O produto <b>{copiarAlvo?.nome}</b> será cadastrado no fornecedor escolhido sem preço e sem histórico.
+              O grupo de equivalência e o fator de conversão vão junto.
             </div>
             <div>
               <Label className="text-xs">Fornecedor de destino *</Label>
@@ -639,6 +901,7 @@ export function ProdutosTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

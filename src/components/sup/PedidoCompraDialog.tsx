@@ -187,7 +187,15 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
 
 
 
-  async function precoTabelaAtual(produto_id: string): Promise<{ preco: number; unidade: string; hist: string | null }> {
+  /** Preço negociado gravado no cadastro do produto deste fornecedor (0 quando não houver). */
+  function negociadoCadastro(produto_id: string): number {
+    const vinc = vinculos.find((v) => v.produto_id === produto_id && v.fornecedor_id === head.fornecedor_id);
+    return n(vinc?.preco_negociado);
+  }
+
+  async function precoTabelaAtual(
+    produto_id: string,
+  ): Promise<{ preco: number; negociado: number; unidade: string; hist: string | null }> {
     const prod = produtos.find((p) => p.id === produto_id);
     const vinc = vinculos.find((v) => v.produto_id === produto_id && v.fornecedor_id === head.fornecedor_id);
     let hist: string | null = null;
@@ -202,7 +210,8 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
       hist = (data?.id as string | undefined) ?? null;
     }
     const preco = vinc?.preco_tabela != null ? n(vinc.preco_tabela) : n((prod as any)?.preco_referencia);
-    return { preco, unidade: prod?.unidade ?? "unidade", hist };
+    const negociado = n(vinc?.preco_negociado);
+    return { preco, negociado, unidade: prod?.unidade ?? "unidade", hist };
 
   }
 
@@ -214,11 +223,17 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
   }
 
   async function trocarProduto(idx: number, produto_id: string) {
-    const { preco, unidade, hist } = await precoTabelaAtual(produto_id);
+    const { preco, negociado, unidade, hist } = await precoTabelaAtual(produto_id);
     setLinhas((l) => l.map((it, i) => i === idx
-      ? { ...it, produto_id, unidade, preco_tabela: preco, preco_negociado: preco, preco_historico_id: hist }
+      ? {
+          ...it, produto_id, unidade,
+          preco_tabela: preco,
+          preco_negociado: negociado > 0 ? negociado : preco,
+          preco_historico_id: hist,
+        }
       : it));
   }
+
 
   function setLinha(idx: number, patch: Partial<ItemLinha>) {
     setLinhas((l) => l.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
@@ -636,7 +651,12 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
                   <td className="p-1.5">
                     <Input type="number" step="0.01" min={0} value={l.preco_negociado}
                       onChange={(e) => setLinha(i, { preco_negociado: Number(e.target.value) })} className="h-8 text-right" disabled={bloqueado} />
+                    {l.produto_id && negociadoCadastro(l.produto_id) > 0
+                      && n(l.preco_negociado) === negociadoCadastro(l.produto_id) && (
+                      <div className="text-[10.5px] text-teal-700 mt-0.5 text-right">preço negociado do cadastro</div>
+                    )}
                   </td>
+
                   <td className="p-1.5 text-right font-semibold tabular-nums">{fmtMoeda(n(l.preco_negociado) * n(l.quantidade))}</td>
                   {isAdmin && (
                     <td className="p-1.5 text-right font-semibold tabular-nums text-emerald-700">{fmtMoeda(economiaItem(l))}</td>
