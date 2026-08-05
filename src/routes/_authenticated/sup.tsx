@@ -12,7 +12,8 @@ import { ProdutosTab } from "@/components/sup/ProdutosTab";
 import { PedidosCompraTab } from "@/components/sup/PedidosCompraTab";
 import { ComissoesTab } from "@/components/sup/ComissoesTab";
 import { DashboardSupTab } from "@/components/sup/DashboardSupTab";
-import { AlteracoesPrecoTab } from "@/components/sup/AlteracoesPrecoTab";
+import { MonitorPrecosTab } from "@/components/sup/MonitorPrecosTab";
+import { HistoricoSupTab } from "@/components/sup/HistoricoSupTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sup")({
@@ -48,13 +49,17 @@ function SupHome() {
   const isAdmin = useIsAdmin();
   const { isLoading } = useMyRoles();
   const TABS = isAdmin
-    ? [...BASE_TABS, { value: "alteracoes-preco", label: "Alterações de Preço" }]
+    ? [...BASE_TABS, { value: "monitor-precos", label: "Monitor de Preços" }, { value: "historico", label: "Histórico SUP" }]
     : BASE_TABS;
   const search = Route.useSearch();
   const [tab, setTabState] = useState(() => {
-    const valid = (t: string | null) =>
-      t && ["produtos", "pedidos", "comissoes", "dashboard", "alteracoes-preco"].includes(t) ? t : null;
-    if (valid(search.tab ?? null)) return search.tab as string;
+    const valid = (t: string | null) => {
+      if (!t) return null;
+      if (t === "alteracoes-preco") return "monitor-precos";
+      return ["produtos", "pedidos", "comissoes", "dashboard", "monitor-precos", "historico"].includes(t) ? t : null;
+    };
+    const daUrl = valid(search.tab ?? null);
+    if (daUrl) return daUrl;
     if (typeof window !== "undefined") {
       const saved = valid(window.localStorage.getItem("sup:tab"));
       if (saved) return saved;
@@ -68,7 +73,7 @@ function SupHome() {
   };
 
   useEffect(() => {
-    if (search.tab) setTabState(search.tab);
+    if (search.tab) setTabState(search.tab === "alteracoes-preco" ? "monitor-precos" : search.tab);
   }, [search.tab]);
 
   useEffect(() => {
@@ -137,8 +142,11 @@ function SupHome() {
           </TabsContent>
           {isAdmin && (
             <>
-              <TabsContent value="alteracoes-preco" forceMount hidden={tab !== "alteracoes-preco"}>
-                <AlteracoesPrecoTab />
+              <TabsContent value="monitor-precos" forceMount hidden={tab !== "monitor-precos"}>
+                <MonitorPrecosTab />
+              </TabsContent>
+              <TabsContent value="historico" forceMount hidden={tab !== "historico"}>
+                <HistoricoSupTab />
               </TabsContent>
             </>
           )}
