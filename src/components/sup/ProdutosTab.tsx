@@ -324,6 +324,8 @@ export function ProdutosTab() {
           especificacao: p.especificacao,
           preco_referencia: null,
           ativo: true,
+          grupo_id: p.grupo_id ?? null,
+          fator_conversao: p.fator_conversao ?? null,
           fornecedor_id: copiarDestino,
           created_by: u.user?.id ?? null,
         })
@@ -335,6 +337,7 @@ export function ProdutosTab() {
         .from("sup_fornecedor_produtos")
         .insert({ fornecedor_id: copiarDestino, produto_id: novo.id });
       if (e2) throw e2;
+
     },
     onSuccess: () => {
       invalidarTudo();
