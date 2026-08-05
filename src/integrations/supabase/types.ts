@@ -1534,6 +1534,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sup_audit_log: {
+        Row: {
+          acao: string
+          feito_em: string
+          feito_por: string | null
+          feito_por_email: string | null
+          feito_por_nome: string | null
+          id: string
+          identificador: string | null
+          linha_completa: Json | null
+          mudancas: Json | null
+          registro_id: string
+          tabela: string
+        }
+        Insert: {
+          acao: string
+          feito_em?: string
+          feito_por?: string | null
+          feito_por_email?: string | null
+          feito_por_nome?: string | null
+          id?: string
+          identificador?: string | null
+          linha_completa?: Json | null
+          mudancas?: Json | null
+          registro_id: string
+          tabela: string
+        }
+        Update: {
+          acao?: string
+          feito_em?: string
+          feito_por?: string | null
+          feito_por_email?: string | null
+          feito_por_nome?: string | null
+          id?: string
+          identificador?: string | null
+          linha_completa?: Json | null
+          mudancas?: Json | null
+          registro_id?: string
+          tabela?: string
+        }
+        Relationships: []
+      }
       sup_comissao_itens: {
         Row: {
           comissao_id: string
@@ -2044,6 +2086,10 @@ export type Database = {
         Row: {
           alterado_por: string | null
           anexo_url: string | null
+          anulado: boolean
+          anulado_em: string | null
+          anulado_motivo: string | null
+          anulado_por: string | null
           created_at: string
           direcao: string
           fornecedor_produto_id: string
@@ -2059,6 +2105,10 @@ export type Database = {
         Insert: {
           alterado_por?: string | null
           anexo_url?: string | null
+          anulado?: boolean
+          anulado_em?: string | null
+          anulado_motivo?: string | null
+          anulado_por?: string | null
           created_at?: string
           direcao: string
           fornecedor_produto_id: string
@@ -2074,6 +2124,10 @@ export type Database = {
         Update: {
           alterado_por?: string | null
           anexo_url?: string | null
+          anulado?: boolean
+          anulado_em?: string | null
+          anulado_motivo?: string | null
+          anulado_por?: string | null
           created_at?: string
           direcao?: string
           fornecedor_produto_id?: string

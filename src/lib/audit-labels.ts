@@ -170,6 +170,32 @@ const LABELS: Record<string, string> = {
   observacao: "Observação",
   pago_por: "Pago por",
   pago_em: "Pago em",
+
+  // ---------- SUP ----------
+  preco_tabela: "Preço de tabela",
+  preco_negociado: "Preço negociado",
+  fornecedor_id: "Fornecedor",
+  grupo_id: "Item equivalente",
+  fator_conversao: "Fator de conversão",
+  anulado: "Anulado",
+  anulado_motivo: "Motivo da anulação",
+  anulado_por: "Anulado por",
+  anulado_em: "Anulado em",
+  comissionado_id: "Comissionado",
+  unidade_referencia: "Unidade de referência",
+  razao_social: "Razão social",
+  nome_fantasia: "Nome fantasia",
+  preco_anterior: "Preço anterior",
+  preco_novo: "Preço novo",
+  direcao: "Direção",
+  preco_referencia: "Preço de referência",
+  quantidade_minima: "Quantidade mínima",
+  prazo_entrega_dias: "Prazo de entrega (dias)",
+  condicao_pagamento: "Condição de pagamento",
+  frete_valor: "Valor do frete",
+  economia_total: "Economia total",
+  valor_comissao: "Valor da comissão",
+  competencia: "Competência",
 };
 
 export function labelCampo(campo: string): string {

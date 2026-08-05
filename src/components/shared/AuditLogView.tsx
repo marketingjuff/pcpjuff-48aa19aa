@@ -21,6 +21,14 @@ const TABELA_LABELS: Record<string, string> = {
   oficinas: "Oficina",
   cop_perdas: "Perda COP",
   pagamentos_consolidados: "Pgto consolidado",
+  sup_fornecedores: "Fornecedor",
+  sup_produtos: "Produto",
+  sup_fornecedor_produtos: "Preço do produto",
+  sup_preco_historico: "Alteração de preço",
+  sup_pedidos_compra: "Pedido de compra",
+  sup_pedido_itens: "Item do pedido",
+  sup_comissoes: "Comissão",
+  sup_produto_grupos: "Item equivalente",
 };
 
 function fmtDateTime(iso: string): string {
@@ -38,7 +46,7 @@ function acaoBadge(a: AuditLogEntry["acao"]) {
 }
 
 interface Props {
-  area: "pcp" | "map" | "cop";
+  area: "pcp" | "map" | "cop" | "sup";
 }
 
 export function AuditLogView({ area }: Props) {

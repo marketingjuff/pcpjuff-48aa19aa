@@ -42,7 +42,7 @@ export const getAuditLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
     z.object({
-      area: z.enum(["pcp", "map", "cop"]),
+      area: z.enum(["pcp", "map", "cop", "sup"]),
       busca: z.string().optional(),
       usuarioId: z.string().uuid().optional(),
       acao: z.enum(["insert", "update", "delete"]).optional(),
@@ -60,6 +60,8 @@ export const getAuditLog = createServerFn({ method: "POST" })
         ? "pedido_audit_log"
         : data.area === "map"
         ? "map_audit_log"
+        : data.area === "sup"
+        ? "sup_audit_log"
         : "cop_audit_log";
 
     let query = supabase
