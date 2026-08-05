@@ -1,44 +1,48 @@
-# Permissões granulares por aba (PCP / COP / MAP / SUP / KPI)
+# Nível "Somente leitura" nas permissões + estado das abas preservado (SUP/KPI)
 
-100% frontend. Nenhuma migração SQL, nenhum `UPDATE` em massa, nenhum dado de usuário reescrito.
-`user_roles.areas_extras` continua sendo a única coluna usada.
+100% frontend. Zero SQL, zero `UPDATE` em massa. `user_roles.areas_extras` continua o único armazenamento — o nível vai como sufixo na chave (`pcp.acabamento:leitura`); chave sem sufixo continua significando edição.
 
-## 1. Novo `src/lib/permissoes.ts`
+## Parte A — Edição vs Somente leitura
 
-- Tipos `ModuloKey`, `PermissaoKey`, `AbaPermissao` e o catálogo `CATALOGO_PERMISSOES` com as chaves `modulo.aba` exatamente como na especificação (10 PCP, 11 COP, 6 MAP, 4 SUP, 4 KPI), reaproveitando os `tabValue` já usados nas rotas.
-- `MODULOS` (ordem: pcp, cop, map, sup, kpi) com label e rota.
-- `normalizarPermissoes(areasExtras, role)`:
-  - traduz chaves legadas (`arte` → `pcp.arte`, `cop`/`map`/`sup` → todas as chaves daquele módulo, etc.);
-  - mantém chaves já no formato novo; ignora desconhecidas em silêncio;
-  - se `role === "gestor"` e o array for inteiramente legado, adiciona `pcp.dashboard`, `pcp.finalizados`, `pcp.retrabalho` (retrocompatibilidade).
-- Helpers: `abasDoModulo`, `permissoesDoModulo`, `labelDaPermissao`, `rotaInicial(permissoes, isAdmin)`.
-- `PRESETS` com os 12 presets da tabela.
-- Abas fora do catálogo (Históricos, Monitor de Preços) continuam admin-only.
+### A.1 `src/lib/permissoes.ts`
+- `NivelAcesso = "edicao" | "leitura"`, campo `nivelConfiguravel` em `AbaPermissao` — `true` apenas nas 9 abas do PCP (dados_in_vendedor, dados_in_producao, arte, dtf, silk, acabamento, expedicao, finalizados, retrabalho), `false` em todo o resto (inclui `pcp.dashboard` e todas as abas de COP/MAP/SUP/KPI).
+- Novos: `parsePermissao`, `serializarPermissao`, `niveisPermissoes(areasExtras, role)`.
+- `normalizarPermissoes` mantém assinatura e comportamento; passa a ignorar o sufixo ao identificar a chave (leitura continua vendo a aba).
+- Dois presets novos: `vendedor_acompanha` e `consulta_pcp`. Os demais seguem em edição.
 
-## 2. `src/hooks/use-role.ts`
+### A.2 `src/hooks/use-role.ts`
+Adiciona `useNiveisPermissoes()`, `usePodeEditar(key)`, `useSoLeitura(key)` mantendo todas as exportações atuais. Admin sempre edita.
 
-- Mantém todas as exportações atuais.
-- Novos: `useMinhasPermissoes()`, `usePode(key)`, `useAbasPermitidas(modulo)`, `useModulosPermitidos()`, `useCanAccessKpi()`.
-- `useCanAccessCop/Map/Sup` reimplementados: admin **ou** ≥1 permissão do módulo (deixam de exigir papel gestor).
+### A.3 `src/components/pcp/edicao-policy.ts`
+`isReadOnly(aba, pedido, canManage, soLeitura = false)` — `soLeitura` retorna `true` antes de qualquer outra regra, com precedência sobre `canManage`.
 
-## 3. Rotas
+### A.4 Componentes PCP
+- **ArteTab / DTFTab / SilkTab / AcabamentoTab**: prop `soLeitura?: boolean`, repassada a `isReadOnly`; botões `{canManage && ...}` viram `{canManage && !soLeitura && ...}`; saves já retornam cedo com `readOnly`.
+- **DadosInTab**: props independentes `soLeituraVendedor` / `soLeituraProducao` — bloqueio por card (fieldset desabilitado + faixa "Somente leitura — você não tem permissão para editar esta aba"), esconde o `UpdateButton` do card e "Deletar".
+- **ExpedicaoTab**: campos desabilitados; esconde "Marcar tudo Sim", salvar, finalizar e ações em lote.
+- **FinalizadosTab**: esconde "Reabrir" e ações destrutivas; tabela visível.
+- **RetrabalhoTab**: campos desabilitados, salvar escondido.
+- Em todos: `if (soLeitura) return;` no início das funções de save.
 
-Padrão nas 5 rotas: abas vindas de `useAbasPermitidas(modulo)`; abas admin-only anexadas no fim com as condições atuais; aba inválida (URL/localStorage) cai na primeira permitida; sem nenhuma aba do módulo → redirect (`replace`) para `rotaInicial`, só depois de as permissões carregarem.
+### A.5 `src/routes/_authenticated/index.tsx`
+Passa `soLeitura={soLeitura("pcp.<aba>")}` a cada aba (duas props no DadosInTab). `canReabrir = isAdmin || (isGestor && pode("pcp.expedicao") && podeEditar("pcp.finalizados"))`.
 
-- **index.tsx (PCP)**: remove as regras implícitas de `isManager` na visibilidade de abas; `dados` aparece com `pcp.dados_in_vendedor` ou `pcp.dados_in_producao`; `canManage` intocado; `canReabrir` = `isAdmin || (isGestor && pode("pcp.expedicao"))`; tela "Sem permissões atribuídas" (com botão Sair) quando o usuário não tem nada.
-- **cop.tsx**: `BASE_TABS` dinâmico; remove o gate/toast "restrito a administradores e gestores"; `historico` admin-only.
-- **map.tsx / sup.tsx**: idem; no SUP preserva o alias `alteracoes-preco` → `monitor-precos` e o Monitor admin-only.
-- **kpi.tsx**: remove o bloqueio admin-only; aba inicial = primeira permitida.
-- **MacroSwitch** (em `cop.tsx`): cada botão — incluindo PCP e KPI — só aparece com ≥1 aba do módulo; com apenas 1 módulo o switch não é renderizado.
-- Botão "Configurações" nos headers de cop/map/sup/kpi passa a `{(isAdmin || isGestor) && …}`.
+### A.6 `PermissoesPanel` em `configuracoes.tsx`
+Ao lado do label das abas com `nivelConfiguravel: true` **e marcadas**, par de botões `Editar | Somente leitura` (leitura com destaque + ícone de olho). Padrão ao marcar: Editar. Cabeçalho do módulo mostra `(3 de 10 · 2 em leitura)` quando houver leitura. `onChange` devolve o array já serializado; leitura inicial via `niveisPermissoes()`.
 
-## 4. `configuracoes.tsx` — apenas `UsuariosTab`
+COP/MAP/SUP ficam sem toggle nesta entrega (não há infraestrutura de leitura nesses componentes).
 
-- `AreasCheckboxes` → novo `PermissoesPanel({ value, onChange })`: um bloco recolhível por módulo, cabeçalho com contador `(2 de 11)` e checkbox tri-estado de marcar/desmarcar o módulo, abas em grid de 2 colunas (`text-xs`, `Checkbox`). Blocos com marcações abrem expandidos. Mesmo catálogo para gestor e operador; não exibido para admin.
-- Linha de presets com `Select` "Aplicar preset…" + `AlertDialog` de confirmação listando os labels; aplicar substitui a seleção, cancelar não altera nada.
-- Usado na criação de conta e, na tabela de usuários, dentro de um `Popover` acionado por botão "Permissões (n)", com save imediato por toggle como hoje.
-- Leitura passa por `normalizarPermissoes` antes de exibir; papel `admin` continua enviando `areas_extras: []`; troca gestor↔operador preserva as marcações (reset só na criação).
+## Parte B — Estado das abas
+
+- **kpi.tsx**: troca `{tab === "x" && ...}` por `forceMount` + `hidden`, com montagem preguiçosa persistente (Set de abas já visitadas, inicializado com a aba inicial). Só a aba inicial dispara consultas.
+- **index / cop / map / sup / kpi**: conjunto de abas montadas congelado — acumula, nunca remove, enquanto o usuário está na tela; `useMyRoles` com `placeholderData: keepPreviousData` para não oscilar em refetch. Segurança inalterada (RLS segue sendo a barreira).
+- **Persistência em localStorage** (leitura no inicializador lazy com try/catch, gravação em `useEffect`, JSON inválido ignorado em silêncio):
+  - `DashboardSupTab` → `empresa`, `de`, `ate` (`sup:dashboard:filtros`)
+  - `MonitorPrecosTab` → `de`, `ate`, `sub` (`sup:monitor:filtros`)
+  - `ComissoesTab` → `comp` (`sup:comissoes:comp`)
+  - `IndicadoresTab` → `preset`, `intervalo`, `comparar`, `empresa` (`kpi:<escopo>:filtros`)
+  - Filtros de seleção múltipla não são persistidos.
 
 ## Notas técnicas
 
-Sem alterações em `src/lib/admin.functions.ts` (server functions seguem com `assertAdmin()`), em `schema-extras.ts` (exports mantidos, mesmo sem uso) ou em qualquer componente de módulo. A aba Usuários permanece dentro de `{isAdmin && …}`. Verificação final com typecheck.
+Nenhum arquivo fora do escopo da especificação é tocado: nada em `supabase/migrations/**`, `admin.functions.ts`, `cop-saldos.ts`, `pedidos.ts`, `cop.ts`, `map.ts`, `schema-extras.ts`, componentes de COP/MAP ou `auth.tsx`. Verificação final com typecheck.
