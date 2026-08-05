@@ -8,7 +8,7 @@ import { LogOut, Settings, Menu } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { useIsAdmin, useMyRoles, useMinhasPermissoes, useAbasPermitidas } from "@/hooks/use-role";
+import { useIsAdmin, useMyRoles, useMinhasPermissoes, useAbasPermitidas, useNiveisPermissoes } from "@/hooks/use-role";
 import { rotaInicial, type PermissaoKey } from "@/lib/permissoes";
 
 import type { Pedido } from "@/lib/pedidos";
@@ -79,6 +79,8 @@ function AppHomeInner() {
   const permissoes = useMinhasPermissoes();
   const pode = (k: PermissaoKey) => permissoes.has(k);
   const abasPcp = useAbasPermitidas("pcp");
+  const niveis = useNiveisPermissoes();
+  const soLeitura = (k: PermissaoKey) => niveis.get(k) === "leitura";
   const isManager = isAdmin || isGestor;
 
 
@@ -295,27 +297,27 @@ function AppHomeInner() {
           )}
           {(pode("pcp.dados_in_vendedor") || pode("pcp.dados_in_producao")) && (
             <TabsContent value="dados" forceMount hidden={tab !== "dados"}>
-              <DadosInTab active={tab === "dados"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} onDelete={(id) => remove.mutate(id)} saving={upsert.isPending} />
+              <DadosInTab active={tab === "dados"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} onDelete={(id) => remove.mutate(id)} saving={upsert.isPending} soLeituraVendedor={!pode("pcp.dados_in_vendedor") || soLeitura("pcp.dados_in_vendedor")} soLeituraProducao={!pode("pcp.dados_in_producao") || soLeitura("pcp.dados_in_producao")} />
             </TabsContent>
           )}
           {pode("pcp.arte") && (
             <TabsContent value="arte" forceMount hidden={tab !== "arte"}>
-              <ArteTab active={tab === "arte"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} canManage={isManager} />
+              <ArteTab active={tab === "arte"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} canManage={isManager} soLeitura={soLeitura("pcp.arte")} />
             </TabsContent>
           )}
           {pode("pcp.dtf") && (
             <TabsContent value="dtf" forceMount hidden={tab !== "dtf"}>
-              <DTFTab active={tab === "dtf"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} canManage={isManager} />
+              <DTFTab active={tab === "dtf"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} canManage={isManager} soLeitura={soLeitura("pcp.dtf")} />
             </TabsContent>
           )}
           {pode("pcp.silk") && (
             <TabsContent value="silk" forceMount hidden={tab !== "silk"}>
-              <SilkTab active={tab === "silk"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} canManage={isManager} />
+              <SilkTab active={tab === "silk"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} canManage={isManager} soLeitura={soLeitura("pcp.silk")} />
             </TabsContent>
           )}
           {pode("pcp.acabamento") && (
             <TabsContent value="acab" forceMount hidden={tab !== "acab"}>
-              <AcabamentoTab active={tab === "acab"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} canManage={isManager} />
+              <AcabamentoTab active={tab === "acab"} pedidos={pedidos} selected={selected} onSelect={setSelectedId} onSave={(p) => upsert.mutate(p)} saving={upsert.isPending} onNavigate={setTab} canManage={isManager} soLeitura={soLeitura("pcp.acabamento")} />
             </TabsContent>
           )}
 
@@ -328,6 +330,7 @@ function AppHomeInner() {
                 onSave={(p) => upsert.mutate(p)}
                 saving={upsert.isPending}
                 onNavigate={setTab}
+                soLeitura={soLeitura("pcp.expedicao")}
                 onFinalizarMany={(ids) => {
                   const now = new Date().toISOString();
                   ids.forEach((id) => upsert.mutate({ id, finalizado_em: now, reaberto: false }));
@@ -341,12 +344,13 @@ function AppHomeInner() {
                 pedidos={pedidos}
                 onReabrir={(id) => upsert.mutate({ id, finalizado_em: null, reaberto: true })}
                 canReabrir={isAdmin || (isGestor && pode("pcp.expedicao"))}
+                soLeitura={soLeitura("pcp.finalizados")}
               />
             </TabsContent>
           )}
           {pode("pcp.retrabalho") && (
             <TabsContent value="retrab" forceMount hidden={tab !== "retrab"}>
-              <RetrabalhoTab pedidos={pedidos} onSave={(p) => upsert.mutate(p)} />
+              <RetrabalhoTab pedidos={pedidos} onSave={(p) => upsert.mutate(p)} soLeitura={soLeitura("pcp.retrabalho")} />
             </TabsContent>
           )}
           {isAdmin && (
