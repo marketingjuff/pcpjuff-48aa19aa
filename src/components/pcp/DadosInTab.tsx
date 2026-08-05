@@ -115,6 +115,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     Array.isArray(selected?.pecas_completadas_log) && (selected!.pecas_completadas_log as any[]).length > 0;
 
   async function salvarPecasSolicitadas(next: import("@/lib/pedidos").PecaSolicitada[]) {
+    if (soLeituraProducao) return;
     const atuais = ((selected?.pecas_solicitadas ?? []) as import("@/lib/pedidos").PecaSolicitada[]);
     const keyOf = (p: any) => `${p.modelo}|${p.cor}|${p.tamanho}`;
     const mapAtuais = new Map(atuais.map((p) => [keyOf(p), Number(p.qtd_enviada) || 0]));
@@ -146,6 +147,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
 
   async function liberarParaCompleto() {
+    if (soLeituraProducao) return;
     setForm((f) => ({ ...f, pecas_solicitadas: [], status_pecas: "completo" }));
     if (selected?.id) {
       onSave({ id: selected.id, pecas_solicitadas: [], status_pecas: "completo" } as any);
