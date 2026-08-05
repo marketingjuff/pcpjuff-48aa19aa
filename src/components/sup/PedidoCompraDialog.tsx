@@ -336,15 +336,62 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           if (error) throw error;
         }
       }
+
+      // Sincroniza o cadastro do fornecedor com os preços digitados no pedido:
+      // preço de tabela e preço negociado passam a valer no catálogo e geram histórico.
+      for (const l of linhas) {
+        if (!l.produto_id) continue;
+        const tabelaNovo = n(l.preco_tabela);
+        const negociadoNovo = n(l.preco_negociado);
+        let vinc = vinculos.find(
+          (v) => v.produto_id === l.produto_id && v.fornecedor_id === head.fornecedor_id,
+        );
+        if (!vinc) {
+          const { data: novo, error: eV } = await (supabase as any)
+            .from("sup_fornecedor_produtos")
+            .insert({
+              fornecedor_id: head.fornecedor_id,
+              produto_id: l.produto_id,
+              preco_tabela: tabelaNovo || null,
+              preco_negociado: negociadoNovo || null,
+              ativo: true,
+            })
+            .select("*")
+            .single();
+          if (eV) throw eV;
+          vinc = novo as any;
+          continue;
+        }
+        const motivo = `Atualizado pelo pedido de compra ${head.numero ?? ""}`.trim();
+        if (tabelaNovo > 0 && n(vinc.preco_tabela) !== tabelaNovo) {
+          await aplicarPrecoTabela({
+            fornecedor_produto_id: vinc.id,
+            preco_anterior: vinc.preco_tabela == null ? null : n(vinc.preco_tabela),
+            preco_novo: tabelaNovo,
+            motivo,
+          });
+        }
+        if (negociadoNovo > 0 && n(vinc.preco_negociado) !== negociadoNovo) {
+          await aplicarPrecoNegociado({
+            fornecedor_produto_id: vinc.id,
+            preco_anterior: vinc.preco_negociado == null ? null : n(vinc.preco_negociado),
+            preco_novo: negociadoNovo,
+            motivo,
+          });
+        }
+      }
       return id;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["sup-pedidos"] });
       qc.invalidateQueries({ queryKey: ["sup-pedido-itens"] });
       qc.invalidateQueries({ queryKey: ["sup-pedido", pedidoId] });
-      toast.success("Pedido salvo.");
+      qc.invalidateQueries({ queryKey: ["sup-fornecedor-produtos"] });
+      qc.invalidateQueries({ queryKey: ["sup-preco-historico"] });
+      toast.success("Pedido salvo. Preços do cadastro atualizados.");
       onOpenChange(false);
     },
+
     onError: (e: any) => toast.error(e.message ?? "Erro ao salvar pedido."),
   });
 
