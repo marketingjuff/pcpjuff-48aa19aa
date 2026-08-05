@@ -47,6 +47,17 @@ interface Props {
   onDelete: (id: string) => void;
   saving: boolean;
   active?: boolean;
+  soLeituraVendedor?: boolean;
+  soLeituraProducao?: boolean;
+}
+
+/** Faixa discreta no topo do card em somente leitura. */
+export function FaixaSomenteLeitura() {
+  return (
+    <div className="mb-2 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+      Somente leitura — você não tem permissão para editar esta aba
+    </div>
+  );
 }
 
 const empty: Partial<Pedido> = {
@@ -62,11 +73,11 @@ const empty: Partial<Pedido> = {
   nf_emitida: null,
 };
 
-export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, saving, active = true }: Props) {
+export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, saving, active = true, soLeituraVendedor = false, soLeituraProducao = false }: Props) {
   const [form, setForm] = useState<Partial<Pedido>>(empty);
   const isAdmin = useIsAdmin();
   const isGestor = useHasRole("gestor");
-  const podeDeletar = isAdmin || isGestor;
+  const podeDeletar = (isAdmin || isGestor) && !soLeituraVendedor && !soLeituraProducao;
   const [uploading, setUploading] = useState(false);
   const { feriados } = useFeriados();
   const { isDirty } = useDirtyForm();
@@ -217,6 +228,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }
 
   async function saveVendor() {
+    if (soLeituraVendedor) return;
     const required = form.pecas_lisas
       ? VENDOR_REQUIRED.filter((k) => k !== "layout_url")
       : VENDOR_REQUIRED;
@@ -245,6 +257,7 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   }
 
   async function saveProducao() {
+    if (soLeituraProducao) return;
     const missP = findMissing(PROD_REQUIRED);
     // Quando o tipo inclui Silk, Dias de Secagem é obrigatório (0 é válido).
     if (tipoIncluiSilk(form.tipo_estampa) && (form.dias_secagem === null || form.dias_secagem === undefined || (form.dias_secagem as any) === "")) {
@@ -517,7 +530,9 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         {/* Vendedor */}
         <Card className="border-l-4 border-l-green-500 bg-green-50/40 dark:bg-green-950/10">
           <CardHeader className="py-2"><CardTitle className="text-base text-green-700 dark:text-green-400">Input do Vendedor</CardTitle></CardHeader>
+          {soLeituraVendedor && <div className="px-6"><FaixaSomenteLeitura /></div>}
           <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-0">
+            <fieldset disabled={soLeituraVendedor} className="contents disabled:opacity-60">
             <Field label="Pedido Olist *" invalid={missingVendor.has("pedido_olist")}><Input value={form.pedido_olist ?? ""} onChange={(e) => set("pedido_olist", e.target.value)} /></Field>
             <div className="lg:col-span-2">
               <Field label="Orçamento Comercial [N.° Orç - Nome Resp. - Empresa] *" invalid={missingVendor.has("orcamento")}><Input value={form.orcamento ?? ""} onChange={(e) => set("orcamento", e.target.value)} /></Field>
@@ -608,14 +623,17 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
                 <Textarea className="uppercase" rows={2} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
               </Field>
             </div>
-            <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start">
-              {selected && (
-                <Button type="button" variant="outline" onClick={handleNew}><X className="h-4 w-4 mr-1" />Cancelar edição</Button>
-              )}
-              <UpdateButton type="button" onClick={saveVendor} disabled={saving}>
-                Salvar Input do Vendedor
-              </UpdateButton>
-            </div>
+            </fieldset>
+            {!soLeituraVendedor && (
+              <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start">
+                {selected && (
+                  <Button type="button" variant="outline" onClick={handleNew}><X className="h-4 w-4 mr-1" />Cancelar edição</Button>
+                )}
+                <UpdateButton type="button" onClick={saveVendor} disabled={saving}>
+                  Salvar Input do Vendedor
+                </UpdateButton>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -627,7 +645,9 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               {selected && <RefacaoBadge pedido={selected} />}
             </div>
           </CardHeader>
+          {soLeituraProducao && <div className="px-6"><FaixaSomenteLeitura /></div>}
           <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-0">
+            <fieldset disabled={soLeituraProducao} className="contents disabled:opacity-60">
             {/* Linha 1: Status | Tipo | Batidas DTF/Silk (condicional) */}
             <Field label="Status de Peças *" invalid={missingProd.has("status_pecas")}>
               <Select value={form.status_pecas ?? ""} onValueChange={(v) => set("status_pecas", v)} disabled={temPendencia}>
@@ -775,10 +795,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
 
 
 
+            </fieldset>
             <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start flex-wrap">
-              <UpdateButton type="button" onClick={saveProducao} disabled={saving}>
-                Salvar Input de Produção
-              </UpdateButton>
+              {!soLeituraProducao && (
+                <UpdateButton type="button" onClick={saveProducao} disabled={saving}>
+                  Salvar Input de Produção
+                </UpdateButton>
+              )}
               {selected && <RefacaoViewerButton pedido={selected} />}
             </div>
             {selected?.data_entrega_proposta && (
