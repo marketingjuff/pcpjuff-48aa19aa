@@ -89,6 +89,9 @@ type ProdForm = {
   especificacao: string;
   ativo: boolean;
   preco: string;
+  preco_negociado: string;
+  grupo_id: string;
+  fator_conversao: string;
   qtd_min: string;
   prazo: string;
   motivo: string;
@@ -97,8 +100,10 @@ type ProdForm = {
 
 const formVazio = (): ProdForm => ({
   nome: "", departamento: "", unidade: "unidade", especificacao: "", ativo: true,
-  preco: "", qtd_min: "", prazo: "", motivo: "", arquivo: null,
+  preco: "", preco_negociado: "", grupo_id: "", fator_conversao: "",
+  qtd_min: "", prazo: "", motivo: "", arquivo: null,
 });
+
 
 const norm = (s: string) => s.trim().toLowerCase();
 const toNum = (s: string) => {
