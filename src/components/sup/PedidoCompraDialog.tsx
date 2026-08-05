@@ -651,7 +651,12 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
                   <td className="p-1.5">
                     <Input type="number" step="0.01" min={0} value={l.preco_negociado}
                       onChange={(e) => setLinha(i, { preco_negociado: Number(e.target.value) })} className="h-8 text-right" disabled={bloqueado} />
+                    {l.produto_id && negociadoCadastro(l.produto_id) > 0
+                      && n(l.preco_negociado) === negociadoCadastro(l.produto_id) && (
+                      <div className="text-[10.5px] text-teal-700 mt-0.5 text-right">preço negociado do cadastro</div>
+                    )}
                   </td>
+
                   <td className="p-1.5 text-right font-semibold tabular-nums">{fmtMoeda(n(l.preco_negociado) * n(l.quantidade))}</td>
                   {isAdmin && (
                     <td className="p-1.5 text-right font-semibold tabular-nums text-emerald-700">{fmtMoeda(economiaItem(l))}</td>
