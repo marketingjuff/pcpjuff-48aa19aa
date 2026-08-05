@@ -16,7 +16,9 @@ import { FileDown, Plus, Trash2 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-role";
 import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
-import { useSupFornecedorProdutos, useSupProdutos } from "@/components/sup/ProdutosTab";
+import {
+  useSupFornecedorProdutos, useSupProdutos, aplicarPrecoTabela, aplicarPrecoNegociado,
+} from "@/components/sup/ProdutosTab";
 import { abrirPdfPedidoCompra } from "@/lib/sup-pc-pdf";
 import {
   SUP_CONDICOES_PAGAMENTO, SUP_EMPRESAS, SUP_EMPRESA_LABEL, SUP_FLUXO,
