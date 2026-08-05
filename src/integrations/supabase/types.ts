@@ -1717,6 +1717,7 @@ export type Database = {
           fornecedor_id: string
           id: string
           prazo_entrega_dias: number | null
+          preco_negociado: number | null
           preco_tabela: number | null
           produto_id: string
           quantidade_minima: number | null
@@ -1728,6 +1729,7 @@ export type Database = {
           fornecedor_id: string
           id?: string
           prazo_entrega_dias?: number | null
+          preco_negociado?: number | null
           preco_tabela?: number | null
           produto_id: string
           quantidade_minima?: number | null
@@ -1739,6 +1741,7 @@ export type Database = {
           fornecedor_id?: string
           id?: string
           prazo_entrega_dias?: number | null
+          preco_negociado?: number | null
           preco_tabela?: number | null
           produto_id?: string
           quantidade_minima?: number | null
@@ -2051,6 +2054,7 @@ export type Database = {
           revisado_em: string | null
           revisado_por: string | null
           status_revisao: string
+          tipo: string
         }
         Insert: {
           alterado_por?: string | null
@@ -2065,6 +2069,7 @@ export type Database = {
           revisado_em?: string | null
           revisado_por?: string | null
           status_revisao?: string
+          tipo?: string
         }
         Update: {
           alterado_por?: string | null
@@ -2079,6 +2084,7 @@ export type Database = {
           revisado_em?: string | null
           revisado_por?: string | null
           status_revisao?: string
+          tipo?: string
         }
         Relationships: [
           {
@@ -2090,6 +2096,36 @@ export type Database = {
           },
         ]
       }
+      sup_produto_grupos: {
+        Row: {
+          ativo: boolean
+          categoria: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string
+          unidade_referencia: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome: string
+          unidade_referencia?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string
+          unidade_referencia?: string
+        }
+        Relationships: []
+      }
       sup_produtos: {
         Row: {
           ativo: boolean
@@ -2098,7 +2134,9 @@ export type Database = {
           created_by: string | null
           departamento: string | null
           especificacao: string | null
+          fator_conversao: number | null
           fornecedor_id: string | null
+          grupo_id: string | null
           id: string
           nome: string
           preco_referencia: number | null
@@ -2112,7 +2150,9 @@ export type Database = {
           created_by?: string | null
           departamento?: string | null
           especificacao?: string | null
+          fator_conversao?: number | null
           fornecedor_id?: string | null
+          grupo_id?: string | null
           id?: string
           nome: string
           preco_referencia?: number | null
@@ -2126,7 +2166,9 @@ export type Database = {
           created_by?: string | null
           departamento?: string | null
           especificacao?: string | null
+          fator_conversao?: number | null
           fornecedor_id?: string | null
+          grupo_id?: string | null
           id?: string
           nome?: string
           preco_referencia?: number | null
@@ -2139,6 +2181,13 @@ export type Database = {
             columns: ["fornecedor_id"]
             isOneToOne: false
             referencedRelation: "sup_fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sup_produtos_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "sup_produto_grupos"
             referencedColumns: ["id"]
           },
         ]
