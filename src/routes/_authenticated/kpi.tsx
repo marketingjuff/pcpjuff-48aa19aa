@@ -38,7 +38,7 @@ function KpiHome() {
       const saved = window.localStorage.getItem("kpi:tab");
       if (saved) return saved;
     }
-    return abas[0]?.value ?? "custom";
+    return abas[0]?.tabValue ?? "custom";
   });
   const setTab = (t: string) => {
     setTabState(t);

@@ -35,9 +35,32 @@ import {
   sugestoesEstadoSP,
   type Sugestao,
 } from "@/lib/feriados-sugestoes";
-import type { AppRole, AppArea, Feriado } from "@/integrations/supabase/schema-extras";
-import { APP_AREAS_GESTOR, APP_AREAS_OPERADOR, APP_AREA_LABEL } from "@/integrations/supabase/schema-extras";
+import type { AppRole, Feriado } from "@/integrations/supabase/schema-extras";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  CATALOGO_PERMISSOES,
+  MODULOS,
+  PRESETS,
+  abasDoModulo,
+  labelDaPermissao,
+  normalizarPermissoes,
+  permissoesDoModulo,
+  type ModuloKey,
+  type PermissaoKey,
+  type Preset,
+} from "@/lib/permissoes";
 import {
   useColorSettings as useColorSettingsHook,
   DEFAULT_COLOR_SETTINGS as DEFAULT_COLOR_SETTINGS_CONST,
@@ -378,7 +401,7 @@ function UsuariosTab() {
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
   const [role, setRole] = useState<AppRole>("gestor");
-  const [areas, setAreas] = useState<AppArea[]>([]);
+  const [areas, setAreas] = useState<PermissaoKey[]>([]);
   const [editingName, setEditingName] = useState<{ id: string; nome: string } | null>(null);
   const [pwTarget, setPwTarget] = useState<{ id: string; email: string } | null>(null);
   const [pwValue, setPwValue] = useState("");
@@ -458,13 +481,7 @@ function UsuariosTab() {
             </Select>
           </div>
         </div>
-        {role !== "admin" && (
-          <AreasCheckboxes
-            value={areas}
-            onChange={setAreas}
-            options={role === "gestor" ? APP_AREAS_GESTOR : APP_AREAS_OPERADOR}
-          />
-        )}
+        {role !== "admin" && <PermissoesPanel value={areas} onChange={setAreas} />}
         <Button onClick={() => create.mutate()} disabled={create.isPending || !email || !password}>
           <Plus className="h-4 w-4 mr-1" /> Criar usuário
         </Button>
@@ -480,7 +497,9 @@ function UsuariosTab() {
             {isLoading ? <TableRow><TableCell colSpan={4}>Carregando…</TableCell></TableRow>
               : (users as any[]).map((u) => {
                 const currentRole = (u.roles?.[0]?.role ?? "operador") as AppRole;
-                const currentAreas = ((u.roles?.[0]?.areas_extras ?? []) as string[]) as AppArea[];
+                const currentAreas = Array.from(
+                  normalizarPermissoes((u.roles?.[0]?.areas_extras ?? []) as string[], currentRole),
+                );
                 return (
                   <TableRow key={u.id}>
                     <TableCell className="align-top">
@@ -516,11 +535,19 @@ function UsuariosTab() {
                           </SelectContent>
                         </Select>
                         {currentRole !== "admin" && (
-                          <AreasCheckboxes
-                            value={currentAreas}
-                            onChange={(next) => update.mutate({ userId: u.id, role: currentRole, areas_extras: next })}
-                            options={currentRole === "gestor" ? APP_AREAS_GESTOR : APP_AREAS_OPERADOR}
-                          />
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-8">
+                                Permissões ({currentAreas.length})
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="start" className="w-[26rem] max-h-[70vh] overflow-y-auto">
+                              <PermissoesPanel
+                                value={currentAreas}
+                                onChange={(next) => update.mutate({ userId: u.id, role: currentRole, areas_extras: next })}
+                              />
+                            </PopoverContent>
+                          </Popover>
                         )}
                       </div>
                     </TableCell>
