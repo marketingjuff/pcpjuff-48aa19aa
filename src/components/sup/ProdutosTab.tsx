@@ -11,12 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Pencil, Copy, TrendingDown, TrendingUp } from "lucide-react";
 import { SortTh, useTableSort } from "@/components/shared/sortable";
+import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { useSupDepartamentos } from "@/components/sup/DepartamentosTab";
 import {
-  SUP_UNIDADES, fmtMoeda, n, variacaoPercentual,
-  type SupFornecedorProduto, type SupPrecoHistorico, type SupProduto,
+  SUP_UNIDADES, fmtMoeda, n, variacaoPercentual, precoPorUnidadeRef, precoVigente,
+  type SupFornecedorProduto, type SupPrecoHistorico, type SupProduto, type SupProdutoGrupo,
 } from "@/lib/sup";
+
 
 export function useSupProdutos() {
   return useQuery({
