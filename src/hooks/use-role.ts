@@ -2,6 +2,17 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole, UserRoleRow } from "@/integrations/supabase/schema-extras";
+import {
+  MODULOS,
+  abasDoModulo,
+  normalizarPermissoes,
+  permissoesDoModulo,
+  todasPermissoes,
+  type AbaPermissao,
+  type ModuloKey,
+  type PermissaoKey,
+} from "@/lib/permissoes";
+
 
 export function useCurrentUser() {
   const [state, setState] = useState<{ userId: string | null; isLoading: boolean }>({
