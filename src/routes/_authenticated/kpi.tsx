@@ -6,12 +6,12 @@ import { LogOut, Settings } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMyRoles, useIsAdmin } from "@/hooks/use-role";
+import { useMyRoles, useIsAdmin, useCanAccessKpi, useAbasPermitidas, useMinhasPermissoes } from "@/hooks/use-role";
+import { rotaInicial } from "@/lib/permissoes";
 import { MacroSwitch } from "@/routes/_authenticated/cop";
 import { ImportacaoOlistTab } from "@/components/kpi/ImportacaoOlistTab";
 import { IndicadoresTab } from "@/components/kpi/IndicadoresTab";
 import { KpiPcpTab } from "@/components/kpi/KpiPcpTab";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/kpi")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -20,17 +20,16 @@ export const Route = createFileRoute("/_authenticated/kpi")({
   component: KpiHome,
 });
 
-const TABS = [
-  { value: "importolist", label: "Importação Olist" },
-  { value: "custom", label: "KPI Juff Custom" },
-  { value: "store", label: "KPI Juff Store" },
-  { value: "pcp", label: "KPI PCP" },
-];
-
 function KpiHome() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const isAdmin = useIsAdmin();
+  const isGestor = useMyRoles().data?.some((r) => r.role === "gestor") ?? false;
+  const canAccess = useCanAccessKpi();
+  const abas = useAbasPermitidas("kpi");
+  const permissoes = useMinhasPermissoes();
+  const pode = (k: string) => permissoes.has(k);
+  const TABS = abas.map((a) => ({ value: a.tabValue, label: a.label }));
   const { isLoading } = useMyRoles();
   const search = Route.useSearch();
   const [tab, setTabState] = useState(() => {
@@ -39,7 +38,7 @@ function KpiHome() {
       const saved = window.localStorage.getItem("kpi:tab");
       if (saved) return saved;
     }
-    return "custom";
+    return abas[0]?.value ?? "custom";
   });
   const setTab = (t: string) => {
     setTabState(t);
@@ -51,12 +50,19 @@ function KpiHome() {
     if (search.tab) setTabState(search.tab);
   }, [search.tab]);
 
+  const primeiraAba = TABS[0]?.value;
   useEffect(() => {
-    if (!isLoading && !isAdmin) {
-      toast.error("KPI é restrito a administradores.");
-      navigate({ to: "/", replace: true });
-    }
-  }, [isAdmin, isLoading, navigate]);
+    if (isLoading || !primeiraAba) return;
+    if (!TABS.some((t) => t.value === tab)) setTab(primeiraAba);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, primeiraAba, tab]);
+
+  const destino = rotaInicial(permissoes, isAdmin);
+  useEffect(() => {
+    if (isLoading || canAccess) return;
+    navigate({ to: destino as any, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canAccess, isLoading, destino]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -64,7 +70,7 @@ function KpiHome() {
     navigate({ to: "/auth", replace: true });
   }
 
-  if (isLoading || !isAdmin) {
+  if (isLoading || !canAccess) {
     return <div className="p-8 text-sm text-muted-foreground">Carregando…</div>;
   }
 
@@ -83,10 +89,12 @@ function KpiHome() {
             <MacroSwitch active="kpi" />
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes" })} aria-label="Configurações">
-              <Settings className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Configurações</span>
-            </Button>
+            {(isAdmin || isGestor) && (
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes" })} aria-label="Configurações">
+                <Settings className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Configurações</span>
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={handleLogout} aria-label="Sair">
               <LogOut className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Sair</span>
@@ -103,22 +111,22 @@ function KpiHome() {
             ))}
           </TabsList>
 
-          {tab === "importolist" && (
+          {tab === "importolist" && pode("kpi.importolist") && (
             <TabsContent value="importolist">
               <ImportacaoOlistTab />
             </TabsContent>
           )}
-          {tab === "custom" && (
+          {tab === "custom" && pode("kpi.custom") && (
             <TabsContent value="custom">
               <IndicadoresTab escopo="custom" />
             </TabsContent>
           )}
-          {tab === "store" && (
+          {tab === "store" && pode("kpi.store") && (
             <TabsContent value="store">
               <IndicadoresTab escopo="store" />
             </TabsContent>
           )}
-          {tab === "pcp" && (
+          {tab === "pcp" && pode("kpi.pcp") && (
             <TabsContent value="pcp">
               <KpiPcpTab />
             </TabsContent>
