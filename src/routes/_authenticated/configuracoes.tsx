@@ -498,8 +498,8 @@ function UsuariosTab() {
               : (users as any[]).map((u) => {
                 const currentRole = (u.roles?.[0]?.role ?? "operador") as AppRole;
                 const currentAreas = Array.from(
-                  normalizarPermissoes((u.roles?.[0]?.areas_extras ?? []) as string[], currentRole),
-                );
+                  niveisPermissoes((u.roles?.[0]?.areas_extras ?? []) as string[], currentRole),
+                ).map(([k, n]) => serializarPermissao(k, n));
                 return (
                   <TableRow key={u.id}>
                     <TableCell className="align-top">
@@ -606,8 +606,14 @@ function UsuariosTab() {
 }
 
 
-function PermissoesPanel({ value, onChange }: { value: PermissaoKey[]; onChange: (next: PermissaoKey[]) => void }) {
-  const marcadas = new Set(value);
+function PermissoesPanel({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
+  // `value` guarda strings serializadas ("pcp.arte" ou "pcp.arte:leitura").
+  const niveis = new Map<PermissaoKey, NivelAcesso>();
+  for (const raw of value) {
+    const p = parsePermissao(raw);
+    if (p) niveis.set(p.key, p.nivel);
+  }
+  const marcadas = new Set(niveis.keys());
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
     for (const m of MODULOS) init[m.key] = permissoesDoModulo(m.key).some((k) => marcadas.has(k));
@@ -616,22 +622,43 @@ function PermissoesPanel({ value, onChange }: { value: PermissaoKey[]; onChange:
   const [presetSel, setPresetSel] = useState("");
   const [presetPend, setPresetPend] = useState<Preset | null>(null);
 
-  function aplicar(next: Set<PermissaoKey>) {
-    onChange(CATALOGO_PERMISSOES.filter((a) => next.has(a.key)).map((a) => a.key));
+  function aplicar(next: Map<PermissaoKey, NivelAcesso>) {
+    onChange(
+      CATALOGO_PERMISSOES.filter((a) => next.has(a.key)).map((a) =>
+        serializarPermissao(a.key, next.get(a.key) ?? "edicao"),
+      ),
+    );
   }
 
   function toggle(key: PermissaoKey, checked: boolean) {
-    const set = new Set(marcadas);
-    if (checked) set.add(key); else set.delete(key);
-    aplicar(set);
+    const next = new Map(niveis);
+    if (checked) next.set(key, next.get(key) ?? "edicao");
+    else next.delete(key);
+    aplicar(next);
+  }
+
+  function setNivel(key: PermissaoKey, nivel: NivelAcesso) {
+    const next = new Map(niveis);
+    next.set(key, nivel);
+    aplicar(next);
   }
 
   function toggleModulo(modulo: ModuloKey, checked: boolean) {
-    const set = new Set(marcadas);
+    const next = new Map(niveis);
     for (const k of permissoesDoModulo(modulo)) {
-      if (checked) set.add(k); else set.delete(k);
+      if (checked) next.set(k, next.get(k) ?? "edicao");
+      else next.delete(k);
     }
-    aplicar(set);
+    aplicar(next);
+  }
+
+  function aplicarPreset(perms: string[]) {
+    const next = new Map<PermissaoKey, NivelAcesso>();
+    for (const raw of perms) {
+      const pp = parsePermissao(raw);
+      if (pp) next.set(pp.key, pp.nivel);
+    }
+    aplicar(next);
   }
 
   return (
@@ -649,7 +676,7 @@ function PermissoesPanel({ value, onChange }: { value: PermissaoKey[]; onChange:
             {PRESETS.map((p) => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <span className="text-xs text-muted-foreground">{value.length} aba(s) marcada(s)</span>
+        <span className="text-xs text-muted-foreground">{marcadas.size} aba(s) marcada(s)</span>
       </div>
 
       {MODULOS.map((m) => {
@@ -661,7 +688,7 @@ function PermissoesPanel({ value, onChange }: { value: PermissaoKey[]; onChange:
           <Collapsible
             key={m.key}
             open={aberto}
-            onOpenChange={(o) => setAbertos((s) => ({ ...s, [m.key]: o }))}
+            onOpenChange={(o) => setAbertos((st) => ({ ...st, [m.key]: o }))}
             className="rounded-md border bg-background"
           >
             <div className="flex items-center gap-2 px-2 py-1.5">
@@ -675,13 +702,37 @@ function PermissoesPanel({ value, onChange }: { value: PermissaoKey[]; onChange:
               </CollapsibleTrigger>
             </div>
             <CollapsibleContent>
-              <div className="grid grid-cols-2 gap-1.5 px-2 pb-2">
-                {abasDoModulo(m.key).map((a) => (
-                  <label key={a.key} className="flex items-center gap-2 text-xs cursor-pointer">
-                    <Checkbox checked={marcadas.has(a.key)} onCheckedChange={(c) => toggle(a.key, !!c)} />
-                    <span>{a.label}</span>
-                  </label>
-                ))}
+              <div className="grid grid-cols-1 gap-1.5 px-2 pb-2">
+                {abasDoModulo(m.key).map((a) => {
+                  const on = marcadas.has(a.key);
+                  const nivel = niveis.get(a.key) ?? "edicao";
+                  return (
+                    <div key={a.key} className="flex items-center justify-between gap-2">
+                      <label className="flex items-center gap-2 text-xs cursor-pointer min-w-0">
+                        <Checkbox checked={on} onCheckedChange={(c) => toggle(a.key, !!c)} />
+                        <span className="truncate">{a.label}</span>
+                      </label>
+                      {on && nivelConfiguravel(a.key) && (
+                        <div className="flex shrink-0 rounded-md border overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => setNivel(a.key, "edicao")}
+                            className={`px-2 py-0.5 text-[11px] ${nivel === "edicao" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setNivel(a.key, "leitura")}
+                            className={`px-2 py-0.5 text-[11px] border-l ${nivel === "leitura" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+                          >
+                            Somente leitura
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -694,14 +745,22 @@ function PermissoesPanel({ value, onChange }: { value: PermissaoKey[]; onChange:
             <AlertDialogTitle>Aplicar preset?</AlertDialogTitle>
             <AlertDialogDescription>
               As permissões atuais deste usuário serão substituídas por:{" "}
-              <i>{(presetPend?.permissoes ?? []).map(labelDaPermissao).join(", ")}</i>. Deseja continuar?
+              <i>
+                {(presetPend?.permissoes ?? [])
+                  .map((raw) => {
+                    const pp = parsePermissao(raw);
+                    if (!pp) return raw;
+                    return labelDaPermissao(pp.key) + (pp.nivel === "leitura" ? " (somente leitura)" : "");
+                  })
+                  .join(", ")}
+              </i>. Deseja continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => { setPresetPend(null); setPresetSel(""); }}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (presetPend) aplicar(new Set(presetPend.permissoes));
+                if (presetPend) aplicarPreset(presetPend.permissoes);
                 setPresetPend(null);
                 setPresetSel("");
               }}
