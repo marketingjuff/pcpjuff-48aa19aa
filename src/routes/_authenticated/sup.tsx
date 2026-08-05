@@ -6,7 +6,8 @@ import { LogOut, Settings } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMyRoles, useCanAccessSup, useIsAdmin } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessSup, useIsAdmin, useAbasPermitidas, useMinhasPermissoes } from "@/hooks/use-role";
+import { rotaInicial } from "@/lib/permissoes";
 import { MacroSwitch } from "@/routes/_authenticated/cop";
 import { ProdutosTab } from "@/components/sup/ProdutosTab";
 import { PedidosCompraTab } from "@/components/sup/PedidosCompraTab";
@@ -14,7 +15,6 @@ import { ComissoesTab } from "@/components/sup/ComissoesTab";
 import { DashboardSupTab } from "@/components/sup/DashboardSupTab";
 import { MonitorPrecosTab } from "@/components/sup/MonitorPrecosTab";
 import { HistoricoSupTab } from "@/components/sup/HistoricoSupTab";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sup")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -35,22 +35,22 @@ export const Route = createFileRoute("/_authenticated/sup")({
   }),
 });
 
-const BASE_TABS = [
-  { value: "produtos", label: "Produtos" },
-  { value: "pedidos", label: "Pedidos de Compra" },
-  { value: "comissoes", label: "Comissões" },
-  { value: "dashboard", label: "Dashboard SUP" },
-];
-
 function SupHome() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const canAccess = useCanAccessSup();
   const isAdmin = useIsAdmin();
-  const { isLoading } = useMyRoles();
-  const TABS = isAdmin
-    ? [...BASE_TABS, { value: "monitor-precos", label: "Monitor de Preços" }, { value: "historico", label: "Histórico SUP" }]
-    : BASE_TABS;
+  const { data: myRoles = [], isLoading } = useMyRoles();
+  const isGestor = myRoles.some((r) => r.role === "gestor");
+  const abas = useAbasPermitidas("sup");
+  const permissoes = useMinhasPermissoes();
+  const pode = (k: string) => permissoes.has(k);
+  const TABS = [
+    ...abas.map((a) => ({ value: a.tabValue, label: a.label })),
+    ...(isAdmin
+      ? [{ value: "monitor-precos", label: "Monitor de Preços" }, { value: "historico", label: "Histórico SUP" }]
+      : []),
+  ];
   const search = Route.useSearch();
   const [tab, setTabState] = useState(() => {
     const valid = (t: string | null) => {
@@ -76,12 +76,19 @@ function SupHome() {
     if (search.tab) setTabState(search.tab === "alteracoes-preco" ? "monitor-precos" : search.tab);
   }, [search.tab]);
 
+  const primeiraAba = TABS[0]?.value;
   useEffect(() => {
-    if (!isLoading && !canAccess) {
-      toast.error("SUP é restrito a administradores e gestores autorizados.");
-      navigate({ to: "/", replace: true });
-    }
-  }, [canAccess, isLoading, navigate]);
+    if (isLoading || !primeiraAba) return;
+    if (!TABS.some((t) => t.value === tab)) setTab(primeiraAba);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, primeiraAba, tab]);
+
+  const destino = rotaInicial(permissoes, isAdmin);
+  useEffect(() => {
+    if (isLoading || canAccess) return;
+    navigate({ to: destino as any, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canAccess, isLoading, destino]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -108,10 +115,12 @@ function SupHome() {
             <MacroSwitch active="sup" />
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes", search: { area: "sup" } as any })} aria-label="Configurações">
-              <Settings className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Configurações</span>
-            </Button>
+            {(isAdmin || isGestor) && (
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes", search: { area: "sup" } as any })} aria-label="Configurações">
+                <Settings className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Configurações</span>
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={handleLogout} aria-label="Sair">
               <LogOut className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Sair</span>
@@ -128,18 +137,26 @@ function SupHome() {
             ))}
           </TabsList>
 
+          {pode("sup.produtos") && (
           <TabsContent value="produtos" forceMount hidden={tab !== "produtos"}>
             <ProdutosTab />
           </TabsContent>
+          )}
+          {pode("sup.pedidos") && (
           <TabsContent value="pedidos" forceMount hidden={tab !== "pedidos"}>
             <PedidosCompraTab pcId={search.pcId} fornecedorId={search.fornecedorId} />
           </TabsContent>
+          )}
+          {pode("sup.comissoes") && (
           <TabsContent value="comissoes" forceMount hidden={tab !== "comissoes"}>
             <ComissoesTab />
           </TabsContent>
+          )}
+          {pode("sup.dashboard") && (
           <TabsContent value="dashboard" forceMount hidden={tab !== "dashboard"}>
             <DashboardSupTab />
           </TabsContent>
+          )}
           {isAdmin && (
             <>
               <TabsContent value="monitor-precos" forceMount hidden={tab !== "monitor-precos"}>

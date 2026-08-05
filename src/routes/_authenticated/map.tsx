@@ -6,7 +6,8 @@ import { LogOut, Settings } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMyRoles, useCanAccessMap, useIsAdmin } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessMap, useIsAdmin, useAbasPermitidas, useMinhasPermissoes } from "@/hooks/use-role";
+import { rotaInicial } from "@/lib/permissoes";
 import { MacroSwitch } from "@/routes/_authenticated/cop";
 import { ProgramacaoFiosTab } from "@/components/map/ProgramacaoFiosTab";
 import { FiosFinalizadosTab } from "@/components/map/FiosFinalizadosTab";
@@ -15,7 +16,6 @@ import { PecasFinalizadasTab } from "@/components/map/PecasFinalizadasTab";
 import { QuebraTab } from "@/components/map/QuebraTab";
 import { DevolucoesTab } from "@/components/map/DevolucoesTab";
 import { HistoricoMapTab } from "@/components/map/HistoricoMapTab";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/map")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -26,22 +26,20 @@ export const Route = createFileRoute("/_authenticated/map")({
   component: MapHome,
 });
 
-const BASE_TABS = [
-  { value: "programacao", label: "Prod. de Tecido" },
-  { value: "finalizados", label: "Prod. Finalizados" },
-  { value: "estoque", label: "Estoque de MP" },
-  { value: "pecas-finalizadas", label: "Peças Finalizadas" },
-  { value: "quebra", label: "Quebra" },
-  { value: "devolucoes", label: "Devoluções" },
-];
-
 function MapHome() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const canAccess = useCanAccessMap();
   const isAdmin = useIsAdmin();
-  const { isLoading } = useMyRoles();
-  const TABS = isAdmin ? [...BASE_TABS, { value: "historico", label: "Histórico MAP" }] : BASE_TABS;
+  const { data: myRoles = [], isLoading } = useMyRoles();
+  const isGestor = myRoles.some((r) => r.role === "gestor");
+  const abas = useAbasPermitidas("map");
+  const permissoes = useMinhasPermissoes();
+  const pode = (k: string) => permissoes.has(k);
+  const TABS = [
+    ...abas.map((a) => ({ value: a.tabValue, label: a.label })),
+    ...(isAdmin ? [{ value: "historico", label: "Histórico MAP" }] : []),
+  ];
   const search = Route.useSearch();
   const [tab, setTabState] = useState(() => {
     if (search.tab) return search.tab;
@@ -61,12 +59,19 @@ function MapHome() {
     if (search.tab) setTabState(search.tab);
   }, [search.tab]);
 
+  const primeiraAba = TABS[0]?.value;
   useEffect(() => {
-    if (!isLoading && !canAccess) {
-      toast.error("MAP é restrito a administradores e gestores autorizados.");
-      navigate({ to: "/", replace: true });
-    }
-  }, [canAccess, isLoading, navigate]);
+    if (isLoading || !primeiraAba) return;
+    if (!TABS.some((t) => t.value === tab)) setTab(primeiraAba);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, primeiraAba, tab]);
+
+  const destino = rotaInicial(permissoes, isAdmin);
+  useEffect(() => {
+    if (isLoading || canAccess) return;
+    navigate({ to: destino as any, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canAccess, isLoading, destino]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -93,10 +98,12 @@ function MapHome() {
             <MacroSwitch active="map" />
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes", search: { area: "map" } as any })} aria-label="Configurações">
-              <Settings className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Configurações</span>
-            </Button>
+            {(isAdmin || isGestor) && (
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes", search: { area: "map" } as any })} aria-label="Configurações">
+                <Settings className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Configurações</span>
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={handleLogout} aria-label="Sair">
               <LogOut className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Sair</span>
@@ -113,24 +120,36 @@ function MapHome() {
             ))}
           </TabsList>
 
+          {pode("map.programacao") && (
           <TabsContent value="programacao" forceMount hidden={tab !== "programacao"}>
             <ProgramacaoFiosTab prodId={search.prodId} fioFilter={search.fioFilter} />
           </TabsContent>
+          )}
+          {pode("map.finalizados") && (
           <TabsContent value="finalizados" forceMount hidden={tab !== "finalizados"}>
             <FiosFinalizadosTab />
           </TabsContent>
+          )}
+          {pode("map.estoque") && (
           <TabsContent value="estoque" forceMount hidden={tab !== "estoque"}>
             <EstoqueMpTab />
           </TabsContent>
+          )}
+          {pode("map.pecas_finalizadas") && (
           <TabsContent value="pecas-finalizadas" forceMount hidden={tab !== "pecas-finalizadas"}>
             <PecasFinalizadasTab />
           </TabsContent>
+          )}
+          {pode("map.quebra") && (
           <TabsContent value="quebra" forceMount hidden={tab !== "quebra"}>
             <QuebraTab />
           </TabsContent>
+          )}
+          {pode("map.devolucoes") && (
           <TabsContent value="devolucoes" forceMount hidden={tab !== "devolucoes"}>
             <DevolucoesTab />
           </TabsContent>
+          )}
           {isAdmin && (
             <TabsContent value="historico" forceMount hidden={tab !== "historico"}>
               <HistoricoMapTab />
