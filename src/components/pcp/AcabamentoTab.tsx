@@ -46,7 +46,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   const { isDirty } = useDirtyForm();
   const { names: responsaveis } = useAppList("acabamento");
   const { feriados } = useFeriados();
-  const sort = useSort<"pedido"|"qtd"|"inicio"|"termino"|"saida"|"etapa"|"orcamento"|"tipo"|"statusPecas"|"dtfEst"|"silkEst">();
+  const sort = useSort<"pedido"|"qtd"|"inicio"|"termino"|"saida"|"etapa"|"orcamento"|"tipo"|"statusPecas"|"dtfEst"|"silkEst"|"respAcab"|"entrega"|"frete">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
@@ -63,7 +63,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
         ...f,
         embalado: v,
         data_saida_juff: nextData,
-        ...(v !== "Sim" ? { responsavel_acabamento: null, responsavel_conferencia: null } : {}),
+        ...(v !== "Sim" ? { responsavel_conferencia: null } : {}),
       };
     });
   }
@@ -71,7 +71,6 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
     setForm((f) => ({
       ...f,
       data_saida_juff: v ?? null,
-      ...(!v ? { responsavel_acabamento: null } : {}),
     }));
   }
 
@@ -171,10 +170,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               <ReadOnlyField label="DTF Estampado?" value={temDTF ? (selected.dtf_estampado ?? "—") : "N/A"} />
               <ReadOnlyField label="Silk Estampado?" value={temSilk ? (selected.silk_feito ?? "—") : "N/A"} />
             </div>
-            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-2 grid-cols-1 sm:grid-cols-3 lg:grid-cols-7">
+              <ReadOnlyField label="Estampador DTF" value={temDTF ? ((selected as any).quem_bateu_dtf ?? "—") : "N/A"} />
+              <ReadOnlyField label="Estampador Silk" value={temSilk ? ((selected as any).quem_bateu_silk ?? "—") : "N/A"} />
               <ReadOnlyField label="Início de Acabamento" value={formatDateBR(selected.inicio_acabamento)} />
               <ReadOnlyField label="Término de Acabamento" value={formatDateBR(selected.termino_acabamento)} />
               <ReadOnlyField label="Saída Juff (prazo)" value={formatDateBR(selected.saida_juff)} />
+              <ReadOnlyField label="Data de Entrega" value={formatDateBR((selected as any).data_entrega)} />
+              <ReadOnlyField label="Tipo de Frete" value={(selected as any).frete ?? "—"} />
             </div>
             <div className="space-y-1">
               <div className="text-xs font-medium text-muted-foreground">Layout</div>
@@ -198,6 +201,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             )}
             <fieldset disabled={readOnly} className="contents disabled:opacity-60">
             <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t">
+              <FormField label="Responsável pelo Acabamento (múltiplos)">
+                <MultiSelectPeople
+                  value={form.responsavel_acabamento}
+                  options={responsaveis}
+                  onChange={(v) => set("responsavel_acabamento", v)}
+                  placeholder="Selecione..."
+                />
+              </FormField>
               <FormField label="EMBALADO?">
                 <Select value={form.embalado ?? ""} onValueChange={setEmbalado}>
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -206,15 +217,6 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </FormField>
               <FormField label={`Data da Embalagem${form.embalado === "Sim" ? " *" : ""}`}>
                 <DateInputBR disabled={form.embalado !== "Sim"} value={form.data_saida_juff} onChange={setDataSaida} />
-              </FormField>
-              <FormField label="Responsável pelo Acabamento (múltiplos)">
-                <MultiSelectPeople
-                  value={form.responsavel_acabamento}
-                  options={responsaveis}
-                  onChange={(v) => set("responsavel_acabamento", v)}
-                  disabled={!form.data_saida_juff}
-                  placeholder={!form.data_saida_juff ? "Preencha a data primeiro" : "Selecione..."}
-                />
               </FormField>
               <div className="sm:col-span-2 lg:col-span-4">
                 <FormField label="Observações do Acabamento">
