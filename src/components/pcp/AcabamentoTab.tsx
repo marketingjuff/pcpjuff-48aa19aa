@@ -46,7 +46,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   const { isDirty } = useDirtyForm();
   const { names: responsaveis } = useAppList("acabamento");
   const { feriados } = useFeriados();
-  const sort = useSort<"pedido"|"qtd"|"inicio"|"termino"|"saida"|"etapa"|"orcamento"|"tipo"|"statusPecas"|"dtfEst"|"silkEst">();
+  const sort = useSort<"pedido"|"qtd"|"inicio"|"termino"|"saida"|"etapa"|"orcamento"|"tipo"|"statusPecas"|"dtfEst"|"silkEst"|"respAcab"|"entrega"|"frete">();
   useEffect(() => {
     if (!selected) { setForm({}); return; }
     if (!isDirty) setForm(selected);
@@ -63,7 +63,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
         ...f,
         embalado: v,
         data_saida_juff: nextData,
-        ...(v !== "Sim" ? { responsavel_acabamento: null, responsavel_conferencia: null } : {}),
+        ...(v !== "Sim" ? { responsavel_conferencia: null } : {}),
       };
     });
   }
@@ -71,7 +71,6 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
     setForm((f) => ({
       ...f,
       data_saida_juff: v ?? null,
-      ...(!v ? { responsavel_acabamento: null } : {}),
     }));
   }
 
@@ -171,10 +170,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               <ReadOnlyField label="DTF Estampado?" value={temDTF ? (selected.dtf_estampado ?? "—") : "N/A"} />
               <ReadOnlyField label="Silk Estampado?" value={temSilk ? (selected.silk_feito ?? "—") : "N/A"} />
             </div>
-            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-2 grid-cols-1 sm:grid-cols-3 lg:grid-cols-7">
+              <ReadOnlyField label="Estampador DTF" value={temDTF ? ((selected as any).quem_bateu_dtf ?? "—") : "N/A"} />
+              <ReadOnlyField label="Estampador Silk" value={temSilk ? ((selected as any).quem_bateu_silk ?? "—") : "N/A"} />
               <ReadOnlyField label="Início de Acabamento" value={formatDateBR(selected.inicio_acabamento)} />
               <ReadOnlyField label="Término de Acabamento" value={formatDateBR(selected.termino_acabamento)} />
               <ReadOnlyField label="Saída Juff (prazo)" value={formatDateBR(selected.saida_juff)} />
+              <ReadOnlyField label="Data de Entrega" value={formatDateBR((selected as any).data_entrega)} />
+              <ReadOnlyField label="Tipo de Frete" value={(selected as any).frete ?? "—"} />
             </div>
             <div className="space-y-1">
               <div className="text-xs font-medium text-muted-foreground">Layout</div>
@@ -198,6 +201,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             )}
             <fieldset disabled={readOnly} className="contents disabled:opacity-60">
             <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t">
+              <FormField label="Responsável pelo Acabamento (múltiplos)">
+                <MultiSelectPeople
+                  value={form.responsavel_acabamento}
+                  options={responsaveis}
+                  onChange={(v) => set("responsavel_acabamento", v)}
+                  placeholder="Selecione..."
+                />
+              </FormField>
               <FormField label="EMBALADO?">
                 <Select value={form.embalado ?? ""} onValueChange={setEmbalado}>
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -206,15 +217,6 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </FormField>
               <FormField label={`Data da Embalagem${form.embalado === "Sim" ? " *" : ""}`}>
                 <DateInputBR disabled={form.embalado !== "Sim"} value={form.data_saida_juff} onChange={setDataSaida} />
-              </FormField>
-              <FormField label="Responsável pelo Acabamento (múltiplos)">
-                <MultiSelectPeople
-                  value={form.responsavel_acabamento}
-                  options={responsaveis}
-                  onChange={(v) => set("responsavel_acabamento", v)}
-                  disabled={!form.data_saida_juff}
-                  placeholder={!form.data_saida_juff ? "Preencha a data primeiro" : "Selecione..."}
-                />
               </FormField>
               <div className="sm:col-span-2 lg:col-span-4">
                 <FormField label="Observações do Acabamento">
@@ -336,11 +338,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                 <Chip label="Tipo" value={p.tipo_estampa} />
                 <Chip label="QTD" value={<QtdTotal pedido={p} />} />
                 <StatusPecasChip pedido={p} />
+                <Chip label="Resp. Acab." value={p.responsavel_acabamento || "—"} />
                 <Chip label="DTF" value={modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"} />
                 <Chip label="Silk" value={modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"} />
                 <Chip label="Início Acab." value={formatDateBR(p.inicio_acabamento) || "—"} />
                 <Chip label="Término Acab." value={formatDateBR(p.termino_acabamento) || "—"} />
                 <Chip label="Saída Juff" value={formatDateBR(p.saida_juff) || "—"} />
+                <Chip label="Entrega" value={formatDateBR((p as any).data_entrega) || "—"} />
+                <Chip label="Frete" value={(p as any).frete || "—"} />
               </PedidoMobileCard>
             ))}
           </div>
@@ -354,11 +359,14 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                   <SortableTh label="TIPO" active={sort.key === "tipo"} onClick={() => sort.toggle("tipo")} />
                   <SortableTh label="QTD" active={sort.key === "qtd"} onClick={() => sort.toggle("qtd")} />
                   <SortableTh label="STATUS DAS PEÇAS" active={sort.key === "statusPecas"} onClick={() => sort.toggle("statusPecas")} />
+                  <SortableTh label="RESP. ACAB." active={sort.key === "respAcab"} onClick={() => sort.toggle("respAcab")} />
                   <SortableTh label="DTF EST." active={sort.key === "dtfEst"} onClick={() => sort.toggle("dtfEst")} />
                   <SortableTh label="SILK EST." active={sort.key === "silkEst"} onClick={() => sort.toggle("silkEst")} />
                   <SortableTh label="INÍCIO ACAB." active={sort.key === "inicio"} onClick={() => sort.toggle("inicio")} />
                   <SortableTh label="TÉRMINO ACAB." active={sort.key === "termino"} onClick={() => sort.toggle("termino")} />
                   <SortableTh label="SAÍDA JUFF" active={sort.key === "saida"} onClick={() => sort.toggle("saida")} />
+                  <SortableTh label="ENTREGA" active={sort.key === "entrega"} onClick={() => sort.toggle("entrega")} />
+                  <SortableTh label="FRETE" active={sort.key === "frete"} onClick={() => sort.toggle("frete")} />
                 </tr>
               </thead>
               <tbody>
@@ -378,6 +386,9 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                         case "statusPecas": return cmpText(a.status_pecas, b.status_pecas, sort.dir);
                         case "dtfEst": return cmpText(modeloIncluiDTF(a.tipo_estampa) ? (a.dtf_estampado ?? "") : "N/A", modeloIncluiDTF(b.tipo_estampa) ? (b.dtf_estampado ?? "") : "N/A", sort.dir);
                         case "silkEst": return cmpText(modeloIncluiSilk(a.tipo_estampa) ? (a.silk_feito ?? "") : "N/A", modeloIncluiSilk(b.tipo_estampa) ? (b.silk_feito ?? "") : "N/A", sort.dir);
+                        case "respAcab": return cmpText(a.responsavel_acabamento, b.responsavel_acabamento, sort.dir);
+                        case "entrega": return cmpDate((a as any).data_entrega, (b as any).data_entrega, sort.dir);
+                        case "frete": return cmpText((a as any).frete, (b as any).frete, sort.dir);
                       }
                       return 0;
                     });
@@ -392,17 +403,20 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
                         <td className="px-1.5 py-0.5"><Badge variant="outline">{p.tipo_estampa}</Badge></td>
                         <td className="px-1.5 py-0.5"><QtdTotal pedido={p} /></td>
                         <td className="px-1.5 py-0.5"><StatusPecasBadge pedido={p} /></td>
+                        <td className="px-1.5 py-0.5">{p.responsavel_acabamento || "—"}</td>
                         <td className="px-1.5 py-0.5">{modeloIncluiDTF(p.tipo_estampa) ? (p.dtf_estampado ?? "—") : "N/A"}</td>
                         <td className="px-1.5 py-0.5">{modeloIncluiSilk(p.tipo_estampa) ? (p.silk_feito ?? "—") : "N/A"}</td>
                         <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.inicio_acabamento)}</td>
                         <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.termino_acabamento)}</td>
                         <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR(p.saida_juff)}</td>
+                        <td className="px-1.5 py-0.5 whitespace-nowrap">{formatDateBR((p as any).data_entrega) || "—"}</td>
+                        <td className="px-1.5 py-0.5">{(p as any).frete ?? "—"}</td>
                       </tr>
                     );
                   });
                 })()}
                 {dashboardPedidos.length === 0 && (
-                  <tr><td colSpan={11} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido pronto para acabamento.</td></tr>
+                  <tr><td colSpan={14} className="px-3 py-8 text-center text-muted-foreground">Nenhum pedido pronto para acabamento.</td></tr>
                 )}
 
 
