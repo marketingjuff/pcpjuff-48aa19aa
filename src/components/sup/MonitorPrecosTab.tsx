@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,9 +10,9 @@ import { OscilacaoPrecoTab } from "@/components/sup/OscilacaoPrecoTab";
 
 /** Container do Monitor de Preços: período compartilhado entre as sub-abas. */
 export function MonitorPrecosTab() {
-  const [de, setDe] = useState("");
-  const [ate, setAte] = useState("");
-  const [sub, setSub] = useState("registro");
+  const [de, setDe] = usePersistedState("sup:monitor:de", "");
+  const [ate, setAte] = usePersistedState("sup:monitor:ate", "");
+  const [sub, setSub] = usePersistedState("sup:monitor:sub", "registro");
 
   return (
     <div className="space-y-3">

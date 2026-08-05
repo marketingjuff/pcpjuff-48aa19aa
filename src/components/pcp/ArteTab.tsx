@@ -49,10 +49,11 @@ interface Props {
   saving: boolean;
   active?: boolean;
   canManage?: boolean;
+  soLeitura?: boolean;
 }
 
-export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = true, canManage = false }: Props) {
-  const readOnly = isReadOnly("arte", selected, canManage);
+export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = true, canManage = false, soLeitura = false }: Props) {
+  const readOnly = isReadOnly("arte", selected, canManage, soLeitura);
   const isOperador = useHasRole("operador");
   const [form, setForm] = useState<Partial<Pedido>>({});
   const { isDirty } = useDirtyForm();
@@ -381,7 +382,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
                 )}
               </div>
               </fieldset>
-              {canManage && !selected.finalizado_em && arteCompleta(selected) && (
+              {canManage && !soLeitura && !selected.finalizado_em && arteCompleta(selected) && (
                 <div className="flex justify-end pt-2">
                   <CorrigirEtapaButton
                     pedido={selected}

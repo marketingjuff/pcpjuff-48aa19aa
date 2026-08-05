@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
 import { PedidoMobileCard, Chip, QtdTotal, useSort, cmpDate, cmpNum, cmpText, SortableTh, Th, ReadOnlyField } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
+import { FaixaSomenteLeitura } from "./DadosInTab";
 import { useColorSettings } from "@/hooks/use-color-settings";
 import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
 
@@ -27,11 +28,14 @@ interface Props {
   pedidos: Pedido[];
   onReabrir: (id: string) => void;
   canReabrir?: boolean;
+  soLeitura?: boolean;
 }
 
-export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props) {
+export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true, soLeitura = false }: Props) {
   const qc = useQueryClient();
   const isAdmin = useIsAdmin();
+  const podeExcluir = isAdmin && !soLeitura;
+  const podeReabrir = canReabrir && !soLeitura;
   const { btnStyle } = useColorSettings();
   const profilesMap = useProfilesMap();
 
@@ -153,7 +157,7 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
       <CardHeader>
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-baseline gap-2"><CardTitle>Pedidos finalizados</CardTitle><span className="text-xs text-muted-foreground tabular-nums">{finalizadosVisiveis.length} de {finalizados.length} {finalizados.length === 1 ? "registro" : "registros"}</span></div>
-          {isAdmin && selectedVisibleCount > 0 && (
+          {podeExcluir && selectedVisibleCount > 0 && (
             <Button
               variant="destructive"
               size="sm"
@@ -167,6 +171,7 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
+        {soLeitura && <FaixaSomenteLeitura />}
         {historico && (
           <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
             <div className="flex items-center justify-between gap-2">
@@ -310,7 +315,7 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
           ) : finalizadosVisiveis.map((p) => (
             <div key={p.id} className={`p-3 ${selectedIds.has(p.id) ? "bg-accent" : ""}`}>
               <div className="flex items-start gap-2">
-                {isAdmin && (
+                {podeExcluir && (
                   <Checkbox
                     checked={selectedIds.has(p.id)}
                     onCheckedChange={(c) => toggleOne(p.id, c === true)}
@@ -330,7 +335,7 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
                     <Chip label="Resp" value={p.responsavel_acabamento} />
                     <Chip label="Finalizado" value={formatDateBR(p.finalizado_em?.slice(0,10)) || "—"} />
                   </div>
-                  {canReabrir && (
+                  {podeReabrir && (
                     <div className="mt-2">
                       <Button size="sm" onClick={() => onReabrir(p.id)} className="w-full" style={btnStyle("reabrir")}>
                         <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
@@ -346,7 +351,7 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
           <table className="w-full text-sm" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
             <thead>
               <tr>
-                {isAdmin && (
+                {podeExcluir && (
                   <th className="h-7 px-1.5 text-left text-[11px] uppercase whitespace-nowrap font-bold text-muted-foreground w-10">
                     <Checkbox
                       checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
@@ -369,11 +374,11 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
             </thead>
             <tbody>
               {finalizadosVisiveis.length === 0 ? (
-                <tr><td colSpan={isAdmin ? 11 : 10} className="text-center py-8 text-muted-foreground">Nenhum pedido finalizado.</td></tr>
+                <tr><td colSpan={podeExcluir ? 11 : 10} className="text-center py-8 text-muted-foreground">Nenhum pedido finalizado.</td></tr>
               ) : (
                 finalizadosVisiveis.map((p) => (
                   <tr key={p.id} className="border-t cursor-pointer hover:bg-accent" onClick={() => setHistorico(p)}>
-                    {isAdmin && (
+                    {podeExcluir && (
                       <td className="px-1.5 py-0.5 w-10" onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={selectedIds.has(p.id)}
@@ -392,7 +397,7 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true }: Props)
                     <td className="px-1.5 py-0.5 text-xs">{p.responsavel_acabamento ?? "—"}</td>
                     <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.finalizado_em?.slice(0,10))}</td>
                     <td className="px-1.5 py-0.5 text-right" onClick={(e) => e.stopPropagation()}>
-                      {canReabrir && (
+                      {podeReabrir && (
                         <Button size="sm" onClick={() => onReabrir(p.id)} style={btnStyle("reabrir")}>
                           <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
                         </Button>

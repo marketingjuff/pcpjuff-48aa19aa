@@ -54,7 +54,10 @@ export function isReadOnly(
   aba: AbaTrava,
   pedido: Pedido | null | undefined,
   canManage: boolean,
+  soLeitura = false,
 ): boolean {
+  // Somente leitura vence tudo, inclusive canManage (gestor em leitura não edita).
+  if (soLeitura) return true;
   if (canManage) return false;
   if (!pedido) return false;
   switch (aba) {

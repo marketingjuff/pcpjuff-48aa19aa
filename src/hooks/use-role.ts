@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole, UserRoleRow } from "@/integrations/supabase/schema-extras";
 import {
   MODULOS,
   abasDoModulo,
+  niveisPermissoes,
   normalizarPermissoes,
   permissoesDoModulo,
   todasPermissoes,
   type AbaPermissao,
   type ModuloKey,
+  type NivelAcesso,
   type PermissaoKey,
 } from "@/lib/permissoes";
+
 
 
 export function useCurrentUser() {
@@ -48,6 +51,7 @@ export function useMyRoles() {
       if (error) throw error;
       return (data ?? []) as Pick<UserRoleRow, "role" | "areas_extras">[];
     },
+    placeholderData: keepPreviousData,
   });
   return {
     ...query,
@@ -125,3 +129,32 @@ export function useCanAccessKpi() {
   return useTemModulo("kpi");
 }
 
+
+/** Nível de acesso (edição/leitura) de cada permissão do usuário. */
+export function useNiveisPermissoes(): Map<PermissaoKey, NivelAcesso> {
+  const { data } = useMyRoles();
+  const rows = data ?? [];
+  const isAdmin = rows.some((r) => r.role === "admin");
+  const out = new Map<PermissaoKey, NivelAcesso>();
+  if (isAdmin) {
+    for (const k of todasPermissoes()) out.set(k, "edicao");
+    return out;
+  }
+  for (const r of rows) {
+    for (const [k, nivel] of niveisPermissoes(r.areas_extras ?? [], r.role)) {
+      // Entre múltiplas linhas de papel, edição vence leitura.
+      if (nivel === "edicao" || !out.has(k)) out.set(k, nivel);
+    }
+  }
+  return out;
+}
+
+/** true se o usuário pode EDITAR a aba. Admin sempre true. */
+export function usePodeEditar(key: PermissaoKey): boolean {
+  return useNiveisPermissoes().get(key) === "edicao";
+}
+
+/** true se o usuário tem a aba mas só em leitura. */
+export function useSoLeitura(key: PermissaoKey): boolean {
+  return useNiveisPermissoes().get(key) === "leitura";
+}

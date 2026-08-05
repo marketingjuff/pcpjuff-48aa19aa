@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag, FilterX } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FaixaSomenteLeitura } from "./DadosInTab";
 import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES_EXPEDICAO, matchEtapaFiltro, UpdateButton, FinalizarButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
@@ -26,6 +27,7 @@ interface Props {
   saving: boolean;
   onNavigate?: (tab: string) => void;
   onFinalizarMany?: (ids: string[]) => void;
+  soLeitura?: boolean;
 }
 
 type ItemKey =
@@ -63,7 +65,7 @@ function todosCompletos(p: Pedido, form: Partial<Pedido>): boolean {
   });
 }
 
-export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNavigate, onFinalizarMany }: Props) {
+export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNavigate, onFinalizarMany, soLeitura = false }: Props) {
   const { feriados } = useFeriados();
   const { names: formasPagamento } = useAppList("pagamento");
   const { names: nfOpcoes } = useAppList("nf");
@@ -92,7 +94,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   }
 
   function handleSave() {
-    if (!selected) return;
+    if (soLeitura || !selected) return;
     // 3B: Salvar não finaliza mais o pedido — apenas atualiza os campos da Expedição.
     onSave({
       id: selected.id,
@@ -109,7 +111,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   }
 
   function handleFinalizar() {
-    if (!selected) return;
+    if (soLeitura || !selected) return;
     onSave({
       id: selected.id,
       exp_cobranca_pagamento: form.exp_cobranca_pagamento ?? null,
@@ -127,7 +129,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   }
 
   function marcarTudoSim() {
-    if (!selected) return;
+    if (soLeitura || !selected) return;
     const itens = itensParaForma(form.forma_pagamento ?? selected.forma_pagamento);
     const upd: any = { ...form };
     const hoje = new Date().toISOString().slice(0, 10);
@@ -213,6 +215,8 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
             </Badge>
           </CardHeader>
           <CardContent className="space-y-3">
+            {soLeitura && <FaixaSomenteLeitura />}
+            <fieldset disabled={soLeitura} className="contents disabled:opacity-60">
             <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
@@ -301,25 +305,32 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               </div>
             )}
 
+            </fieldset>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="flex gap-2 flex-wrap sm:justify-start">
-                <Button onClick={marcarTudoSim} disabled={saving} variant="outline" className="w-full sm:w-auto">
-                  Marcar tudo como "Sim"
-                </Button>
-                <UpdateButton onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
-                  Salvar Expedição
-                </UpdateButton>
+                {!soLeitura && (
+                  <>
+                    <Button onClick={marcarTudoSim} disabled={saving} variant="outline" className="w-full sm:w-auto">
+                      Marcar tudo como "Sim"
+                    </Button>
+                    <UpdateButton onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
+                      Salvar Expedição
+                    </UpdateButton>
+                  </>
+                )}
                 <RefacaoViewerButton pedido={selected} />
-                <FinalizarButton
-                  onClick={handleFinalizar}
-                  disabled={saving || !todosCompletos(selected, form)}
-                  title={!todosCompletos(selected, form) ? "Finalize todas as pendências da expedição antes de concluir o pedido" : undefined}
-                  className="w-full sm:w-auto"
-                >
-                  Finalizar Pedido
-                </FinalizarButton>
+                {!soLeitura && (
+                  <FinalizarButton
+                    onClick={handleFinalizar}
+                    disabled={saving || !todosCompletos(selected, form)}
+                    title={!todosCompletos(selected, form) ? "Finalize todas as pendências da expedição antes de concluir o pedido" : undefined}
+                    className="w-full sm:w-auto"
+                  >
+                    Finalizar Pedido
+                  </FinalizarButton>
+                )}
               </div>
-              <VoltarDropdown
+              {!soLeitura && <VoltarDropdown
                 pedido={selected}
                 destinos={["dados", "arte", "dtf", "silk", "acabamento"]}
                 onVoltar={async (destino, payload) => {
@@ -332,8 +343,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   } as any);
                   if (onNavigate) onNavigate(destino);
                 }}
-
-              />
+              />}
             </div>
           </CardContent>
         </Card>
@@ -372,7 +382,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
 
 
           {/* Barra de ações em lote */}
-          {onFinalizarMany && (
+          {onFinalizarMany && !soLeitura && (
             <div className="flex items-center justify-between gap-2 rounded-md border border-dashed bg-muted/30 px-3 py-2">
               <div className="text-xs text-muted-foreground">
                 {selectedIds.size === 0

@@ -9,6 +9,7 @@ import {
   type RefacaoRetrato,
 } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FaixaSomenteLeitura } from "./DadosInTab";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ import {
 interface Props {
   pedidos: Pedido[];
   onSave: (p: Partial<Pedido> & { id?: string }) => void;
+  soLeitura?: boolean;
 }
 
 // ----------- Formatadores ----------
@@ -82,7 +84,7 @@ function fmtEtapa(v: string | null | undefined): string {
 
 // ----------- Componente principal ----------
 
-export function RetrabalhoTab({ pedidos, onSave }: Props) {
+export function RetrabalhoTab({ pedidos, onSave, soLeitura = false }: Props) {
   const [busca, setBusca] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const profilesMap = useProfilesMap();
@@ -181,12 +183,14 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
   }
 
   function updateEpisodio(pedido: Pedido, idx: number, patch: Partial<RefacaoEpisodio>) {
+    if (soLeitura) return;
     const refs: RefacaoEpisodio[] = [...((pedido.refacoes ?? []) as RefacaoEpisodio[])];
     refs[idx] = { ...refs[idx], ...patch };
     onSave({ id: pedido.id, refacoes: refs } as any);
   }
 
   function deleteEpisodio(pedido: Pedido, idx: number) {
+    if (soLeitura) return;
     if (!confirm("Apagar este episódio de refação? Essa ação reduz a contagem de asteriscos do pedido.")) return;
     const refs = (pedido.refacoes ?? []).filter((_, i) => i !== idx);
     onSave({ id: pedido.id, refacoes: refs } as any);
@@ -194,6 +198,7 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
 
   return (
     <div className="space-y-4">
+      {soLeitura && <FaixaSomenteLeitura />}
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
         <StatCard label="Peças refeitas" value={stats.totalRefeitas} />
         <StatCard label="Peças perdidas" value={stats.totalPerdaPecas} />
@@ -299,6 +304,7 @@ export function RetrabalhoTab({ pedidos, onSave }: Props) {
                           profilesMap={profilesMap}
                           onUpdate={(patch) => updateEpisodio(p, idx, patch)}
                           onDelete={() => deleteEpisodio(p, idx)}
+                          soLeitura={soLeitura}
                         />
                       ))}
                     </div>
@@ -334,12 +340,14 @@ function EpisodioCard({
   profilesMap,
   onUpdate,
   onDelete,
+  soLeitura = false,
 }: {
   pedido: Pedido;
   episodio: RefacaoEpisodio;
   profilesMap: Record<string, string>;
   onUpdate: (patch: Partial<RefacaoEpisodio>) => void;
   onDelete: () => void;
+  soLeitura?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const mostraAdesivos = tipoIncluiDTF(pedido.tipo_estampa);
@@ -433,14 +441,16 @@ function EpisodioCard({
 
       {episodio.retrato && <RetratoView retrato={episodio.retrato} profilesMap={profilesMap} />}
 
-      <div className="flex justify-between gap-2 pt-1">
-        <Button variant="outline" size="sm" onClick={onDelete}>
-          <Trash2 className="h-4 w-4 mr-1" /> Apagar episódio
-        </Button>
-        <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>
-          <Pencil className="h-4 w-4 mr-1" /> Editar episódio
-        </Button>
-      </div>
+      {!soLeitura && (
+        <div className="flex justify-between gap-2 pt-1">
+          <Button variant="outline" size="sm" onClick={onDelete}>
+            <Trash2 className="h-4 w-4 mr-1" /> Apagar episódio
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>
+            <Pencil className="h-4 w-4 mr-1" /> Editar episódio
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

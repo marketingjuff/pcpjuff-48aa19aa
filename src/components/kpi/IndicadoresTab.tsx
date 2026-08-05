@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -277,10 +278,10 @@ const RANKINGS_STORE: { dimStore: DimRankingStore; dim: DimRanking; titulo: stri
 
 export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicadores } = {}) {
   const soPcpAtivo = escopo === "custom";
-  const [preset, setPreset] = useState<Preset>("mes");
-  const [intervalo, setIntervalo] = useState(() => intervaloPreset("mes"));
+  const [preset, setPreset] = usePersistedState<Preset>(`kpi:${escopo}:preset`, "mes");
+  const [intervalo, setIntervalo] = usePersistedState(`kpi:${escopo}:intervalo`, intervaloPreset("mes"));
   const [comparar, setComparar] = useState(false);
-  const [empresa, setEmpresa] = useState<EmpresaFiltro>("CONSOLIDADO");
+  const [empresa, setEmpresa] = usePersistedState<EmpresaFiltro>(`kpi:${escopo}:empresa`, "CONSOLIDADO");
   const [vendedores, setVendedores] = useState<string[]>([]);
   const [modelos, setModelos] = useState<string[]>([]);
   const [cores, setCores] = useState<string[]>([]);

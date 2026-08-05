@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { LogOut, Settings } from "lucide-react";
@@ -49,6 +49,11 @@ function KpiHome() {
   useEffect(() => {
     if (search.tab) setTabState(search.tab);
   }, [search.tab]);
+
+  // Abas já visitadas continuam montadas (hidden) para preservar filtros e estado.
+  const visitadas = useRef<Set<string>>(new Set([tab]));
+  visitadas.current.add(tab);
+  const montada = (v: string) => visitadas.current.has(v);
 
   const primeiraAba = TABS[0]?.value;
   useEffect(() => {
@@ -111,23 +116,23 @@ function KpiHome() {
             ))}
           </TabsList>
 
-          {tab === "importolist" && pode("kpi.importolist") && (
-            <TabsContent value="importolist">
+          {montada("importolist") && pode("kpi.importolist") && (
+            <TabsContent value="importolist" forceMount hidden={tab !== "importolist"}>
               <ImportacaoOlistTab />
             </TabsContent>
           )}
-          {tab === "custom" && pode("kpi.custom") && (
-            <TabsContent value="custom">
+          {montada("custom") && pode("kpi.custom") && (
+            <TabsContent value="custom" forceMount hidden={tab !== "custom"}>
               <IndicadoresTab escopo="custom" />
             </TabsContent>
           )}
-          {tab === "store" && pode("kpi.store") && (
-            <TabsContent value="store">
+          {montada("store") && pode("kpi.store") && (
+            <TabsContent value="store" forceMount hidden={tab !== "store"}>
               <IndicadoresTab escopo="store" />
             </TabsContent>
           )}
-          {tab === "pcp" && pode("kpi.pcp") && (
-            <TabsContent value="pcp">
+          {montada("pcp") && pode("kpi.pcp") && (
+            <TabsContent value="pcp" forceMount hidden={tab !== "pcp"}>
               <KpiPcpTab />
             </TabsContent>
           )}
