@@ -174,6 +174,8 @@ export function ProdutosTab() {
   const { data: departamentos = [] } = useSupDepartamentos();
   const { data: fornecedores = [] } = useSupFornecedores();
   const { data: vinculos = [] } = useSupFornecedorProdutos();
+  const { data: grupos = [] } = useSupProdutoGrupos();
+
 
   const [buscaForn, setBuscaForn] = useState("");
   const [mostrarInativos, setMostrarInativos] = useState(false);
