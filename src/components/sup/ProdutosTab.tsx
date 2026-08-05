@@ -535,7 +535,7 @@ export function ProdutosTab() {
       </div>
 
       <Dialog open={prodOpen} onOpenChange={setProdOpen}>
-        <DialogContent className="max-w-[660px]">
+        <DialogContent className="max-w-[720px]">
           <DialogHeader>
             <DialogTitle>
               {(form.id ? "Editar produto" : "Novo produto") + (fornecedorSel ? ` — ${fornecedorSel.nome_fantasia || fornecedorSel.razao_social}` : "")}
@@ -571,6 +571,45 @@ export function ProdutosTab() {
             <div>
               <Label className="text-xs">Preço de tabela</Label>
               <Input value={form.preco} onChange={(e) => setForm((f) => ({ ...f, preco: e.target.value }))} className="h-9 text-right" placeholder="0,00" />
+            </div>
+            <div>
+              <Label className="text-xs">Preço negociado</Label>
+              <Input value={form.preco_negociado} onChange={(e) => setForm((f) => ({ ...f, preco_negociado: e.target.value }))} className="h-9 text-right" placeholder="0,00" />
+            </div>
+            {precoRefTexto && (
+              <div className="col-span-3 -mt-1 text-[11px] text-teal-700">{precoRefTexto}</div>
+            )}
+            <div className="col-span-2">
+              <Label className="text-xs">Item equivalente (grupo)</Label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Combobox
+                    value={form.grupo_id || "__none__"}
+                    onChange={(v) => setForm((f) => ({ ...f, grupo_id: v === "__none__" ? "" : v, fator_conversao: v === "__none__" ? "" : (f.fator_conversao || "1") }))}
+                    options={[
+                      { value: "__none__", label: "— sem grupo —" },
+                      ...grupos.filter((g) => g.ativo || g.id === form.grupo_id).map((g) => ({ value: g.id, label: g.nome, hint: g.unidade_referencia })),
+                    ]}
+                    placeholder="Selecione o grupo"
+                  />
+                </div>
+                <Button type="button" variant="outline" className="h-9 whitespace-nowrap" onClick={abrirNovoGrupo}>
+                  <Plus className="h-4 w-4 mr-1" /> Criar novo grupo
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Fator de conversão</Label>
+              <Input
+                value={form.fator_conversao}
+                disabled={!form.grupo_id}
+                onChange={(e) => setForm((f) => ({ ...f, fator_conversao: e.target.value }))}
+                className="h-9 text-right"
+                placeholder="1"
+              />
+              <div className="text-[11px] text-muted-foreground mt-0.5">
+                Ex.: o produto é vendido em rolo e o grupo compara por metro — se o rolo tem 100 m, o fator é 100.
+              </div>
             </div>
             <div>
               <Label className="text-xs">Qtd. mínima</Label>
@@ -614,12 +653,40 @@ export function ProdutosTab() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={grupoOpen} onOpenChange={setGrupoOpen}>
+        <DialogContent className="max-w-[420px]">
+          <DialogHeader><DialogTitle>Novo grupo de itens equivalentes</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Nome *</Label>
+              <Input value={grupoForm.nome} onChange={(e) => setGrupoForm((g) => ({ ...g, nome: e.target.value }))} className="h-9" />
+            </div>
+            <div>
+              <Label className="text-xs">Unidade de referência *</Label>
+              <Select value={grupoForm.unidade_referencia} onValueChange={(v) => setGrupoForm((g) => ({ ...g, unidade_referencia: v }))}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>{SUP_UNIDADES.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Categoria</Label>
+              <Input value={grupoForm.categoria} onChange={(e) => setGrupoForm((g) => ({ ...g, categoria: e.target.value }))} className="h-9" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGrupoOpen(false)}>Cancelar</Button>
+            <Button className="bg-teal-600 hover:bg-teal-700 text-white" disabled={criarGrupo.isPending} onClick={() => criarGrupo.mutate()}>Criar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={copiarOpen} onOpenChange={setCopiarOpen}>
         <DialogContent className="max-w-[480px]">
           <DialogHeader><DialogTitle>Copiar para outro fornecedor</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="text-xs text-muted-foreground">
               O produto <b>{copiarAlvo?.nome}</b> será cadastrado no fornecedor escolhido sem preço e sem histórico.
+              O grupo de equivalência e o fator de conversão vão junto.
             </div>
             <div>
               <Label className="text-xs">Fornecedor de destino *</Label>
@@ -639,6 +706,7 @@ export function ProdutosTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }
