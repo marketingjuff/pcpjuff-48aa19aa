@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/sup")({
     tab: typeof s.tab === "string" ? s.tab : undefined,
     pcId: typeof s.pcId === "string" ? s.pcId : undefined,
     fornecedorId: typeof s.fornecedorId === "string" ? s.fornecedorId : undefined,
-  }),
+  }) as { tab?: string; pcId?: string; fornecedorId?: string },
   component: SupHome,
   head: () => ({
     meta: [

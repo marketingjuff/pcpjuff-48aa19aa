@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/")({
   validateSearch: (s: Record<string, unknown>) => ({
     tab: typeof s.tab === "string" ? s.tab : undefined,
     pedidoId: typeof s.pedidoId === "string" ? s.pedidoId : undefined,
-  }),
+  }) as { tab?: string; pedidoId?: string },
   component: AppHome,
 });
 

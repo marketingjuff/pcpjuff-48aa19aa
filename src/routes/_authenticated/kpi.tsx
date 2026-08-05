@@ -16,7 +16,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/kpi")({
   validateSearch: (s: Record<string, unknown>) => ({
     tab: typeof s.tab === "string" ? s.tab : undefined,
-  }),
+  }) as { tab?: string },
   component: KpiHome,
 });
 

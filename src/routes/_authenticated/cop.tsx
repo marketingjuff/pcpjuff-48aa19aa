@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/cop")({
     tab: typeof s.tab === "string" ? s.tab : undefined,
     copId: typeof s.copId === "string" ? s.copId : undefined,
     area: typeof s.area === "string" ? s.area : undefined,
-  }),
+  }) as { tab?: string; copId?: string; area?: string },
   component: CopHome,
 });
 

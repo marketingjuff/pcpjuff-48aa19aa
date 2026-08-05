@@ -52,7 +52,7 @@ import { SupConfigPanel } from "@/components/sup/SupConfigPanel";
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   validateSearch: (s: Record<string, unknown>) => ({
     area: (s.area === "cop" ? "cop" : s.area === "map" ? "map" : s.area === "sup" ? "sup" : "pcp") as "pcp" | "cop" | "map" | "sup",
-  }),
+  }) as { area?: "pcp" | "cop" | "map" | "sup" },
   component: ConfiguracoesPage,
 });
 
