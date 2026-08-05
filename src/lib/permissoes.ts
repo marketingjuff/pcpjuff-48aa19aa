@@ -173,18 +173,17 @@ export function niveisPermissoes(
   const out = new Map<PermissaoKey, NivelAcesso>();
   // Base: todas as abas visíveis entram como edição (comportamento atual).
   for (const k of normalizarPermissoes(areasExtras, role)) out.set(k, "edicao");
-  // Só chaves no formato novo podem declarar leitura.
+  // Só chaves no formato novo podem declarar leitura; se a mesma aba aparecer
+  // também sem sufixo, edição vence.
+  const leitura = new Set<PermissaoKey>();
+  const edicao = new Set<PermissaoKey>();
   for (const raw of areasExtras ?? []) {
     const p = parsePermissao(typeof raw === "string" ? raw : "");
     if (!p || !POR_KEY.has(p.key)) continue;
-    if (p.nivel === "leitura" && out.get(p.key) !== "edicao") continue;
-    if (p.nivel === "leitura") out.set(p.key, "leitura");
+    (p.nivel === "leitura" ? leitura : edicao).add(p.key);
   }
-  // Uma mesma aba marcada duas vezes (edição + leitura) fica em edição.
-  for (const raw of areasExtras ?? []) {
-    const p = parsePermissao(typeof raw === "string" ? raw : "");
-    if (p && p.nivel === "edicao" && POR_KEY.has(p.key)) out.set(p.key, "edicao");
-  }
+  for (const k of leitura) if (!edicao.has(k) && out.has(k)) out.set(k, "leitura");
+
   return out;
 }
 
