@@ -8,8 +8,9 @@ import { LogOut, Settings, Menu } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
-import type { AppArea } from "@/integrations/supabase/schema-extras";
+import { useIsAdmin, useMyRoles, useMinhasPermissoes, useAbasPermitidas } from "@/hooks/use-role";
+import { rotaInicial, type PermissaoKey } from "@/lib/permissoes";
+
 import type { Pedido } from "@/lib/pedidos";
 import { DadosInTab } from "@/components/pcp/DadosInTab";
 import { ArteTab } from "@/components/pcp/ArteTab";
