@@ -343,8 +343,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   } as any);
                   if (onNavigate) onNavigate(destino);
                 }}
-
-              />
+              />}
             </div>
           </CardContent>
         </Card>
