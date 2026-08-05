@@ -667,7 +667,7 @@ function PermissoesPanel({ value, onChange }: { value: PermissaoKey[]; onChange:
             <div className="flex items-center gap-2 px-2 py-1.5">
               <Checkbox
                 checked={sel === total ? true : sel > 0 ? "indeterminate" : false}
-                onCheckedChange={(c) => toggleModulo(m.key, c !== true ? sel !== total : true)}
+                onCheckedChange={() => toggleModulo(m.key, sel !== total)}
                 aria-label={`Marcar tudo de ${m.label}`}
               />
               <CollapsibleTrigger className="flex-1 text-left text-xs font-medium">
