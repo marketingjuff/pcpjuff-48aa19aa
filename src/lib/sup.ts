@@ -148,6 +148,10 @@ export type SupPrecoHistorico = {
   motivo: string | null;
   anexo_url: string | null;
   status_revisao: "pendente" | "revisada" | "contestada";
+  anulado: boolean;
+  anulado_por: string | null;
+  anulado_em: string | null;
+  anulado_motivo: string | null;
   revisado_por: string | null;
   revisado_em: string | null;
   alterado_por: string | null;
