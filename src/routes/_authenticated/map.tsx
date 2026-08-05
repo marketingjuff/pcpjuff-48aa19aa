@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/map")({
     tab: typeof s.tab === "string" ? s.tab : undefined,
     prodId: typeof s.prodId === "string" ? s.prodId : undefined,
     fioFilter: typeof s.fioFilter === "string" ? s.fioFilter : undefined,
-  }),
+  }) as { tab?: string; prodId?: string; fioFilter?: string },
   component: MapHome,
 });
 
