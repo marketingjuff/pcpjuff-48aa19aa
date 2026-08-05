@@ -94,6 +94,50 @@ export function AlteracoesPrecoTab() {
 
   const pendentes = linhas.filter((r) => r.h.status_revisao === "pendente").length;
 
+  /** Comparativo por grupo de equivalência, sempre na unidade de referência do grupo. */
+  const comparativo = useMemo(() => {
+    return grupos
+      .filter((g) => g.ativo)
+      .map((g) => {
+        const itens = produtos
+          .filter((p) => p.grupo_id === g.id && p.ativo && p.fornecedor_id)
+          .map((p) => {
+            const v = vinculos.find((x) => x.produto_id === p.id && x.fornecedor_id === p.fornecedor_id) ?? null;
+            const vigente = precoVigente(v);
+            const porRef = precoPorUnidadeRef(vigente, p.fator_conversao);
+            const forn = fornecedores.find((f) => f.id === p.fornecedor_id);
+            return {
+              produto_id: p.id,
+              produto: p.nome,
+              unidade: p.unidade,
+              fornecedor: forn?.nome_fantasia || forn?.razao_social || "—",
+              vigente: vigente ?? 0,
+              porRef: porRef ?? 0,
+              difPerc: 0,
+            };
+          })
+          .filter((it) => it.porRef > 0)
+          .sort((a, b) => a.porRef - b.porRef);
+
+        if (itens.length < 2) return null;
+        const melhor = itens[0]!.porRef;
+        const pior = itens[itens.length - 1]!.porRef;
+        for (const it of itens) it.difPerc = ((it.porRef - melhor) / melhor) * 100;
+
+        return {
+          id: g.id,
+          nome: g.nome,
+          unidade_referencia: g.unidade_referencia,
+          itens,
+          economia: pior - melhor,
+          economiaPerc: ((pior - melhor) / pior) * 100,
+        };
+      })
+      .filter((g): g is NonNullable<typeof g> => g !== null)
+      .sort((a, b) => b.economiaPerc - a.economiaPerc);
+  }, [grupos, produtos, vinculos, fornecedores]);
+
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-2">
