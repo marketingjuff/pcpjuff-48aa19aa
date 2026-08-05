@@ -670,14 +670,20 @@ export function ProdutosTab() {
           <div className="rounded-md border bg-card overflow-hidden">
             <div className="px-3 py-2 bg-muted/40 flex items-center justify-between gap-2">
               <span className="text-xs font-semibold uppercase tracking-wider">Histórico de preço — {sel.nome}</span>
-              <Select value={histTipo} onValueChange={setHistTipo}>
-                <SelectTrigger className="h-7 w-[190px] text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os preços</SelectItem>
-                  <SelectItem value="tabela">Somente tabela</SelectItem>
-                  <SelectItem value="negociado">Somente negociado</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-1.5 text-[11.5px] cursor-pointer">
+                  <Checkbox checked={histAnulados} onCheckedChange={(v) => setHistAnulados(!!v)} />
+                  Mostrar anulados
+                </label>
+                <Select value={histTipo} onValueChange={setHistTipo}>
+                  <SelectTrigger className="h-7 w-[190px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os preços</SelectItem>
+                    <SelectItem value="tabela">Somente tabela</SelectItem>
+                    <SelectItem value="negociado">Somente negociado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="max-h-[40vh] overflow-auto">
               <table className="w-full text-[12.5px]">
@@ -698,7 +704,7 @@ export function ProdutosTab() {
                   ) : historicoFiltrado.map((h) => {
                     const varPct = variacaoPercentual(h.preco_anterior, n(h.preco_novo));
                     return (
-                      <tr key={h.id} className="border-t">
+                      <tr key={h.id} className={`border-t ${h.anulado ? "line-through text-muted-foreground" : ""}`}>
                         <td className="p-1.5 whitespace-nowrap">{new Date(h.created_at).toLocaleString("pt-BR")}</td>
                         <td className="p-1.5 text-center">
                           <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${h.tipo === "negociado" ? "bg-teal-100 text-teal-900" : "bg-muted text-muted-foreground"}`}>
@@ -713,7 +719,14 @@ export function ProdutosTab() {
                             {varPct == null ? "inicial" : `${varPct > 0 ? "+" : ""}${varPct.toFixed(1)}%`}
                           </span>
                         </td>
-                        <td className="p-1.5">{h.motivo ?? "—"}</td>
+                        <td className="p-1.5">
+                          {h.anulado && (
+                            <span className="no-underline mr-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10.5px] font-semibold align-middle">
+                              Anulado
+                            </span>
+                          )}
+                          {h.anulado ? (h.anulado_motivo ?? "—") : (h.motivo ?? "—")}
+                        </td>
                         <td className="p-1.5 text-center">
                           <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
                             h.status_revisao === "pendente" ? "bg-amber-100 text-amber-900"
