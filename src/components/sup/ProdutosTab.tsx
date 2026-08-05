@@ -189,6 +189,7 @@ export function ProdutosTab() {
   const [precoOriginal, setPrecoOriginal] = useState<number | null>(null);
   const [negociadoOriginal, setNegociadoOriginal] = useState<number | null>(null);
   const [histTipo, setHistTipo] = useState("todos");
+  const [histAnulados, setHistAnulados] = useState(false);
 
   const [grupoOpen, setGrupoOpen] = useState(false);
   const [grupoForm, setGrupoForm] = useState({ nome: "", categoria: "", unidade_referencia: "unidade" });
@@ -261,8 +262,11 @@ export function ProdutosTab() {
   });
 
   const historicoFiltrado = useMemo(
-    () => historico.filter((h) => histTipo === "todos" || (h.tipo ?? "tabela") === histTipo),
-    [historico, histTipo],
+    () =>
+      historico
+        .filter((h) => histTipo === "todos" || (h.tipo ?? "tabela") === histTipo)
+        .filter((h) => (histAnulados ? true : !h.anulado)),
+    [historico, histTipo, histAnulados],
   );
 
 
