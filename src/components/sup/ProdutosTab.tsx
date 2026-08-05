@@ -126,10 +126,16 @@ export function ProdutosTab() {
   const [prodOpen, setProdOpen] = useState(false);
   const [form, setForm] = useState<ProdForm>(formVazio());
   const [precoOriginal, setPrecoOriginal] = useState<number | null>(null);
+  const [negociadoOriginal, setNegociadoOriginal] = useState<number | null>(null);
+  const [histTipo, setHistTipo] = useState("todos");
+
+  const [grupoOpen, setGrupoOpen] = useState(false);
+  const [grupoForm, setGrupoForm] = useState({ nome: "", categoria: "", unidade_referencia: "unidade" });
 
   const [copiarOpen, setCopiarOpen] = useState(false);
   const [copiarAlvo, setCopiarAlvo] = useState<SupProduto | null>(null);
   const [copiarDestino, setCopiarDestino] = useState("");
+
 
   const vinculoDoProduto = (produto_id: string) =>
     vinculos.find((v) => v.produto_id === produto_id) ?? null;
