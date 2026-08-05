@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
@@ -19,9 +20,9 @@ export function DashboardSupTab() {
   const { data: fornecedores = [] } = useSupFornecedores();
   const { data: produtos = [] } = useSupProdutos();
 
-  const [empresa, setEmpresa] = useState("todas");
-  const [de, setDe] = useState("");
-  const [ate, setAte] = useState("");
+  const [empresa, setEmpresa] = usePersistedState("sup:dashboard:empresa", "todas");
+  const [de, setDe] = usePersistedState("sup:dashboard:de", "");
+  const [ate, setAte] = usePersistedState("sup:dashboard:ate", "");
 
   const itensPorPedido = useMemo(() => {
     const m = new Map<string, SupPedidoItem[]>();

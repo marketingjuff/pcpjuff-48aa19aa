@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -34,7 +35,7 @@ function competenciaAtual() {
 export function ComissoesTab() {
   const qc = useQueryClient();
   const isAdmin = useIsAdmin();
-  const [comp, setComp] = useState(competenciaAtual());
+  const [comp, setComp] = usePersistedState("sup:comissoes:competencia", competenciaAtual());
   const [ajusteAlvo, setAjusteAlvo] = useState<SupComissao | null>(null);
   const [ajusteValor, setAjusteValor] = useState("");
   const [ajusteMotivo, setAjusteMotivo] = useState("");
