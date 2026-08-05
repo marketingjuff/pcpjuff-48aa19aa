@@ -200,6 +200,72 @@ export function AlteracoesPrecoTab() {
           </tbody>
         </table>
       </div>
+
+      <div className="rounded-md border bg-card overflow-hidden">
+        <div className="px-3 py-2 bg-muted/40">
+          <div className="text-xs font-semibold uppercase tracking-wider">Comparativo entre fornecedores</div>
+          <div className="text-[11px] text-muted-foreground">
+            Compara apenas produtos que estão no mesmo grupo de itens equivalentes, sempre convertidos para a unidade de
+            referência do grupo. Sem grupo e sem fator de conversão, o produto não entra na comparação.
+          </div>
+        </div>
+        {comparativo.length === 0 ? (
+          <div className="p-4 text-sm text-muted-foreground text-center">
+            Nenhum grupo com dois ou mais fornecedores com preço cadastrado.
+          </div>
+        ) : (
+          <div className="max-h-[60vh] overflow-auto divide-y">
+            {comparativo.map((g) => (
+              <div key={g.id} className="p-3">
+                <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
+                  <div className="text-[13px] font-semibold">
+                    {g.nome} <span className="text-muted-foreground font-normal">· por {g.unidade_referencia}</span>
+                  </div>
+                  <div className="text-[11.5px]">
+                    Economia potencial:{" "}
+                    <span className="font-semibold tabular-nums text-emerald-700">
+                      {fmtMoeda(g.economia)}/{g.unidade_referencia}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {" "}({g.economiaPerc.toFixed(1)}% trocando o mais caro pelo mais barato)
+                    </span>
+                  </div>
+                </div>
+                <table className="w-full text-[12.5px]">
+                  <thead className="bg-muted/20">
+                    <tr className="text-xs">
+                      <th className="p-1.5 text-left">Fornecedor</th>
+                      <th className="p-1.5 text-left">Produto</th>
+                      <th className="p-1.5 text-right">Preço vigente</th>
+                      <th className="p-1.5 text-center">Unidade</th>
+                      <th className="p-1.5 text-right">Preço/un. ref.</th>
+                      <th className="p-1.5 text-right">vs. melhor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {g.itens.map((it, i) => (
+                      <tr key={it.produto_id} className={`border-t ${i === 0 ? "bg-emerald-50" : ""}`}>
+                        <td className="p-1.5">
+                          {it.fornecedor}
+                          {i === 0 && <span className="ml-1 text-[10.5px] font-semibold text-emerald-800">melhor preço</span>}
+                        </td>
+                        <td className="p-1.5">{it.produto}</td>
+                        <td className="p-1.5 text-right tabular-nums">{fmtMoeda(it.vigente)}</td>
+                        <td className="p-1.5 text-center">{it.unidade}</td>
+                        <td className="p-1.5 text-right font-semibold tabular-nums">{fmtMoeda(it.porRef)}</td>
+                        <td className="p-1.5 text-right tabular-nums">
+                          {i === 0 ? "—" : `+${it.difPerc.toFixed(1)}%`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
+
