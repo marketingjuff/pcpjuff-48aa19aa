@@ -74,13 +74,13 @@ function AppHomeInner() {
   }, [search.tab, search.pedidoId]);
 
   const isAdmin = useIsAdmin();
-  const { data: myRoles = [] } = useMyRoles();
+  const { data: myRoles = [], isLoading: rolesLoading } = useMyRoles();
   const isGestor = myRoles.some((r) => r.role === "gestor");
-  const areas = new Set<AppArea>(
-    (myRoles.flatMap((r) => (r.areas_extras ?? []) as AppArea[])),
-  );
-  const canSee = (a: AppArea) => isAdmin || areas.has(a);
+  const permissoes = useMinhasPermissoes();
+  const pode = (k: PermissaoKey) => permissoes.has(k);
+  const abasPcp = useAbasPermitidas("pcp");
   const isManager = isAdmin || isGestor;
+
 
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ["pedidos"],
