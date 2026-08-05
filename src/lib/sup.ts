@@ -351,3 +351,27 @@ export function variacaoPercentual(anterior: number | null | undefined, novo: nu
   if (a <= 0) return null;
   return ((novo - a) / a) * 100;
 }
+
+// ---------------- Preço negociado / grupos de equivalência ----------------
+
+/** Preço convertido para a unidade de referência do grupo. */
+export function precoPorUnidadeRef(preco: unknown, fator_conversao: unknown): number | null {
+  const p = n(preco);
+  const f = n(fator_conversao);
+  if (p <= 0 || f <= 0) return null;
+  return p / f;
+}
+
+/** Preço vigente do cadastro: negociado quando houver, senão tabela. */
+export function precoVigente(v: { preco_tabela?: unknown; preco_negociado?: unknown } | null | undefined): number | null {
+  const neg = n(v?.preco_negociado);
+  if (neg > 0) return neg;
+  const tab = n(v?.preco_tabela);
+  return tab > 0 ? tab : null;
+}
+
+/** Variação percentual entre dois preços na mesma unidade. Negativo = economia. */
+export function variacaoPreco(anterior: number, atual: number): number | null {
+  if (anterior <= 0) return null;
+  return ((atual - anterior) / anterior) * 100;
+}
