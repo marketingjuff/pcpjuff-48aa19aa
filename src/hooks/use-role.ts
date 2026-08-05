@@ -5,13 +5,16 @@ import type { AppRole, UserRoleRow } from "@/integrations/supabase/schema-extras
 import {
   MODULOS,
   abasDoModulo,
+  niveisPermissoes,
   normalizarPermissoes,
   permissoesDoModulo,
   todasPermissoes,
   type AbaPermissao,
   type ModuloKey,
+  type NivelAcesso,
   type PermissaoKey,
 } from "@/lib/permissoes";
+
 
 
 export function useCurrentUser() {
