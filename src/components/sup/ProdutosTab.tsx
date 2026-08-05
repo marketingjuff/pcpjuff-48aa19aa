@@ -211,9 +211,14 @@ export function ProdutosTab() {
         throw new Error("__DUP__");
       }
       const preco = toNum(f.preco);
+      const precoNeg = toNum(f.preco_negociado);
       const qtd_min = toNum(f.qtd_min);
       const prazoNum = toNum(f.prazo);
       const prazo = prazoNum == null ? null : Math.round(prazoNum);
+      const fator = f.grupo_id ? toNum(f.fator_conversao) : null;
+      if (f.grupo_id && (fator == null || fator <= 0)) {
+        throw new Error("Informe um fator de conversão maior que zero para o grupo escolhido.");
+      }
 
       const base = {
         nome: f.nome.trim(),
@@ -222,6 +227,8 @@ export function ProdutosTab() {
         especificacao: f.especificacao.trim() || null,
         preco_referencia: preco,
         ativo: f.ativo,
+        grupo_id: f.grupo_id || null,
+        fator_conversao: fator,
       };
 
       let anexo_url: string | null = null;
@@ -262,6 +269,15 @@ export function ProdutosTab() {
             anexo_url,
           });
         }
+        if (precoNeg != null) {
+          await aplicarPrecoNegociado({
+            fornecedor_produto_id: vinc.id,
+            preco_anterior: null,
+            preco_novo: precoNeg,
+            motivo: f.motivo || null,
+            anexo_url,
+          });
+        }
         return;
       }
 
@@ -297,6 +313,25 @@ export function ProdutosTab() {
           anexo_url,
         });
       }
+
+      const atualNeg = vinculo?.preco_negociado ?? null;
+      if (precoNeg != null && n(atualNeg) !== precoNeg) {
+        await aplicarPrecoNegociado({
+          fornecedor_produto_id: vinculoId!,
+          preco_anterior: atualNeg,
+          preco_novo: precoNeg,
+          motivo: f.motivo || null,
+          anexo_url,
+        });
+      }
+      if (precoNeg == null && atualNeg != null) {
+        const { error } = await (supabase as any)
+          .from("sup_fornecedor_produtos")
+          .update({ preco_negociado: null })
+          .eq("id", vinculoId);
+        if (error) throw error;
+      }
+
     },
     onSuccess: () => {
       invalidarTudo();
