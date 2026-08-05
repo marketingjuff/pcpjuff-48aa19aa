@@ -20,7 +20,6 @@ import { HistoricoCopTab } from "@/components/cop/HistoricoCopTab";
 import { ControlePerdasTab } from "@/components/cop/ControlePerdasTab";
 import { AlimentacaoEstoqueTab } from "@/components/cop/AlimentacaoEstoqueTab";
 import { SaldoRealTab } from "@/components/cop/SaldoRealTab";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cop")({
   validateSearch: (s: Record<string, unknown>) => ({
