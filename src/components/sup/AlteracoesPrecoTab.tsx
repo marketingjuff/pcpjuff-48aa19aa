@@ -10,8 +10,10 @@ import { TrendingDown, TrendingUp, Download } from "lucide-react";
 import { SortTh, useTableSort } from "@/components/shared/sortable";
 import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
-import { useSupFornecedorProdutos, useSupProdutos } from "@/components/sup/ProdutosTab";
-import { fmtMoeda, n, variacaoPercentual, type SupPrecoHistorico } from "@/lib/sup";
+import { useSupFornecedorProdutos, useSupProdutos, useSupProdutoGrupos } from "@/components/sup/ProdutosTab";
+import {
+  fmtMoeda, n, variacaoPercentual, precoPorUnidadeRef, precoVigente, type SupPrecoHistorico,
+} from "@/lib/sup";
 
 export function AlteracoesPrecoTab() {
   const qc = useQueryClient();
@@ -19,6 +21,8 @@ export function AlteracoesPrecoTab() {
   const { data: fornecedores = [] } = useSupFornecedores();
   const { data: produtos = [] } = useSupProdutos();
   const { data: vinculos = [] } = useSupFornecedorProdutos();
+  const { data: grupos = [] } = useSupProdutoGrupos();
+
 
   const [direcao, setDirecao] = useState("todas");
   const [revisao, setRevisao] = useState("todas");
