@@ -52,6 +52,17 @@ export function AlteracoesPrecoTab({ de, ate }: Props) {
     },
   });
 
+  const { data: variacaoPrecos = [] } = useQuery({
+    queryKey: ["sup-variacao-precos"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("sup_produto_variacao_precos").select("*");
+      if (error) throw error;
+      return (data ?? []) as SupProdutoVariacaoPreco[];
+    },
+  });
+
+
+
   /** PCs emitidos (fora de rascunho/cancelado) que usaram o registro em anulação. */
   const { data: pcsDoAlvo = [] } = useQuery({
     queryKey: ["sup-pc-do-historico", alvo?.id],
