@@ -1108,6 +1108,46 @@ export function ProdutosTab() {
         }}
       />
 
+      <Dialog open={!!excluirProd} onOpenChange={(v) => { if (!v) setExcluirProd(null); }}>
+        <DialogContent className="max-w-[460px]">
+          <DialogHeader><DialogTitle>Apagar produto</DialogTitle></DialogHeader>
+          <div className="text-sm">
+            Apagar <b>{excluirProd?.nome}</b> definitivamente? O histórico de preços deste produto também será apagado.
+            Produtos já usados em pedidos de compra não podem ser apagados.
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExcluirProd(null)}>Cancelar</Button>
+            <Button
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+              disabled={excluirProduto.isPending}
+              onClick={() => excluirProduto.mutate()}
+            >
+              Apagar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!excluirForn} onOpenChange={(v) => { if (!v) setExcluirForn(null); }}>
+        <DialogContent className="max-w-[460px]">
+          <DialogHeader><DialogTitle>Apagar fornecedor</DialogTitle></DialogHeader>
+          <div className="text-sm">
+            Apagar <b>{excluirForn?.nome_fantasia || excluirForn?.razao_social}</b> definitivamente?
+            Todos os produtos deste fornecedor e seus históricos de preço serão apagados.
+            Fornecedores com pedidos de compra não podem ser apagados.
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExcluirForn(null)}>Cancelar</Button>
+            <Button
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+              disabled={excluirFornecedor.isPending}
+              onClick={() => excluirFornecedor.mutate()}
+            >
+              Apagar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
 
     </div>
