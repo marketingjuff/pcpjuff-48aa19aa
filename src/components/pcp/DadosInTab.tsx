@@ -618,10 +618,48 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               </Field>
             </div>
             <div className="sm:col-span-2 lg:col-span-4">
+              <label className="flex items-start gap-2 text-[12.5px] cursor-pointer select-none rounded-md border border-violet-300 bg-violet-50/60 p-2">
+                <Checkbox
+                  disabled={soLeituraVendedor}
+                  checked={!!form.necessita_captacao_video}
+                  onCheckedChange={(v) => setCaptacaoVideo(v === true)}
+                />
+                <span>
+                  <span className="font-medium">Captação de vídeo da produção</span>{" "}
+                  <span className="text-muted-foreground">— (cliente pediu vídeo da estamparia sendo feita)</span>
+                </span>
+              </label>
+            </div>
+            <div className="sm:col-span-2 lg:col-span-4">
               <Field label="Observações do vendedor">
                 <Textarea className="uppercase" rows={2} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
               </Field>
             </div>
+            <AlertDialog open={confirmVideo !== null} onOpenChange={(v) => { if (!v) setConfirmVideo(null); }}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {confirmVideo ? "Confirmar captação de vídeo?" : "Remover a captação de vídeo?"}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {confirmVideo
+                      ? "O marketing será chamado para gravar a estamparia deste pedido. A produção precisa acontecer em uma segunda ou quinta-feira."
+                      : "O aviso para o marketing deixará de aparecer nas abas DTF e Silk deste pedido."}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setConfirmVideo(null)}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      set("necessita_captacao_video", (confirmVideo === true) as any);
+                      setConfirmVideo(null);
+                    }}
+                  >
+                    Confirmar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             </fieldset>
             {!soLeituraVendedor && (
               <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start">
