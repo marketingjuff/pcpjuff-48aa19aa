@@ -142,6 +142,103 @@ export async function aplicarPrecoNegociado(args: {
   return hist?.id as string | undefined;
 }
 
+/** Preços por combinação de variação (por vínculo fornecedor-produto). */
+export function useSupVariacaoPrecos() {
+  return useQuery({
+    queryKey: ["sup-variacao-precos"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("sup_produto_variacao_precos").select("*");
+      if (error) throw error;
+      return (data ?? []) as SupProdutoVariacaoPreco[];
+    },
+  });
+}
+
+/** Irmã de aplicarPrecoTabela: grava histórico e atualiza a linha da combinação. */
+export async function aplicarPrecoVariacaoTabela(args: {
+  fornecedor_produto_id: string;
+  variacao_preco_id: string;
+  preco_anterior: number | null;
+  preco_novo: number;
+  motivo?: string | null;
+  anexo_url?: string | null;
+}) {
+  const { fornecedor_produto_id, variacao_preco_id, preco_anterior, preco_novo } = args;
+  const anterior = preco_anterior == null || n(preco_anterior) === 0 ? null : n(preco_anterior);
+  const direcao: "alta" | "baixa" | "inicial" =
+    anterior == null ? "inicial" : preco_novo > anterior ? "alta" : "baixa";
+  const status_revisao = direcao === "alta" ? "pendente" : "revisada";
+  const { data: u } = await supabase.auth.getUser();
+
+  const { data: hist, error: e1 } = await (supabase as any)
+    .from("sup_preco_historico")
+    .insert({
+      fornecedor_produto_id,
+      variacao_preco_id,
+      preco_anterior: anterior,
+      preco_novo,
+      direcao,
+      tipo: "tabela",
+      motivo: args.motivo || null,
+      anexo_url: args.anexo_url || null,
+      status_revisao,
+      alterado_por: u.user?.id ?? null,
+    })
+    .select("id")
+    .single();
+  if (e1) throw e1;
+
+  const { error: e2 } = await (supabase as any)
+    .from("sup_produto_variacao_precos")
+    .update({ preco_tabela: preco_novo })
+    .eq("id", variacao_preco_id);
+  if (e2) throw e2;
+  return hist?.id as string | undefined;
+}
+
+/** Irmã de aplicarPrecoNegociado: grava histórico e atualiza a linha da combinação. */
+export async function aplicarPrecoVariacaoNegociado(args: {
+  fornecedor_produto_id: string;
+  variacao_preco_id: string;
+  preco_anterior: number | null;
+  preco_novo: number;
+  motivo?: string | null;
+  anexo_url?: string | null;
+}) {
+  const { fornecedor_produto_id, variacao_preco_id, preco_anterior, preco_novo } = args;
+  const anterior = preco_anterior == null || n(preco_anterior) === 0 ? null : n(preco_anterior);
+  const direcao: "alta" | "baixa" | "inicial" =
+    anterior == null ? "inicial" : preco_novo > anterior ? "alta" : "baixa";
+  const status_revisao = direcao === "alta" ? "pendente" : "revisada";
+  const { data: u } = await supabase.auth.getUser();
+
+  const { data: hist, error: e1 } = await (supabase as any)
+    .from("sup_preco_historico")
+    .insert({
+      fornecedor_produto_id,
+      variacao_preco_id,
+      preco_anterior: anterior,
+      preco_novo,
+      direcao,
+      tipo: "negociado",
+      motivo: args.motivo || null,
+      anexo_url: args.anexo_url || null,
+      status_revisao,
+      alterado_por: u.user?.id ?? null,
+    })
+    .select("id")
+    .single();
+  if (e1) throw e1;
+
+  const { error: e2 } = await (supabase as any)
+    .from("sup_produto_variacao_precos")
+    .update({ preco_negociado: preco_novo })
+    .eq("id", variacao_preco_id);
+  if (e2) throw e2;
+  return hist?.id as string | undefined;
+}
+
+
 
 type ProdForm = {
   id?: string;
