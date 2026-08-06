@@ -116,9 +116,9 @@ function SupHome() {
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
             {(isAdmin || isGestor) && (
-              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes", search: { area: "sup" } as any })} aria-label="Configurações">
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes", search: { area: "sup" } as any })} aria-label="Cadastros">
                 <Settings className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">Configurações</span>
+                <span className="hidden sm:inline">Cadastros</span>
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={handleLogout} aria-label="Sair">
