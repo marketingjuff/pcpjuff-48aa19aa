@@ -1367,6 +1367,7 @@ function ListaCard({ kind, title, placeholder, modulos, compartilhadaCom, notaUs
           ))}
         </TableBody>
       </Table>
+      {notaUso && <p className="text-xs text-muted-foreground">{notaUso}</p>}
     </div>
   );
 }
