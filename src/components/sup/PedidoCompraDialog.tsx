@@ -37,6 +37,9 @@ type ItemLinha = {
   preco_negociado: number;
   preco_historico_id: string | null;
   quantidade_recebida: number;
+  variacao_1_valor: string;
+  variacao_2_valor: string;
+  variacao_preco_id: string | null;
 };
 
 interface Props {
