@@ -152,11 +152,13 @@ export function GanttPedidos({
                     />
                   )}
                   {saida !== null && (
-                    <Flag
+                    <span
                       title={`Saída Juff · ${formatDateBR(p.saida_juff)}`}
-                      className="absolute h-3 w-3 text-rose-600"
+                      className="absolute"
                       style={{ left: saida * colWidth + colWidth / 2 - 6, top: 21 }}
-                    />
+                    >
+                      <Flag className="h-3 w-3 text-rose-600" />
+                    </span>
                   )}
                 </div>
               </div>
