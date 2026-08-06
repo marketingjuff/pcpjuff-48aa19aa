@@ -50,6 +50,26 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
   const dias = useMemo(() => diasDaJanela(de, ate, feriados), [de, ate, feriados]);
   const colWidth = zoom === "dia" ? 22 : 9;
 
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const jaCentralizou = useRef(false);
+
+  function irParaHoje() {
+    const el = scrollRef.current;
+    const i = dias.indexOf(hoje);
+    if (!el || i < 0) return;
+    el.scrollTo({ left: Math.max(0, i * colWidth - (el.clientWidth - COL_ID) / 2), behavior: "smooth" });
+  }
+
+  // ao abrir, posiciona a rolagem horizontal em "hoje"
+  useEffect(() => {
+    if (jaCentralizou.current || dias.length === 0) return;
+    const el = scrollRef.current;
+    const i = dias.indexOf(hoje);
+    if (!el || i < 0) return;
+    el.scrollLeft = Math.max(0, i * colWidth - (el.clientWidth - COL_ID) / 2);
+    jaCentralizou.current = true;
+  }, [dias, colWidth, hoje]);
+
   const naJanela = useMemo(() => {
     return pedidos.filter((p) => {
       if (p.finalizado_em) return false;
