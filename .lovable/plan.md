@@ -1,66 +1,56 @@
-# Captação de Vídeo + Monitor PCP
+# Monitor PCP — correção de leitura (100% visual)
 
-Somente os arquivos autorizados no prompt são tocados. Nada de COP, MAP, SUP, KPI; `src/lib/cop-saldos.ts` intacto. Migração 100% aditiva.
+Sem migração de banco. Sem mudança em nenhuma regra de cálculo. Só os 3 arquivos autorizados
+(`MonitorPcpTab.tsx`, `monitor/FaixaCalor.tsx`, `monitor/GanttPedidos.tsx`) — o `MonitorPcpTab.tsx`
+do projeto está em `src/components/pcp/monitor/`.
 
-## 1. Migração (aditiva)
+## 1. Régua de datas (novo cabeçalho)
 
-`supabase/migrations/<ts>_monitor_pcp_e_captacao_video.sql`, exatamente o SQL do prompt:
+Cabeçalho de duas linhas, colado no topo da área de rolagem (sticky vertical, acompanha a rolagem
+horizontal):
 
-- `pedidos`: `ADD COLUMN IF NOT EXISTS necessita_captacao_video`, `video_captado_silk`, `video_captado_dtf` (boolean).
-- `CREATE TABLE IF NOT EXISTS pcp_capacidade_etapa (etapa PK, teto_dia, atualizado_em, atualizado_por)`, RLS ligada, SELECT para `authenticated`, INSERT/UPDATE só admin via `has_role`, mais os `GRANT SELECT/INSERT/UPDATE` para `authenticated` e `GRANT ALL` para `service_role` (sem grant a Data API a tabela fica inacessível).
-- `INSERT ... ON CONFLICT DO NOTHING` com arte 900, dtf 700, silk 900, acabamento 900.
+- Linha de cima: mês/ano agrupado (`AGO 2026`, `SET 2026`), com separador entre meses.
+- Linha de baixo: zoom Dia → `seg`/`10` em duas linhas; zoom Semana → `10–14 ago`.
+- Coluna de hoje com fundo destacado; linha vermelha vertical atravessando régua, faixa e Gantt.
+- Grade vertical mais visível em toda a altura.
 
-Nenhum `DROP`, `TRUNCATE`, `DELETE`, rename ou mudança de tipo. Tipos regenerados depois.
+Observação: a grade do Monitor é montada só com **dias úteis** (sábados, domingos e feriados já não
+existem como coluna). Então não há coluna cinza de fim de semana a pintar; em vez disso a régua marca
+a quebra de semana com um separador mais forte, para não perder a noção de fim de semana.
 
-## 2. Bloco A — Captação de vídeo
+## 2. Faixa de calor no lugar certo
 
-**`DadosInTab.tsx`**
-- Checkbox "Captação de vídeo da produção — (cliente pediu vídeo da estamparia sendo feita)" no card Input do Vendedor, não obrigatório, desabilitado em `soLeituraVendedor`.
-- `AlertDialog` de confirmação ao marcar e outro ao desmarcar, com os textos do prompt. Cancelar reverte; nada é gravado no dialog, só no "Salvar Input do Vendedor".
-- No salvamento do Input de Produção: se `necessita_captacao_video` e o tipo inclui Silk e/ou DTF, checa se o intervalo `inicio_estamparia`→`termino_estamparia` (extremos inclusive) contém alguma segunda ou quinta. Se não, `toast.warning` amarelo com o texto do prompt e **salva mesmo assim**. Nenhuma validação existente é alterada.
+A `FaixaCalor` passa a ficar fixa logo abaixo da régua (sticky com `top` calculado a partir da altura
+da régua), acima da lista, sem rolar com os pedidos. Padrão **expandida** (Arte / DTF / Silk /
+Acabamento), com botão de recolher para linha única ao lado.
 
-**`SilkTab.tsx` / `DTFTab.tsx`**
-- Moldura vermelha grande no topo (borda grossa, fundo vermelho claro, ícone de alerta): "CHAMAR O MARKETING PARA FAZER O VÍDEO DESTA PRODUÇÃO", com botão "Vídeo captado".
-- Silk usa `video_captado_silk` + tipo inclui Silk; DTF usa `video_captado_dtf` + tipo inclui DTF. Independentes. Botão grava via o `onSave` já existente e a moldura desaparece. Sem histórico/autor.
+## 3. Zoom padrão Semana + rolagem em "hoje"
 
-## 3. Bloco B — Monitor PCP
+Valor inicial `semana` quando não há nada salvo (persistência mantida). Ao montar, a área rola
+horizontalmente até a coluna de hoje (centralizada), uma única vez.
 
-**`src/lib/pcp-monitor.ts`** (puro, sem React)
-- Cargas: arte = `n_batidas_dtf` no dia `arte_data` (0 se só Silk/Lisa); dtf/silk = `qtd` no intervalo de estamparia conforme o tipo; acabamento = `qtd` no intervalo de acabamento. Nulos → 1 / 0, nunca `NaN`.
-- `tetoEfetivo = floor(teto × (1 − 0,01 × (nPedidosNoDia − 1)))`, com `nPedidosNoDia` contado sobre as datas gravadas, antes da simulação.
-- Simulação por faixa: pedidos ordenados por `saida_juff` crescente, carga distribuída pelos dias úteis (`dias-uteis.ts` + feriados), escorregando para o próximo dia útil inclusive além do término. Marca estouro por dia e por pedido vazado. Cores: ≤80% verde, ≤100% amarelo, >100% ou dia com vazamento vermelho.
-- Tudo em memória. Nenhuma escrita no banco.
+## 4. Legenda das etapas
 
-**`src/hooks/use-capacidade.ts`** — leitura/gravação de `pcp_capacidade_etapa` com TanStack Query e invalidação.
+Barra de legenda no cabeçalho do Monitor, junto da legenda de carga já existente:
+◆ Arte · ▬ DTF · ▬ Silk · ▬ Acabamento · ⚑ Saída Juff · 📷 captação de vídeo · ⚠ etapa vencida.
+Uma cor fixa por etapa, usada igual no Gantt e nas sublinhas da faixa de calor. Barra de estamparia
+bicolor só quando o tipo inclui DTF **e** Silk (comportamento atual mantido).
 
-**`MonitorPcpTab.tsx`**
-- Janela de 1 mês antes a 4 meses depois de hoje. Entram pedidos não finalizados com ao menos uma de `arte_data`, `inicio_estamparia`, `inicio_acabamento`. Linhas ordenadas por `saida_juff` crescente, nulos por último.
-- Faixa de calor fixa no topo (`FaixaCalor.tsx`) com Arte/DTF/Silk/Acabamento e botão de recolher para linha única — estado em `localStorage`.
-- Zoom Semana (padrão) / Dia, persistido em `localStorage`. Semana: coluna seg–sex, cor do pior dia, rodapé "3/5 dias no limite". Dia: colunas estreitas, ~4 semanas, linha vermelha de hoje e botão "Hoje".
-- Filtros: busca por nº de pedido/cliente, filtro por `tipo_estampa`, toggle "só atrasados".
-- Engrenagem de capacidade só para admin (`useIsAdmin`).
+## 5. Densidade das linhas
 
-**`GanttPedidos.tsx`**
-- Losango na arte, barra de estamparia (bicolor quando DTF+Silk), barra de acabamento, bandeira na Saída Juff. Etiqueta `#pedido · cliente · qtd pçs · tipo_estampa`. Ícone 📷 com captação de vídeo e ⚠ em etapa vencida usando a lógica de pendência já existente em `src/lib/pedidos.ts`, sem alterá-la.
-- Clique na linha abre painel lateral com resumo, "Editar datas" e atalho para a aba da etapa.
+Altura da linha de 46px → ~34px (marcadores reposicionados), coluna de identificação do pedido sticky
+na horizontal (fica visível ao rolar para os meses seguintes) e zebra sutil alternando o fundo.
 
-**Arrasto**
-- Só com `pcp.monitor` em nível edição. Move a linha inteira em dias úteis; blocos de 5 dias úteis no zoom Semana, dia a dia no zoom Dia.
-- Move apenas `arte_data`, `inicio_estamparia`, `termino_estamparia`, `termino_acabamento`. `inicio_acabamento` é recalculado reaproveitando a fórmula do `DadosInTab.tsx` (extraída para `pcp-monitor.ts` e reimportada lá, sem duplicar regra). `saida_juff` nunca se move.
-- Etapa já executada não se move: arte finalizada, `dtf_estampado`/`silk_feito` = "Sim", acabamento já embalado.
+## 6. Tooltip
 
-**`EditarDatasDialog.tsx`**
-- Abre antes de qualquer gravação quando o `termino_acabamento` passa da `saida_juff` ou quando há captação de vídeo e o novo intervalo de estamparia não pega segunda nem quinta. Mensagem no topo diz qual conflito disparou.
-- Editáveis com `DateInputBR`: Dias de Secagem, Arte, Início/Término Estamparia, Término Acabamento. Início de Acabamento e Saída Juff em cinza, somente leitura, com a explicação "calculada — só muda pela data de entrega, no Input do Vendedor".
-- Mesmas validações de ordem do `DadosInTab.tsx`. Botão "Encaixar na próxima segunda/quinta (dd/mm)" no caso da regra de vídeo. Salvar usa o mesmo upsert; cancelar devolve o pedido à posição original.
+Tooltip por barra/marcador com nome da etapa, datas em formato brasileiro e quantidade, ex.:
+`Estamparia · 10/08/2026 a 12/08/2026 · 300 pçs`.
 
-**`CapacidadeDialog.tsx`** — quatro campos numéricos (Arte, DTF, Silk, Acabamento) gravando em `pcp_capacidade_etapa`, só admin.
+## Detalhes técnicos
 
-## 4. Registro
-
-- `src/lib/permissoes.ts`: acrescenta `{ key: "pcp.monitor", modulo: "pcp", tabValue: "monitor", label: "Monitor PCP", nivelConfiguravel: true }` logo após `pcp.dashboard`. Nada removido ou renomeado.
-- `src/routes/_authenticated/index.tsx`: aba `monitor` depois de "Dashboard", no mesmo padrão `TabsTrigger` + `TabsContent forceMount hidden`, respeitando `abasPcp`, `pode()` e `soLeitura()`.
-
-## Notas técnicas
-
-Grid do Gantt em CSS grid com colunas por dia/semana; arrasto por pointer events com offset em dias úteis, sem biblioteca nova. Recharts não é usado. Colunas novas em `pedidos` são opcionais, então nenhum formulário existente passa a exigir campo novo.
+- Tokens de cor por etapa em uma constante local no `MonitorPcpTab.tsx`, passada por prop para
+  `FaixaCalor` e `GanttPedidos` (nada novo exportado de `pcp-monitor.ts`).
+- Sticky em duas camadas dentro de `#monitor-scroll`: régua `top-0 z-30`, faixa `z-20`; coluna
+  esquerda `sticky left-0` com fundo opaco em régua, faixa e linhas.
+- Scroll inicial em "hoje" via `useEffect` com ref no container, dependente de `dias`/`colWidth`.
+- Nenhuma alteração em filtros, arrasto, diálogos, permissões ou salvamento.
