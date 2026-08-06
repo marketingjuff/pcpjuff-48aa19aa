@@ -720,6 +720,13 @@ export function ProdutosTab() {
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
+                        size="icon" variant="ghost" className="h-7 w-7" title="Duplicar produto neste fornecedor"
+                        onClick={(e) => { e.stopPropagation(); abrirDuplicar(p); }}
+                      >
+                        <CopyPlus className="h-3.5 w-3.5" />
+                      </Button>
+
+                      <Button
                         size="icon" variant="ghost" className="h-7 w-7" title="Copiar para outro fornecedor"
                         onClick={(e) => { e.stopPropagation(); setCopiarAlvo(p); setCopiarDestino(""); setCopiarOpen(true); }}
                       >
