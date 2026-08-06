@@ -17,12 +17,15 @@ import { useIsAdmin } from "@/hooks/use-role";
 import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import {
-  useSupFornecedorProdutos, useSupProdutos, aplicarPrecoTabela, aplicarPrecoNegociado,
+  useSupFornecedorProdutos, useSupProdutos, useSupVariacaoPrecos,
+  aplicarPrecoTabela, aplicarPrecoNegociado,
+  aplicarPrecoVariacaoTabela, aplicarPrecoVariacaoNegociado,
 } from "@/components/sup/ProdutosTab";
+import { useSupVariacoes, useSupVariacaoValores } from "@/components/sup/VariacoesConfig";
 import { abrirPdfPedidoCompra } from "@/lib/sup-pc-pdf";
 import {
   SUP_CONDICOES_PAGAMENTO, SUP_EMPRESAS, SUP_EMPRESA_LABEL, SUP_FLUXO,
-  SUP_STATUS_CLASSE, SUP_STATUS_LABEL, addDias, calcTotaisPedido, economiaItem, fmtMoeda, n,
+  SUP_STATUS_CLASSE, SUP_STATUS_LABEL, addDias, calcTotaisPedido, chaveVariacao, economiaItem, fmtMoeda, n,
   statusPorRecebimento, type SupComissionado, type SupConfig, type SupPedidoCompra,
   type SupPedidoItem, type SupStatusPc,
 } from "@/lib/sup";
