@@ -489,6 +489,8 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
       qc.invalidateQueries({ queryKey: ["sup-pedido", pedidoId] });
       qc.invalidateQueries({ queryKey: ["sup-fornecedor-produtos"] });
       qc.invalidateQueries({ queryKey: ["sup-preco-historico"] });
+      qc.invalidateQueries({ queryKey: ["sup-variacao-precos"] });
+      qc.invalidateQueries({ queryKey: ["sup-alteracoes-preco"] });
       toast.success("Pedido salvo. Preços do cadastro atualizados.");
       onOpenChange(false);
     },
