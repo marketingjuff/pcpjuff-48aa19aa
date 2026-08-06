@@ -624,7 +624,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         {fornecedorSel && (
           <div className="rounded-md border bg-muted/30 p-2 text-xs grid grid-cols-2 md:grid-cols-4 gap-2">
             <Dado label="CNPJ/CPF" valor={fornecedorSel.documento} />
-            <Dado label="Categoria" valor={fornecedorSel.categoria} />
+            
             <Dado
               label="Contato"
               valor={[fornecedorSel.contato_nome, fornecedorSel.contato_telefone, fornecedorSel.contato_email]
