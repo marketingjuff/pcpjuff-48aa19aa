@@ -1959,6 +1959,11 @@ export type Database = {
           quantidade: number
           quantidade_recebida: number
           unidade: string
+          variacao_1_nome: string | null
+          variacao_1_valor: string | null
+          variacao_2_nome: string | null
+          variacao_2_valor: string | null
+          variacao_preco_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1972,6 +1977,11 @@ export type Database = {
           quantidade?: number
           quantidade_recebida?: number
           unidade?: string
+          variacao_1_nome?: string | null
+          variacao_1_valor?: string | null
+          variacao_2_nome?: string | null
+          variacao_2_valor?: string | null
+          variacao_preco_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1985,6 +1995,11 @@ export type Database = {
           quantidade?: number
           quantidade_recebida?: number
           unidade?: string
+          variacao_1_nome?: string | null
+          variacao_1_valor?: string | null
+          variacao_2_nome?: string | null
+          variacao_2_valor?: string | null
+          variacao_preco_id?: string | null
         }
         Relationships: [
           {
@@ -2128,6 +2143,7 @@ export type Database = {
           revisado_por: string | null
           status_revisao: string
           tipo: string
+          variacao_preco_id: string | null
         }
         Insert: {
           alterado_por?: string | null
@@ -2147,6 +2163,7 @@ export type Database = {
           revisado_por?: string | null
           status_revisao?: string
           tipo?: string
+          variacao_preco_id?: string | null
         }
         Update: {
           alterado_por?: string | null
@@ -2166,6 +2183,7 @@ export type Database = {
           revisado_por?: string | null
           status_revisao?: string
           tipo?: string
+          variacao_preco_id?: string | null
         }
         Relationships: [
           {
@@ -2173,6 +2191,13 @@ export type Database = {
             columns: ["fornecedor_produto_id"]
             isOneToOne: false
             referencedRelation: "sup_fornecedor_produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sup_preco_historico_variacao_preco_id_fkey"
+            columns: ["variacao_preco_id"]
+            isOneToOne: false
+            referencedRelation: "sup_produto_variacao_precos"
             referencedColumns: ["id"]
           },
         ]
@@ -2207,6 +2232,50 @@ export type Database = {
         }
         Relationships: []
       }
+      sup_produto_variacao_precos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          fornecedor_produto_id: string
+          id: string
+          preco_negociado: number | null
+          preco_tabela: number | null
+          updated_at: string
+          variacao_1_valor: string | null
+          variacao_2_valor: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          fornecedor_produto_id: string
+          id?: string
+          preco_negociado?: number | null
+          preco_tabela?: number | null
+          updated_at?: string
+          variacao_1_valor?: string | null
+          variacao_2_valor?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          fornecedor_produto_id?: string
+          id?: string
+          preco_negociado?: number | null
+          preco_tabela?: number | null
+          updated_at?: string
+          variacao_1_valor?: string | null
+          variacao_2_valor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sup_produto_variacao_precos_fornecedor_produto_id_fkey"
+            columns: ["fornecedor_produto_id"]
+            isOneToOne: false
+            referencedRelation: "sup_fornecedor_produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sup_produtos: {
         Row: {
           ativo: boolean
@@ -2220,9 +2289,12 @@ export type Database = {
           grupo_id: string | null
           id: string
           nome: string
+          preco_por_variacao: boolean
           preco_referencia: number | null
           unidade: string
           updated_at: string
+          variacao_1_id: string | null
+          variacao_2_id: string | null
         }
         Insert: {
           ativo?: boolean
@@ -2236,9 +2308,12 @@ export type Database = {
           grupo_id?: string | null
           id?: string
           nome: string
+          preco_por_variacao?: boolean
           preco_referencia?: number | null
           unidade?: string
           updated_at?: string
+          variacao_1_id?: string | null
+          variacao_2_id?: string | null
         }
         Update: {
           ativo?: boolean
@@ -2252,9 +2327,12 @@ export type Database = {
           grupo_id?: string | null
           id?: string
           nome?: string
+          preco_por_variacao?: boolean
           preco_referencia?: number | null
           unidade?: string
           updated_at?: string
+          variacao_1_id?: string | null
+          variacao_2_id?: string | null
         }
         Relationships: [
           {
@@ -2271,7 +2349,86 @@ export type Database = {
             referencedRelation: "sup_produto_grupos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sup_produtos_variacao_1_id_fkey"
+            columns: ["variacao_1_id"]
+            isOneToOne: false
+            referencedRelation: "sup_variacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sup_produtos_variacao_2_id_fkey"
+            columns: ["variacao_2_id"]
+            isOneToOne: false
+            referencedRelation: "sup_variacoes"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      sup_variacao_valores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          ordem: number
+          updated_at: string
+          valor: string
+          variacao_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          ordem?: number
+          updated_at?: string
+          valor: string
+          variacao_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          ordem?: number
+          updated_at?: string
+          valor?: string
+          variacao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sup_variacao_valores_variacao_id_fkey"
+            columns: ["variacao_id"]
+            isOneToOne: false
+            referencedRelation: "sup_variacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sup_variacoes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
