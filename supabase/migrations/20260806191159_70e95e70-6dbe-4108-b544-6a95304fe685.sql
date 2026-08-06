@@ -1,0 +1,1 @@
+ALTER TABLE public.sup_fornecedores DROP COLUMN IF EXISTS prazo_entrega_padrao_dias;
