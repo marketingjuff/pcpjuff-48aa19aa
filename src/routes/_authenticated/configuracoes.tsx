@@ -276,7 +276,7 @@ function ConfiguracoesPage() {
               <TabsContent value="cop"><CoresCopCard /></TabsContent>
             </Tabs>
           ) : atual?.slug === "listas" ? (
-            <ListasTab canAccessCop={canAccessCop} canAccessMap={canAccessMap} />
+            <ListasTab canAccessCop={canAccessCop} canAccessMap={canAccessMap} canAccessSup={canAccessSup} />
           ) : atual?.slug === "cop" ? (
             <CopConfigPanel />
           ) : atual?.slug === "map" ? (
@@ -1174,11 +1174,11 @@ function BackupTab() {
   );
 }
 
-function ListasTab({ canAccessCop, canAccessMap }: { canAccessCop: boolean; canAccessMap: boolean }) {
+function ListasTab({ canAccessCop, canAccessMap, canAccessSup }: { canAccessCop: boolean; canAccessMap: boolean; canAccessSup: boolean }) {
   const [busca, setBusca] = useState("");
   const termo = normalizarBusca(busca);
 
-  const modulos: ListaModulo[] = ["pcp", ...(canAccessCop ? (["cop"] as ListaModulo[]) : []), ...(canAccessMap ? (["map"] as ListaModulo[]) : [])];
+  const modulos: ListaModulo[] = ["pcp", ...(canAccessCop ? (["cop"] as ListaModulo[]) : []), ...(canAccessMap ? (["map"] as ListaModulo[]) : []), ...(canAccessSup ? (["sup"] as ListaModulo[]) : [])];
 
   function cardDe(item: ListaCatalogoItem) {
     const compartilhada = item.modulos.length > 1;

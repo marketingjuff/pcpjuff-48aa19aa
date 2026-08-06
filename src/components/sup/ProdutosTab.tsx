@@ -15,6 +15,7 @@ import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { FornecedorDialog } from "@/components/sup/FornecedorDialog";
 import { useSupDepartamentos } from "@/components/sup/DepartamentosTab";
+import { useAppList } from "@/lib/app-lists";
 import {
   SUP_UNIDADES, fmtMoeda, n, variacaoPercentual, precoPorUnidadeRef, precoVigente,
   type SupFornecedor, type SupFornecedorProduto, type SupPrecoHistorico, type SupProduto, type SupProdutoGrupo,
@@ -176,6 +177,8 @@ export function ProdutosTab() {
   const { data: fornecedores = [] } = useSupFornecedores();
   const { data: vinculos = [] } = useSupFornecedorProdutos();
   const { data: grupos = [] } = useSupProdutoGrupos();
+  const { names: unidadesLista } = useAppList("sup_unidade");
+  const unidades = unidadesLista.length ? unidadesLista : ([...SUP_UNIDADES] as string[]);
 
 
   const [buscaForn, setBuscaForn] = useState("");
@@ -813,7 +816,12 @@ export function ProdutosTab() {
               <Label className="text-xs">Unidade *</Label>
               <Select value={form.unidade} onValueChange={(v) => setForm((f) => ({ ...f, unidade: v }))}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>{SUP_UNIDADES.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  {unidades.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  {form.unidade && !unidades.includes(form.unidade) && (
+                    <SelectItem value={form.unidade}>{form.unidade}</SelectItem>
+                  )}
+                </SelectContent>
               </Select>
             </div>
             <div>
@@ -913,7 +921,7 @@ export function ProdutosTab() {
               <Label className="text-xs">Unidade de referência *</Label>
               <Select value={grupoForm.unidade_referencia} onValueChange={(v) => setGrupoForm((g) => ({ ...g, unidade_referencia: v }))}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>{SUP_UNIDADES.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                <SelectContent>{unidades.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
