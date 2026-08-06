@@ -4,6 +4,7 @@ import type { Pedido } from "@/lib/pedidos";
 import { SIM_NAO_PROCESSO, modeloIncluiSilk, visivelEmSilk, tipoIncluiDTF, tipoIncluiSilk, episodioAberto, silkCompleto } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CaptacaoVideoBanner } from "./CaptacaoVideoBanner";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
@@ -182,6 +183,11 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
       {selected ? (
         <>
         <OrcamentoTitle orcamento={selected.orcamento} />
+        <CaptacaoVideoBanner
+          mostrar={!!selected.necessita_captacao_video && tipoIncluiSilk(selected.tipo_estampa) && !selected.video_captado_silk}
+          soLeitura={soLeitura}
+          onCaptado={() => onSave({ id: selected.id, video_captado_silk: true } as any)}
+        />
         {!modeloIncluiSilk(selected.tipo_estampa) ? (
           <EmptyState>Este pedido não inclui Silk (modelo: {selected.tipo_estampa}).</EmptyState>
         ) : (
