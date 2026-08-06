@@ -161,6 +161,9 @@ export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta,
                   let pior = 0;
                   let limite = 0;
                   const titulo: string[] = [];
+                  // números do dia/etapa mais crítico da célula (só exibição)
+                  let mostra: { carga: number; teto: number; esc: number } | null = null;
+                  let piorPeso = -1;
                   for (const et of alvo) {
                     const r = compacta ? resultados[et.key] : res;
                     for (const d of c.dias) {
@@ -170,7 +173,15 @@ export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta,
                       if (peso >= 2) limite++;
                       if (peso > pior) pior = peso;
                       if (dc && dc.carga > 0) {
-                        titulo.push(`${formatDateBR(d)} · ${et.label}: ${dc.carga}/${dc.tetoEfetivo}`);
+                        const esc = dc.cargaEscorregada ?? 0;
+                        titulo.push(
+                          `${formatDateBR(d)} · ${et.label}: ${dc.carga}/${dc.tetoEfetivo}` +
+                            (esc > 0 ? ` — ${esc} vieram de dias anteriores por falta de capacidade` : ""),
+                        );
+                        if (peso > piorPeso || (peso === piorPeso && dc.carga > (mostra?.carga ?? 0))) {
+                          piorPeso = peso;
+                          mostra = { carga: dc.carga, teto: dc.tetoEfetivo, esc };
+                        }
                       }
                     }
                   }
@@ -181,10 +192,17 @@ export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta,
                       key={c.key}
                       title={titulo.slice(0, 8).join("\n") || formatDateBR(c.dias[0]!)}
                       style={{ width: colWidth * c.dias.length }}
-                      className={`flex h-5 items-center justify-center border-r border-white/60 ${NIVEL_BG[nivel]} ${
+                      className={`flex h-5 items-center justify-center overflow-hidden border-r border-white/60 ${NIVEL_BG[nivel]} ${
                         contemHoje ? "ring-1 ring-inset ring-rose-500" : ""
                       }`}
                     >
+                      {zoom === "dia" && mostra && (
+                        <span className="whitespace-nowrap text-[8.5px] font-semibold tabular-nums text-foreground/80">
+                          {mostra.esc > 0
+                            ? `${mostra.carga - mostra.esc}+${mostra.esc}↷/${mostra.teto}`
+                            : `${mostra.carga}/${mostra.teto}`}
+                        </span>
+                      )}
                       {zoom === "semana" && limite > 0 && (
                         <span className="text-[9px] font-semibold tabular-nums text-foreground/70">
                           {limite}/{c.dias.length}
