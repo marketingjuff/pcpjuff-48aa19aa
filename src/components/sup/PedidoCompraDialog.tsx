@@ -442,7 +442,25 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
               .single();
             if (eC) throw eC;
             comb = nova as any;
+            // O item já foi gravado antes com variacao_preco_id nulo: vincula agora.
+            const upd = (supabase as any)
+              .from("sup_pedido_itens")
+              .update({ variacao_preco_id: comb!.id });
+            const { error: eU } = l.id
+              ? await upd.eq("id", l.id)
+              : await upd
+                  .eq("pedido_id", id)
+                  .eq("produto_id", l.produto_id)
+                  .eq("variacao_1_valor", l.variacao_1_valor)
+                  .filter(
+                    "variacao_2_valor",
+                    l.variacao_2_valor ? "eq" : "is",
+                    l.variacao_2_valor ?? null,
+                  );
+            if (eU) throw eU;
+            l.variacao_preco_id = comb!.id;
           }
+
           if (tabelaNovo > 0 && n(comb!.preco_tabela) !== tabelaNovo) {
             await aplicarPrecoVariacaoTabela({
               fornecedor_produto_id: vinc!.id,
