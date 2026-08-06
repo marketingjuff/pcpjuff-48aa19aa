@@ -181,6 +181,8 @@ export function ProdutosTab() {
   const [buscaForn, setBuscaForn] = useState("");
   const [mostrarInativos, setMostrarInativos] = useState(false);
   const [fornId, setFornId] = useState<string | null>(null);
+  const [fornDialogOpen, setFornDialogOpen] = useState(false);
+  const [fornEdit, setFornEdit] = useState<SupFornecedor | null>(null);
 
   const [busca, setBusca] = useState("");
   const [selId, setSelId] = useState<string | null>(null);
