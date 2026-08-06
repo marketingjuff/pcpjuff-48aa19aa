@@ -110,13 +110,17 @@ export function GanttPedidos({
                   <span className="text-muted-foreground tabular-nums">{qtd} pçs</span>
                   {p.necessita_captacao_video && <Video className="h-3 w-3 shrink-0 text-violet-600" />}
                   {lista.length > 0 && (
-                    <AlertTriangle className="h-3 w-3 shrink-0 text-rose-600" title={tituloAtraso} />
+                    <span title={tituloAtraso} className="shrink-0">
+                      <AlertTriangle className="h-3 w-3 text-rose-600" />
+                    </span>
                   )}
                   {vazou && (
-                    <CornerDownRight
-                      className="h-3 w-3 shrink-0 text-amber-600"
+                    <span
                       title="Não cabe na capacidade: parte da carga escorregou para depois do término planejado"
-                    />
+                      className="shrink-0"
+                    >
+                      <CornerDownRight className="h-3 w-3 text-amber-600" />
+                    </span>
                   )}
                 </div>
                 <div className="truncate text-[9.5px] text-muted-foreground">
