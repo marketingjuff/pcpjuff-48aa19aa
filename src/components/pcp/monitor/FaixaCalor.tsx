@@ -60,10 +60,12 @@ interface ReguaProps {
   zoom: "semana" | "dia";
   colWidth: number;
   hoje: string;
+  /** true = dia útil; falso pinta a coluna de cinza (sáb/dom/feriado) */
+  diaUtil: (d: string) => boolean;
 }
 
 /** Régua de datas fixa no topo da área de rolagem. */
-export function ReguaDatas({ dias, zoom, colWidth, hoje }: ReguaProps) {
+export function ReguaDatas({ dias, zoom, colWidth, hoje, diaUtil }: ReguaProps) {
   const colunas = colunasDaGrade(dias, zoom);
 
   // agrupamento de meses na linha de cima
@@ -105,22 +107,27 @@ export function ReguaDatas({ dias, zoom, colWidth, hoje }: ReguaProps) {
           {colunas.map((c) => {
             const contemHoje = c.dias.includes(hoje);
             const { l1, l2 } = rotuloColuna(c, zoom);
-            const fimSemana = zoom === "dia" && new Date(c.dias[0]! + "T00:00:00").getDay() === 5;
+            const naoUtil = zoom === "dia" && !diaUtil(c.dias[0]!);
+            const domingo = zoom === "dia" && new Date(c.dias[0]! + "T00:00:00").getDay() === 0;
             return (
               <div
                 key={c.key}
                 title={
                   c.dias.length > 1
                     ? `${formatDateBR(c.dias[0]!)} a ${formatDateBR(c.dias[c.dias.length - 1]!)}`
-                    : formatDateBR(c.dias[0]!)
+                    : formatDateBR(c.dias[0]!) + (naoUtil ? " · dia não útil" : "")
                 }
                 style={{ width: colWidth * c.dias.length, height: 26 }}
                 className={`flex flex-col items-center justify-center overflow-hidden leading-none ${
-                  fimSemana || zoom === "semana" ? "border-r-2 border-border" : "border-r border-border/60"
-                } ${contemHoje ? "bg-rose-500/10" : ""}`}
+                  domingo || zoom === "semana" ? "border-r-2 border-border" : "border-r border-border/60"
+                } ${contemHoje ? "bg-rose-500/10" : naoUtil ? "bg-muted" : ""}`}
               >
-                <span className="text-[8.5px] text-muted-foreground">{l1}</span>
-                <span className={`text-[9.5px] tabular-nums ${contemHoje ? "font-bold text-rose-600" : "font-medium"}`}>
+                <span className={`text-[8.5px] ${naoUtil ? "text-muted-foreground/60" : "text-muted-foreground"}`}>{l1}</span>
+                <span
+                  className={`text-[9.5px] tabular-nums ${
+                    contemHoje ? "font-bold text-rose-600" : naoUtil ? "text-muted-foreground/60" : "font-medium"
+                  }`}
+                >
                   {l2}
                 </span>
               </div>
@@ -131,6 +138,7 @@ export function ReguaDatas({ dias, zoom, colWidth, hoje }: ReguaProps) {
     </div>
   );
 }
+
 
 interface Props {
   dias: string[];
