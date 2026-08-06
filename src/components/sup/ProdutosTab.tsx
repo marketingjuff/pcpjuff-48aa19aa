@@ -1583,7 +1583,54 @@ export function ProdutosTab() {
         </DialogContent>
       </Dialog>
 
+      <AlertDialog open={confirmFlagOff} onOpenChange={setConfirmFlagOff}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desligar preço por variação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              As {combinacoesForm.length} combinação(ões) de preço deste produto serão inativadas ao salvar.
+              Nada é apagado e o histórico de preços continua disponível. O produto volta a usar um preço único.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setForm((f) => ({ ...f, preco_por_variacao: false }))}>
+              Desligar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmTroca} onOpenChange={(v) => { if (!v) setConfirmTroca(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Trocar o tipo de variação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este produto já tem {combinacoesForm.length} combinação(ões) de preço. Ao salvar, elas serão
+              inativadas porque deixam de corresponder aos novos tipos. Nada é apagado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const t = confirmTroca;
+                setConfirmTroca(null);
+                if (!t) return;
+                setForm((f) =>
+                  t.campo === "variacao_1_id"
+                    ? { ...f, variacao_1_id: t.valor, variacao_2_id: t.valor ? f.variacao_2_id : "", preco_por_variacao: t.valor ? f.preco_por_variacao : false }
+                    : { ...f, variacao_2_id: t.valor },
+                );
+              }}
+            >
+              Trocar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
+
   );
 }
