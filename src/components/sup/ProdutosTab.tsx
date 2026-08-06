@@ -17,8 +17,14 @@ import { FornecedorDialog } from "@/components/sup/FornecedorDialog";
 import { useSupDepartamentos } from "@/components/sup/DepartamentosTab";
 import { useAppList } from "@/lib/app-lists";
 import {
-  SUP_UNIDADES, fmtMoeda, n, variacaoPercentual, precoPorUnidadeRef, precoVigente,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useSupVariacoes, useSupVariacaoValores } from "@/components/sup/VariacoesConfig";
+import {
+  SUP_UNIDADES, chaveVariacao, fmtMoeda, n, rotuloVariacao, variacaoPercentual, precoPorUnidadeRef, precoVigente,
   type SupFornecedor, type SupFornecedorProduto, type SupPrecoHistorico, type SupProduto, type SupProdutoGrupo,
+  type SupProdutoVariacaoPreco,
 } from "@/lib/sup";
 
 
