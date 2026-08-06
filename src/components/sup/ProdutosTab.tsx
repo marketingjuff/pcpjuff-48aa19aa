@@ -945,6 +945,23 @@ export function ProdutosTab() {
         </DialogContent>
       </Dialog>
 
+      <FornecedorDialog
+        open={fornDialogOpen}
+        onOpenChange={setFornDialogOpen}
+        fornecedor={fornEdit}
+        onSaved={(id) => {
+          const criando = fornEdit === null;
+          if (criando && id) {
+            setFornId(id);
+            setSelId(null);
+            setBuscaForn("");
+          }
+          setFornEdit(null);
+        }}
+      />
+
+
+
     </div>
   );
 }
