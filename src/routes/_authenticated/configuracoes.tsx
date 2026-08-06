@@ -1174,70 +1174,75 @@ function BackupTab() {
   );
 }
 
-function ListasTab() {
-  type Section = { kind: AppListKind; title: string; placeholder: string };
-  const groups: { value: string; label: string; sections: Section[] }[] = [
-    {
-      value: "dados_in",
-      label: "Dados In",
-      sections: [
-        { kind: "vendedor", title: "Vendedores", placeholder: "Novo vendedor" },
-        { kind: "frete", title: "Frete (transportadoras)", placeholder: "Nova opção de frete" },
-        { kind: "pagamento", title: "Tipo de Pagamento", placeholder: "Nova forma de pagamento" },
-        { kind: "nf", title: "Nota Fiscal", placeholder: "Nova opção (ex.: Sim, Não, Não se aplica)" },
-      ],
-    },
-    {
-      value: "arte",
-      label: "Arte",
-      sections: [
-        { kind: "status_arte", title: "Status da Arte", placeholder: "Nova opção de Status da Arte" },
-      ],
-    },
-    {
-      value: "producao",
-      label: "Produção",
-      sections: [
-        { kind: "dtf", title: "Operadores DTF", placeholder: "Novo operador DTF" },
-        { kind: "silk", title: "Operadores Silk", placeholder: "Novo operador Silk" },
-        { kind: "acabamento", title: "Responsáveis pelo Acabamento", placeholder: "Novo responsável" },
-        { kind: "corte_dtf", title: "Quem cortou o DTF", placeholder: "Novo responsável pelo corte" },
-        { kind: "revelacao_silk", title: "Quem revelou a tela (Silk)", placeholder: "Nova pessoa" },
-        { kind: "motivo_perda", title: "Motivos de perda", placeholder: "Novo motivo de perda" },
-      ],
-    },
-    {
-      value: "refacao",
-      label: "Refação",
-      sections: [
-        { kind: "refacao_area_identifica", title: "Área que identificou o problema", placeholder: "Nova área" },
-        { kind: "refacao_area_erro", title: "Área que errou a produção", placeholder: "Nova área" },
-        { kind: "refacao_problema_arte", title: "Problemas da Arte", placeholder: "Novo problema" },
-        { kind: "refacao_problema_dtf", title: "Problemas do DTF", placeholder: "Novo problema" },
-        { kind: "refacao_problema_silk", title: "Problemas do Silk", placeholder: "Novo problema" },
-        { kind: "refacao_problema_acabamento", title: "Problemas do Acabamento", placeholder: "Novo problema" },
-      ],
-    },
-  ];
+function ListasTab({ canAccessCop, canAccessMap }: { canAccessCop: boolean; canAccessMap: boolean }) {
+  const [busca, setBusca] = useState("");
+  const termo = normalizarBusca(busca);
+
+  const modulos: ListaModulo[] = ["pcp", ...(canAccessCop ? (["cop"] as ListaModulo[]) : []), ...(canAccessMap ? (["map"] as ListaModulo[]) : [])];
+
+  function cardDe(item: ListaCatalogoItem) {
+    const compartilhada = item.modulos.length > 1;
+    return (
+      <ListaCard
+        key={item.kind}
+        kind={item.kind}
+        title={item.titulo}
+        placeholder={item.placeholder}
+        modulos={item.modulos}
+        compartilhadaCom={compartilhada ? item.modulos.map(moduloLabel).join(" e ") : undefined}
+        notaUso={item.notaUso}
+      />
+    );
+  }
+
+  const resultados = termo
+    ? LISTAS_CATALOGO.filter((i) => normalizarBusca(i.titulo).includes(termo) && i.modulos.some((m) => modulos.includes(m)))
+    : [];
+
   return (
-    <Tabs defaultValue="dados_in">
-      <TabsList className="mb-4 flex flex-wrap h-auto">
-        {groups.map((g) => (
-          <TabsTrigger key={g.value} value={g.value}>{g.label}</TabsTrigger>
-        ))}
-      </TabsList>
-      {groups.map((g) => (
-        <TabsContent key={g.value} value={g.value}>
-          <div className="grid gap-6 md:grid-cols-2">
-            {g.sections.map((s) => (
-              <ListaCard key={s.kind} {...s} />
+    <div className="space-y-4">
+      <Input
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        placeholder="Buscar lista pelo nome…"
+        className="max-w-sm"
+      />
+
+      {termo ? (
+        resultados.length === 0 ? (
+          <div className="text-sm text-muted-foreground">Nenhuma lista encontrada.</div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2">{resultados.map(cardDe)}</div>
+        )
+      ) : (
+        <Tabs defaultValue="pcp">
+          <TabsList className="mb-4 flex flex-wrap h-auto">
+            {modulos.map((m) => (
+              <TabsTrigger key={m} value={m} className={moduloTabClasses(m)}>{moduloLabel(m)}</TabsTrigger>
             ))}
-          </div>
-        </TabsContent>
-      ))}
-    </Tabs>
+          </TabsList>
+          {modulos.map((m) => {
+            const itens = LISTAS_CATALOGO.filter((i) => i.modulos.includes(m));
+            const grupos = Array.from(new Set(itens.map((i) => i.grupo)));
+            return (
+              <TabsContent key={m} value={m} className="space-y-6">
+                {grupos.map((g) => (
+                  <div key={g} className="space-y-3">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{g}</div>
+                    <div className="grid gap-6 md:grid-cols-2">
+                      {itens.filter((i) => i.grupo === g).map(cardDe)}
+                    </div>
+                  </div>
+                ))}
+              </TabsContent>
+            );
+          })}
+        </Tabs>
+      )}
+    </div>
   );
 }
+
 
 function ListaCard({ kind, title, placeholder }: { kind: AppListKind; title: string; placeholder: string }) {
   const { items, isLoading } = useAppList(kind);
