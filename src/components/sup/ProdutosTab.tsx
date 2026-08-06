@@ -13,6 +13,7 @@ import { Plus, Pencil, Copy, TrendingDown, TrendingUp } from "lucide-react";
 import { SortTh, useTableSort } from "@/components/shared/sortable";
 import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
+import { FornecedorDialog } from "@/components/sup/FornecedorDialog";
 import { useSupDepartamentos } from "@/components/sup/DepartamentosTab";
 import {
   SUP_UNIDADES, fmtMoeda, n, variacaoPercentual, precoPorUnidadeRef, precoVigente,
