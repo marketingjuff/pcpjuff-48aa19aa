@@ -493,6 +493,26 @@ export function ProdutosTab() {
       const { error: e1 } = await (supabase as any).from("sup_produtos").update(base).eq("id", f.id);
       if (e1) throw e1;
 
+      // Combinações deixam de valer quando o preço por variação é desligado
+      // ou quando os tipos de variação mudam. Nada é apagado: inativamos.
+      const antes = produtos.find((p) => p.id === f.id);
+      const trocouTipos =
+        (antes?.variacao_1_id ?? null) !== (f.variacao_1_id || null) ||
+        (antes?.variacao_2_id ?? null) !== (f.variacao_2_id || null);
+      const desligou = !!antes?.preco_por_variacao && !base.preco_por_variacao;
+      if (trocouTipos || desligou) {
+        const vId = vinculoDoProduto(f.id)?.id ?? null;
+        if (vId) {
+          const { error } = await (supabase as any)
+            .from("sup_produto_variacao_precos")
+            .update({ ativo: false })
+            .eq("fornecedor_produto_id", vId)
+            .eq("ativo", true);
+          if (error) throw error;
+        }
+      }
+
+
       let vinculo = vinculoDoProduto(f.id);
       let vinculoId = vinculo?.id ?? null;
       if (!vinculoId) {
