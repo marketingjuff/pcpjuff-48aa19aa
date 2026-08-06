@@ -590,6 +590,9 @@ export function ProdutosTab() {
           ativo: true,
           grupo_id: p.grupo_id ?? null,
           fator_conversao: p.fator_conversao ?? null,
+          variacao_1_id: p.variacao_1_id ?? null,
+          variacao_2_id: p.variacao_2_id ?? null,
+          preco_por_variacao: p.preco_por_variacao ?? false,
           fornecedor_id: copiarDestino,
           created_by: u.user?.id ?? null,
         })
