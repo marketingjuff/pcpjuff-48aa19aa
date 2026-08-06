@@ -204,6 +204,9 @@ export function ProdutosTab() {
   const [copiarAlvo, setCopiarAlvo] = useState<SupProduto | null>(null);
   const [copiarDestino, setCopiarDestino] = useState("");
 
+  const [excluirProd, setExcluirProd] = useState<SupProduto | null>(null);
+  const [excluirForn, setExcluirForn] = useState<SupFornecedor | null>(null);
+
 
   const vinculoDoProduto = (produto_id: string) =>
     vinculos.find((v) => v.produto_id === produto_id) ?? null;
