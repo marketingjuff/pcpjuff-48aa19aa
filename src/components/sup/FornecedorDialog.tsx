@@ -34,7 +34,6 @@ export function FornecedorDialog({ open, onOpenChange, fornecedor, onSaved }: Pr
         razao_social: f.razao_social.trim(),
         nome_fantasia: f.nome_fantasia || null,
         documento: f.documento || null,
-        categoria: f.categoria || null,
         contato_nome: f.contato_nome || null,
         contato_telefone: f.contato_telefone || null,
         contato_email: f.contato_email || null,
@@ -90,10 +89,7 @@ export function FornecedorDialog({ open, onOpenChange, fornecedor, onSaved }: Pr
             <Input value={form.documento ?? ""} onChange={(e) => set("documento", e.target.value)} className="h-9" />
           </div>
           <div>
-            <Label className="text-xs">Categoria</Label>
-            <Input value={form.categoria ?? ""} onChange={(e) => set("categoria", e.target.value)} className="h-9" placeholder="Tintas, limpeza, papelaria…" />
-          </div>
-          <div>
+
             <Label className="text-xs">Contato — nome</Label>
             <Input value={form.contato_nome ?? ""} onChange={(e) => set("contato_nome", e.target.value)} className="h-9" />
           </div>
