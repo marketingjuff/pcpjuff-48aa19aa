@@ -105,7 +105,7 @@ export function PendenciaMapeamentoAlert() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => navigate({ to: "/configuracoes", search: { area: "cop" } as any })}
+            onClick={() => navigate({ to: "/configuracoes", search: { s: "cop", origem: "/cop" } as any })}
           >
             Abrir Configurações do COP
           </Button>
