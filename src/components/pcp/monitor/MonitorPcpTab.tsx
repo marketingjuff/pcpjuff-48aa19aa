@@ -51,24 +51,35 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
   const colWidth = zoom === "dia" ? 52 : 9;
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const jaCentralizou = useRef(false);
+
+  // posição de rolagem que deixa "hoje" logo no início da área visível
+  function offsetHoje(el: HTMLDivElement) {
+    const i = dias.indexOf(hoje);
+    if (i < 0) return null;
+    // mantém 2 colunas de contexto antes do dia vigente
+    const pad = zoom === "dia" ? 2 : 6;
+    return Math.max(0, (i - pad) * colWidth);
+  }
 
   function irParaHoje() {
     const el = scrollRef.current;
-    const i = dias.indexOf(hoje);
-    if (!el || i < 0) return;
-    el.scrollTo({ left: Math.max(0, i * colWidth - (el.clientWidth - COL_ID) / 2), behavior: "smooth" });
+    if (!el) return;
+    const left = offsetHoje(el);
+    if (left === null) return;
+    el.scrollTo({ left, behavior: "smooth" });
   }
 
-  // ao abrir, posiciona a rolagem horizontal em "hoje"
+  // sempre que a janela/zoom mudar, reposiciona no dia vigente
   useEffect(() => {
-    if (jaCentralizou.current || dias.length === 0) return;
+    if (dias.length === 0) return;
     const el = scrollRef.current;
-    const i = dias.indexOf(hoje);
-    if (!el || i < 0) return;
-    el.scrollLeft = Math.max(0, i * colWidth - (el.clientWidth - COL_ID) / 2);
-    jaCentralizou.current = true;
-  }, [dias, colWidth, hoje]);
+    if (!el) return;
+    const left = offsetHoje(el);
+    if (left === null) return;
+    el.scrollLeft = left;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dias, colWidth, hoje, zoom]);
+
 
   const naJanela = useMemo(() => {
     return pedidos.filter((p) => {
