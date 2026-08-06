@@ -386,3 +386,72 @@ export function variacaoPreco(anterior: number, atual: number): number | null {
   if (anterior <= 0) return null;
   return ((atual - anterior) / anterior) * 100;
 }
+
+/* ================= Variações de produto (SUP) ================= */
+
+export type SupVariacao = {
+  id: string;
+  nome: string;
+  ordem: number;
+  ativo: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type SupVariacaoValor = {
+  id: string;
+  variacao_id: string;
+  valor: string;
+  ordem: number;
+  ativo: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type SupProdutoVariacaoPreco = {
+  id: string;
+  fornecedor_produto_id: string;
+  variacao_1_valor: string | null;
+  variacao_2_valor: string | null;
+  preco_tabela: number | null;
+  preco_negociado: number | null;
+  ativo: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+/** Rótulo curto da combinação: "Azul · M". Vazio quando não há variação. */
+export function rotuloVariacao(v: {
+  variacao_1_valor?: string | null;
+  variacao_2_valor?: string | null;
+}): string {
+  return [v.variacao_1_valor, v.variacao_2_valor]
+    .map((x) => (x ?? "").trim())
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** Rótulo completo com os nomes dos tipos: "Cor: Azul · Tamanho: M". */
+export function rotuloVariacaoCompleto(v: {
+  variacao_1_nome?: string | null;
+  variacao_1_valor?: string | null;
+  variacao_2_nome?: string | null;
+  variacao_2_valor?: string | null;
+}): string {
+  const partes: string[] = [];
+  const add = (nome?: string | null, valor?: string | null) => {
+    const val = (valor ?? "").trim();
+    if (!val) return;
+    const nm = (nome ?? "").trim();
+    partes.push(nm ? `${nm}: ${val}` : val);
+  };
+  add(v.variacao_1_nome, v.variacao_1_valor);
+  add(v.variacao_2_nome, v.variacao_2_valor);
+  return partes.join(" · ");
+}
+
+/** Chave de comparação de combinação, normalizada. */
+export function chaveVariacao(v1?: string | null, v2?: string | null): string {
+  const nm = (s?: string | null) => (s ?? "").trim().toLowerCase();
+  return `${nm(v1)}||${nm(v2)}`;
+}
