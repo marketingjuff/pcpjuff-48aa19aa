@@ -28,14 +28,17 @@ export function abrirPdfPedidoCompra(args: {
   const nCols = orcamento ? 4 : 6;
   const linhas = itens.length === 0
     ? `<tr><td colspan="${nCols}" style="text-align:center">Sem itens</td></tr>`
-    : itens.map((i, idx) => `<tr>
+    : itens.map((i, idx) => {
+        const rot = rotuloVariacaoCompleto(i);
+        return `<tr>
         <td class="num">${idx + 1}</td>
-        <td>${esc(nomeProduto(i.produto_id))}</td>
+        <td>${esc(nomeProduto(i.produto_id))}${rot ? ` — ${esc(rot)}` : ""}</td>
         <td class="num">${esc(fmtQtd(i.quantidade))}</td>
         <td class="num">${esc(i.unidade)}</td>
         ${orcamento ? "" : `<td class="num">${esc(fmtMoeda(i.preco_negociado))}</td>
         <td class="num">${esc(fmtMoeda(n(i.preco_negociado) * n(i.quantidade)))}</td>`}
-      </tr>`).join("");
+      </tr>`;
+      }).join("");
 
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8" />
 <title>${esc(titulo)}</title>
