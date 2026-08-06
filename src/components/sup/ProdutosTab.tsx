@@ -820,6 +820,12 @@ export function ProdutosTab() {
                       >
                         <Copy className="h-3.5 w-3.5" />
                       </Button>
+                      <Button
+                        size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-rose-700" title="Apagar produto"
+                        onClick={(e) => { e.stopPropagation(); setExcluirProd(p); }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </td>
                   </tr>
                 );
