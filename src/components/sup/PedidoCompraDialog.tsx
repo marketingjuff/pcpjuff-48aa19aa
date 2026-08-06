@@ -240,9 +240,42 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           preco_tabela: preco,
           preco_negociado: negociado > 0 ? negociado : preco,
           preco_historico_id: hist,
+          variacao_1_valor: "",
+          variacao_2_valor: "",
+          variacao_preco_id: null,
         }
       : it));
   }
+
+  /** Combinação cadastrada para a linha (quando o produto tem preço por variação). */
+  function combinacaoDaLinha(l: ItemLinha) {
+    const vinc = vinculos.find((v) => v.produto_id === l.produto_id && v.fornecedor_id === head.fornecedor_id);
+    if (!vinc || !l.variacao_1_valor) return null;
+    return (
+      variacaoPrecos.find(
+        (c) =>
+          c.fornecedor_produto_id === vinc.id &&
+          c.ativo &&
+          chaveVariacao(c.variacao_1_valor, c.variacao_2_valor) === chaveVariacao(l.variacao_1_valor, l.variacao_2_valor || null),
+      ) ?? null
+    );
+  }
+
+  /** Ao escolher a combinação, herda o preço cadastrado dela (quando houver). */
+  function trocarVariacao(idx: number, campo: "variacao_1_valor" | "variacao_2_valor", valor: string) {
+    setLinhas((l) => l.map((it, i) => {
+      if (i !== idx) return it;
+      const proximo = { ...it, [campo]: valor } as ItemLinha;
+      const prod = produtos.find((p) => p.id === proximo.produto_id);
+      if (!prod?.preco_por_variacao) return { ...proximo, variacao_preco_id: null };
+      const comb = combinacaoDaLinha(proximo);
+      if (!comb) return { ...proximo, variacao_preco_id: null };
+      const tabela = comb.preco_tabela == null ? proximo.preco_tabela : n(comb.preco_tabela);
+      const neg = comb.preco_negociado == null ? tabela : n(comb.preco_negociado);
+      return { ...proximo, variacao_preco_id: comb.id, preco_tabela: tabela, preco_negociado: neg };
+    }));
+  }
+
 
 
   function setLinha(idx: number, patch: Partial<ItemLinha>) {
