@@ -1092,6 +1092,27 @@ export type Database = {
           },
         ]
       }
+      pcp_capacidade_etapa: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          etapa: string
+          teto_dia: number
+        }
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          etapa: string
+          teto_dia?: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          etapa?: string
+          teto_dia?: number
+        }
+        Relationships: []
+      }
       pedido_audit_log: {
         Row: {
           acao: string
@@ -1180,6 +1201,7 @@ export type Database = {
           layout_url: string | null
           n_batidas_dtf: number | null
           n_batidas_silk: number | null
+          necessita_captacao_video: boolean
           necessita_vetorizacao: boolean | null
           nf_emitida: string | null
           obs_vendedor: string | null
@@ -1216,6 +1238,8 @@ export type Database = {
           vetorizacao_dtf: string | null
           vetorizacao_executada: boolean | null
           vetorizacao_silk: string | null
+          video_captado_dtf: boolean
+          video_captado_silk: boolean
         }
         Insert: {
           acabamento_data?: string | null
@@ -1262,6 +1286,7 @@ export type Database = {
           layout_url?: string | null
           n_batidas_dtf?: number | null
           n_batidas_silk?: number | null
+          necessita_captacao_video?: boolean
           necessita_vetorizacao?: boolean | null
           nf_emitida?: string | null
           obs_vendedor?: string | null
@@ -1298,6 +1323,8 @@ export type Database = {
           vetorizacao_dtf?: string | null
           vetorizacao_executada?: boolean | null
           vetorizacao_silk?: string | null
+          video_captado_dtf?: boolean
+          video_captado_silk?: boolean
         }
         Update: {
           acabamento_data?: string | null
@@ -1344,6 +1371,7 @@ export type Database = {
           layout_url?: string | null
           n_batidas_dtf?: number | null
           n_batidas_silk?: number | null
+          necessita_captacao_video?: boolean
           necessita_vetorizacao?: boolean | null
           nf_emitida?: string | null
           obs_vendedor?: string | null
@@ -1380,6 +1408,8 @@ export type Database = {
           vetorizacao_dtf?: string | null
           vetorizacao_executada?: boolean | null
           vetorizacao_silk?: string | null
+          video_captado_dtf?: boolean
+          video_captado_silk?: boolean
         }
         Relationships: []
       }
