@@ -816,7 +816,12 @@ export function ProdutosTab() {
               <Label className="text-xs">Unidade *</Label>
               <Select value={form.unidade} onValueChange={(v) => setForm((f) => ({ ...f, unidade: v }))}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>{unidades.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  {unidades.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  {form.unidade && !unidades.includes(form.unidade) && (
+                    <SelectItem value={form.unidade}>{form.unidade}</SelectItem>
+                  )}
+                </SelectContent>
               </Select>
             </div>
             <div>
