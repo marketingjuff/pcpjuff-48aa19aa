@@ -326,6 +326,100 @@ export function ProdutosTab() {
   const vinculoDoProduto = (produto_id: string) =>
     vinculos.find((v) => v.produto_id === produto_id) ?? null;
 
+  const nomeVariacao = (id: string) => variacoes.find((v) => v.id === id)?.nome ?? "";
+  const valoresDeVariacao = (id: string) =>
+    variacaoValores.filter((v) => v.variacao_id === id && v.ativo);
+
+  const vinculoForm = form.id ? vinculoDoProduto(form.id) : null;
+  const combinacoesForm = vinculoForm
+    ? variacaoPrecos.filter((c) => c.fornecedor_produto_id === vinculoForm.id && c.ativo)
+    : [];
+
+  const salvarCombinacao = useMutation({
+    mutationFn: async () => {
+      if (!vinculoForm) throw new Error("Salve o produto antes de cadastrar preços por variação.");
+      const v1 = combNovo.v1.trim();
+      if (!v1) throw new Error("Escolha o valor da primeira variação.");
+      const v2 = form.variacao_2_id ? combNovo.v2.trim() : "";
+      if (form.variacao_2_id && !v2) throw new Error("Escolha o valor da segunda variação.");
+      if (combinacoesForm.some((c) => chaveVariacao(c.variacao_1_valor, c.variacao_2_valor) === chaveVariacao(v1, v2 || null))) {
+        throw new Error("Esta combinação já está cadastrada.");
+      }
+      const tabela = toNum(combNovo.tabela);
+      const negociado = toNum(combNovo.negociado);
+
+      const { data, error } = await (supabase as any)
+        .from("sup_produto_variacao_precos")
+        .insert({
+          fornecedor_produto_id: vinculoForm.id,
+          variacao_1_valor: v1,
+          variacao_2_valor: v2 || null,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+
+      if (tabela != null) {
+        await aplicarPrecoVariacaoTabela({
+          fornecedor_produto_id: vinculoForm.id,
+          variacao_preco_id: data.id,
+          preco_anterior: null,
+          preco_novo: tabela,
+        });
+      }
+      if (negociado != null) {
+        await aplicarPrecoVariacaoNegociado({
+          fornecedor_produto_id: vinculoForm.id,
+          variacao_preco_id: data.id,
+          preco_anterior: null,
+          preco_novo: negociado,
+        });
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sup-variacao-precos"] });
+      qc.invalidateQueries({ queryKey: ["sup-alteracoes-preco"] });
+      setCombNovo({ v1: "", v2: "", tabela: "", negociado: "" });
+      toast.success("Combinação salva.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao salvar combinação."),
+  });
+
+  const atualizarCombinacao = useMutation({
+    mutationFn: async (args: { comb: SupProdutoVariacaoPreco; campo: "tabela" | "negociado"; valor: string }) => {
+      const novo = toNum(args.valor);
+      if (novo == null) throw new Error("Informe um preço.");
+      const anterior = args.campo === "tabela" ? args.comb.preco_tabela : args.comb.preco_negociado;
+      if (n(anterior) === novo) return;
+      const fn = args.campo === "tabela" ? aplicarPrecoVariacaoTabela : aplicarPrecoVariacaoNegociado;
+      await fn({
+        fornecedor_produto_id: args.comb.fornecedor_produto_id,
+        variacao_preco_id: args.comb.id,
+        preco_anterior: anterior,
+        preco_novo: novo,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sup-variacao-precos"] });
+      qc.invalidateQueries({ queryKey: ["sup-alteracoes-preco"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao atualizar preço."),
+  });
+
+  const inativarCombinacao = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any)
+        .from("sup_produto_variacao_precos")
+        .update({ ativo: false })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sup-variacao-precos"] }),
+    onError: (e: any) => toast.error(e.message ?? "Erro ao inativar combinação."),
+  });
+
+
+
   const fornecedoresFiltrados = useMemo(() => {
     const b = norm(buscaForn);
     return fornecedores
