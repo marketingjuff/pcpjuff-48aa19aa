@@ -156,6 +156,7 @@ export type SupPrecoHistorico = {
   revisado_por: string | null;
   revisado_em: string | null;
   alterado_por: string | null;
+  variacao_preco_id?: string | null;
   created_at: string;
 };
 
