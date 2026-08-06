@@ -15,6 +15,8 @@ interface Props {
   resultados: Record<Etapa, ResultadoEtapa>;
   podeArrastar: boolean;
   hoje: string;
+  /** true = dia útil; dia não útil recebe fundo cinza na grade */
+  diaUtil: (d: string) => boolean;
   onAbrir: (p: Pedido) => void;
   /** offset em dias úteis (positivo = futuro) */
   onArrastar: (p: Pedido, offsetDiasUteis: number) => void;
@@ -28,7 +30,7 @@ interface Props {
 const ROW_H = 34;
 
 export function GanttPedidos({
-  pedidos, dias, colWidth, zoom, resultados, podeArrastar, hoje, onAbrir, onArrastar, etapaTravada,
+  pedidos, dias, colWidth, zoom, resultados, podeArrastar, hoje, diaUtil, onAbrir, onArrastar, etapaTravada,
   atrasos, concluida,
 }: Props) {
   const { feriados } = useFeriados();
@@ -36,7 +38,9 @@ export function GanttPedidos({
   const total = dias.length * colWidth;
   const [drag, setDrag] = useState<{ id: string; dx: number } | null>(null);
   const startX = useRef(0);
-  const passo = zoom === "semana" ? 5 : 1;
+  // no zoom Semana uma coluna visual = 7 dias corridos
+  const passo = zoom === "semana" ? 7 : 1;
+
 
   function pos(dia: string | null | undefined): number | null {
     if (!dia) return null;
