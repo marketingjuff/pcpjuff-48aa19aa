@@ -1292,7 +1292,17 @@ function ListaCard({ kind, title, placeholder, modulos, compartilhadaCom, notaUs
   return (
     <div className="border rounded-lg p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-semibold">{title}</h2>
+        <div className="min-w-0 space-y-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <h2 className="font-semibold">{title}</h2>
+            {(modulos ?? []).map((m) => (
+              <span key={m} className={moduloBadgeClasses(m)}>{moduloLabel(m)}</span>
+            ))}
+          </div>
+          {compartilhadaCom && (
+            <p className="text-xs text-muted-foreground">Lista compartilhada entre {compartilhadaCom} — alterações valem para os dois módulos.</p>
+          )}
+        </div>
         <Button size="sm" variant="outline" onClick={sortAZ} disabled={reorder.isPending || items.length < 2}>
           <ArrowDownAZ className="h-4 w-4 mr-1" /> A→Z
         </Button>
