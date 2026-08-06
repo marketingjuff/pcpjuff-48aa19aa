@@ -790,6 +790,40 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
                       </SelectContent>
                     </Select>
 
+                    {(() => {
+                      const prod = produtos.find((p) => p.id === l.produto_id);
+                      if (!prod?.variacao_1_id) return null;
+                      const opts = (id: string) =>
+                        variacaoValores.filter((v) => v.variacao_id === id && v.ativo);
+                      return (
+                        <div className="mt-1 flex gap-1">
+                          {[prod.variacao_1_id, prod.variacao_2_id].map((varId, pos) => {
+                            if (!varId) return null;
+                            const campo = pos === 0 ? "variacao_1_valor" : "variacao_2_valor";
+                            const valor = pos === 0 ? l.variacao_1_valor : l.variacao_2_valor;
+                            return (
+                              <Select
+                                key={varId}
+                                value={valor || undefined}
+                                onValueChange={(v) => trocarVariacao(i, campo as any, v)}
+                                disabled={bloqueado}
+                              >
+                                <SelectTrigger className="h-7 text-[12px]">
+                                  <SelectValue placeholder={variacoes.find((x) => x.id === varId)?.nome ?? "Variação"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {opts(varId).length === 0 ? (
+                                    <SelectItem value="__sem__" disabled>Sem valores cadastrados</SelectItem>
+                                  ) : opts(varId).map((v) => (
+                                    <SelectItem key={v.id} value={v.valor}>{v.valor}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="p-1.5">
                     <Input type="number" step="0.001" min={0} value={l.quantidade}
