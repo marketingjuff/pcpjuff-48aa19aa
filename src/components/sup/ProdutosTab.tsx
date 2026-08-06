@@ -214,6 +214,16 @@ export function ProdutosTab() {
       .sort((a, b2) => a.razao_social.localeCompare(b2.razao_social, "pt-BR"));
   }, [fornecedores, buscaForn, mostrarInativos]);
 
+  useEffect(() => {
+    if (!fornId) return;
+    const f = fornecedores.find((x) => x.id === fornId);
+    if (f && !f.ativo && !mostrarInativos) {
+      setFornId(null);
+      setSelId(null);
+    }
+  }, [fornecedores, fornId, mostrarInativos]);
+
+
   const contagem = useMemo(() => {
     const m = new Map<string, number>();
     for (const p of produtos) {
