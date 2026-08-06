@@ -33,7 +33,7 @@ export const MODULOS: { key: ModuloKey; label: string; rota: string }[] = [
 export const CATALOGO_PERMISSOES: AbaPermissao[] = [
   // PCP
   { key: "pcp.dashboard", modulo: "pcp", tabValue: "dashboard", label: "Dashboard Master", nivelConfiguravel: false },
-  
+  { key: "pcp.dados_in_vendedor", modulo: "pcp", tabValue: "dados", label: "Dados In — Input de Vendedor", nivelConfiguravel: true },
   { key: "pcp.dados_in_vendedor", modulo: "pcp", tabValue: "dados", label: "Dados In — Input de Vendedor", nivelConfiguravel: true },
   { key: "pcp.dados_in_producao", modulo: "pcp", tabValue: "dados", label: "Dados In — Input de Produção", nivelConfiguravel: true },
   { key: "pcp.arte", modulo: "pcp", tabValue: "arte", label: "Arte", nivelConfiguravel: true },
