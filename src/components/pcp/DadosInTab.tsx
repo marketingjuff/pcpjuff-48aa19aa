@@ -193,6 +193,13 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const incluiSilk = tipoIncluiSilk(form.tipo_estampa);
   const soDTF = tipoIncluiDTF(form.tipo_estampa) && !incluiSilk;
   const diasSecagemNum = Number(form.dias_secagem ?? 0) || 0;
+  // Captação de vídeo (Input do Vendedor) — confirma ao marcar e ao desmarcar.
+  const [confirmVideo, setConfirmVideo] = useState<boolean | null>(null);
+  function setCaptacaoVideo(v: boolean) {
+    if (soLeituraVendedor) return;
+    setConfirmVideo(v);
+  }
+
   const inicioAcabamentoCalc = useMemo(
     () => calcInicioAcabamento(form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados),
     [form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados],
@@ -287,6 +294,15 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         if (dup.bloqueado) { toast.error(dup.motivo!); return; }
       }
     }
+    // Captação de vídeo: avisa (sem bloquear) quando a estamparia não cai em segunda/quinta.
+    if (form.necessita_captacao_video && (tipoIncluiSilk(form.tipo_estampa) || tipoIncluiDTF(form.tipo_estampa))) {
+      if (!temSegundaOuQuinta(form.inicio_estamparia, form.termino_estamparia ?? form.inicio_estamparia)) {
+        toast.warning(
+          "Este pedido tem captação de vídeo, mas a estamparia não cai em nenhuma segunda ou quinta-feira. O marketing só grava nesses dias.",
+        );
+      }
+    }
+
     // Validação das datas de produção (janela e ordem do fluxo)
     {
       const inicioAcabEfetivo = isLisa ? (form.inicio_acabamento ?? null) : (inicioAcabamentoCalc ?? form.inicio_acabamento ?? null);
