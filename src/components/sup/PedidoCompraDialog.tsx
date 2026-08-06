@@ -578,6 +578,14 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         preco_negociado: n(l.preco_negociado),
         preco_historico_id: l.preco_historico_id,
         quantidade_recebida: n(l.quantidade_recebida),
+        variacao_1_nome: produtos.find((p) => p.id === l.produto_id)?.variacao_1_id
+          ? (variacoes.find((v) => v.id === produtos.find((p) => p.id === l.produto_id)?.variacao_1_id)?.nome ?? null)
+          : null,
+        variacao_1_valor: l.variacao_1_valor || null,
+        variacao_2_nome: produtos.find((p) => p.id === l.produto_id)?.variacao_2_id
+          ? (variacoes.find((v) => v.id === produtos.find((p) => p.id === l.produto_id)?.variacao_2_id)?.nome ?? null)
+          : null,
+        variacao_2_valor: l.variacao_2_valor || null,
         ordem: i,
       })),
       produtos,
