@@ -72,9 +72,20 @@ import {
   type ColorSettings as ColorSettingsType,
   type BotaoKey as BotaoKeyType,
 } from "@/hooks/use-color-settings";
-import { CopConfigPanel } from "@/components/cop/CopConfigPanel";
+import { CopConfigPanel, CoresCopCard } from "@/components/cop/CopConfigPanel";
 import { MapConfigPanel } from "@/components/map/MapConfigPanel";
 import { SupConfigPanel } from "@/components/sup/SupConfigPanel";
+import {
+  LISTAS_CATALOGO,
+  moduloBadgeClasses,
+  moduloDotClasses,
+  moduloLabel,
+  moduloTabClasses,
+  normalizarBusca,
+  type ListaCatalogoItem,
+  type ListaModulo,
+  type ModuloVisual,
+} from "@/lib/config-listas-catalogo";
 
 type SecaoSlug = "usuarios" | "feriados" | "backup" | "aparencia" | "listas" | "cop" | "map" | "sup";
 const SLUGS: SecaoSlug[] = ["usuarios", "feriados", "backup", "aparencia", "listas", "cop", "map", "sup"];
