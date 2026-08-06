@@ -169,6 +169,8 @@ export function SupConfigTab() {
         </table>
       </div>
 
+      <VariacoesConfig />
+
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-[520px]">
           <DialogHeader><DialogTitle>{form.id ? "Editar comissionado" : "Novo comissionado"}</DialogTitle></DialogHeader>
