@@ -518,6 +518,35 @@ export function ProdutosTab() {
     setProdOpen(true);
   }
 
+  function abrirDuplicar(p: SupProduto) {
+    const v = vinculoDoProduto(p.id);
+    let nome = `${p.nome} (cópia)`;
+    let i = 2;
+    while (fornId && nomeDuplicado(nome, fornId)) {
+      nome = `${p.nome} (cópia ${i++})`;
+    }
+    setForm({
+      id: null,
+      nome,
+      departamento: p.departamento ?? "",
+      unidade: p.unidade,
+      especificacao: p.especificacao ?? "",
+      ativo: p.ativo,
+      preco: v?.preco_tabela == null ? "" : String(v.preco_tabela),
+      preco_negociado: v?.preco_negociado == null ? "" : String(v.preco_negociado),
+      grupo_id: p.grupo_id ?? "",
+      fator_conversao: p.fator_conversao == null ? "" : String(p.fator_conversao),
+      qtd_min: v?.quantidade_minima == null ? "" : String(v.quantidade_minima),
+      prazo: v?.prazo_entrega_dias == null ? "" : String(v.prazo_entrega_dias),
+      motivo: "",
+      arquivo: null,
+    });
+    setPrecoOriginal(null);
+    setNegociadoOriginal(null);
+    setProdOpen(true);
+  }
+
+
   function abrirEdicao(p: SupProduto) {
     const v = vinculoDoProduto(p.id);
     const preco = v?.preco_tabela ?? null;
