@@ -1244,7 +1244,7 @@ function ListasTab({ canAccessCop, canAccessMap }: { canAccessCop: boolean; canA
 }
 
 
-function ListaCard({ kind, title, placeholder }: { kind: AppListKind; title: string; placeholder: string }) {
+function ListaCard({ kind, title, placeholder, modulos, compartilhadaCom, notaUso }: { kind: AppListKind; title: string; placeholder: string; modulos?: ListaModulo[]; compartilhadaCom?: string; notaUso?: string }) {
   const { items, isLoading } = useAppList(kind);
   const { add, rename, remove, reorder } = useAppListMutations(kind);
   const [novo, setNovo] = useState("");
