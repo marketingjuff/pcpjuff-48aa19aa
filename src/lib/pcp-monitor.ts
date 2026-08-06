@@ -106,6 +106,8 @@ export function cargaDoPedido(p: Pedido, etapa: Etapa): number {
 export type DiaCarga = {
   dia: string;
   carga: number;
+  /** Só exibição: recorte de `carga` que veio escorregado de dias anteriores. */
+  cargaEscorregada?: number;
   teto: number;
   tetoEfetivo: number;
   pedidos: number;
@@ -166,6 +168,7 @@ export function simularEtapa(
 
   for (const { p, iv, carga } of ordenados) {
     const dias = diasUteisNoIntervalo(iv.ini, iv.fim, feriados);
+    const diasPlanejados = new Set(dias); // só exibição
     if (dias.length === 0) continue;
     let restante = carga;
     let cursor = dias[0]!;
@@ -176,6 +179,7 @@ export function simularEtapa(
       const espaco = Math.max(0, d.tetoEfetivo - d.carga);
       const usa = Math.min(restante, espaco);
       d.carga += usa;
+      if (!diasPlanejados.has(cursor)) d.cargaEscorregada = (d.cargaEscorregada ?? 0) + usa; // só exibição
       restante -= usa;
       if (restante > 0) {
         idx++;

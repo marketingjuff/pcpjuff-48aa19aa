@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { TIPOS_ESTAMPA, tipoIncluiDTF, tipoIncluiSilk } from "@/lib/pedidos";
+import { TIPOS_ESTAMPA, isAtrasadoSetor, tipoIncluiDTF, tipoIncluiSilk } from "@/lib/pedidos";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Settings, CalendarDays, Flag, Video, AlertTriangle } from "lucide-react";
+import { Settings, CalendarDays, Flag, Video, AlertTriangle, CornerDownRight } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
@@ -19,7 +19,7 @@ import {
   ETAPAS, diasDaJanela, janelaMonitor, simularEtapa, inicioAcabamentoDoPedido,
   temSegundaOuQuinta, type Etapa, type ResultadoEtapa,
 } from "@/lib/pcp-monitor";
-import { COL_ID, ETAPA_COR, FaixaCalor, ReguaDatas } from "./FaixaCalor";
+import { COL_ID, ETAPA_COR, ETAPA_COR_BORDA, ETAPA_COR_CLARA, FaixaCalor, ReguaDatas } from "./FaixaCalor";
 import { GanttPedidos } from "./GanttPedidos";
 import { CapacidadeDialog } from "./CapacidadeDialog";
 import { EditarDatasDialog, type ConflitoTipo } from "./EditarDatasDialog";
@@ -37,7 +37,7 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
   const { tetos } = useCapacidade();
   const hoje = todayISO();
 
-  const [zoom, setZoom] = usePersistedState<"semana" | "dia">("pcp:monitor:zoom", "semana");
+  const [zoom, setZoom] = usePersistedState<"semana" | "dia">("pcp:monitor:zoom", "dia");
   const [compacta, setCompacta] = usePersistedState<boolean>("pcp:monitor:faixaCompacta", false);
   const [busca, setBusca] = useState("");
   const [tipo, setTipo] = useState<string>("todos");
@@ -48,7 +48,7 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
 
   const { de, ate } = useMemo(() => janelaMonitor(), []);
   const dias = useMemo(() => diasDaJanela(de, ate, feriados), [de, ate, feriados]);
-  const colWidth = zoom === "dia" ? 22 : 9;
+  const colWidth = zoom === "dia" ? 52 : 9;
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const jaCentralizou = useRef(false);
@@ -86,6 +86,28 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
     return out;
   }, [naJanela, tetos, feriados]);
 
+  /** Etapas atrasadas pela regra oficial (`isAtrasadoSetor`): data-limite no passado e etapa não concluída. */
+  function atrasos(p: Pedido): { etapa: Etapa; texto: string }[] {
+    const out: { etapa: Etapa; texto: string }[] = [];
+    if (isAtrasadoSetor(p, "arte"))
+      out.push({ etapa: "arte", texto: `Arte atrasada — limite era ${formatDateBR(p.arte_data)} e não foi finalizada` });
+    if (isAtrasadoSetor(p, "dtf"))
+      out.push({ etapa: "dtf", texto: `DTF atrasado — início era ${formatDateBR(p.inicio_estamparia)} e ainda não foi estampado` });
+    if (isAtrasadoSetor(p, "silk"))
+      out.push({ etapa: "silk", texto: `Silk atrasado — início era ${formatDateBR(p.inicio_estamparia)} e ainda não foi batido` });
+    if (isAtrasadoSetor(p, "acabamento"))
+      out.push({ etapa: "acabamento", texto: `Acabamento atrasado — saída era ${formatDateBR(p.saida_juff)} e não foi embalado` });
+    return out;
+  }
+
+  /** Etapa concluída pelos campos de execução. */
+  function concluida(p: Pedido, etapa: Etapa): boolean {
+    if (etapa === "arte") return p.status_arte === "Arte Finalizada";
+    if (etapa === "dtf") return p.dtf_estampado === "Sim";
+    if (etapa === "silk") return p.silk_feito === "Sim";
+    return p.embalado === "Sim";
+  }
+
   const linhas = useMemo(() => {
     const q = busca.trim().toLowerCase();
     return naJanela
@@ -96,15 +118,13 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
           if (!alvo.includes(q)) return false;
         }
         if (soAtrasados) {
-          const atrasado =
-            (!!p.termino_acabamento && !!p.saida_juff && p.termino_acabamento > p.saida_juff) ||
-            (["arte", "dtf", "silk", "acabamento"] as Etapa[]).some((e) => resultados[e]?.pedidosVazados.has(p.id));
+          const atrasado = (["arte", "dtf", "silk", "acabamento"] as const).some((s) => isAtrasadoSetor(p, s));
           if (!atrasado) return false;
         }
         return true;
       })
       .sort((a, b) => (a.saida_juff ?? "9999-12-31").localeCompare(b.saida_juff ?? "9999-12-31"));
-  }, [naJanela, busca, tipo, soAtrasados, resultados]);
+  }, [naJanela, busca, tipo, soAtrasados]);
 
   /** Etapa já executada bloqueia o arrasto da linha. */
   function etapaTravada(p: Pedido): string | null {
@@ -180,13 +200,19 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
             )}
           </div>
           <div className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1"><span className={`h-2.5 w-2.5 rotate-45 ${ETAPA_COR.arte} inline-block`} />Arte (dia limite)</span>
+            <span className="flex items-center gap-1"><Flag className="h-3 w-3 text-emerald-600" />Entrada do pedido</span>
+            <span className="flex items-center gap-1"><span className={`h-2 w-4 rounded-sm ${ETAPA_COR.arte} inline-block`} />Arte (barra até o limite)</span>
             <span className="flex items-center gap-1"><span className={`h-2 w-4 rounded-sm ${ETAPA_COR.dtf} inline-block`} />DTF</span>
             <span className="flex items-center gap-1"><span className={`h-2 w-4 rounded-sm ${ETAPA_COR.silk} inline-block`} />Silk</span>
             <span className="flex items-center gap-1"><span className={`h-2 w-4 rounded-sm ${ETAPA_COR.acabamento} inline-block`} />Acabamento</span>
             <span className="flex items-center gap-1"><Flag className="h-3 w-3 text-rose-600" />Saída Juff</span>
+            <span className="flex items-center gap-1">
+              <span className={`h-2 w-4 rounded-sm ${ETAPA_COR.acabamento} inline-block`} />sólida = concluída
+              <span className={`ml-1 h-2 w-4 rounded-sm border ${ETAPA_COR_BORDA.acabamento} ${ETAPA_COR_CLARA.acabamento} inline-block`} />clara = pendente
+            </span>
             <span className="flex items-center gap-1"><Video className="h-3 w-3 text-violet-600" />captação de vídeo</span>
-            <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-rose-600" />etapa vencida</span>
+            <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-rose-600" />etapa atrasada</span>
+            <span className="flex items-center gap-1"><CornerDownRight className="h-3 w-3 text-amber-600" />não cabe na capacidade</span>
           </div>
           <div className="w-full flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-emerald-200 inline-block" />até 80%</span>
@@ -223,6 +249,8 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
               onAbrir={setDetalhe}
               onArrastar={arrastar}
               etapaTravada={etapaTravada}
+              atrasos={atrasos}
+              concluida={concluida}
             />
           </div>
         </div>
