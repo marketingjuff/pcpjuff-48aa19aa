@@ -38,8 +38,11 @@ export function GanttPedidos({
   const total = dias.length * colWidth;
   const [drag, setDrag] = useState<{ id: string; dx: number } | null>(null);
   const startX = useRef(0);
-  // no zoom Semana uma coluna visual = 7 dias corridos
-  const passo = zoom === "semana" ? 7 : 1;
+  // no zoom Semana uma coluna visual = 7 dias corridos, mas o deslocamento
+  // de datas continua em dias úteis (1 semana = 5 dias úteis)
+  const passoCol = zoom === "semana" ? 7 : 1;
+  const passoDias = zoom === "semana" ? 5 : 1;
+
 
 
   function pos(dia: string | null | undefined): number | null {
