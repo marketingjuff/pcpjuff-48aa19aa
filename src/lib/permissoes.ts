@@ -63,7 +63,7 @@ export const CATALOGO_PERMISSOES: AbaPermissao[] = [
   { key: "map.quebra", modulo: "map", tabValue: "quebra", label: "Quebra", nivelConfiguravel: false },
   { key: "map.devolucoes", modulo: "map", tabValue: "devolucoes", label: "Devoluções", nivelConfiguravel: false },
   // SUP
-  { key: "sup.produtos", modulo: "sup", tabValue: "produtos", label: "Produtos", nivelConfiguravel: false },
+  { key: "sup.produtos", modulo: "sup", tabValue: "produtos", label: "Cadastro", nivelConfiguravel: false },
   { key: "sup.pedidos", modulo: "sup", tabValue: "pedidos", label: "Pedidos de Compra", nivelConfiguravel: false },
   { key: "sup.comissoes", modulo: "sup", tabValue: "comissoes", label: "Comissões", nivelConfiguravel: false },
   { key: "sup.dashboard", modulo: "sup", tabValue: "dashboard", label: "Dashboard SUP", nivelConfiguravel: false },
