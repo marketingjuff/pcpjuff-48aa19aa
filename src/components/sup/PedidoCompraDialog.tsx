@@ -420,6 +420,50 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           continue;
         }
         const motivo = `Atualizado pelo pedido de compra ${head.numero ?? ""}`.trim();
+
+        // Produto com preço por variação: o preço vale para a combinação, não para o produto.
+        const prodSync = produtos.find((p) => p.id === l.produto_id);
+        if (prodSync?.preco_por_variacao && l.variacao_1_valor) {
+          let comb = variacaoPrecos.find(
+            (c) =>
+              c.fornecedor_produto_id === vinc!.id &&
+              c.ativo &&
+              chaveVariacao(c.variacao_1_valor, c.variacao_2_valor) === chaveVariacao(l.variacao_1_valor, l.variacao_2_valor || null),
+          ) ?? null;
+          if (!comb) {
+            const { data: nova, error: eC } = await (supabase as any)
+              .from("sup_produto_variacao_precos")
+              .insert({
+                fornecedor_produto_id: vinc!.id,
+                variacao_1_valor: l.variacao_1_valor,
+                variacao_2_valor: l.variacao_2_valor || null,
+              })
+              .select("*")
+              .single();
+            if (eC) throw eC;
+            comb = nova as any;
+          }
+          if (tabelaNovo > 0 && n(comb!.preco_tabela) !== tabelaNovo) {
+            await aplicarPrecoVariacaoTabela({
+              fornecedor_produto_id: vinc!.id,
+              variacao_preco_id: comb!.id,
+              preco_anterior: comb!.preco_tabela == null ? null : n(comb!.preco_tabela),
+              preco_novo: tabelaNovo,
+              motivo,
+            });
+          }
+          if (negociadoNovo > 0 && n(comb!.preco_negociado) !== negociadoNovo) {
+            await aplicarPrecoVariacaoNegociado({
+              fornecedor_produto_id: vinc!.id,
+              variacao_preco_id: comb!.id,
+              preco_anterior: comb!.preco_negociado == null ? null : n(comb!.preco_negociado),
+              preco_novo: negociadoNovo,
+              motivo,
+            });
+          }
+          continue;
+        }
+
         if (tabelaNovo > 0 && n(vinc.preco_tabela) !== tabelaNovo) {
           await aplicarPrecoTabela({
             fornecedor_produto_id: vinc.id,
