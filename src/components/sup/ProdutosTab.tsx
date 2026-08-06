@@ -435,6 +435,9 @@ export function ProdutosTab() {
         ativo: f.ativo,
         grupo_id: f.grupo_id || null,
         fator_conversao: fator,
+        variacao_1_id: f.variacao_1_id || null,
+        variacao_2_id: f.variacao_2_id || null,
+        preco_por_variacao: f.variacao_1_id ? f.preco_por_variacao : false,
       };
 
       let anexo_url: string | null = null;
