@@ -48,8 +48,11 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
   const [edicao, setEdicao] = useState<{ pedido: Pedido; proposta: Partial<Pedido> | null; conflito: ConflitoTipo } | null>(null);
 
   const { de, ate } = useMemo(() => janelaMonitor(), []);
-  const dias = useMemo(() => diasDaJanela(de, ate, feriados), [de, ate, feriados]);
+  // eixo de exibição: todos os dias corridos (sáb/dom/feriado aparecem em cinza)
+  const dias = useMemo(() => diasCorridosDaJanela(de, ate), [de, ate]);
+  const diaUtil = useMemo(() => (d: string) => isDiaUtil(new Date(d + "T00:00:00"), feriados), [feriados]);
   const colWidth = zoom === "dia" ? 52 : 9;
+
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
