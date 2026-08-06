@@ -41,7 +41,6 @@ export function FornecedorDialog({ open, onOpenChange, fornecedor, onSaved }: Pr
         cidade: f.cidade || null,
         uf: f.uf ? f.uf.toUpperCase().slice(0, 2) : null,
         condicao_pagamento_padrao: f.condicao_pagamento_padrao || null,
-        prazo_entrega_padrao_dias: f.prazo_entrega_padrao_dias ?? null,
         ativo: f.ativo ?? true,
         observacoes: f.observacoes || null,
       };
