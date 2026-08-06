@@ -68,9 +68,10 @@ export function GanttPedidos({
   }
   function onPointerUp(p: Pedido) {
     if (!drag || drag.id !== p.id) return;
-    const passos = Math.round(drag.dx / (colWidth * passo));
+    const passos = Math.round(drag.dx / (colWidth * passoCol));
     setDrag(null);
-    if (passos !== 0) onArrastar(p, passos * passo);
+    if (passos !== 0) onArrastar(p, passos * passoDias);
+
   }
 
   return (
