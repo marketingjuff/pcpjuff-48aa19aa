@@ -200,13 +200,19 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
             )}
           </div>
           <div className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1"><span className={`h-2.5 w-2.5 rotate-45 ${ETAPA_COR.arte} inline-block`} />Arte (dia limite)</span>
+            <span className="flex items-center gap-1"><Flag className="h-3 w-3 text-emerald-600" />Entrada do pedido</span>
+            <span className="flex items-center gap-1"><span className={`h-2 w-4 rounded-sm ${ETAPA_COR.arte} inline-block`} />Arte (barra até o limite)</span>
             <span className="flex items-center gap-1"><span className={`h-2 w-4 rounded-sm ${ETAPA_COR.dtf} inline-block`} />DTF</span>
             <span className="flex items-center gap-1"><span className={`h-2 w-4 rounded-sm ${ETAPA_COR.silk} inline-block`} />Silk</span>
             <span className="flex items-center gap-1"><span className={`h-2 w-4 rounded-sm ${ETAPA_COR.acabamento} inline-block`} />Acabamento</span>
             <span className="flex items-center gap-1"><Flag className="h-3 w-3 text-rose-600" />Saída Juff</span>
+            <span className="flex items-center gap-1">
+              <span className={`h-2 w-4 rounded-sm ${ETAPA_COR.acabamento} inline-block`} />sólida = concluída
+              <span className={`ml-1 h-2 w-4 rounded-sm border ${ETAPA_COR_BORDA.acabamento} ${ETAPA_COR_CLARA.acabamento} inline-block`} />clara = pendente
+            </span>
             <span className="flex items-center gap-1"><Video className="h-3 w-3 text-violet-600" />captação de vídeo</span>
-            <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-rose-600" />etapa vencida</span>
+            <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-rose-600" />etapa atrasada</span>
+            <span className="flex items-center gap-1"><CornerDownRight className="h-3 w-3 text-amber-600" />não cabe na capacidade</span>
           </div>
           <div className="w-full flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-emerald-200 inline-block" />até 80%</span>
@@ -243,6 +249,8 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
               onAbrir={setDetalhe}
               onArrastar={arrastar}
               etapaTravada={etapaTravada}
+              atrasos={atrasos}
+              concluida={concluida}
             />
           </div>
         </div>
