@@ -74,26 +74,26 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
   }
 
   // sempre que a janela/zoom mudar, reposiciona no dia vigente.
-  // A aba pode estar montada escondida (forceMount): nesse caso a largura é 0 e
-  // definir scrollLeft não tem efeito, então esperamos o container aparecer.
+  // A aba pode estar montada escondida (forceMount) ou a grade ainda não ter
+  // largura final, e nesses casos definir scrollLeft não tem efeito — então
+  // tentamos até a posição realmente "pegar".
   useEffect(() => {
     if (dias.length === 0) return;
-    const el = scrollRef.current;
-    if (!el) return;
-    let feito = false;
-    const aplica = () => {
-      if (feito || el.clientWidth === 0) return;
+    let tentativas = 0;
+    const t = window.setInterval(() => {
+      const el = scrollRef.current;
+      tentativas++;
+      if (tentativas > 60) { window.clearInterval(t); return; }
+      if (!el || el.clientWidth === 0) return;
       const left = offsetHoje(el);
-      if (left === null) return;
+      if (left === null) { window.clearInterval(t); return; }
       el.scrollLeft = left;
-      if (el.scrollLeft > 0 || left === 0) feito = true;
-    };
-    aplica();
-    const ro = new ResizeObserver(() => aplica());
-    ro.observe(el);
-    return () => ro.disconnect();
+      if (Math.abs(el.scrollLeft - left) < 2) window.clearInterval(t);
+    }, 120);
+    return () => window.clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dias, colWidth, hoje, zoom]);
+
 
 
 
