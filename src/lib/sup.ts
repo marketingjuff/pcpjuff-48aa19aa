@@ -121,6 +121,9 @@ export type SupProduto = {
   ativo: boolean;
   grupo_id: string | null;
   fator_conversao: number | null;
+  variacao_1_id?: string | null;
+  variacao_2_id?: string | null;
+  preco_por_variacao?: boolean | null;
   created_at?: string;
 };
 
