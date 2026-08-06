@@ -731,6 +731,7 @@ export function ProdutosTab() {
                 className="px-2 text-muted-foreground hover:text-rose-700 hover:bg-rose-50"
               >
                 <Trash2 className="h-3.5 w-3.5" />
+              </button>
             </div>
           ))}
         </div>
