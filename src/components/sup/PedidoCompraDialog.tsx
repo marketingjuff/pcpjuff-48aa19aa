@@ -159,9 +159,6 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
     setHead((h) => {
       const patch: Partial<SupPedidoCompra> = {};
       if (f.condicao_pagamento_padrao) patch.condicao_pagamento = f.condicao_pagamento_padrao;
-      if (f.prazo_entrega_padrao_dias != null && h.data_pedido) {
-        patch.previsao_entrega = addDias(h.data_pedido, f.prazo_entrega_padrao_dias);
-      }
       return { ...h, ...patch };
     });
   }
