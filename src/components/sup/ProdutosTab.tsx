@@ -1238,6 +1238,199 @@ export function ProdutosTab() {
                 Ex.: o produto é vendido em rolo e o grupo compara por metro — se o rolo tem 100 m, o fator é 100.
               </div>
             </div>
+
+            <div className="col-span-3 rounded-md border p-3 space-y-3">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Variações</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Variação 1</Label>
+                  <Combobox
+                    value={form.variacao_1_id || "__none__"}
+                    onChange={(v) => {
+                      const valor = v === "__none__" ? "" : v;
+                      if (form.id && combinacoesForm.length > 0 && valor !== form.variacao_1_id) {
+                        setConfirmTroca({ campo: "variacao_1_id", valor });
+                        return;
+                      }
+                      setForm((f) => ({
+                        ...f,
+                        variacao_1_id: valor,
+                        variacao_2_id: valor ? f.variacao_2_id : "",
+                        preco_por_variacao: valor ? f.preco_por_variacao : false,
+                      }));
+                    }}
+                    options={[
+                      { value: "__none__", label: "— sem variação —" },
+                      ...variacoes.filter((v) => v.ativo || v.id === form.variacao_1_id).map((v) => ({ value: v.id, label: v.nome })),
+                    ]}
+                    placeholder="Selecione"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Variação 2</Label>
+                  <Combobox
+                    value={form.variacao_2_id || "__none__"}
+                    onChange={(v) => {
+                      const valor = v === "__none__" ? "" : v;
+                      if (form.id && combinacoesForm.length > 0 && valor !== form.variacao_2_id) {
+                        setConfirmTroca({ campo: "variacao_2_id", valor });
+                        return;
+                      }
+                      setForm((f) => ({ ...f, variacao_2_id: valor }));
+                    }}
+                    options={[
+                      { value: "__none__", label: "— sem variação —" },
+                      ...variacoes
+                        .filter((v) => (v.ativo || v.id === form.variacao_2_id) && v.id !== form.variacao_1_id)
+                        .map((v) => ({ value: v.id, label: v.nome })),
+                    ]}
+                    placeholder="Selecione"
+                  />
+                </div>
+              </div>
+
+              {!form.variacao_1_id ? (
+                <div className="text-[11px] text-muted-foreground">
+                  Sem variação: o produto continua com um preço único. Os tipos e valores são cadastrados em Configurações › SUP.
+                </div>
+              ) : (
+                <>
+                  <label className="flex items-center gap-2 text-[13px]">
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5"
+                      checked={form.preco_por_variacao}
+                      onChange={(e) => {
+                        if (!e.target.checked && combinacoesForm.length > 0) { setConfirmFlagOff(true); return; }
+                        setForm((f) => ({ ...f, preco_por_variacao: e.target.checked }));
+                      }}
+                    />
+                    O preço varia por variação
+                  </label>
+
+                  {form.preco_por_variacao && (
+                    !form.id ? (
+                      <div className="text-[11px] text-muted-foreground">
+                        Salve o produto para cadastrar os preços de cada combinação.
+                      </div>
+                    ) : (
+                      <div className="rounded-md border overflow-hidden">
+                        <table className="w-full text-[13px]">
+                          <thead className="bg-muted/40">
+                            <tr>
+                              <th className="text-left px-2 py-1 font-semibold">{nomeVariacao(form.variacao_1_id) || "Variação 1"}</th>
+                              {form.variacao_2_id && (
+                                <th className="text-left px-2 py-1 font-semibold">{nomeVariacao(form.variacao_2_id)}</th>
+                              )}
+                              <th className="text-right px-2 py-1 font-semibold w-28">Tabela</th>
+                              <th className="text-right px-2 py-1 font-semibold w-28">Negociado</th>
+                              <th className="w-8" />
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {combinacoesForm.length === 0 && (
+                              <tr><td colSpan={form.variacao_2_id ? 5 : 4} className="px-2 py-2 text-muted-foreground">Nenhuma combinação cadastrada.</td></tr>
+                            )}
+                            {combinacoesForm.map((c) => (
+                              <tr key={c.id} className="border-t">
+                                <td className="px-2 py-1">{c.variacao_1_valor}</td>
+                                {form.variacao_2_id && <td className="px-2 py-1">{c.variacao_2_valor ?? "—"}</td>}
+                                <td className="px-2 py-1">
+                                  <Input
+                                    defaultValue={c.preco_tabela == null ? "" : String(c.preco_tabela)}
+                                    className="h-8 text-right"
+                                    placeholder="0,00"
+                                    onBlur={(e) => {
+                                      if (e.target.value.trim() === "") return;
+                                      atualizarCombinacao.mutate({ comb: c, campo: "tabela", valor: e.target.value });
+                                    }}
+                                  />
+                                </td>
+                                <td className="px-2 py-1">
+                                  <Input
+                                    defaultValue={c.preco_negociado == null ? "" : String(c.preco_negociado)}
+                                    className="h-8 text-right"
+                                    placeholder="0,00"
+                                    onBlur={(e) => {
+                                      if (e.target.value.trim() === "") return;
+                                      atualizarCombinacao.mutate({ comb: c, campo: "negociado", valor: e.target.value });
+                                    }}
+                                  />
+                                </td>
+                                <td className="px-1">
+                                  <button
+                                    type="button"
+                                    title="Inativar combinação"
+                                    className="text-muted-foreground hover:text-destructive"
+                                    onClick={() => inativarCombinacao.mutate(c.id)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                            <tr className="border-t bg-muted/20">
+                              <td className="px-2 py-1">
+                                <Combobox
+                                  value={combNovo.v1 || "__none__"}
+                                  onChange={(v) => setCombNovo((c) => ({ ...c, v1: v === "__none__" ? "" : v }))}
+                                  options={[
+                                    { value: "__none__", label: "—" },
+                                    ...valoresDeVariacao(form.variacao_1_id).map((v) => ({ value: v.valor, label: v.valor })),
+                                  ]}
+                                  placeholder="Valor"
+                                />
+                              </td>
+                              {form.variacao_2_id && (
+                                <td className="px-2 py-1">
+                                  <Combobox
+                                    value={combNovo.v2 || "__none__"}
+                                    onChange={(v) => setCombNovo((c) => ({ ...c, v2: v === "__none__" ? "" : v }))}
+                                    options={[
+                                      { value: "__none__", label: "—" },
+                                      ...valoresDeVariacao(form.variacao_2_id).map((v) => ({ value: v.valor, label: v.valor })),
+                                    ]}
+                                    placeholder="Valor"
+                                  />
+                                </td>
+                              )}
+                              <td className="px-2 py-1">
+                                <Input
+                                  value={combNovo.tabela}
+                                  onChange={(e) => setCombNovo((c) => ({ ...c, tabela: e.target.value }))}
+                                  className="h-8 text-right"
+                                  placeholder="0,00"
+                                />
+                              </td>
+                              <td className="px-2 py-1">
+                                <Input
+                                  value={combNovo.negociado}
+                                  onChange={(e) => setCombNovo((c) => ({ ...c, negociado: e.target.value }))}
+                                  className="h-8 text-right"
+                                  placeholder="0,00"
+                                />
+                              </td>
+                              <td className="px-1">
+                                <button
+                                  type="button"
+                                  title="Adicionar combinação"
+                                  className="text-teal-700 hover:text-teal-900"
+                                  disabled={salvarCombinacao.isPending}
+                                  onClick={() => salvarCombinacao.mutate()}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    )
+                  )}
+                </>
+              )}
+            </div>
+
             <div>
               <Label className="text-xs">Qtd. mínima</Label>
               <Input value={form.qtd_min} onChange={(e) => setForm((f) => ({ ...f, qtd_min: e.target.value }))} className="h-9 text-right" />
