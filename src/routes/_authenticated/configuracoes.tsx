@@ -76,14 +76,38 @@ import { CopConfigPanel } from "@/components/cop/CopConfigPanel";
 import { MapConfigPanel } from "@/components/map/MapConfigPanel";
 import { SupConfigPanel } from "@/components/sup/SupConfigPanel";
 
+type SecaoSlug = "usuarios" | "feriados" | "backup" | "aparencia" | "listas" | "cop" | "map" | "sup";
+const SLUGS: SecaoSlug[] = ["usuarios", "feriados", "backup", "aparencia", "listas", "cop", "map", "sup"];
+const LS_ULTIMA_SECAO = "pcpjuff:config:ultima-secao";
+
+function areaLegadoParaSlug(area: unknown): SecaoSlug | undefined {
+  if (area === "pcp") return "listas";
+  if (area === "cop") return "cop";
+  if (area === "map") return "map";
+  if (area === "sup") return "sup";
+  return undefined;
+}
+
 export const Route = createFileRoute("/_authenticated/configuracoes")({
-  validateSearch: (s: Record<string, unknown>) => ({
-    area: (s.area === "cop" ? "cop" : s.area === "map" ? "map" : s.area === "sup" ? "sup" : "pcp") as "pcp" | "cop" | "map" | "sup",
-  }) as { area?: "pcp" | "cop" | "map" | "sup" },
+  validateSearch: (s: Record<string, unknown>) => {
+    const direto = SLUGS.includes(s.s as SecaoSlug) ? (s.s as SecaoSlug) : undefined;
+    const legado = areaLegadoParaSlug(s.area);
+    return {
+      s: direto ?? legado,
+      origem: typeof s.origem === "string" ? s.origem : undefined,
+    };
+  },
   component: ConfiguracoesPage,
 });
 
 const ROLES: AppRole[] = ["admin", "gestor", "operador"];
+
+interface SecaoDef {
+  slug: SecaoSlug;
+  label: string;
+  grupo: "Sistema" | "Cadastros";
+  modulo?: ModuloVisual;
+}
 
 function ConfiguracoesPage() {
   const navigate = useNavigate();
@@ -94,7 +118,36 @@ function ConfiguracoesPage() {
   const canAccessMap = useCanAccessMap();
   const canAccessSup = useCanAccessSup();
   const canAccess = isAdmin || isGestor;
-  const { area } = Route.useSearch();
+  const { s: slugUrl, origem } = Route.useSearch();
+
+  const secoes: SecaoDef[] = [
+    ...(isAdmin ? [{ slug: "usuarios" as SecaoSlug, label: "Usuários e permissões", grupo: "Sistema" as const }] : []),
+    ...(isAdmin ? [{ slug: "feriados" as SecaoSlug, label: "Feriados", grupo: "Sistema" as const }] : []),
+    ...(canAccess ? [{ slug: "backup" as SecaoSlug, label: "Backup", grupo: "Sistema" as const }] : []),
+    ...(isAdmin ? [{ slug: "aparencia" as SecaoSlug, label: "Aparência", grupo: "Sistema" as const }] : []),
+    ...(canAccess ? [{ slug: "listas" as SecaoSlug, label: "Listas", grupo: "Cadastros" as const }] : []),
+    ...(canAccessCop ? [{ slug: "cop" as SecaoSlug, label: "COP", grupo: "Cadastros" as const, modulo: "cop" as ModuloVisual }] : []),
+    ...(canAccessMap ? [{ slug: "map" as SecaoSlug, label: "MAP", grupo: "Cadastros" as const, modulo: "map" as ModuloVisual }] : []),
+    ...(canAccessSup ? [{ slug: "sup" as SecaoSlug, label: "SUP", grupo: "Cadastros" as const, modulo: "sup" as ModuloVisual }] : []),
+  ];
+
+  const permitido = (slug?: SecaoSlug) => !!slug && secoes.some((x) => x.slug === slug);
+
+  const [secao, setSecao] = useState<SecaoSlug | null>(null);
+
+  // Resolve a seção inicial: URL → localStorage → primeira permitida
+  useEffect(() => {
+    if (isLoading || !canAccess || secoes.length === 0) return;
+    if (permitido(slugUrl)) { setSecao(slugUrl!); return; }
+    if (secao && permitido(secao)) return;
+    let salva: SecaoSlug | undefined;
+    try {
+      const v = localStorage.getItem(LS_ULTIMA_SECAO);
+      if (v && SLUGS.includes(v as SecaoSlug)) salva = v as SecaoSlug;
+    } catch { /* ignore */ }
+    setSecao(permitido(salva) ? salva! : secoes[0].slug);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, canAccess, slugUrl, secoes.length]);
 
   useEffect(() => {
     if (!isLoading && !canAccess) {
@@ -107,57 +160,125 @@ function ConfiguracoesPage() {
     return <div className="p-8 text-sm text-muted-foreground">Carregando…</div>;
   }
 
-  function setArea(a: "pcp" | "cop" | "map" | "sup") {
-    navigate({ to: "/configuracoes", search: { area: a } });
+  function irPara(slug: SecaoSlug) {
+    setSecao(slug);
+    try { localStorage.setItem(LS_ULTIMA_SECAO, slug); } catch { /* ignore */ }
+    navigate({ to: "/configuracoes", search: { s: slug, origem }, replace: true });
   }
+
+  const atual = secoes.find((x) => x.slug === secao) ?? secoes[0];
+  const grupos: ("Sistema" | "Cadastros")[] = ["Sistema", "Cadastros"];
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-30">
         <div className="container mx-auto flex items-center justify-between gap-2 px-3 py-2 sm:px-4 sm:py-3">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <Link to={area === "cop" ? "/cop" : area === "map" ? "/map" : area === "sup" ? "/sup" : "/"}>
-              <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Voltar</span></Button>
-            </Link>
+            <Button variant="ghost" size="sm" onClick={() => navigate({ to: (origem ?? "/") as any })}>
+              <ArrowLeft className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Voltar</span>
+            </Button>
             <h1 className="text-base sm:text-lg font-semibold truncate">Configurações</h1>
           </div>
-          {(canAccessCop || canAccessMap || canAccessSup) && (
-            <div className="inline-flex rounded-md border bg-card p-0.5 text-xs">
-              <button type="button" onClick={() => setArea("pcp")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "pcp" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}>PCP</button>
-              {canAccessCop && <button type="button" onClick={() => setArea("cop")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "cop" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}>COP</button>}
-              {canAccessMap && <button type="button" onClick={() => setArea("map")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "map" ? "bg-yellow-500 text-white" : "hover:bg-accent"}`}>MAP</button>}
-              {canAccessSup && <button type="button" onClick={() => setArea("sup")} className={`px-3 py-1 rounded font-medium transition-colors ${area === "sup" ? "bg-teal-600 text-white" : "hover:bg-accent"}`}>SUP</button>}
-            </div>
-          )}
         </div>
       </header>
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        {area === "cop" && canAccessCop ? (
-          <CopConfigPanel />
-        ) : area === "map" && canAccessMap ? (
-          <MapConfigPanel />
-        ) : area === "sup" && canAccessSup ? (
-          <SupConfigPanel />
-        ) : (
-          <Tabs defaultValue={isAdmin ? "feriados" : "listas"}>
-            <TabsList className="mb-6 flex flex-wrap h-auto w-full sm:w-auto">
-              {isAdmin && <TabsTrigger value="feriados">Feriados</TabsTrigger>}
-              {isAdmin && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
-              <TabsTrigger value="listas">Listas</TabsTrigger>
-              <TabsTrigger value="backup">Backup</TabsTrigger>
-              {isAdmin && <TabsTrigger value="cores">Cores</TabsTrigger>}
-            </TabsList>
-            {isAdmin && <TabsContent value="feriados"><FeriadosTab /></TabsContent>}
-            {isAdmin && <TabsContent value="usuarios"><UsuariosTab /></TabsContent>}
-            <TabsContent value="listas"><ListasTab /></TabsContent>
-            <TabsContent value="backup"><BackupTab /></TabsContent>
-            {isAdmin && <TabsContent value="cores"><CoresTab /></TabsContent>}
-          </Tabs>
-        )}
-      </main>
+
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 flex flex-col md:flex-row gap-4 md:gap-6">
+        {/* Sidebar desktop */}
+        <nav className="hidden md:block w-[220px] shrink-0 self-start sticky top-[64px] space-y-4">
+          {grupos.map((g) => {
+            const itens = secoes.filter((x) => x.grupo === g);
+            if (itens.length === 0) return null;
+            return (
+              <div key={g} className="space-y-1">
+                <div className="px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{g}</div>
+                {itens.map((it) => (
+                  <button
+                    key={it.slug}
+                    type="button"
+                    onClick={() => irPara(it.slug)}
+                    className={`w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-left transition-colors ${
+                      atual?.slug === it.slug ? "bg-primary text-primary-foreground font-medium" : "hover:bg-accent"
+                    }`}
+                  >
+                    {it.modulo ? <span className={moduloDotClasses(it.modulo)} /> : null}
+                    <span className="truncate">{it.label}</span>
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* Chips mobile */}
+        <div className="md:hidden -mx-3 px-3 overflow-x-auto">
+          <div className="flex gap-2 pb-1">
+            {secoes.map((it) => (
+              <button
+                key={it.slug}
+                type="button"
+                onClick={() => irPara(it.slug)}
+                className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors ${
+                  atual?.slug === it.slug ? "bg-primary text-primary-foreground border-primary" : "hover:bg-accent"
+                }`}
+              >
+                {it.modulo ? <span className={moduloDotClasses(it.modulo)} /> : null}
+                {it.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <main className="min-w-0 flex-1 space-y-4">
+          {atual && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>Configurações</span>
+              <span>›</span>
+              <span>{atual.grupo}</span>
+              <span>›</span>
+              <span className="text-foreground font-medium">{atual.label}</span>
+              {atual.modulo && (
+                <span className={moduloBadgeClasses(atual.modulo)}>{moduloLabel(atual.modulo)}</span>
+              )}
+            </div>
+          )}
+
+          {atual?.slug === "usuarios" ? (
+            <div className="space-y-6">
+              <UsuariosTab />
+              <div className="rounded-md border p-4 text-sm text-muted-foreground">
+                As configurações de cada módulo ficam liberadas para <span className="font-medium text-foreground">administradores</span> e para{" "}
+                <span className="font-medium text-foreground">gestores com acesso ao módulo</span>. Para conceder acesso a um gestor,
+                use o botão <b className="text-foreground">Permissões</b> na tabela acima e marque o módulo desejado.
+              </div>
+            </div>
+          ) : atual?.slug === "feriados" ? (
+            <FeriadosTab />
+          ) : atual?.slug === "backup" ? (
+            <BackupTab />
+          ) : atual?.slug === "aparencia" ? (
+            <Tabs defaultValue="pcp">
+              <TabsList className="mb-4">
+                <TabsTrigger value="pcp" className={moduloTabClasses("pcp")}>PCP</TabsTrigger>
+                <TabsTrigger value="cop" className={moduloTabClasses("cop")}>COP</TabsTrigger>
+              </TabsList>
+              <TabsContent value="pcp"><CoresTab /></TabsContent>
+              <TabsContent value="cop"><CoresCopCard /></TabsContent>
+            </Tabs>
+          ) : atual?.slug === "listas" ? (
+            <ListasTab canAccessCop={canAccessCop} canAccessMap={canAccessMap} />
+          ) : atual?.slug === "cop" ? (
+            <CopConfigPanel />
+          ) : atual?.slug === "map" ? (
+            <MapConfigPanel />
+          ) : atual?.slug === "sup" ? (
+            <SupConfigPanel />
+          ) : null}
+        </main>
+      </div>
     </div>
   );
 }
+
 
 function FeriadosTab() {
   const qc = useQueryClient();
