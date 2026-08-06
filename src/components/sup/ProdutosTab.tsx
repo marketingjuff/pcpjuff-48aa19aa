@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, Copy, CopyPlus, TrendingDown, TrendingUp } from "lucide-react";
+import { Plus, Pencil, Copy, CopyPlus, Trash2, TrendingDown, TrendingUp } from "lucide-react";
 import { SortTh, useTableSort } from "@/components/shared/sortable";
 import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
@@ -203,6 +203,9 @@ export function ProdutosTab() {
   const [copiarOpen, setCopiarOpen] = useState(false);
   const [copiarAlvo, setCopiarAlvo] = useState<SupProduto | null>(null);
   const [copiarDestino, setCopiarDestino] = useState("");
+
+  const [excluirProd, setExcluirProd] = useState<SupProduto | null>(null);
+  const [excluirForn, setExcluirForn] = useState<SupFornecedor | null>(null);
 
 
   const vinculoDoProduto = (produto_id: string) =>
@@ -481,6 +484,83 @@ export function ProdutosTab() {
       toast.error(e.message === "__DUP__" ? "Este fornecedor já tem um produto com esse nome." : (e.message ?? "Erro ao copiar produto.")),
   });
 
+  /** Apaga produto: bloqueia se já foi usado em pedido; limpa histórico e vínculos antes. */
+  async function apagarProdutos(ids: string[]) {
+    if (ids.length === 0) return;
+    const { data: usados, error: eU } = await (supabase as any)
+      .from("sup_pedido_itens").select("produto_id").in("produto_id", ids).limit(1);
+    if (eU) throw eU;
+    if ((usados ?? []).length > 0) throw new Error("__EM_USO__");
+
+    const { data: vs, error: eV } = await (supabase as any)
+      .from("sup_fornecedor_produtos").select("id").in("produto_id", ids);
+    if (eV) throw eV;
+    const vIds = (vs ?? []).map((v: any) => v.id as string);
+    if (vIds.length) {
+      const { error: eH } = await (supabase as any)
+        .from("sup_preco_historico").delete().in("fornecedor_produto_id", vIds);
+      if (eH) throw eH;
+      const { error: eFP } = await (supabase as any)
+        .from("sup_fornecedor_produtos").delete().in("id", vIds);
+      if (eFP) throw eFP;
+    }
+    const { error: eP } = await (supabase as any).from("sup_produtos").delete().in("id", ids);
+    if (eP) throw eP;
+  }
+
+  const excluirProduto = useMutation({
+    mutationFn: async () => {
+      if (!excluirProd) return;
+      await apagarProdutos([excluirProd.id]);
+    },
+    onSuccess: () => {
+      invalidarTudo();
+      if (selId === excluirProd?.id) setSelId(null);
+      setExcluirProd(null);
+      toast.success("Produto apagado.");
+    },
+    onError: (e: any) =>
+      toast.error(
+        e.message === "__EM_USO__"
+          ? "Este produto já foi usado em pedido de compra. Inative-o em vez de apagar."
+          : (e.message ?? "Erro ao apagar produto."),
+      ),
+  });
+
+  const excluirFornecedor = useMutation({
+    mutationFn: async () => {
+      const f = excluirForn;
+      if (!f) return;
+      const { data: pcs, error: eP } = await (supabase as any)
+        .from("sup_pedidos_compra").select("id").eq("fornecedor_id", f.id).limit(1);
+      if (eP) throw eP;
+      if ((pcs ?? []).length > 0) throw new Error("__PC__");
+
+      const ids = produtos.filter((p) => p.fornecedor_id === f.id).map((p) => p.id);
+      await apagarProdutos(ids);
+
+      const { error } = await (supabase as any).from("sup_fornecedores").delete().eq("id", f.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidarTudo();
+      qc.invalidateQueries({ queryKey: ["sup-fornecedores"] });
+      if (fornId === excluirForn?.id) { setFornId(null); setSelId(null); }
+      setExcluirForn(null);
+      toast.success("Fornecedor apagado.");
+    },
+    onError: (e: any) =>
+      toast.error(
+        e.message === "__PC__"
+          ? "Este fornecedor tem pedidos de compra. Inative-o em vez de apagar."
+          : e.message === "__EM_USO__"
+            ? "Há produtos deste fornecedor usados em pedidos de compra. Inative o fornecedor em vez de apagar."
+            : (e.message ?? "Erro ao apagar fornecedor."),
+      ),
+  });
+
+
+
   const criarGrupo = useMutation({
     mutationFn: async () => {
       if (!grupoForm.nome.trim()) throw new Error("Informe o nome do grupo.");
@@ -644,6 +724,14 @@ export function ProdutosTab() {
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
+              <button
+                type="button"
+                title="Apagar fornecedor"
+                onClick={() => setExcluirForn(f)}
+                className="px-2 text-muted-foreground hover:text-rose-700 hover:bg-rose-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
             </div>
           ))}
         </div>
@@ -731,6 +819,12 @@ export function ProdutosTab() {
                         onClick={(e) => { e.stopPropagation(); setCopiarAlvo(p); setCopiarDestino(""); setCopiarOpen(true); }}
                       >
                         <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-rose-700" title="Apagar produto"
+                        onClick={(e) => { e.stopPropagation(); setExcluirProd(p); }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </td>
                   </tr>
@@ -1014,6 +1108,46 @@ export function ProdutosTab() {
         }}
       />
 
+      <Dialog open={!!excluirProd} onOpenChange={(v) => { if (!v) setExcluirProd(null); }}>
+        <DialogContent className="max-w-[460px]">
+          <DialogHeader><DialogTitle>Apagar produto</DialogTitle></DialogHeader>
+          <div className="text-sm">
+            Apagar <b>{excluirProd?.nome}</b> definitivamente? O histórico de preços deste produto também será apagado.
+            Produtos já usados em pedidos de compra não podem ser apagados.
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExcluirProd(null)}>Cancelar</Button>
+            <Button
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+              disabled={excluirProduto.isPending}
+              onClick={() => excluirProduto.mutate()}
+            >
+              Apagar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!excluirForn} onOpenChange={(v) => { if (!v) setExcluirForn(null); }}>
+        <DialogContent className="max-w-[460px]">
+          <DialogHeader><DialogTitle>Apagar fornecedor</DialogTitle></DialogHeader>
+          <div className="text-sm">
+            Apagar <b>{excluirForn?.nome_fantasia || excluirForn?.razao_social}</b> definitivamente?
+            Todos os produtos deste fornecedor e seus históricos de preço serão apagados.
+            Fornecedores com pedidos de compra não podem ser apagados.
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExcluirForn(null)}>Cancelar</Button>
+            <Button
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+              disabled={excluirFornecedor.isPending}
+              onClick={() => excluirFornecedor.mutate()}
+            >
+              Apagar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
 
     </div>
