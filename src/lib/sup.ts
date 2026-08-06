@@ -81,7 +81,6 @@ export type SupFornecedor = {
   razao_social: string;
   nome_fantasia: string | null;
   documento: string | null;
-  categoria: string | null;
   contato_nome: string | null;
   contato_telefone: string | null;
   contato_email: string | null;
