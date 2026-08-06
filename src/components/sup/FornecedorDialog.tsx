@@ -34,7 +34,6 @@ export function FornecedorDialog({ open, onOpenChange, fornecedor, onSaved }: Pr
         razao_social: f.razao_social.trim(),
         nome_fantasia: f.nome_fantasia || null,
         documento: f.documento || null,
-        categoria: f.categoria || null,
         contato_nome: f.contato_nome || null,
         contato_telefone: f.contato_telefone || null,
         contato_email: f.contato_email || null,
