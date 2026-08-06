@@ -86,6 +86,28 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
     return out;
   }, [naJanela, tetos, feriados]);
 
+  /** Etapas atrasadas pela regra oficial (`isAtrasadoSetor`): data-limite no passado e etapa não concluída. */
+  function atrasos(p: Pedido): { etapa: Etapa; texto: string }[] {
+    const out: { etapa: Etapa; texto: string }[] = [];
+    if (isAtrasadoSetor(p, "arte"))
+      out.push({ etapa: "arte", texto: `Arte atrasada — limite era ${formatDateBR(p.arte_data)} e não foi finalizada` });
+    if (isAtrasadoSetor(p, "dtf"))
+      out.push({ etapa: "dtf", texto: `DTF atrasado — início era ${formatDateBR(p.inicio_estamparia)} e ainda não foi estampado` });
+    if (isAtrasadoSetor(p, "silk"))
+      out.push({ etapa: "silk", texto: `Silk atrasado — início era ${formatDateBR(p.inicio_estamparia)} e ainda não foi batido` });
+    if (isAtrasadoSetor(p, "acabamento"))
+      out.push({ etapa: "acabamento", texto: `Acabamento atrasado — saída era ${formatDateBR(p.saida_juff)} e não foi embalado` });
+    return out;
+  }
+
+  /** Etapa concluída pelos campos de execução. */
+  function concluida(p: Pedido, etapa: Etapa): boolean {
+    if (etapa === "arte") return p.status_arte === "Arte Finalizada";
+    if (etapa === "dtf") return p.dtf_estampado === "Sim";
+    if (etapa === "silk") return p.silk_feito === "Sim";
+    return p.embalado === "Sim";
+  }
+
   const linhas = useMemo(() => {
     const q = busca.trim().toLowerCase();
     return naJanela
@@ -96,15 +118,13 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
           if (!alvo.includes(q)) return false;
         }
         if (soAtrasados) {
-          const atrasado =
-            (!!p.termino_acabamento && !!p.saida_juff && p.termino_acabamento > p.saida_juff) ||
-            (["arte", "dtf", "silk", "acabamento"] as Etapa[]).some((e) => resultados[e]?.pedidosVazados.has(p.id));
+          const atrasado = (["arte", "dtf", "silk", "acabamento"] as const).some((s) => isAtrasadoSetor(p, s));
           if (!atrasado) return false;
         }
         return true;
       })
       .sort((a, b) => (a.saida_juff ?? "9999-12-31").localeCompare(b.saida_juff ?? "9999-12-31"));
-  }, [naJanela, busca, tipo, soAtrasados, resultados]);
+  }, [naJanela, busca, tipo, soAtrasados]);
 
   /** Etapa já executada bloqueia o arrasto da linha. */
   function etapaTravada(p: Pedido): string | null {
