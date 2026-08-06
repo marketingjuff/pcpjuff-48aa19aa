@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SUP_CONDICOES_PAGAMENTO, type SupFornecedor } from "@/lib/sup";
+import { maskCpfCnpj } from "@/lib/format";
 
 const VAZIO: Partial<SupFornecedor> = { ativo: true };
 
@@ -86,7 +87,13 @@ export function FornecedorDialog({ open, onOpenChange, fornecedor, onSaved }: Pr
           </div>
           <div>
             <Label className="text-xs">CNPJ / CPF</Label>
-            <Input value={form.documento ?? ""} onChange={(e) => set("documento", e.target.value)} className="h-9" />
+            <Input
+              value={form.documento ?? ""}
+              onChange={(e) => set("documento", maskCpfCnpj(e.target.value))}
+              inputMode="numeric"
+              placeholder="00.000.000/0000-00"
+              className="h-9"
+            />
           </div>
           <div>
 
