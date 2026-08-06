@@ -813,7 +813,7 @@ export function ProdutosTab() {
               <Label className="text-xs">Unidade *</Label>
               <Select value={form.unidade} onValueChange={(v) => setForm((f) => ({ ...f, unidade: v }))}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>{SUP_UNIDADES.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                <SelectContent>{unidades.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
@@ -913,7 +913,7 @@ export function ProdutosTab() {
               <Label className="text-xs">Unidade de referência *</Label>
               <Select value={grupoForm.unidade_referencia} onValueChange={(v) => setGrupoForm((g) => ({ ...g, unidade_referencia: v }))}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>{SUP_UNIDADES.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                <SelectContent>{unidades.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>

@@ -1,7 +1,7 @@
 import type { AppListKind } from "@/lib/app-lists";
 
-export type ListaModulo = "pcp" | "cop" | "map";
-export type ModuloVisual = ListaModulo | "sup" | "sistema";
+export type ListaModulo = "pcp" | "cop" | "map" | "sup";
+export type ModuloVisual = ListaModulo | "sistema";
 
 export interface ListaCatalogoItem {
   kind: AppListKind;
@@ -75,6 +75,16 @@ export const LISTAS_CATALOGO: ListaCatalogoItem[] = [
 
   // ---------- MAP · Devoluções ----------
   { kind: "map_motivo_devolucao", titulo: "Motivos de devolução", placeholder: "Ex.: cor errada", modulos: ["map"], grupo: "Devoluções" },
+
+  // ---------- SUP · Produtos ----------
+  {
+    kind: "sup_unidade",
+    titulo: "Unidades de medida",
+    placeholder: "Ex.: rolo",
+    modulos: ["sup"],
+    grupo: "Produtos",
+    notaUso: "Escolhida no cadastro de produtos do SUP e na unidade de referência dos grupos de itens equivalentes.",
+  },
 ];
 
 /** Rótulo curto do módulo. */
