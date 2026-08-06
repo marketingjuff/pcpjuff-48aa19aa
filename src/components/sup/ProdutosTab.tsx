@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, Copy, TrendingDown, TrendingUp } from "lucide-react";
+import { Plus, Pencil, Copy, CopyPlus, TrendingDown, TrendingUp } from "lucide-react";
 import { SortTh, useTableSort } from "@/components/shared/sortable";
 import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
@@ -518,6 +518,35 @@ export function ProdutosTab() {
     setProdOpen(true);
   }
 
+  function abrirDuplicar(p: SupProduto) {
+    const v = vinculoDoProduto(p.id);
+    let nome = `${p.nome} (cópia)`;
+    let i = 2;
+    while (fornId && nomeDuplicado(nome, fornId)) {
+      nome = `${p.nome} (cópia ${i++})`;
+    }
+    setForm({
+      id: undefined,
+      nome,
+      departamento: p.departamento ?? "",
+      unidade: p.unidade,
+      especificacao: p.especificacao ?? "",
+      ativo: p.ativo,
+      preco: v?.preco_tabela == null ? "" : String(v.preco_tabela),
+      preco_negociado: v?.preco_negociado == null ? "" : String(v.preco_negociado),
+      grupo_id: p.grupo_id ?? "",
+      fator_conversao: p.fator_conversao == null ? "" : String(p.fator_conversao),
+      qtd_min: v?.quantidade_minima == null ? "" : String(v.quantidade_minima),
+      prazo: v?.prazo_entrega_dias == null ? "" : String(v.prazo_entrega_dias),
+      motivo: "",
+      arquivo: null,
+    });
+    setPrecoOriginal(null);
+    setNegociadoOriginal(null);
+    setProdOpen(true);
+  }
+
+
   function abrirEdicao(p: SupProduto) {
     const v = vinculoDoProduto(p.id);
     const preco = v?.preco_tabela ?? null;
@@ -690,6 +719,13 @@ export function ProdutosTab() {
                       <Button size="icon" variant="ghost" className="h-7 w-7" title="Editar" onClick={(e) => { e.stopPropagation(); abrirEdicao(p); }}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
+                      <Button
+                        size="icon" variant="ghost" className="h-7 w-7" title="Duplicar produto neste fornecedor"
+                        onClick={(e) => { e.stopPropagation(); abrirDuplicar(p); }}
+                      >
+                        <CopyPlus className="h-3.5 w-3.5" />
+                      </Button>
+
                       <Button
                         size="icon" variant="ghost" className="h-7 w-7" title="Copiar para outro fornecedor"
                         onClick={(e) => { e.stopPropagation(); setCopiarAlvo(p); setCopiarDestino(""); setCopiarOpen(true); }}
