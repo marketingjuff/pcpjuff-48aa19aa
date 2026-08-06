@@ -727,6 +727,9 @@ export function ProdutosTab() {
       prazo: v?.prazo_entrega_dias == null ? "" : String(v.prazo_entrega_dias),
       motivo: "",
       arquivo: null,
+      variacao_1_id: p.variacao_1_id ?? "",
+      variacao_2_id: p.variacao_2_id ?? "",
+      preco_por_variacao: !!p.preco_por_variacao,
     });
     setPrecoOriginal(null);
     setNegociadoOriginal(null);
