@@ -186,6 +186,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
     setLinhas([{
       produto_id: "", quantidade: 1, unidade: "unidade",
       preco_tabela: 0, preco_negociado: 0, preco_historico_id: null, quantidade_recebida: 0,
+      variacao_1_valor: "", variacao_2_valor: "", variacao_preco_id: null,
     }]);
     setTrocaFornecedor(null);
   }
@@ -224,6 +225,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
     setLinhas((l) => [...l, {
       produto_id: "", quantidade: 1, unidade: "unidade",
       preco_tabela: 0, preco_negociado: 0, preco_historico_id: null, quantidade_recebida: 0,
+      variacao_1_valor: "", variacao_2_valor: "", variacao_preco_id: null,
     }]);
   }
 
