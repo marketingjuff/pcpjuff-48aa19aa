@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { addDiasUteis, diasUteisEntre, diasUteisAteHoje, addDiasCorridos, proximoDiaUtil, isDataUtilISO } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
+import { calcInicioAcabamento, temSegundaOuQuinta } from "@/lib/pcp-monitor";
 import { formatDateBR } from "@/lib/format";
 import { PedidoMobileCard, Chip, QtdTotal, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES_DADOS_IN, matchEtapaFiltro, UpdateButton, EtapaBadgeView } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
@@ -192,14 +193,17 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const incluiSilk = tipoIncluiSilk(form.tipo_estampa);
   const soDTF = tipoIncluiDTF(form.tipo_estampa) && !incluiSilk;
   const diasSecagemNum = Number(form.dias_secagem ?? 0) || 0;
-  const inicioAcabamentoCalc = useMemo(() => {
-    if (!form.termino_estamparia || isLisa) return null;
-    if (soDTF) return form.termino_estamparia;
-    if (!incluiSilk) return null;
-    // término dia 1, secagem N dias → início no dia (1 + N + 1); o dia do término e o dia do início não contam.
-    const base = addDiasCorridos(form.termino_estamparia, diasSecagemNum + 1);
-    return proximoDiaUtil(base, feriados);
-  }, [form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados]);
+  // Captação de vídeo (Input do Vendedor) — confirma ao marcar e ao desmarcar.
+  const [confirmVideo, setConfirmVideo] = useState<boolean | null>(null);
+  function setCaptacaoVideo(v: boolean) {
+    if (soLeituraVendedor) return;
+    setConfirmVideo(v);
+  }
+
+  const inicioAcabamentoCalc = useMemo(
+    () => calcInicioAcabamento(form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados),
+    [form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados],
+  );
 
 
   const VENDOR_REQUIRED: (keyof Pedido)[] = [
@@ -290,6 +294,15 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
         if (dup.bloqueado) { toast.error(dup.motivo!); return; }
       }
     }
+    // Captação de vídeo: avisa (sem bloquear) quando a estamparia não cai em segunda/quinta.
+    if (form.necessita_captacao_video && (tipoIncluiSilk(form.tipo_estampa) || tipoIncluiDTF(form.tipo_estampa))) {
+      if (!temSegundaOuQuinta(form.inicio_estamparia, form.termino_estamparia ?? form.inicio_estamparia)) {
+        toast.warning(
+          "Este pedido tem captação de vídeo, mas a estamparia não cai em nenhuma segunda ou quinta-feira. O marketing só grava nesses dias.",
+        );
+      }
+    }
+
     // Validação das datas de produção (janela e ordem do fluxo)
     {
       const inicioAcabEfetivo = isLisa ? (form.inicio_acabamento ?? null) : (inicioAcabamentoCalc ?? form.inicio_acabamento ?? null);
@@ -621,10 +634,48 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
               </Field>
             </div>
             <div className="sm:col-span-2 lg:col-span-4">
+              <label className="flex items-start gap-2 text-[12.5px] cursor-pointer select-none rounded-md border border-violet-300 bg-violet-50/60 p-2">
+                <Checkbox
+                  disabled={soLeituraVendedor}
+                  checked={!!form.necessita_captacao_video}
+                  onCheckedChange={(v) => setCaptacaoVideo(v === true)}
+                />
+                <span>
+                  <span className="font-medium">Captação de vídeo da produção</span>{" "}
+                  <span className="text-muted-foreground">— (cliente pediu vídeo da estamparia sendo feita)</span>
+                </span>
+              </label>
+            </div>
+            <div className="sm:col-span-2 lg:col-span-4">
               <Field label="Observações do vendedor">
                 <Textarea className="uppercase" rows={2} value={form.obs_vendedor ?? ""} onChange={(e) => set("obs_vendedor", e.target.value)} />
               </Field>
             </div>
+            <AlertDialog open={confirmVideo !== null} onOpenChange={(v) => { if (!v) setConfirmVideo(null); }}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {confirmVideo ? "Confirmar captação de vídeo?" : "Remover a captação de vídeo?"}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {confirmVideo
+                      ? "O marketing será chamado para gravar a estamparia deste pedido. A produção precisa acontecer em uma segunda ou quinta-feira."
+                      : "O aviso para o marketing deixará de aparecer nas abas DTF e Silk deste pedido."}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setConfirmVideo(null)}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      set("necessita_captacao_video", (confirmVideo === true) as any);
+                      setConfirmVideo(null);
+                    }}
+                  >
+                    Confirmar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             </fieldset>
             {!soLeituraVendedor && (
               <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-start">

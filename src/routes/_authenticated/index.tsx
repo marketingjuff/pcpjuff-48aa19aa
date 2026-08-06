@@ -18,6 +18,7 @@ import { DTFTab } from "@/components/pcp/DTFTab";
 import { SilkTab } from "@/components/pcp/SilkTab";
 import { AcabamentoTab } from "@/components/pcp/AcabamentoTab";
 import { DashboardTab } from "@/components/pcp/DashboardTab";
+import { MonitorPcpTab } from "@/components/pcp/monitor/MonitorPcpTab";
 import { FinalizadosTab } from "@/components/pcp/FinalizadosTab";
 import { ExpedicaoTab } from "@/components/pcp/ExpedicaoTab";
 import { RetrabalhoTab } from "@/components/pcp/RetrabalhoTab";
@@ -293,6 +294,16 @@ function AppHomeInner() {
           {pode("pcp.dashboard") && (
             <TabsContent value="dashboard" forceMount hidden={tab !== "dashboard"}>
               <DashboardTab pedidos={pedidos} loading={isLoading} onEdit={(id) => goToTabWithPedido("dados", id)} onViewProgress={(id) => goToTabWithPedido("arte", id)} />
+            </TabsContent>
+          )}
+          {pode("pcp.monitor") && (
+            <TabsContent value="monitor" forceMount hidden={tab !== "monitor"}>
+              <MonitorPcpTab
+                pedidos={pedidos}
+                onSave={(p) => upsert.mutate(p)}
+                onNavigate={(t, id) => goToTabWithPedido(t, id)}
+                soLeitura={soLeitura("pcp.monitor")}
+              />
             </TabsContent>
           )}
           {(pode("pcp.dados_in_vendedor") || pode("pcp.dados_in_producao")) && (

@@ -4,6 +4,7 @@ import type { Pedido } from "@/lib/pedidos";
 import { SIM_NAO_PROCESSO, modeloIncluiDTF, visivelEmDTF, tipoIncluiDTF, tipoIncluiSilk, episodioAberto, dtfCompleto } from "@/lib/pedidos";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CaptacaoVideoBanner } from "./CaptacaoVideoBanner";
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
@@ -195,6 +196,11 @@ export function DTFTab({ pedidos, selected, onSelect, onSave, saving, active = t
       {selected ? (
         <>
         <OrcamentoTitle orcamento={selected.orcamento} />
+        <CaptacaoVideoBanner
+          mostrar={!!selected.necessita_captacao_video && tipoIncluiDTF(selected.tipo_estampa) && !selected.video_captado_dtf}
+          soLeitura={soLeitura}
+          onCaptado={() => onSave({ id: selected.id, video_captado_dtf: true } as any)}
+        />
         {!modeloIncluiDTF(selected.tipo_estampa) ? (
           <EmptyState>Este pedido não inclui DTF (modelo: {selected.tipo_estampa}).</EmptyState>
         ) : (
