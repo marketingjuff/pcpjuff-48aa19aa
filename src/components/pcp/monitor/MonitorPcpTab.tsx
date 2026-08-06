@@ -170,15 +170,7 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
                 <SelectItem value="dia">Dia</SelectItem>
               </SelectContent>
             </Select>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                const el = document.getElementById("monitor-scroll");
-                const i = dias.indexOf(hoje);
-                if (el && i >= 0) el.scrollTo({ left: Math.max(0, i * colWidth - 200), behavior: "smooth" });
-              }}
-            >
+            <Button size="sm" variant="outline" onClick={irParaHoje}>
               <CalendarDays className="h-4 w-4 mr-1" />Hoje
             </Button>
             {isAdmin && (
@@ -186,6 +178,15 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
                 <Settings className="h-4 w-4" />
               </Button>
             )}
+          </div>
+          <div className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1"><span className={`h-2.5 w-2.5 rotate-45 ${ETAPA_COR.arte} inline-block`} />Arte (dia limite)</span>
+            <span className="flex items-center gap-1"><span className={`h-2 w-4 rounded-sm ${ETAPA_COR.dtf} inline-block`} />DTF</span>
+            <span className="flex items-center gap-1"><span className={`h-2 w-4 rounded-sm ${ETAPA_COR.silk} inline-block`} />Silk</span>
+            <span className="flex items-center gap-1"><span className={`h-2 w-4 rounded-sm ${ETAPA_COR.acabamento} inline-block`} />Acabamento</span>
+            <span className="flex items-center gap-1"><Flag className="h-3 w-3 text-rose-600" />Saída Juff</span>
+            <span className="flex items-center gap-1"><Video className="h-3 w-3 text-violet-600" />captação de vídeo</span>
+            <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-rose-600" />etapa vencida</span>
           </div>
           <div className="w-full flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-emerald-200 inline-block" />até 80%</span>
@@ -199,8 +200,9 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
       </Card>
 
       <Card className="overflow-hidden">
-        <div id="monitor-scroll" className="overflow-auto max-h-[74vh]">
-          <div style={{ width: 150 + dias.length * colWidth }}>
+        <div id="monitor-scroll" ref={scrollRef} className="overflow-auto max-h-[74vh]">
+          <div style={{ width: COL_ID + dias.length * colWidth }}>
+            <ReguaDatas dias={dias} zoom={zoom} colWidth={colWidth} hoje={hoje} />
             <FaixaCalor
               dias={dias}
               zoom={zoom}
@@ -225,6 +227,7 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
           </div>
         </div>
       </Card>
+
 
       <Sheet open={!!detalhe} onOpenChange={(v) => !v && setDetalhe(null)}>
         <SheetContent side="right" className="w-[360px]">
