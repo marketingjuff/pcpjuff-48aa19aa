@@ -126,15 +126,7 @@ export function FornecedorDialog({ open, onOpenChange, fornecedor, onSaved }: Pr
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Prazo de entrega padrão (dias)</Label>
-            <Input
-              type="number" min={0}
-              value={form.prazo_entrega_padrao_dias ?? ""}
-              onChange={(e) => set("prazo_entrega_padrao_dias", e.target.value === "" ? null : Number(e.target.value))}
-              className="h-9"
-            />
-          </div>
-          <div>
+
             <Label className="text-xs">Situação</Label>
             <Select value={form.ativo === false ? "inativo" : "ativo"} onValueChange={(v) => set("ativo", v === "ativo")}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
