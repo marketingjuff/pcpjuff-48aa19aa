@@ -363,6 +363,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
 
       for (let i = 0; i < linhas.length; i++) {
         const l = linhas[i];
+        const prodItem = produtos.find((p) => p.id === l.produto_id);
         const item = {
           pedido_id: id,
           produto_id: l.produto_id,
@@ -372,6 +373,16 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           preco_negociado: n(l.preco_negociado),
           preco_historico_id: l.preco_historico_id,
           quantidade_recebida: n(l.quantidade_recebida),
+          // Snapshot: o item guarda o texto da variação, não o vínculo ao cadastro.
+          variacao_1_nome: prodItem?.variacao_1_id
+            ? (variacoes.find((v) => v.id === prodItem.variacao_1_id)?.nome ?? null)
+            : null,
+          variacao_1_valor: l.variacao_1_valor || null,
+          variacao_2_nome: prodItem?.variacao_2_id
+            ? (variacoes.find((v) => v.id === prodItem.variacao_2_id)?.nome ?? null)
+            : null,
+          variacao_2_valor: l.variacao_2_valor || null,
+          variacao_preco_id: l.variacao_preco_id,
           ordem: i,
         };
         if (l.id) {
