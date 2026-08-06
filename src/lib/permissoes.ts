@@ -33,7 +33,6 @@ export const MODULOS: { key: ModuloKey; label: string; rota: string }[] = [
 export const CATALOGO_PERMISSOES: AbaPermissao[] = [
   // PCP
   { key: "pcp.dashboard", modulo: "pcp", tabValue: "dashboard", label: "Dashboard Master", nivelConfiguravel: false },
-  { key: "pcp.monitor", modulo: "pcp", tabValue: "monitor", label: "Monitor PCP", nivelConfiguravel: true },
   { key: "pcp.dados_in_vendedor", modulo: "pcp", tabValue: "dados", label: "Dados In — Input de Vendedor", nivelConfiguravel: true },
   { key: "pcp.dados_in_producao", modulo: "pcp", tabValue: "dados", label: "Dados In — Input de Produção", nivelConfiguravel: true },
   { key: "pcp.arte", modulo: "pcp", tabValue: "arte", label: "Arte", nivelConfiguravel: true },
@@ -43,6 +42,7 @@ export const CATALOGO_PERMISSOES: AbaPermissao[] = [
   { key: "pcp.expedicao", modulo: "pcp", tabValue: "exp", label: "Expedição", nivelConfiguravel: true },
   { key: "pcp.finalizados", modulo: "pcp", tabValue: "fin", label: "Finalizados", nivelConfiguravel: true },
   { key: "pcp.retrabalho", modulo: "pcp", tabValue: "retrab", label: "Retrabalho", nivelConfiguravel: true },
+  { key: "pcp.monitor", modulo: "pcp", tabValue: "monitor", label: "Monitor PCP", nivelConfiguravel: true },
   // COP
   { key: "cop.dashboard", modulo: "cop", tabValue: "dashboard", label: "Dashboard COP", nivelConfiguravel: false },
   { key: "cop.disponivel", modulo: "cop", tabValue: "disponivel", label: "Disponível", nivelConfiguravel: false },
