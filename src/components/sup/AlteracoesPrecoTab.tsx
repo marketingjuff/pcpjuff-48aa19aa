@@ -120,11 +120,14 @@ export function AlteracoesPrecoTab({ de, ate }: Props) {
     onError: (e: any) => toast.error(e.message ?? "Erro ao anular registro."),
   });
 
-  const meta = (fornecedor_produto_id: string) => {
-    const v = vinculos.find((x) => x.id === fornecedor_produto_id);
+  const meta = (h: SupPrecoHistorico) => {
+    const v = vinculos.find((x) => x.id === h.fornecedor_produto_id);
+    const nome = produtos.find((p) => p.id === v?.produto_id)?.nome ?? "—";
+    const comb = h.variacao_preco_id ? variacaoPrecos.find((x) => x.id === h.variacao_preco_id) : null;
+    const suf = comb ? rotuloVariacao(comb) : "";
     return {
       fornecedor: fornecedores.find((f) => f.id === v?.fornecedor_id)?.razao_social ?? "—",
-      produto: produtos.find((p) => p.id === v?.produto_id)?.nome ?? "—",
+      produto: suf ? `${nome} — ${suf}` : nome,
     };
   };
 
@@ -139,9 +142,9 @@ export function AlteracoesPrecoTab({ de, ate }: Props) {
         if (ate && dia > ate) return false;
         return true;
       })
-      .map((h) => ({ h, ...meta(h.fornecedor_produto_id), varPct: variacaoPercentual(h.preco_anterior, n(h.preco_novo)) }));
+      .map((h) => ({ h, ...meta(h), varPct: variacaoPercentual(h.preco_anterior, n(h.preco_novo)) }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historico, direcao, tipo, mostrarAnulados, de, ate, vinculos, fornecedores, produtos]);
+  }, [historico, direcao, tipo, mostrarAnulados, de, ate, vinculos, fornecedores, produtos, variacaoPrecos]);
 
   const { rows: ordenadas, sortKey, sortDir, toggle } = useTableSort(linhas, {
     quando: (r) => r.h.created_at,
