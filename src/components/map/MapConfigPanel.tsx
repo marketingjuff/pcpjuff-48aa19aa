@@ -16,8 +16,6 @@ export function MapConfigPanel() {
   return (
     <div className="space-y-6">
       <KgPorPecaCard />
-      <ListaCard kind="map_malharia" titulo="Malharias" placeholder="Ex.: Mavelo" />
-      <ListaCard kind="map_acabamento" titulo="Acabamentos" placeholder="Ex.: ACAB5" />
       <CoresAcabamentoCard />
     </div>
   );
