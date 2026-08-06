@@ -86,7 +86,9 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
       if (tentativas > 60) { window.clearInterval(t); return; }
       if (!el || el.clientWidth === 0) return;
       const left = offsetHoje(el);
+      console.log("[monitor] scroll hoje", { hoje, i: dias.indexOf(hoje), left, cw: el.clientWidth });
       if (left === null) { window.clearInterval(t); return; }
+
       el.scrollLeft = left;
       if (Math.abs(el.scrollLeft - left) < 2) window.clearInterval(t);
     }, 120);
