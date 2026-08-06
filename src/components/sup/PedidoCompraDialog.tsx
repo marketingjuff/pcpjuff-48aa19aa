@@ -110,6 +110,9 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         preco_negociado: n(i.preco_negociado),
         preco_historico_id: i.preco_historico_id,
         quantidade_recebida: n(i.quantidade_recebida),
+        variacao_1_valor: i.variacao_1_valor ?? "",
+        variacao_2_valor: i.variacao_2_valor ?? "",
+        variacao_preco_id: i.variacao_preco_id ?? null,
       })));
     } else {
       setHead({
