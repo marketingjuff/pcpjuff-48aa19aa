@@ -159,9 +159,6 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
     setHead((h) => {
       const patch: Partial<SupPedidoCompra> = {};
       if (f.condicao_pagamento_padrao) patch.condicao_pagamento = f.condicao_pagamento_padrao;
-      if (f.prazo_entrega_padrao_dias != null && h.data_pedido) {
-        patch.previsao_entrega = addDias(h.data_pedido, f.prazo_entrega_padrao_dias);
-      }
       return { ...h, ...patch };
     });
   }
@@ -632,10 +629,6 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
             />
             <Dado label="Cidade/UF" valor={[fornecedorSel.cidade, fornecedorSel.uf].filter(Boolean).join("/") || null} />
             <Dado label="Condição de pagamento padrão" valor={fornecedorSel.condicao_pagamento_padrao} />
-            <Dado
-              label="Prazo de entrega padrão"
-              valor={fornecedorSel.prazo_entrega_padrao_dias != null ? `${fornecedorSel.prazo_entrega_padrao_dias} dias` : null}
-            />
             {fornecedorSel.observacoes && (
               <div className="col-span-2 md:col-span-4">
                 <Dado label="Observações do fornecedor" valor={fornecedorSel.observacoes} />

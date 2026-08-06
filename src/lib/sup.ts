@@ -87,7 +87,6 @@ export type SupFornecedor = {
   cidade: string | null;
   uf: string | null;
   condicao_pagamento_padrao: string | null;
-  prazo_entrega_padrao_dias: number | null;
   ativo: boolean;
   observacoes: string | null;
   created_at?: string;

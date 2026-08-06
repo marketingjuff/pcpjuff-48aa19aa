@@ -1851,7 +1851,6 @@ export type Database = {
           id: string
           nome_fantasia: string | null
           observacoes: string | null
-          prazo_entrega_padrao_dias: number | null
           razao_social: string
           uf: string | null
           updated_at: string
@@ -1870,7 +1869,6 @@ export type Database = {
           id?: string
           nome_fantasia?: string | null
           observacoes?: string | null
-          prazo_entrega_padrao_dias?: number | null
           razao_social: string
           uf?: string | null
           updated_at?: string
@@ -1889,7 +1887,6 @@ export type Database = {
           id?: string
           nome_fantasia?: string | null
           observacoes?: string | null
-          prazo_entrega_padrao_dias?: number | null
           razao_social?: string
           uf?: string | null
           updated_at?: string
