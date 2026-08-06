@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import { useAppList, useAppListMutations } from "@/lib/app-lists";
+import { useAppList } from "@/lib/app-lists";
 import { useKgPorPeca, useCorAcabamentos, corComAcabamento } from "@/lib/map";
 import { REFACAO_CORES } from "@/lib/pedidos";
 
