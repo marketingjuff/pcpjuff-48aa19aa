@@ -59,6 +59,9 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
   const { data: fornecedores = [] } = useSupFornecedores();
   const { data: produtos = [] } = useSupProdutos();
   const { data: vinculos = [] } = useSupFornecedorProdutos();
+  const { data: variacaoPrecos = [] } = useSupVariacaoPrecos();
+  const { data: variacoes = [] } = useSupVariacoes();
+  const { data: variacaoValores = [] } = useSupVariacaoValores();
 
   const { data: config } = useQuery({
     queryKey: ["sup-config"],
