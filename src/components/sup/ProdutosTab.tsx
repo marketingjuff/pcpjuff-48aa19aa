@@ -526,7 +526,7 @@ export function ProdutosTab() {
       nome = `${p.nome} (cópia ${i++})`;
     }
     setForm({
-      id: null,
+      id: undefined,
       nome,
       departamento: p.departamento ?? "",
       unidade: p.unidade,
