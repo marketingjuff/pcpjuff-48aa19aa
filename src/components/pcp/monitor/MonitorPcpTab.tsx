@@ -14,11 +14,12 @@ import { useFeriados } from "@/hooks/use-feriados";
 import { useIsAdmin } from "@/hooks/use-role";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useCapacidade } from "@/hooks/use-capacidade";
-import { addDiasUteis, todayISO } from "@/lib/dias-uteis";
+import { addDiasUteis, isDiaUtil, todayISO } from "@/lib/dias-uteis";
 import {
-  ETAPAS, diasDaJanela, janelaMonitor, simularEtapa, inicioAcabamentoDoPedido,
+  ETAPAS, diasCorridosDaJanela, janelaMonitor, simularEtapa, inicioAcabamentoDoPedido,
   temSegundaOuQuinta, type Etapa, type ResultadoEtapa,
 } from "@/lib/pcp-monitor";
+
 import { COL_ID, ETAPA_COR, ETAPA_COR_BORDA, ETAPA_COR_CLARA, FaixaCalor, ReguaDatas } from "./FaixaCalor";
 import { GanttPedidos } from "./GanttPedidos";
 import { CapacidadeDialog } from "./CapacidadeDialog";
@@ -47,8 +48,11 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
   const [edicao, setEdicao] = useState<{ pedido: Pedido; proposta: Partial<Pedido> | null; conflito: ConflitoTipo } | null>(null);
 
   const { de, ate } = useMemo(() => janelaMonitor(), []);
-  const dias = useMemo(() => diasDaJanela(de, ate, feriados), [de, ate, feriados]);
+  // eixo de exibição: todos os dias corridos (sáb/dom/feriado aparecem em cinza)
+  const dias = useMemo(() => diasCorridosDaJanela(de, ate), [de, ate]);
+  const diaUtil = useMemo(() => (d: string) => isDiaUtil(new Date(d + "T00:00:00"), feriados), [feriados]);
   const colWidth = zoom === "dia" ? 52 : 9;
+
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -69,16 +73,41 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
     el.scrollTo({ left, behavior: "smooth" });
   }
 
-  // sempre que a janela/zoom mudar, reposiciona no dia vigente
+  // Reposiciona no dia vigente. Roda em todo render até conseguir (a aba pode
+  // estar montada escondida por forceMount, e aí scrollLeft não "pega").
+  const posicionadoRef = useRef<string>("");
   useEffect(() => {
-    if (dias.length === 0) return;
+    const chave = `${zoom}|${dias.length}|${hoje}`;
+    if (posicionadoRef.current === chave) return;
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el || el.clientWidth === 0 || dias.length === 0) return;
     const left = offsetHoje(el);
     if (left === null) return;
     el.scrollLeft = left;
+    if (Math.abs(el.scrollLeft - left) < 2) posicionadoRef.current = chave;
+  });
+
+  // rede de segurança: quando a aba passa de escondida para visível não há novo
+  // render, então observamos a largura do container (0 → visível).
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      if (posicionadoRef.current || el.clientWidth === 0 || dias.length === 0) return;
+      const left = offsetHoje(el);
+      if (left === null) return;
+      el.scrollLeft = left;
+      if (Math.abs(el.scrollLeft - left) < 2) posicionadoRef.current = `${zoom}|${dias.length}|${hoje}`;
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dias, colWidth, hoje, zoom]);
+
+
+
+
+
 
 
   const naJanela = useMemo(() => {
@@ -239,7 +268,7 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
       <Card className="overflow-hidden">
         <div id="monitor-scroll" ref={scrollRef} className="overflow-auto max-h-[74vh]">
           <div style={{ width: COL_ID + dias.length * colWidth }}>
-            <ReguaDatas dias={dias} zoom={zoom} colWidth={colWidth} hoje={hoje} />
+            <ReguaDatas dias={dias} zoom={zoom} colWidth={colWidth} hoje={hoje} diaUtil={diaUtil} />
             <FaixaCalor
               dias={dias}
               zoom={zoom}
@@ -248,6 +277,7 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
               onToggleCompacta={() => setCompacta((v) => !v)}
               colWidth={colWidth}
               hoje={hoje}
+              diaUtil={diaUtil}
             />
             <GanttPedidos
               pedidos={linhas}
@@ -257,12 +287,14 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
               resultados={resultados}
               podeArrastar={!soLeitura}
               hoje={hoje}
+              diaUtil={diaUtil}
               onAbrir={setDetalhe}
               onArrastar={arrastar}
               etapaTravada={etapaTravada}
               atrasos={atrasos}
               concluida={concluida}
             />
+
           </div>
         </div>
       </Card>

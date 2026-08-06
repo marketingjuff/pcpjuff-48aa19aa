@@ -60,10 +60,12 @@ interface ReguaProps {
   zoom: "semana" | "dia";
   colWidth: number;
   hoje: string;
+  /** true = dia útil; falso pinta a coluna de cinza (sáb/dom/feriado) */
+  diaUtil: (d: string) => boolean;
 }
 
 /** Régua de datas fixa no topo da área de rolagem. */
-export function ReguaDatas({ dias, zoom, colWidth, hoje }: ReguaProps) {
+export function ReguaDatas({ dias, zoom, colWidth, hoje, diaUtil }: ReguaProps) {
   const colunas = colunasDaGrade(dias, zoom);
 
   // agrupamento de meses na linha de cima
@@ -105,22 +107,27 @@ export function ReguaDatas({ dias, zoom, colWidth, hoje }: ReguaProps) {
           {colunas.map((c) => {
             const contemHoje = c.dias.includes(hoje);
             const { l1, l2 } = rotuloColuna(c, zoom);
-            const fimSemana = zoom === "dia" && new Date(c.dias[0]! + "T00:00:00").getDay() === 5;
+            const naoUtil = zoom === "dia" && !diaUtil(c.dias[0]!);
+            const domingo = zoom === "dia" && new Date(c.dias[0]! + "T00:00:00").getDay() === 0;
             return (
               <div
                 key={c.key}
                 title={
                   c.dias.length > 1
                     ? `${formatDateBR(c.dias[0]!)} a ${formatDateBR(c.dias[c.dias.length - 1]!)}`
-                    : formatDateBR(c.dias[0]!)
+                    : formatDateBR(c.dias[0]!) + (naoUtil ? " · dia não útil" : "")
                 }
                 style={{ width: colWidth * c.dias.length, height: 26 }}
                 className={`flex flex-col items-center justify-center overflow-hidden leading-none ${
-                  fimSemana || zoom === "semana" ? "border-r-2 border-border" : "border-r border-border/60"
-                } ${contemHoje ? "bg-rose-500/10" : ""}`}
+                  domingo || zoom === "semana" ? "border-r-2 border-border" : "border-r border-border/60"
+                } ${contemHoje ? "bg-rose-500/10" : naoUtil ? "bg-muted" : ""}`}
               >
-                <span className="text-[8.5px] text-muted-foreground">{l1}</span>
-                <span className={`text-[9.5px] tabular-nums ${contemHoje ? "font-bold text-rose-600" : "font-medium"}`}>
+                <span className={`text-[8.5px] ${naoUtil ? "text-muted-foreground/60" : "text-muted-foreground"}`}>{l1}</span>
+                <span
+                  className={`text-[9.5px] tabular-nums ${
+                    contemHoje ? "font-bold text-rose-600" : naoUtil ? "text-muted-foreground/60" : "font-medium"
+                  }`}
+                >
                   {l2}
                 </span>
               </div>
@@ -132,6 +139,7 @@ export function ReguaDatas({ dias, zoom, colWidth, hoje }: ReguaProps) {
   );
 }
 
+
 interface Props {
   dias: string[];
   zoom: "semana" | "dia";
@@ -140,11 +148,14 @@ interface Props {
   onToggleCompacta: () => void;
   colWidth: number;
   hoje: string;
+  /** true = dia útil; dia não útil fica cinza e vazio */
+  diaUtil: (d: string) => boolean;
 }
 
-export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta, colWidth, hoje }: Props) {
+export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta, colWidth, hoje, diaUtil }: Props) {
   const colunas = colunasDaGrade(dias, zoom);
   const etapas = compacta ? [ETAPAS[0]!] : ETAPAS;
+  const cabeNumero = colWidth >= 28;
 
   return (
     <div className="sticky z-20 border-b bg-card" style={{ top: REGUA_H }}>
@@ -173,6 +184,7 @@ export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta,
               </div>
               <div className="flex">
                 {colunas.map((c) => {
+                  const naoUtil = zoom === "dia" && !diaUtil(c.dias[0]!);
                   const alvo = compacta ? ETAPAS : [e];
                   let pior = 0;
                   let limite = 0;
@@ -190,9 +202,10 @@ export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta,
                       if (peso > pior) pior = peso;
                       if (dc && dc.carga > 0) {
                         const esc = dc.cargaEscorregada ?? 0;
+                        const dd = new Date(d + "T00:00:00");
                         titulo.push(
-                          `${formatDateBR(d)} · ${et.label}: ${dc.carga}/${dc.tetoEfetivo}` +
-                            (esc > 0 ? ` — ${esc} vieram de dias anteriores por falta de capacidade` : ""),
+                          `${DOW[dd.getDay()]} ${formatDateBR(d)} · ${et.label}\nCarga: ${dc.carga} de ${dc.tetoEfetivo}` +
+                            (esc > 0 ? `\n${esc} vieram de dias anteriores por falta de capacidade` : ""),
                         );
                         if (peso > piorPeso || (peso === piorPeso && dc.carga > (mostra?.carga ?? 0))) {
                           piorPeso = peso;
@@ -206,20 +219,28 @@ export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta,
                   return (
                     <div
                       key={c.key}
-                      title={titulo.slice(0, 8).join("\n") || formatDateBR(c.dias[0]!)}
+                      title={
+                        naoUtil
+                          ? `${formatDateBR(c.dias[0]!)} · dia não útil — não se produz`
+                          : titulo.slice(0, 6).join("\n\n") || formatDateBR(c.dias[0]!)
+                      }
                       style={{ width: colWidth * c.dias.length }}
-                      className={`flex h-5 items-center justify-center overflow-hidden border-r border-white/60 ${NIVEL_BG[nivel]} ${
-                        contemHoje ? "ring-1 ring-inset ring-rose-500" : ""
-                      }`}
+                      className={`relative flex h-6 flex-col items-center justify-center overflow-hidden border-r border-white/60 leading-none ${
+                        naoUtil ? "bg-muted" : NIVEL_BG[nivel]
+                      } ${contemHoje ? "ring-1 ring-inset ring-rose-500" : ""}`}
                     >
-                      {zoom === "dia" && mostra && (
-                        <span className="whitespace-nowrap text-[8.5px] font-semibold tabular-nums text-foreground/80">
-                          {mostra.esc > 0
-                            ? `${mostra.carga - mostra.esc}+${mostra.esc}↷/${mostra.teto}`
-                            : `${mostra.carga}/${mostra.teto}`}
-                        </span>
+                      {!naoUtil && zoom === "dia" && mostra && cabeNumero && (
+                        <>
+                          <span className="text-[9px] font-semibold tabular-nums text-foreground/85">
+                            {mostra.carga}
+                          </span>
+                          <span className="text-[8px] tabular-nums text-foreground/45">{mostra.teto}</span>
+                        </>
                       )}
-                      {zoom === "semana" && limite > 0 && (
+                      {!naoUtil && zoom === "dia" && mostra && mostra.esc > 0 && (
+                        <span className="absolute right-0.5 top-0 text-[8px] leading-none text-foreground/60">↷</span>
+                      )}
+                      {!naoUtil && zoom === "semana" && limite > 0 && (
                         <span className="text-[9px] font-semibold tabular-nums text-foreground/70">
                           {limite}/{c.dias.length}
                         </span>
@@ -235,3 +256,4 @@ export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta,
     </div>
   );
 }
+

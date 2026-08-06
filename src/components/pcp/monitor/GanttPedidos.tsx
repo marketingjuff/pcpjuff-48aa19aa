@@ -15,6 +15,8 @@ interface Props {
   resultados: Record<Etapa, ResultadoEtapa>;
   podeArrastar: boolean;
   hoje: string;
+  /** true = dia útil; dia não útil recebe fundo cinza na grade */
+  diaUtil: (d: string) => boolean;
   onAbrir: (p: Pedido) => void;
   /** offset em dias úteis (positivo = futuro) */
   onArrastar: (p: Pedido, offsetDiasUteis: number) => void;
@@ -28,7 +30,7 @@ interface Props {
 const ROW_H = 34;
 
 export function GanttPedidos({
-  pedidos, dias, colWidth, zoom, resultados, podeArrastar, hoje, onAbrir, onArrastar, etapaTravada,
+  pedidos, dias, colWidth, zoom, resultados, podeArrastar, hoje, diaUtil, onAbrir, onArrastar, etapaTravada,
   atrasos, concluida,
 }: Props) {
   const { feriados } = useFeriados();
@@ -36,7 +38,12 @@ export function GanttPedidos({
   const total = dias.length * colWidth;
   const [drag, setDrag] = useState<{ id: string; dx: number } | null>(null);
   const startX = useRef(0);
-  const passo = zoom === "semana" ? 5 : 1;
+  // no zoom Semana uma coluna visual = 7 dias corridos, mas o deslocamento
+  // de datas continua em dias úteis (1 semana = 5 dias úteis)
+  const passoCol = zoom === "semana" ? 7 : 1;
+  const passoDias = zoom === "semana" ? 5 : 1;
+
+
 
   function pos(dia: string | null | undefined): number | null {
     if (!dia) return null;
@@ -61,9 +68,10 @@ export function GanttPedidos({
   }
   function onPointerUp(p: Pedido) {
     if (!drag || drag.id !== p.id) return;
-    const passos = Math.round(drag.dx / (colWidth * passo));
+    const passos = Math.round(drag.dx / (colWidth * passoCol));
     setDrag(null);
-    if (passos !== 0) onArrastar(p, passos * passo);
+    if (passos !== 0) onArrastar(p, passos * passoDias);
+
   }
 
   return (
@@ -139,7 +147,8 @@ export function GanttPedidos({
                 {/* grade */}
                 <div className="pointer-events-none absolute inset-0 flex">
                   {dias.map((d) => {
-                    const sexta = new Date(d + "T00:00:00").getDay() === 5;
+                    const domingo = new Date(d + "T00:00:00").getDay() === 0;
+                    const naoUtil = !diaUtil(d);
                     return (
                       <div
                         key={d}
@@ -147,12 +156,13 @@ export function GanttPedidos({
                         className={`${
                           d === hoje
                             ? "border-r-2 border-rose-500 bg-rose-500/10"
-                            : sexta
+                            : domingo
                               ? "border-r-2 border-border/70"
                               : "border-r border-border/50"
-                        }`}
+                        } ${d !== hoje && naoUtil ? "bg-muted/70" : ""}`}
                       />
                     );
+
                   })}
                 </div>
                 <div className="absolute inset-0" style={{ transform: `translateX(${dx}px)` }}>

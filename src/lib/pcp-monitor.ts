@@ -262,6 +262,24 @@ export function diasDaJanela(de: string, ate: string, feriados: Feriados): strin
   return diasUteisNoIntervalo(de, ate, feriados);
 }
 
+/**
+ * SOMENTE EXIBIÇÃO: todos os dias corridos da janela, incluindo sábados,
+ * domingos e feriados. Não é usada por nenhum cálculo de carga.
+ */
+export function diasCorridosDaJanela(de: string, ate: string): string[] {
+  if (!de || !ate) return [];
+  const out: string[] = [];
+  const d = new Date(de + "T00:00:00");
+  const end = new Date(ate + "T00:00:00");
+  let guard = 0;
+  while (d.getTime() <= end.getTime() && guard++ < 1200) {
+    out.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+
+
 /** Agrupa dias em semanas (chave = segunda-feira da semana). */
 export function agruparPorSemana(dias: string[]): { semana: string; dias: string[] }[] {
   const out: { semana: string; dias: string[] }[] = [];
