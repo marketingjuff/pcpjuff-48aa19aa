@@ -724,6 +724,13 @@ export function ProdutosTab() {
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
+              <button
+                type="button"
+                title="Apagar fornecedor"
+                onClick={() => setExcluirForn(f)}
+                className="px-2 text-muted-foreground hover:text-rose-700 hover:bg-rose-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
             </div>
           ))}
         </div>
