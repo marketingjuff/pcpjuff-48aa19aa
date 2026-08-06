@@ -255,12 +255,16 @@ type ProdForm = {
   prazo: string;
   motivo: string;
   arquivo: File | null;
+  variacao_1_id: string;
+  variacao_2_id: string;
+  preco_por_variacao: boolean;
 };
 
 const formVazio = (): ProdForm => ({
   nome: "", departamento: "", unidade: "unidade", especificacao: "", ativo: true,
   preco: "", preco_negociado: "", grupo_id: "", fator_conversao: "",
   qtd_min: "", prazo: "", motivo: "", arquivo: null,
+  variacao_1_id: "", variacao_2_id: "", preco_por_variacao: false,
 });
 
 
