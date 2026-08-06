@@ -17,7 +17,7 @@ import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
 import { useIsAdmin } from "@/hooks/use-role";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { useSupFornecedorProdutos, useSupProdutos } from "@/components/sup/ProdutosTab";
-import { fmtMoeda, n, variacaoPercentual, type SupPrecoHistorico } from "@/lib/sup";
+import { fmtMoeda, n, rotuloVariacao, variacaoPercentual, type SupPrecoHistorico, type SupProdutoVariacaoPreco } from "@/lib/sup";
 
 interface Props {
   de: string;
