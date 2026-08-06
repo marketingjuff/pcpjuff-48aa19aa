@@ -8,11 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Pencil, ShieldCheck } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { REFACAO_MODELOS } from "@/lib/pedidos";
 import type { Oficina } from "@/lib/cop";
-import { useAppList, useAppListMutations } from "@/lib/app-lists";
 import { ProdutoMapCard } from "./ProdutoMapCard";
 
 import {
@@ -25,120 +24,9 @@ export function CopConfigPanel() {
   return (
     <div className="space-y-6">
       <OficinasCard />
-      <MotivosPerdaCard />
-      <DestinosPerdaCard />
       <ProdutoMapCard />
-      <CoresCopCard />
-      <AcessoCard />
 
     </div>
-  );
-}
-
-/* -------------------- Destinos de Perda -------------------- */
-function DestinosPerdaCard() {
-  const { items } = useAppList("destino_perda");
-  const { add, remove } = useAppListMutations("destino_perda");
-  const [novo, setNovo] = useState("");
-  async function handleAdd() {
-    const v = novo.trim();
-    if (!v) { toast.error("Digite o destino."); return; }
-    try { await add.mutateAsync(v); setNovo(""); toast.success("Destino adicionado."); }
-    catch (e: any) { toast.error(e?.message ?? "Erro ao adicionar."); }
-  }
-  return (
-    <Card>
-      <CardHeader className="pb-2"><CardTitle className="text-base">Destinos de peças perdidas</CardTitle></CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex gap-2">
-          <Input
-            placeholder="Ex.: Reciclagem"
-            value={novo}
-            onChange={(e) => setNovo(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAdd(); } }}
-            disabled={add.isPending}
-          />
-          <Button size="sm" onClick={handleAdd} disabled={add.isPending}>
-            <Plus className="h-4 w-4 mr-1" /> Adicionar
-          </Button>
-        </div>
-        <Table>
-          <TableHeader><TableRow><TableHead>Destino</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
-          <TableBody>
-            {items.length === 0 ? (
-              <TableRow><TableCell colSpan={2} className="text-muted-foreground">Nenhum destino cadastrado.</TableCell></TableRow>
-            ) : items.map((it) => (
-              <TableRow key={it.id}>
-                <TableCell>{it.nome}</TableCell>
-                <TableCell className="text-right">
-                  <Button size="icon" variant="ghost" onClick={() => remove.mutate(it.id)} title="Remover">
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-}
-
-/* -------------------- Motivos de Perda -------------------- */
-function MotivosPerdaCard() {
-  const { items } = useAppList("motivo_perda");
-  const { add, remove } = useAppListMutations("motivo_perda");
-  const [novo, setNovo] = useState("");
-
-  async function handleAdd() {
-    const v = novo.trim();
-    if (!v) { toast.error("Digite o motivo."); return; }
-    try { await add.mutateAsync(v); setNovo(""); toast.success("Motivo adicionado."); }
-    catch (e: any) { toast.error(e?.message ?? "Erro ao adicionar."); }
-  }
-
-  return (
-    <Card>
-      <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Motivos de perda</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex gap-2">
-          <Input
-            placeholder="Ex.: Mancha no tecido"
-            value={novo}
-            onChange={(e) => setNovo(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAdd(); } }}
-            disabled={add.isPending}
-          />
-          <Button size="sm" onClick={handleAdd} disabled={add.isPending}>
-            <Plus className="h-4 w-4 mr-1" /> Adicionar
-          </Button>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Motivo</TableHead>
-              <TableHead className="w-16"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.length === 0 ? (
-              <TableRow><TableCell colSpan={2} className="text-muted-foreground">Nenhum motivo cadastrado — o dropdown usará o padrão (Defeito do tecido, Tecido desfiado, Erro de costura).</TableCell></TableRow>
-            ) : items.map((it) => (
-              <TableRow key={it.id}>
-                <TableCell>{it.nome}</TableCell>
-                <TableCell className="text-right">
-                  <Button size="icon" variant="ghost" onClick={() => remove.mutate(it.id)} title="Remover">
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -312,7 +200,7 @@ function OficinaDialog({ oficina, onClose, onSaved }: { oficina: Oficina | null;
 }
 
 /* -------------------- Cores COP -------------------- */
-function CoresCopCard() {
+export function CoresCopCard() {
   const { settings, save } = useCopColorSettings();
   const [draft, setDraft] = useState<CopColorSettings>(settings);
   useEffect(() => { setDraft(settings); }, [settings]);
@@ -394,18 +282,6 @@ function CoresCopCard() {
           <Button variant="outline" onClick={() => setDraft(DEFAULT_COP_COLOR_SETTINGS)}>Restaurar padrão</Button>
           <Button onClick={handleSave} disabled={save.isPending}>Salvar cores</Button>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-/* -------------------- Acesso -------------------- */
-function AcessoCard() {
-  return (
-    <Card>
-      <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Controle de acesso ao COP</CardTitle></CardHeader>
-      <CardContent className="text-sm text-muted-foreground space-y-2">
-        <p>As configurações do COP estão liberadas para <span className="font-medium text-foreground">administradores</span> e <span className="font-medium text-foreground">gestores com acesso ao COP</span>.</p>
       </CardContent>
     </Card>
   );
