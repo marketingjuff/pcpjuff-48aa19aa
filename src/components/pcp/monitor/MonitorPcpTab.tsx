@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { TIPOS_ESTAMPA, tipoIncluiDTF, tipoIncluiSilk } from "@/lib/pedidos";
+import { TIPOS_ESTAMPA, isAtrasadoSetor, tipoIncluiDTF, tipoIncluiSilk } from "@/lib/pedidos";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Settings, CalendarDays, Flag, Video, AlertTriangle } from "lucide-react";
+import { Settings, CalendarDays, Flag, Video, AlertTriangle, CornerDownRight } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
@@ -19,7 +19,7 @@ import {
   ETAPAS, diasDaJanela, janelaMonitor, simularEtapa, inicioAcabamentoDoPedido,
   temSegundaOuQuinta, type Etapa, type ResultadoEtapa,
 } from "@/lib/pcp-monitor";
-import { COL_ID, ETAPA_COR, FaixaCalor, ReguaDatas } from "./FaixaCalor";
+import { COL_ID, ETAPA_COR, ETAPA_COR_BORDA, ETAPA_COR_CLARA, FaixaCalor, ReguaDatas } from "./FaixaCalor";
 import { GanttPedidos } from "./GanttPedidos";
 import { CapacidadeDialog } from "./CapacidadeDialog";
 import { EditarDatasDialog, type ConflitoTipo } from "./EditarDatasDialog";
@@ -37,7 +37,7 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
   const { tetos } = useCapacidade();
   const hoje = todayISO();
 
-  const [zoom, setZoom] = usePersistedState<"semana" | "dia">("pcp:monitor:zoom", "semana");
+  const [zoom, setZoom] = usePersistedState<"semana" | "dia">("pcp:monitor:zoom", "dia");
   const [compacta, setCompacta] = usePersistedState<boolean>("pcp:monitor:faixaCompacta", false);
   const [busca, setBusca] = useState("");
   const [tipo, setTipo] = useState<string>("todos");
@@ -48,7 +48,7 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
 
   const { de, ate } = useMemo(() => janelaMonitor(), []);
   const dias = useMemo(() => diasDaJanela(de, ate, feriados), [de, ate, feriados]);
-  const colWidth = zoom === "dia" ? 22 : 9;
+  const colWidth = zoom === "dia" ? 52 : 9;
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const jaCentralizou = useRef(false);
