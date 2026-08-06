@@ -147,7 +147,8 @@ export function GanttPedidos({
                 {/* grade */}
                 <div className="pointer-events-none absolute inset-0 flex">
                   {dias.map((d) => {
-                    const sexta = new Date(d + "T00:00:00").getDay() === 5;
+                    const domingo = new Date(d + "T00:00:00").getDay() === 0;
+                    const naoUtil = !diaUtil(d);
                     return (
                       <div
                         key={d}
@@ -155,12 +156,13 @@ export function GanttPedidos({
                         className={`${
                           d === hoje
                             ? "border-r-2 border-rose-500 bg-rose-500/10"
-                            : sexta
+                            : domingo
                               ? "border-r-2 border-border/70"
                               : "border-r border-border/50"
-                        }`}
+                        } ${d !== hoje && naoUtil ? "bg-muted/70" : ""}`}
                       />
                     );
+
                   })}
                 </div>
                 <div className="absolute inset-0" style={{ transform: `translateX(${dx}px)` }}>
