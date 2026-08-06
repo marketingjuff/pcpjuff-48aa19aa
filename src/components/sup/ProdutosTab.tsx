@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -13,10 +13,11 @@ import { Plus, Pencil, Copy, TrendingDown, TrendingUp } from "lucide-react";
 import { SortTh, useTableSort } from "@/components/shared/sortable";
 import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
+import { FornecedorDialog } from "@/components/sup/FornecedorDialog";
 import { useSupDepartamentos } from "@/components/sup/DepartamentosTab";
 import {
   SUP_UNIDADES, fmtMoeda, n, variacaoPercentual, precoPorUnidadeRef, precoVigente,
-  type SupFornecedorProduto, type SupPrecoHistorico, type SupProduto, type SupProdutoGrupo,
+  type SupFornecedor, type SupFornecedorProduto, type SupPrecoHistorico, type SupProduto, type SupProdutoGrupo,
 } from "@/lib/sup";
 
 
@@ -180,6 +181,8 @@ export function ProdutosTab() {
   const [buscaForn, setBuscaForn] = useState("");
   const [mostrarInativos, setMostrarInativos] = useState(false);
   const [fornId, setFornId] = useState<string | null>(null);
+  const [fornDialogOpen, setFornDialogOpen] = useState(false);
+  const [fornEdit, setFornEdit] = useState<SupFornecedor | null>(null);
 
   const [busca, setBusca] = useState("");
   const [selId, setSelId] = useState<string | null>(null);
@@ -210,6 +213,16 @@ export function ProdutosTab() {
       .slice()
       .sort((a, b2) => a.razao_social.localeCompare(b2.razao_social, "pt-BR"));
   }, [fornecedores, buscaForn, mostrarInativos]);
+
+  useEffect(() => {
+    if (!fornId) return;
+    const f = fornecedores.find((x) => x.id === fornId);
+    if (f && !f.ativo && !mostrarInativos) {
+      setFornId(null);
+      setSelId(null);
+    }
+  }, [fornecedores, fornId, mostrarInativos]);
+
 
   const contagem = useMemo(() => {
     const m = new Map<string, number>();
@@ -552,6 +565,16 @@ export function ProdutosTab() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4">
       <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-xs font-semibold uppercase tracking-wider">Fornecedores</div>
+          <Button
+            size="sm"
+            className="h-7 bg-teal-600 hover:bg-teal-700 text-white"
+            onClick={() => { setFornEdit(null); setFornDialogOpen(true); }}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" /> Novo
+          </Button>
+        </div>
         <div>
           <Label className="text-xs">Buscar fornecedor</Label>
           <Input value={buscaForn} onChange={(e) => setBuscaForn(e.target.value)} placeholder="Razão social, fantasia…" className="h-9" />
@@ -564,23 +587,36 @@ export function ProdutosTab() {
           {fornecedoresFiltrados.length === 0 ? (
             <div className="p-4 text-sm text-muted-foreground text-center">Nenhum fornecedor.</div>
           ) : fornecedoresFiltrados.map((f) => (
-            <button
+            <div
               key={f.id}
-              type="button"
-              onClick={() => { setFornId(f.id); setSelId(null); }}
-              className={`w-full text-left px-3 py-2 border-b last:border-b-0 hover:bg-muted/20 ${fornId === f.id ? "bg-teal-50" : ""}`}
+              className={`flex items-stretch border-b last:border-b-0 ${fornId === f.id ? "bg-teal-50" : ""}`}
             >
-              <div className="text-[13px] font-medium flex items-center justify-between gap-2">
-                <span className="truncate">{f.nome_fantasia || f.razao_social}</span>
-                <span className="text-[11px] text-muted-foreground whitespace-nowrap tabular-nums">
-                  {contagem.get(f.id) ?? 0} produtos
-                </span>
-              </div>
-              {!f.ativo && <div className="text-[11px] text-muted-foreground">inativo</div>}
-            </button>
+              <button
+                type="button"
+                onClick={() => { setFornId(f.id); setSelId(null); }}
+                className="flex-1 min-w-0 text-left px-3 py-2 hover:bg-muted/20"
+              >
+                <div className="text-[13px] font-medium flex items-center justify-between gap-2">
+                  <span className="truncate">{f.nome_fantasia || f.razao_social}</span>
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap tabular-nums">
+                    {contagem.get(f.id) ?? 0} produtos
+                  </span>
+                </div>
+                {!f.ativo && <div className="text-[11px] text-muted-foreground">inativo</div>}
+              </button>
+              <button
+                type="button"
+                title="Editar fornecedor"
+                onClick={() => { setFornEdit(f); setFornDialogOpen(true); }}
+                className="px-2 text-muted-foreground hover:text-foreground hover:bg-muted/30"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </div>
           ))}
         </div>
       </div>
+
 
       <div className="space-y-3">
         <div className="flex items-end gap-2">
@@ -918,6 +954,23 @@ export function ProdutosTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <FornecedorDialog
+        open={fornDialogOpen}
+        onOpenChange={setFornDialogOpen}
+        fornecedor={fornEdit}
+        onSaved={(id) => {
+          const criando = fornEdit === null;
+          if (criando && id) {
+            setFornId(id);
+            setSelId(null);
+            setBuscaForn("");
+          }
+          setFornEdit(null);
+        }}
+      />
+
+
 
     </div>
   );
