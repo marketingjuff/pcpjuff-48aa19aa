@@ -15,6 +15,7 @@ import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { FornecedorDialog } from "@/components/sup/FornecedorDialog";
 import { useSupDepartamentos } from "@/components/sup/DepartamentosTab";
+import { useAppList } from "@/lib/app-lists";
 import {
   SUP_UNIDADES, fmtMoeda, n, variacaoPercentual, precoPorUnidadeRef, precoVigente,
   type SupFornecedor, type SupFornecedorProduto, type SupPrecoHistorico, type SupProduto, type SupProdutoGrupo,
@@ -176,6 +177,8 @@ export function ProdutosTab() {
   const { data: fornecedores = [] } = useSupFornecedores();
   const { data: vinculos = [] } = useSupFornecedorProdutos();
   const { data: grupos = [] } = useSupProdutoGrupos();
+  const { names: unidadesLista } = useAppList("sup_unidade");
+  const unidades = unidadesLista.length ? unidadesLista : ([...SUP_UNIDADES] as string[]);
 
 
   const [buscaForn, setBuscaForn] = useState("");
