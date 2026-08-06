@@ -198,6 +198,11 @@ export type SupPedidoItem = {
   preco_negociado: number;
   preco_historico_id: string | null;
   quantidade_recebida: number;
+  variacao_1_nome?: string | null;
+  variacao_1_valor?: string | null;
+  variacao_2_nome?: string | null;
+  variacao_2_valor?: string | null;
+  variacao_preco_id?: string | null;
   ordem: number;
 };
 
