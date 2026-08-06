@@ -73,28 +73,20 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
     el.scrollTo({ left, behavior: "smooth" });
   }
 
-  // sempre que a janela/zoom mudar, reposiciona no dia vigente.
-  // A aba pode estar montada escondida (forceMount) ou a grade ainda não ter
-  // largura final, e nesses casos definir scrollLeft não tem efeito — então
-  // tentamos até a posição realmente "pegar".
+  // Reposiciona no dia vigente. Roda em todo render até conseguir (a aba pode
+  // estar montada escondida por forceMount, e aí scrollLeft não "pega").
+  const posicionadoRef = useRef<string>("");
   useEffect(() => {
-    if (dias.length === 0) return;
-    let tentativas = 0;
-    const t = window.setInterval(() => {
-      const el = scrollRef.current;
-      tentativas++;
-      if (tentativas > 60) { window.clearInterval(t); return; }
-      if (!el || el.clientWidth === 0) return;
-      const left = offsetHoje(el);
-      console.log("[monitor] scroll hoje", { hoje, i: dias.indexOf(hoje), left, cw: el.clientWidth });
-      if (left === null) { window.clearInterval(t); return; }
+    const chave = `${zoom}|${dias.length}|${hoje}`;
+    if (posicionadoRef.current === chave) return;
+    const el = scrollRef.current;
+    if (!el || el.clientWidth === 0 || dias.length === 0) return;
+    const left = offsetHoje(el);
+    if (left === null) return;
+    el.scrollLeft = left;
+    if (Math.abs(el.scrollLeft - left) < 2) posicionadoRef.current = chave;
+  });
 
-      el.scrollLeft = left;
-      if (Math.abs(el.scrollLeft - left) < 2) window.clearInterval(t);
-    }, 120);
-    return () => window.clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dias, colWidth, hoje, zoom]);
 
 
 
