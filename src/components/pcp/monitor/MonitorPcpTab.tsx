@@ -243,7 +243,7 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
       <Card className="overflow-hidden">
         <div id="monitor-scroll" ref={scrollRef} className="overflow-auto max-h-[74vh]">
           <div style={{ width: COL_ID + dias.length * colWidth }}>
-            <ReguaDatas dias={dias} zoom={zoom} colWidth={colWidth} hoje={hoje} />
+            <ReguaDatas dias={dias} zoom={zoom} colWidth={colWidth} hoje={hoje} diaUtil={diaUtil} />
             <FaixaCalor
               dias={dias}
               zoom={zoom}
@@ -252,6 +252,7 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
               onToggleCompacta={() => setCompacta((v) => !v)}
               colWidth={colWidth}
               hoje={hoje}
+              diaUtil={diaUtil}
             />
             <GanttPedidos
               pedidos={linhas}
@@ -261,12 +262,14 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
               resultados={resultados}
               podeArrastar={!soLeitura}
               hoje={hoje}
+              diaUtil={diaUtil}
               onAbrir={setDetalhe}
               onArrastar={arrastar}
               etapaTravada={etapaTravada}
               atrasos={atrasos}
               concluida={concluida}
             />
+
           </div>
         </div>
       </Card>
