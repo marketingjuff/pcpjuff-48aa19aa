@@ -629,10 +629,6 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
             />
             <Dado label="Cidade/UF" valor={[fornecedorSel.cidade, fornecedorSel.uf].filter(Boolean).join("/") || null} />
             <Dado label="Condição de pagamento padrão" valor={fornecedorSel.condicao_pagamento_padrao} />
-            <Dado
-              label="Prazo de entrega padrão"
-              valor={fornecedorSel.prazo_entrega_padrao_dias != null ? `${fornecedorSel.prazo_entrega_padrao_dias} dias` : null}
-            />
             {fornecedorSel.observacoes && (
               <div className="col-span-2 md:col-span-4">
                 <Dado label="Observações do fornecedor" valor={fornecedorSel.observacoes} />
