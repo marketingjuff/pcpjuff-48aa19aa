@@ -192,14 +192,10 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
   const incluiSilk = tipoIncluiSilk(form.tipo_estampa);
   const soDTF = tipoIncluiDTF(form.tipo_estampa) && !incluiSilk;
   const diasSecagemNum = Number(form.dias_secagem ?? 0) || 0;
-  const inicioAcabamentoCalc = useMemo(() => {
-    if (!form.termino_estamparia || isLisa) return null;
-    if (soDTF) return form.termino_estamparia;
-    if (!incluiSilk) return null;
-    // término dia 1, secagem N dias → início no dia (1 + N + 1); o dia do término e o dia do início não contam.
-    const base = addDiasCorridos(form.termino_estamparia, diasSecagemNum + 1);
-    return proximoDiaUtil(base, feriados);
-  }, [form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados]);
+  const inicioAcabamentoCalc = useMemo(
+    () => calcInicioAcabamento(form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados),
+    [form.termino_estamparia, soDTF, incluiSilk, isLisa, diasSecagemNum, feriados],
+  );
 
 
   const VENDOR_REQUIRED: (keyof Pedido)[] = [
