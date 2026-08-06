@@ -86,7 +86,13 @@ export function FornecedorDialog({ open, onOpenChange, fornecedor, onSaved }: Pr
           </div>
           <div>
             <Label className="text-xs">CNPJ / CPF</Label>
-            <Input value={form.documento ?? ""} onChange={(e) => set("documento", e.target.value)} className="h-9" />
+            <Input
+              value={form.documento ?? ""}
+              onChange={(e) => set("documento", maskCpfCnpj(e.target.value))}
+              inputMode="numeric"
+              placeholder="00.000.000/0000-00"
+              className="h-9"
+            />
           </div>
           <div>
 
