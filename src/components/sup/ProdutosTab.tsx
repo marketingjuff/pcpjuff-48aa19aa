@@ -314,6 +314,14 @@ export function ProdutosTab() {
   const [excluirProd, setExcluirProd] = useState<SupProduto | null>(null);
   const [excluirForn, setExcluirForn] = useState<SupFornecedor | null>(null);
 
+  const { data: variacoes = [] } = useSupVariacoes();
+  const { data: variacaoValores = [] } = useSupVariacaoValores();
+  const { data: variacaoPrecos = [] } = useSupVariacaoPrecos();
+
+  const [combNovo, setCombNovo] = useState({ v1: "", v2: "", tabela: "", negociado: "" });
+  const [confirmFlagOff, setConfirmFlagOff] = useState(false);
+  const [confirmTroca, setConfirmTroca] = useState<{ campo: "variacao_1_id" | "variacao_2_id"; valor: string } | null>(null);
+
 
   const vinculoDoProduto = (produto_id: string) =>
     vinculos.find((v) => v.produto_id === produto_id) ?? null;
