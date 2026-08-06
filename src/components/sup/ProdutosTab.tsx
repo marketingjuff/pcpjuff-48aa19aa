@@ -17,7 +17,7 @@ import { FornecedorDialog } from "@/components/sup/FornecedorDialog";
 import { useSupDepartamentos } from "@/components/sup/DepartamentosTab";
 import {
   SUP_UNIDADES, fmtMoeda, n, variacaoPercentual, precoPorUnidadeRef, precoVigente,
-  type SupFornecedorProduto, type SupPrecoHistorico, type SupProduto, type SupProdutoGrupo,
+  type SupFornecedor, type SupFornecedorProduto, type SupPrecoHistorico, type SupProduto, type SupProdutoGrupo,
 } from "@/lib/sup";
 
 
