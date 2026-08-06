@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import { TIPOS_ESTAMPA, tipoIncluiDTF, tipoIncluiSilk } from "@/lib/pedidos";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,7 +19,7 @@ import {
   ETAPAS, diasDaJanela, janelaMonitor, simularEtapa, inicioAcabamentoDoPedido,
   temSegundaOuQuinta, type Etapa, type ResultadoEtapa,
 } from "@/lib/pcp-monitor";
-import { FaixaCalor } from "./FaixaCalor";
+import { COL_ID, ETAPA_COR, FaixaCalor, ReguaDatas } from "./FaixaCalor";
 import { GanttPedidos } from "./GanttPedidos";
 import { CapacidadeDialog } from "./CapacidadeDialog";
 import { EditarDatasDialog, type ConflitoTipo } from "./EditarDatasDialog";
