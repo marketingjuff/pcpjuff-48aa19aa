@@ -14,11 +14,12 @@ import { useFeriados } from "@/hooks/use-feriados";
 import { useIsAdmin } from "@/hooks/use-role";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useCapacidade } from "@/hooks/use-capacidade";
-import { addDiasUteis, todayISO } from "@/lib/dias-uteis";
+import { addDiasUteis, isDiaUtil, todayISO } from "@/lib/dias-uteis";
 import {
-  ETAPAS, diasDaJanela, janelaMonitor, simularEtapa, inicioAcabamentoDoPedido,
+  ETAPAS, diasCorridosDaJanela, janelaMonitor, simularEtapa, inicioAcabamentoDoPedido,
   temSegundaOuQuinta, type Etapa, type ResultadoEtapa,
 } from "@/lib/pcp-monitor";
+
 import { COL_ID, ETAPA_COR, ETAPA_COR_BORDA, ETAPA_COR_CLARA, FaixaCalor, ReguaDatas } from "./FaixaCalor";
 import { GanttPedidos } from "./GanttPedidos";
 import { CapacidadeDialog } from "./CapacidadeDialog";
