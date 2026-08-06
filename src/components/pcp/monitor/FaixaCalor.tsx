@@ -11,6 +11,22 @@ export const ETAPA_COR: Record<Etapa, string> = {
   acabamento: "bg-emerald-500",
 };
 
+/** Versão clara (etapa pendente). */
+export const ETAPA_COR_CLARA: Record<Etapa, string> = {
+  arte: "bg-sky-500/20",
+  dtf: "bg-indigo-500/20",
+  silk: "bg-fuchsia-500/20",
+  acabamento: "bg-emerald-500/20",
+};
+
+/** Contorno na cor da etapa (etapa pendente). */
+export const ETAPA_COR_BORDA: Record<Etapa, string> = {
+  arte: "border-sky-500",
+  dtf: "border-indigo-500",
+  silk: "border-fuchsia-500",
+  acabamento: "border-emerald-500",
+};
+
 /** Largura da coluna fixa de identificação do pedido. */
 export const COL_ID = 150;
 /** Altura total da régua de datas (linha de mês + linha de dia/semana). */
