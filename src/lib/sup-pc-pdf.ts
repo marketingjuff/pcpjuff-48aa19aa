@@ -2,7 +2,7 @@
 // NÃO exibe preço de tabela, economia ou comissão.
 import logoJuff from "@/assets/loguinhojuffpreto.png.asset.json";
 import type { SupFornecedor, SupPedidoCompra, SupPedidoItem, SupProduto } from "@/lib/sup";
-import { SUP_EMPRESA_LABEL, fmtDataBR, fmtMoeda, fmtQtd, n, subtotalNegociado } from "@/lib/sup";
+import { SUP_EMPRESA_LABEL, fmtDataBR, fmtMoeda, fmtQtd, n, rotuloVariacaoCompleto, subtotalNegociado } from "@/lib/sup";
 
 function esc(s: string | number | null | undefined): string {
   if (s === null || s === undefined) return "";
