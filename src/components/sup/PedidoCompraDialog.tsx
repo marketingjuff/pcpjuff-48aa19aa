@@ -17,12 +17,15 @@ import { useIsAdmin } from "@/hooks/use-role";
 import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import {
-  useSupFornecedorProdutos, useSupProdutos, aplicarPrecoTabela, aplicarPrecoNegociado,
+  useSupFornecedorProdutos, useSupProdutos, useSupVariacaoPrecos,
+  aplicarPrecoTabela, aplicarPrecoNegociado,
+  aplicarPrecoVariacaoTabela, aplicarPrecoVariacaoNegociado,
 } from "@/components/sup/ProdutosTab";
+import { useSupVariacoes, useSupVariacaoValores } from "@/components/sup/VariacoesConfig";
 import { abrirPdfPedidoCompra } from "@/lib/sup-pc-pdf";
 import {
   SUP_CONDICOES_PAGAMENTO, SUP_EMPRESAS, SUP_EMPRESA_LABEL, SUP_FLUXO,
-  SUP_STATUS_CLASSE, SUP_STATUS_LABEL, addDias, calcTotaisPedido, economiaItem, fmtMoeda, n,
+  SUP_STATUS_CLASSE, SUP_STATUS_LABEL, addDias, calcTotaisPedido, chaveVariacao, economiaItem, fmtMoeda, n,
   statusPorRecebimento, type SupComissionado, type SupConfig, type SupPedidoCompra,
   type SupPedidoItem, type SupStatusPc,
 } from "@/lib/sup";
@@ -37,6 +40,9 @@ type ItemLinha = {
   preco_negociado: number;
   preco_historico_id: string | null;
   quantidade_recebida: number;
+  variacao_1_valor: string;
+  variacao_2_valor: string;
+  variacao_preco_id: string | null;
 };
 
 interface Props {
@@ -53,6 +59,9 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
   const { data: fornecedores = [] } = useSupFornecedores();
   const { data: produtos = [] } = useSupProdutos();
   const { data: vinculos = [] } = useSupFornecedorProdutos();
+  const { data: variacaoPrecos = [] } = useSupVariacaoPrecos();
+  const { data: variacoes = [] } = useSupVariacoes();
+  const { data: variacaoValores = [] } = useSupVariacaoValores();
 
   const { data: config } = useQuery({
     queryKey: ["sup-config"],
@@ -107,6 +116,9 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         preco_negociado: n(i.preco_negociado),
         preco_historico_id: i.preco_historico_id,
         quantidade_recebida: n(i.quantidade_recebida),
+        variacao_1_valor: i.variacao_1_valor ?? "",
+        variacao_2_valor: i.variacao_2_valor ?? "",
+        variacao_preco_id: i.variacao_preco_id ?? null,
       })));
     } else {
       setHead({
@@ -180,6 +192,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
     setLinhas([{
       produto_id: "", quantidade: 1, unidade: "unidade",
       preco_tabela: 0, preco_negociado: 0, preco_historico_id: null, quantidade_recebida: 0,
+      variacao_1_valor: "", variacao_2_valor: "", variacao_preco_id: null,
     }]);
     setTrocaFornecedor(null);
   }
@@ -218,6 +231,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
     setLinhas((l) => [...l, {
       produto_id: "", quantidade: 1, unidade: "unidade",
       preco_tabela: 0, preco_negociado: 0, preco_historico_id: null, quantidade_recebida: 0,
+      variacao_1_valor: "", variacao_2_valor: "", variacao_preco_id: null,
     }]);
   }
 
@@ -229,9 +243,42 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           preco_tabela: preco,
           preco_negociado: negociado > 0 ? negociado : preco,
           preco_historico_id: hist,
+          variacao_1_valor: "",
+          variacao_2_valor: "",
+          variacao_preco_id: null,
         }
       : it));
   }
+
+  /** Combinação cadastrada para a linha (quando o produto tem preço por variação). */
+  function combinacaoDaLinha(l: ItemLinha) {
+    const vinc = vinculos.find((v) => v.produto_id === l.produto_id && v.fornecedor_id === head.fornecedor_id);
+    if (!vinc || !l.variacao_1_valor) return null;
+    return (
+      variacaoPrecos.find(
+        (c) =>
+          c.fornecedor_produto_id === vinc.id &&
+          c.ativo &&
+          chaveVariacao(c.variacao_1_valor, c.variacao_2_valor) === chaveVariacao(l.variacao_1_valor, l.variacao_2_valor || null),
+      ) ?? null
+    );
+  }
+
+  /** Ao escolher a combinação, herda o preço cadastrado dela (quando houver). */
+  function trocarVariacao(idx: number, campo: "variacao_1_valor" | "variacao_2_valor", valor: string) {
+    setLinhas((l) => l.map((it, i) => {
+      if (i !== idx) return it;
+      const proximo = { ...it, [campo]: valor } as ItemLinha;
+      const prod = produtos.find((p) => p.id === proximo.produto_id);
+      if (!prod?.preco_por_variacao) return { ...proximo, variacao_preco_id: null };
+      const comb = combinacaoDaLinha(proximo);
+      if (!comb) return { ...proximo, variacao_preco_id: null };
+      const tabela = comb.preco_tabela == null ? proximo.preco_tabela : n(comb.preco_tabela);
+      const neg = comb.preco_negociado == null ? tabela : n(comb.preco_negociado);
+      return { ...proximo, variacao_preco_id: comb.id, preco_tabela: tabela, preco_negociado: neg };
+    }));
+  }
+
 
 
   function setLinha(idx: number, patch: Partial<ItemLinha>) {
@@ -316,6 +363,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
 
       for (let i = 0; i < linhas.length; i++) {
         const l = linhas[i];
+        const prodItem = produtos.find((p) => p.id === l.produto_id);
         const item = {
           pedido_id: id,
           produto_id: l.produto_id,
@@ -325,6 +373,16 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           preco_negociado: n(l.preco_negociado),
           preco_historico_id: l.preco_historico_id,
           quantidade_recebida: n(l.quantidade_recebida),
+          // Snapshot: o item guarda o texto da variação, não o vínculo ao cadastro.
+          variacao_1_nome: prodItem?.variacao_1_id
+            ? (variacoes.find((v) => v.id === prodItem.variacao_1_id)?.nome ?? null)
+            : null,
+          variacao_1_valor: l.variacao_1_valor || null,
+          variacao_2_nome: prodItem?.variacao_2_id
+            ? (variacoes.find((v) => v.id === prodItem.variacao_2_id)?.nome ?? null)
+            : null,
+          variacao_2_valor: l.variacao_2_valor || null,
+          variacao_preco_id: l.variacao_preco_id,
           ordem: i,
         };
         if (l.id) {
@@ -362,6 +420,50 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           continue;
         }
         const motivo = `Atualizado pelo pedido de compra ${head.numero ?? ""}`.trim();
+
+        // Produto com preço por variação: o preço vale para a combinação, não para o produto.
+        const prodSync = produtos.find((p) => p.id === l.produto_id);
+        if (prodSync?.preco_por_variacao && l.variacao_1_valor) {
+          let comb = variacaoPrecos.find(
+            (c) =>
+              c.fornecedor_produto_id === vinc!.id &&
+              c.ativo &&
+              chaveVariacao(c.variacao_1_valor, c.variacao_2_valor) === chaveVariacao(l.variacao_1_valor, l.variacao_2_valor || null),
+          ) ?? null;
+          if (!comb) {
+            const { data: nova, error: eC } = await (supabase as any)
+              .from("sup_produto_variacao_precos")
+              .insert({
+                fornecedor_produto_id: vinc!.id,
+                variacao_1_valor: l.variacao_1_valor,
+                variacao_2_valor: l.variacao_2_valor || null,
+              })
+              .select("*")
+              .single();
+            if (eC) throw eC;
+            comb = nova as any;
+          }
+          if (tabelaNovo > 0 && n(comb!.preco_tabela) !== tabelaNovo) {
+            await aplicarPrecoVariacaoTabela({
+              fornecedor_produto_id: vinc!.id,
+              variacao_preco_id: comb!.id,
+              preco_anterior: comb!.preco_tabela == null ? null : n(comb!.preco_tabela),
+              preco_novo: tabelaNovo,
+              motivo,
+            });
+          }
+          if (negociadoNovo > 0 && n(comb!.preco_negociado) !== negociadoNovo) {
+            await aplicarPrecoVariacaoNegociado({
+              fornecedor_produto_id: vinc!.id,
+              variacao_preco_id: comb!.id,
+              preco_anterior: comb!.preco_negociado == null ? null : n(comb!.preco_negociado),
+              preco_novo: negociadoNovo,
+              motivo,
+            });
+          }
+          continue;
+        }
+
         if (tabelaNovo > 0 && n(vinc.preco_tabela) !== tabelaNovo) {
           await aplicarPrecoTabela({
             fornecedor_produto_id: vinc.id,
@@ -387,6 +489,8 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
       qc.invalidateQueries({ queryKey: ["sup-pedido", pedidoId] });
       qc.invalidateQueries({ queryKey: ["sup-fornecedor-produtos"] });
       qc.invalidateQueries({ queryKey: ["sup-preco-historico"] });
+      qc.invalidateQueries({ queryKey: ["sup-variacao-precos"] });
+      qc.invalidateQueries({ queryKey: ["sup-alteracoes-preco"] });
       toast.success("Pedido salvo. Preços do cadastro atualizados.");
       onOpenChange(false);
     },
@@ -474,6 +578,14 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         preco_negociado: n(l.preco_negociado),
         preco_historico_id: l.preco_historico_id,
         quantidade_recebida: n(l.quantidade_recebida),
+        variacao_1_nome: produtos.find((p) => p.id === l.produto_id)?.variacao_1_id
+          ? (variacoes.find((v) => v.id === produtos.find((p) => p.id === l.produto_id)?.variacao_1_id)?.nome ?? null)
+          : null,
+        variacao_1_valor: l.variacao_1_valor || null,
+        variacao_2_nome: produtos.find((p) => p.id === l.produto_id)?.variacao_2_id
+          ? (variacoes.find((v) => v.id === produtos.find((p) => p.id === l.produto_id)?.variacao_2_id)?.nome ?? null)
+          : null,
+        variacao_2_valor: l.variacao_2_valor || null,
         ordem: i,
       })),
       produtos,
@@ -678,6 +790,40 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
                       </SelectContent>
                     </Select>
 
+                    {(() => {
+                      const prod = produtos.find((p) => p.id === l.produto_id);
+                      if (!prod?.variacao_1_id) return null;
+                      const opts = (id: string) =>
+                        variacaoValores.filter((v) => v.variacao_id === id && v.ativo);
+                      return (
+                        <div className="mt-1 flex gap-1">
+                          {[prod.variacao_1_id, prod.variacao_2_id].map((varId, pos) => {
+                            if (!varId) return null;
+                            const campo = pos === 0 ? "variacao_1_valor" : "variacao_2_valor";
+                            const valor = pos === 0 ? l.variacao_1_valor : l.variacao_2_valor;
+                            return (
+                              <Select
+                                key={varId}
+                                value={valor || undefined}
+                                onValueChange={(v) => trocarVariacao(i, campo as any, v)}
+                                disabled={bloqueado}
+                              >
+                                <SelectTrigger className="h-7 text-[12px]">
+                                  <SelectValue placeholder={variacoes.find((x) => x.id === varId)?.nome ?? "Variação"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {opts(varId).length === 0 ? (
+                                    <SelectItem value="__sem__" disabled>Sem valores cadastrados</SelectItem>
+                                  ) : opts(varId).map((v) => (
+                                    <SelectItem key={v.id} value={v.valor}>{v.valor}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="p-1.5">
                     <Input type="number" step="0.001" min={0} value={l.quantidade}

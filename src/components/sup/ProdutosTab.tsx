@@ -17,8 +17,14 @@ import { FornecedorDialog } from "@/components/sup/FornecedorDialog";
 import { useSupDepartamentos } from "@/components/sup/DepartamentosTab";
 import { useAppList } from "@/lib/app-lists";
 import {
-  SUP_UNIDADES, fmtMoeda, n, variacaoPercentual, precoPorUnidadeRef, precoVigente,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useSupVariacoes, useSupVariacaoValores } from "@/components/sup/VariacoesConfig";
+import {
+  SUP_UNIDADES, chaveVariacao, fmtMoeda, n, rotuloVariacao, variacaoPercentual, precoPorUnidadeRef, precoVigente,
   type SupFornecedor, type SupFornecedorProduto, type SupPrecoHistorico, type SupProduto, type SupProdutoGrupo,
+  type SupProdutoVariacaoPreco,
 } from "@/lib/sup";
 
 
@@ -136,6 +142,103 @@ export async function aplicarPrecoNegociado(args: {
   return hist?.id as string | undefined;
 }
 
+/** Preços por combinação de variação (por vínculo fornecedor-produto). */
+export function useSupVariacaoPrecos() {
+  return useQuery({
+    queryKey: ["sup-variacao-precos"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("sup_produto_variacao_precos").select("*");
+      if (error) throw error;
+      return (data ?? []) as SupProdutoVariacaoPreco[];
+    },
+  });
+}
+
+/** Irmã de aplicarPrecoTabela: grava histórico e atualiza a linha da combinação. */
+export async function aplicarPrecoVariacaoTabela(args: {
+  fornecedor_produto_id: string;
+  variacao_preco_id: string;
+  preco_anterior: number | null;
+  preco_novo: number;
+  motivo?: string | null;
+  anexo_url?: string | null;
+}) {
+  const { fornecedor_produto_id, variacao_preco_id, preco_anterior, preco_novo } = args;
+  const anterior = preco_anterior == null || n(preco_anterior) === 0 ? null : n(preco_anterior);
+  const direcao: "alta" | "baixa" | "inicial" =
+    anterior == null ? "inicial" : preco_novo > anterior ? "alta" : "baixa";
+  const status_revisao = direcao === "alta" ? "pendente" : "revisada";
+  const { data: u } = await supabase.auth.getUser();
+
+  const { data: hist, error: e1 } = await (supabase as any)
+    .from("sup_preco_historico")
+    .insert({
+      fornecedor_produto_id,
+      variacao_preco_id,
+      preco_anterior: anterior,
+      preco_novo,
+      direcao,
+      tipo: "tabela",
+      motivo: args.motivo || null,
+      anexo_url: args.anexo_url || null,
+      status_revisao,
+      alterado_por: u.user?.id ?? null,
+    })
+    .select("id")
+    .single();
+  if (e1) throw e1;
+
+  const { error: e2 } = await (supabase as any)
+    .from("sup_produto_variacao_precos")
+    .update({ preco_tabela: preco_novo })
+    .eq("id", variacao_preco_id);
+  if (e2) throw e2;
+  return hist?.id as string | undefined;
+}
+
+/** Irmã de aplicarPrecoNegociado: grava histórico e atualiza a linha da combinação. */
+export async function aplicarPrecoVariacaoNegociado(args: {
+  fornecedor_produto_id: string;
+  variacao_preco_id: string;
+  preco_anterior: number | null;
+  preco_novo: number;
+  motivo?: string | null;
+  anexo_url?: string | null;
+}) {
+  const { fornecedor_produto_id, variacao_preco_id, preco_anterior, preco_novo } = args;
+  const anterior = preco_anterior == null || n(preco_anterior) === 0 ? null : n(preco_anterior);
+  const direcao: "alta" | "baixa" | "inicial" =
+    anterior == null ? "inicial" : preco_novo > anterior ? "alta" : "baixa";
+  const status_revisao = direcao === "alta" ? "pendente" : "revisada";
+  const { data: u } = await supabase.auth.getUser();
+
+  const { data: hist, error: e1 } = await (supabase as any)
+    .from("sup_preco_historico")
+    .insert({
+      fornecedor_produto_id,
+      variacao_preco_id,
+      preco_anterior: anterior,
+      preco_novo,
+      direcao,
+      tipo: "negociado",
+      motivo: args.motivo || null,
+      anexo_url: args.anexo_url || null,
+      status_revisao,
+      alterado_por: u.user?.id ?? null,
+    })
+    .select("id")
+    .single();
+  if (e1) throw e1;
+
+  const { error: e2 } = await (supabase as any)
+    .from("sup_produto_variacao_precos")
+    .update({ preco_negociado: preco_novo })
+    .eq("id", variacao_preco_id);
+  if (e2) throw e2;
+  return hist?.id as string | undefined;
+}
+
+
 
 type ProdForm = {
   id?: string;
@@ -152,12 +255,16 @@ type ProdForm = {
   prazo: string;
   motivo: string;
   arquivo: File | null;
+  variacao_1_id: string;
+  variacao_2_id: string;
+  preco_por_variacao: boolean;
 };
 
 const formVazio = (): ProdForm => ({
   nome: "", departamento: "", unidade: "unidade", especificacao: "", ativo: true,
   preco: "", preco_negociado: "", grupo_id: "", fator_conversao: "",
   qtd_min: "", prazo: "", motivo: "", arquivo: null,
+  variacao_1_id: "", variacao_2_id: "", preco_por_variacao: false,
 });
 
 
@@ -207,9 +314,111 @@ export function ProdutosTab() {
   const [excluirProd, setExcluirProd] = useState<SupProduto | null>(null);
   const [excluirForn, setExcluirForn] = useState<SupFornecedor | null>(null);
 
+  const { data: variacoes = [] } = useSupVariacoes();
+  const { data: variacaoValores = [] } = useSupVariacaoValores();
+  const { data: variacaoPrecos = [] } = useSupVariacaoPrecos();
+
+  const [combNovo, setCombNovo] = useState({ v1: "", v2: "", tabela: "", negociado: "" });
+  const [confirmFlagOff, setConfirmFlagOff] = useState(false);
+  const [confirmTroca, setConfirmTroca] = useState<{ campo: "variacao_1_id" | "variacao_2_id"; valor: string } | null>(null);
+
 
   const vinculoDoProduto = (produto_id: string) =>
     vinculos.find((v) => v.produto_id === produto_id) ?? null;
+
+  const nomeVariacao = (id: string) => variacoes.find((v) => v.id === id)?.nome ?? "";
+  const valoresDeVariacao = (id: string) =>
+    variacaoValores.filter((v) => v.variacao_id === id && v.ativo);
+
+  const vinculoForm = form.id ? vinculoDoProduto(form.id) : null;
+  const combinacoesForm = vinculoForm
+    ? variacaoPrecos.filter((c) => c.fornecedor_produto_id === vinculoForm.id && c.ativo)
+    : [];
+
+  const salvarCombinacao = useMutation({
+    mutationFn: async () => {
+      if (!vinculoForm) throw new Error("Salve o produto antes de cadastrar preços por variação.");
+      const v1 = combNovo.v1.trim();
+      if (!v1) throw new Error("Escolha o valor da primeira variação.");
+      const v2 = form.variacao_2_id ? combNovo.v2.trim() : "";
+      if (form.variacao_2_id && !v2) throw new Error("Escolha o valor da segunda variação.");
+      if (combinacoesForm.some((c) => chaveVariacao(c.variacao_1_valor, c.variacao_2_valor) === chaveVariacao(v1, v2 || null))) {
+        throw new Error("Esta combinação já está cadastrada.");
+      }
+      const tabela = toNum(combNovo.tabela);
+      const negociado = toNum(combNovo.negociado);
+
+      const { data, error } = await (supabase as any)
+        .from("sup_produto_variacao_precos")
+        .insert({
+          fornecedor_produto_id: vinculoForm.id,
+          variacao_1_valor: v1,
+          variacao_2_valor: v2 || null,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+
+      if (tabela != null) {
+        await aplicarPrecoVariacaoTabela({
+          fornecedor_produto_id: vinculoForm.id,
+          variacao_preco_id: data.id,
+          preco_anterior: null,
+          preco_novo: tabela,
+        });
+      }
+      if (negociado != null) {
+        await aplicarPrecoVariacaoNegociado({
+          fornecedor_produto_id: vinculoForm.id,
+          variacao_preco_id: data.id,
+          preco_anterior: null,
+          preco_novo: negociado,
+        });
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sup-variacao-precos"] });
+      qc.invalidateQueries({ queryKey: ["sup-alteracoes-preco"] });
+      setCombNovo({ v1: "", v2: "", tabela: "", negociado: "" });
+      toast.success("Combinação salva.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao salvar combinação."),
+  });
+
+  const atualizarCombinacao = useMutation({
+    mutationFn: async (args: { comb: SupProdutoVariacaoPreco; campo: "tabela" | "negociado"; valor: string }) => {
+      const novo = toNum(args.valor);
+      if (novo == null) throw new Error("Informe um preço.");
+      const anterior = args.campo === "tabela" ? args.comb.preco_tabela : args.comb.preco_negociado;
+      if (n(anterior) === novo) return;
+      const fn = args.campo === "tabela" ? aplicarPrecoVariacaoTabela : aplicarPrecoVariacaoNegociado;
+      await fn({
+        fornecedor_produto_id: args.comb.fornecedor_produto_id,
+        variacao_preco_id: args.comb.id,
+        preco_anterior: anterior,
+        preco_novo: novo,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sup-variacao-precos"] });
+      qc.invalidateQueries({ queryKey: ["sup-alteracoes-preco"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao atualizar preço."),
+  });
+
+  const inativarCombinacao = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any)
+        .from("sup_produto_variacao_precos")
+        .update({ ativo: false })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sup-variacao-precos"] }),
+    onError: (e: any) => toast.error(e.message ?? "Erro ao inativar combinação."),
+  });
+
+
 
   const fornecedoresFiltrados = useMemo(() => {
     const b = norm(buscaForn);
@@ -328,6 +537,9 @@ export function ProdutosTab() {
         ativo: f.ativo,
         grupo_id: f.grupo_id || null,
         fator_conversao: fator,
+        variacao_1_id: f.variacao_1_id || null,
+        variacao_2_id: f.variacao_2_id || null,
+        preco_por_variacao: f.variacao_1_id ? f.preco_por_variacao : false,
       };
 
       let anexo_url: string | null = null;
@@ -382,6 +594,26 @@ export function ProdutosTab() {
 
       const { error: e1 } = await (supabase as any).from("sup_produtos").update(base).eq("id", f.id);
       if (e1) throw e1;
+
+      // Combinações deixam de valer quando o preço por variação é desligado
+      // ou quando os tipos de variação mudam. Nada é apagado: inativamos.
+      const antes = produtos.find((p) => p.id === f.id);
+      const trocouTipos =
+        (antes?.variacao_1_id ?? null) !== (f.variacao_1_id || null) ||
+        (antes?.variacao_2_id ?? null) !== (f.variacao_2_id || null);
+      const desligou = !!antes?.preco_por_variacao && !base.preco_por_variacao;
+      if (trocouTipos || desligou) {
+        const vId = vinculoDoProduto(f.id)?.id ?? null;
+        if (vId) {
+          const { error } = await (supabase as any)
+            .from("sup_produto_variacao_precos")
+            .update({ ativo: false })
+            .eq("fornecedor_produto_id", vId)
+            .eq("ativo", true);
+          if (error) throw error;
+        }
+      }
+
 
       let vinculo = vinculoDoProduto(f.id);
       let vinculoId = vinculo?.id ?? null;
@@ -460,6 +692,9 @@ export function ProdutosTab() {
           ativo: true,
           grupo_id: p.grupo_id ?? null,
           fator_conversao: p.fator_conversao ?? null,
+          variacao_1_id: p.variacao_1_id ?? null,
+          variacao_2_id: p.variacao_2_id ?? null,
+          preco_por_variacao: p.preco_por_variacao ?? false,
           fornecedor_id: copiarDestino,
           created_by: u.user?.id ?? null,
         })
@@ -620,6 +855,9 @@ export function ProdutosTab() {
       prazo: v?.prazo_entrega_dias == null ? "" : String(v.prazo_entrega_dias),
       motivo: "",
       arquivo: null,
+      variacao_1_id: p.variacao_1_id ?? "",
+      variacao_2_id: p.variacao_2_id ?? "",
+      preco_por_variacao: !!p.preco_por_variacao,
     });
     setPrecoOriginal(null);
     setNegociadoOriginal(null);
@@ -646,6 +884,9 @@ export function ProdutosTab() {
       prazo: v?.prazo_entrega_dias == null ? "" : String(v.prazo_entrega_dias),
       motivo: "",
       arquivo: null,
+      variacao_1_id: p.variacao_1_id ?? "",
+      variacao_2_id: p.variacao_2_id ?? "",
+      preco_por_variacao: !!p.preco_por_variacao,
     });
     setPrecoOriginal(preco);
     setNegociadoOriginal(neg);
@@ -997,6 +1238,199 @@ export function ProdutosTab() {
                 Ex.: o produto é vendido em rolo e o grupo compara por metro — se o rolo tem 100 m, o fator é 100.
               </div>
             </div>
+
+            <div className="col-span-3 rounded-md border p-3 space-y-3">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Variações</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Variação 1</Label>
+                  <Combobox
+                    value={form.variacao_1_id || "__none__"}
+                    onChange={(v) => {
+                      const valor = v === "__none__" ? "" : v;
+                      if (form.id && combinacoesForm.length > 0 && valor !== form.variacao_1_id) {
+                        setConfirmTroca({ campo: "variacao_1_id", valor });
+                        return;
+                      }
+                      setForm((f) => ({
+                        ...f,
+                        variacao_1_id: valor,
+                        variacao_2_id: valor ? f.variacao_2_id : "",
+                        preco_por_variacao: valor ? f.preco_por_variacao : false,
+                      }));
+                    }}
+                    options={[
+                      { value: "__none__", label: "— sem variação —" },
+                      ...variacoes.filter((v) => v.ativo || v.id === form.variacao_1_id).map((v) => ({ value: v.id, label: v.nome })),
+                    ]}
+                    placeholder="Selecione"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Variação 2</Label>
+                  <Combobox
+                    value={form.variacao_2_id || "__none__"}
+                    onChange={(v) => {
+                      const valor = v === "__none__" ? "" : v;
+                      if (form.id && combinacoesForm.length > 0 && valor !== form.variacao_2_id) {
+                        setConfirmTroca({ campo: "variacao_2_id", valor });
+                        return;
+                      }
+                      setForm((f) => ({ ...f, variacao_2_id: valor }));
+                    }}
+                    options={[
+                      { value: "__none__", label: "— sem variação —" },
+                      ...variacoes
+                        .filter((v) => (v.ativo || v.id === form.variacao_2_id) && v.id !== form.variacao_1_id)
+                        .map((v) => ({ value: v.id, label: v.nome })),
+                    ]}
+                    placeholder="Selecione"
+                  />
+                </div>
+              </div>
+
+              {!form.variacao_1_id ? (
+                <div className="text-[11px] text-muted-foreground">
+                  Sem variação: o produto continua com um preço único. Os tipos e valores são cadastrados em Configurações › SUP.
+                </div>
+              ) : (
+                <>
+                  <label className="flex items-center gap-2 text-[13px]">
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5"
+                      checked={form.preco_por_variacao}
+                      onChange={(e) => {
+                        if (!e.target.checked && combinacoesForm.length > 0) { setConfirmFlagOff(true); return; }
+                        setForm((f) => ({ ...f, preco_por_variacao: e.target.checked }));
+                      }}
+                    />
+                    O preço varia por variação
+                  </label>
+
+                  {form.preco_por_variacao && (
+                    !form.id ? (
+                      <div className="text-[11px] text-muted-foreground">
+                        Salve o produto para cadastrar os preços de cada combinação.
+                      </div>
+                    ) : (
+                      <div className="rounded-md border overflow-hidden">
+                        <table className="w-full text-[13px]">
+                          <thead className="bg-muted/40">
+                            <tr>
+                              <th className="text-left px-2 py-1 font-semibold">{nomeVariacao(form.variacao_1_id) || "Variação 1"}</th>
+                              {form.variacao_2_id && (
+                                <th className="text-left px-2 py-1 font-semibold">{nomeVariacao(form.variacao_2_id)}</th>
+                              )}
+                              <th className="text-right px-2 py-1 font-semibold w-28">Tabela</th>
+                              <th className="text-right px-2 py-1 font-semibold w-28">Negociado</th>
+                              <th className="w-8" />
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {combinacoesForm.length === 0 && (
+                              <tr><td colSpan={form.variacao_2_id ? 5 : 4} className="px-2 py-2 text-muted-foreground">Nenhuma combinação cadastrada.</td></tr>
+                            )}
+                            {combinacoesForm.map((c) => (
+                              <tr key={c.id} className="border-t">
+                                <td className="px-2 py-1">{c.variacao_1_valor}</td>
+                                {form.variacao_2_id && <td className="px-2 py-1">{c.variacao_2_valor ?? "—"}</td>}
+                                <td className="px-2 py-1">
+                                  <Input
+                                    defaultValue={c.preco_tabela == null ? "" : String(c.preco_tabela)}
+                                    className="h-8 text-right"
+                                    placeholder="0,00"
+                                    onBlur={(e) => {
+                                      if (e.target.value.trim() === "") return;
+                                      atualizarCombinacao.mutate({ comb: c, campo: "tabela", valor: e.target.value });
+                                    }}
+                                  />
+                                </td>
+                                <td className="px-2 py-1">
+                                  <Input
+                                    defaultValue={c.preco_negociado == null ? "" : String(c.preco_negociado)}
+                                    className="h-8 text-right"
+                                    placeholder="0,00"
+                                    onBlur={(e) => {
+                                      if (e.target.value.trim() === "") return;
+                                      atualizarCombinacao.mutate({ comb: c, campo: "negociado", valor: e.target.value });
+                                    }}
+                                  />
+                                </td>
+                                <td className="px-1">
+                                  <button
+                                    type="button"
+                                    title="Inativar combinação"
+                                    className="text-muted-foreground hover:text-destructive"
+                                    onClick={() => inativarCombinacao.mutate(c.id)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                            <tr className="border-t bg-muted/20">
+                              <td className="px-2 py-1">
+                                <Combobox
+                                  value={combNovo.v1 || "__none__"}
+                                  onChange={(v) => setCombNovo((c) => ({ ...c, v1: v === "__none__" ? "" : v }))}
+                                  options={[
+                                    { value: "__none__", label: "—" },
+                                    ...valoresDeVariacao(form.variacao_1_id).map((v) => ({ value: v.valor, label: v.valor })),
+                                  ]}
+                                  placeholder="Valor"
+                                />
+                              </td>
+                              {form.variacao_2_id && (
+                                <td className="px-2 py-1">
+                                  <Combobox
+                                    value={combNovo.v2 || "__none__"}
+                                    onChange={(v) => setCombNovo((c) => ({ ...c, v2: v === "__none__" ? "" : v }))}
+                                    options={[
+                                      { value: "__none__", label: "—" },
+                                      ...valoresDeVariacao(form.variacao_2_id).map((v) => ({ value: v.valor, label: v.valor })),
+                                    ]}
+                                    placeholder="Valor"
+                                  />
+                                </td>
+                              )}
+                              <td className="px-2 py-1">
+                                <Input
+                                  value={combNovo.tabela}
+                                  onChange={(e) => setCombNovo((c) => ({ ...c, tabela: e.target.value }))}
+                                  className="h-8 text-right"
+                                  placeholder="0,00"
+                                />
+                              </td>
+                              <td className="px-2 py-1">
+                                <Input
+                                  value={combNovo.negociado}
+                                  onChange={(e) => setCombNovo((c) => ({ ...c, negociado: e.target.value }))}
+                                  className="h-8 text-right"
+                                  placeholder="0,00"
+                                />
+                              </td>
+                              <td className="px-1">
+                                <button
+                                  type="button"
+                                  title="Adicionar combinação"
+                                  className="text-teal-700 hover:text-teal-900"
+                                  disabled={salvarCombinacao.isPending}
+                                  onClick={() => salvarCombinacao.mutate()}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    )
+                  )}
+                </>
+              )}
+            </div>
+
             <div>
               <Label className="text-xs">Qtd. mínima</Label>
               <Input value={form.qtd_min} onChange={(e) => setForm((f) => ({ ...f, qtd_min: e.target.value }))} className="h-9 text-right" />
@@ -1149,7 +1583,54 @@ export function ProdutosTab() {
         </DialogContent>
       </Dialog>
 
+      <AlertDialog open={confirmFlagOff} onOpenChange={setConfirmFlagOff}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desligar preço por variação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              As {combinacoesForm.length} combinação(ões) de preço deste produto serão inativadas ao salvar.
+              Nada é apagado e o histórico de preços continua disponível. O produto volta a usar um preço único.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setForm((f) => ({ ...f, preco_por_variacao: false }))}>
+              Desligar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmTroca} onOpenChange={(v) => { if (!v) setConfirmTroca(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Trocar o tipo de variação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este produto já tem {combinacoesForm.length} combinação(ões) de preço. Ao salvar, elas serão
+              inativadas porque deixam de corresponder aos novos tipos. Nada é apagado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const t = confirmTroca;
+                setConfirmTroca(null);
+                if (!t) return;
+                setForm((f) =>
+                  t.campo === "variacao_1_id"
+                    ? { ...f, variacao_1_id: t.valor, variacao_2_id: t.valor ? f.variacao_2_id : "", preco_por_variacao: t.valor ? f.preco_por_variacao : false }
+                    : { ...f, variacao_2_id: t.valor },
+                );
+              }}
+            >
+              Trocar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
+
   );
 }

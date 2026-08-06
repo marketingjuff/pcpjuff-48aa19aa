@@ -17,7 +17,7 @@ import { useProfilesMap, resolveNome } from "@/hooks/use-profiles-map";
 import { useIsAdmin } from "@/hooks/use-role";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { useSupFornecedorProdutos, useSupProdutos } from "@/components/sup/ProdutosTab";
-import { fmtMoeda, n, variacaoPercentual, type SupPrecoHistorico } from "@/lib/sup";
+import { fmtMoeda, n, rotuloVariacao, variacaoPercentual, type SupPrecoHistorico, type SupProdutoVariacaoPreco } from "@/lib/sup";
 
 interface Props {
   de: string;
@@ -51,6 +51,17 @@ export function AlteracoesPrecoTab({ de, ate }: Props) {
       return (data ?? []) as SupPrecoHistorico[];
     },
   });
+
+  const { data: variacaoPrecos = [] } = useQuery({
+    queryKey: ["sup-variacao-precos"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("sup_produto_variacao_precos").select("*");
+      if (error) throw error;
+      return (data ?? []) as SupProdutoVariacaoPreco[];
+    },
+  });
+
+
 
   /** PCs emitidos (fora de rascunho/cancelado) que usaram o registro em anulação. */
   const { data: pcsDoAlvo = [] } = useQuery({
@@ -120,11 +131,14 @@ export function AlteracoesPrecoTab({ de, ate }: Props) {
     onError: (e: any) => toast.error(e.message ?? "Erro ao anular registro."),
   });
 
-  const meta = (fornecedor_produto_id: string) => {
-    const v = vinculos.find((x) => x.id === fornecedor_produto_id);
+  const meta = (h: SupPrecoHistorico) => {
+    const v = vinculos.find((x) => x.id === h.fornecedor_produto_id);
+    const nome = produtos.find((p) => p.id === v?.produto_id)?.nome ?? "—";
+    const comb = h.variacao_preco_id ? variacaoPrecos.find((x) => x.id === h.variacao_preco_id) : null;
+    const suf = comb ? rotuloVariacao(comb) : "";
     return {
       fornecedor: fornecedores.find((f) => f.id === v?.fornecedor_id)?.razao_social ?? "—",
-      produto: produtos.find((p) => p.id === v?.produto_id)?.nome ?? "—",
+      produto: suf ? `${nome} — ${suf}` : nome,
     };
   };
 
@@ -139,9 +153,9 @@ export function AlteracoesPrecoTab({ de, ate }: Props) {
         if (ate && dia > ate) return false;
         return true;
       })
-      .map((h) => ({ h, ...meta(h.fornecedor_produto_id), varPct: variacaoPercentual(h.preco_anterior, n(h.preco_novo)) }));
+      .map((h) => ({ h, ...meta(h), varPct: variacaoPercentual(h.preco_anterior, n(h.preco_novo)) }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historico, direcao, tipo, mostrarAnulados, de, ate, vinculos, fornecedores, produtos]);
+  }, [historico, direcao, tipo, mostrarAnulados, de, ate, vinculos, fornecedores, produtos, variacaoPrecos]);
 
   const { rows: ordenadas, sortKey, sortDir, toggle } = useTableSort(linhas, {
     quando: (r) => r.h.created_at,

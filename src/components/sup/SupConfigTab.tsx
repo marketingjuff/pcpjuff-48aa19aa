@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Pencil, Plus } from "lucide-react";
 import type { SupComissao, SupComissionado, SupConfig } from "@/lib/sup";
+import { VariacoesConfig } from "@/components/sup/VariacoesConfig";
 
 type Profile = { id: string; nome: string | null; email: string };
 
@@ -167,6 +168,8 @@ export function SupConfigTab() {
           </tbody>
         </table>
       </div>
+
+      <VariacoesConfig />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-[520px]">
