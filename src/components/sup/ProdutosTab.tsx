@@ -552,6 +552,16 @@ export function ProdutosTab() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4">
       <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-xs font-semibold uppercase tracking-wider">Fornecedores</div>
+          <Button
+            size="sm"
+            className="h-7 bg-teal-600 hover:bg-teal-700 text-white"
+            onClick={() => { setFornEdit(null); setFornDialogOpen(true); }}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" /> Novo
+          </Button>
+        </div>
         <div>
           <Label className="text-xs">Buscar fornecedor</Label>
           <Input value={buscaForn} onChange={(e) => setBuscaForn(e.target.value)} placeholder="Razão social, fantasia…" className="h-9" />
@@ -564,23 +574,36 @@ export function ProdutosTab() {
           {fornecedoresFiltrados.length === 0 ? (
             <div className="p-4 text-sm text-muted-foreground text-center">Nenhum fornecedor.</div>
           ) : fornecedoresFiltrados.map((f) => (
-            <button
+            <div
               key={f.id}
-              type="button"
-              onClick={() => { setFornId(f.id); setSelId(null); }}
-              className={`w-full text-left px-3 py-2 border-b last:border-b-0 hover:bg-muted/20 ${fornId === f.id ? "bg-teal-50" : ""}`}
+              className={`flex items-stretch border-b last:border-b-0 ${fornId === f.id ? "bg-teal-50" : ""}`}
             >
-              <div className="text-[13px] font-medium flex items-center justify-between gap-2">
-                <span className="truncate">{f.nome_fantasia || f.razao_social}</span>
-                <span className="text-[11px] text-muted-foreground whitespace-nowrap tabular-nums">
-                  {contagem.get(f.id) ?? 0} produtos
-                </span>
-              </div>
-              {!f.ativo && <div className="text-[11px] text-muted-foreground">inativo</div>}
-            </button>
+              <button
+                type="button"
+                onClick={() => { setFornId(f.id); setSelId(null); }}
+                className="flex-1 min-w-0 text-left px-3 py-2 hover:bg-muted/20"
+              >
+                <div className="text-[13px] font-medium flex items-center justify-between gap-2">
+                  <span className="truncate">{f.nome_fantasia || f.razao_social}</span>
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap tabular-nums">
+                    {contagem.get(f.id) ?? 0} produtos
+                  </span>
+                </div>
+                {!f.ativo && <div className="text-[11px] text-muted-foreground">inativo</div>}
+              </button>
+              <button
+                type="button"
+                title="Editar fornecedor"
+                onClick={() => { setFornEdit(f); setFornDialogOpen(true); }}
+                className="px-2 text-muted-foreground hover:text-foreground hover:bg-muted/30"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </div>
           ))}
         </div>
       </div>
+
 
       <div className="space-y-3">
         <div className="flex items-end gap-2">
