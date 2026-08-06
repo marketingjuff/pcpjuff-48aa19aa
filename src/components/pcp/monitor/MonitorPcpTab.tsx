@@ -87,6 +87,24 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
     if (Math.abs(el.scrollLeft - left) < 2) posicionadoRef.current = chave;
   });
 
+  // rede de segurança: quando a aba passa de escondida para visível não há novo
+  // render, então observamos a largura do container (0 → visível).
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      if (posicionadoRef.current || el.clientWidth === 0 || dias.length === 0) return;
+      const left = offsetHoje(el);
+      if (left === null) return;
+      el.scrollLeft = left;
+      if (Math.abs(el.scrollLeft - left) < 2) posicionadoRef.current = `${zoom}|${dias.length}|${hoje}`;
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dias, colWidth, hoje, zoom]);
+
+
 
 
 
