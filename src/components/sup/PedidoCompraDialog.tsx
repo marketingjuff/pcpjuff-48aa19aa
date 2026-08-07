@@ -113,7 +113,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         quantidade: n(i.quantidade),
         unidade: i.unidade,
         preco_tabela: n(i.preco_tabela),
-        preco_negociado: n(i.preco_negociado),
+        preco_negociado: n(i.preco_negociado) > 0 ? n(i.preco_negociado) : n(i.preco_tabela),
         preco_historico_id: i.preco_historico_id,
         quantidade_recebida: n(i.quantidade_recebida),
         variacao_1_valor: i.variacao_1_valor ?? "",
