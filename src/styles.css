@@ -223,8 +223,7 @@
 }
 
 @layer base {
-  /* COP: sem setinhas de incremento nos campos numéricos (UX de digitação). */
-  /* Campos numéricos em todo o sistema: sem setinhas de incremento. */
+  /* Campos numéricos em todo o sistema: sem setinhas de incremento (UX de digitação). */
   input[type="number"] {
     -moz-appearance: textfield;
     appearance: textfield;
