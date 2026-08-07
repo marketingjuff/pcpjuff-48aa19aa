@@ -12,6 +12,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { NumberInput } from "@/components/ui/number-input";
 import { FileDown, Plus, Trash2 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/use-role";
 import { Combobox } from "@/components/shared/combobox";
@@ -25,7 +26,8 @@ import { useSupVariacoes, useSupVariacaoValores } from "@/components/sup/Variaco
 import { abrirPdfPedidoCompra } from "@/lib/sup-pc-pdf";
 import {
   SUP_CONDICOES_PAGAMENTO, SUP_EMPRESAS, SUP_EMPRESA_LABEL, SUP_FLUXO,
-  SUP_STATUS_CLASSE, SUP_STATUS_LABEL, addDias, calcTotaisPedido, chaveVariacao, economiaItem, fmtMoeda, n,
+  SUP_STATUS_CLASSE, SUP_STATUS_LABEL, addDias, calcTotaisPedido, casasDecimaisUnidade, chaveVariacao,
+  comissaoPercentualEfetiva, economiaItem, fmtMoeda, n,
   statusPorRecebimento, type SupComissionado, type SupConfig, type SupPedidoCompra,
   type SupPedidoItem, type SupStatusPc,
 } from "@/lib/sup";
@@ -106,7 +108,11 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
     if (!open) return;
     if (pedidoId) {
       if (!carregado) return;
-      setHead({ ...carregado.pedido });
+      setHead(
+        carregado.pedido.comissionado_id == null
+          ? { ...carregado.pedido, comissao_percentual: 0 }
+          : { ...carregado.pedido },
+      );
       setLinhas(carregado.itens.map((i) => ({
         id: i.id,
         produto_id: i.produto_id,
@@ -128,14 +134,15 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         frete_valor: 0,
         desconto_global_tipo: "valor",
         desconto_global_valor: 0,
-        comissao_percentual: config?.percentual_padrao ?? 0,
+        comissionado_id: null,
+        comissao_percentual: 0,
       });
       setLinhas([]);
     }
     setRemovidos([]);
     setMotivoCancelar("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, pedidoId, carregado, config?.percentual_padrao]);
+  }, [open, pedidoId, carregado]);
 
   const status = (head.status ?? "rascunho") as SupStatusPc;
   const cancelado = status === "cancelado";
@@ -144,7 +151,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
     desconto_global_tipo: head.desconto_global_tipo ?? null,
     desconto_global_valor: head.desconto_global_valor,
     frete_valor: head.frete_valor,
-    comissao_percentual: head.comissao_percentual,
+    comissao_percentual: comissaoPercentualEfetiva(head),
   });
 
   const produtosDoFornecedor = useMemo(() => {
@@ -328,7 +335,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         data_pedido: head.data_pedido,
         responsavel_id: head.responsavel_id ?? u.user?.id ?? null,
         comissionado_id: head.comissionado_id ?? null,
-        comissao_percentual: head.comissao_percentual ?? config?.percentual_padrao ?? 0,
+        comissao_percentual: head.comissionado_id ? n(head.comissao_percentual) : 0,
         status: statusFinal,
         condicao_pagamento: head.condicao_pagamento ?? null,
         condicao_pagamento_outros: head.condicao_pagamento === "Outros" ? (head.condicao_pagamento_outros ?? null) : null,
@@ -701,8 +708,8 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
           <div>
 
             <Label className="text-xs">Frete (R$)</Label>
-            <Input type="number" step="0.01" min={0} value={head.frete_valor ?? 0}
-              onChange={(e) => set("frete_valor", Number(e.target.value))} className="h-9" disabled={bloqueado} />
+            <NumberInput decimais={2} min={0} value={n(head.frete_valor)}
+              onValueChange={(v) => set("frete_valor", v)} className="h-9 w-full" disabled={bloqueado} />
           </div>
           <div>
             <Label className="text-xs">Desconto global</Label>
@@ -714,12 +721,12 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
                   <SelectItem value="percentual">%</SelectItem>
                 </SelectContent>
               </Select>
-              <Input type="number" step="0.01" min={0} value={head.desconto_global_valor ?? 0}
-                onChange={(e) => set("desconto_global_valor", Number(e.target.value))} className="h-9" disabled={bloqueado} />
+              <NumberInput decimais={2} min={0} value={n(head.desconto_global_valor)}
+                onValueChange={(v) => set("desconto_global_valor", v)} className="h-9 w-full" disabled={bloqueado} />
             </div>
           </div>
           <div>
-            <Label className="text-xs">Comissionado</Label>
+            <Label className="text-xs">{isAdmin ? "Comissionado" : "Comissionamento"}</Label>
             <Select
               value={head.comissionado_id ?? "nenhum"}
               onValueChange={(v) => {
@@ -727,10 +734,12 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
                 setHead((h) => ({
                   ...h,
                   comissionado_id: v === "nenhum" ? null : v,
-                  comissao_percentual: v === "nenhum" ? 0 : (c?.percentual ?? config?.percentual_padrao ?? 0),
+                  comissao_percentual: v === "nenhum"
+                    ? 0
+                    : (c?.percentual && c.percentual > 0 ? c.percentual : (config?.percentual_padrao ?? 0)),
                 }));
               }}
-              disabled={bloqueado}
+              disabled={bloqueado || !isAdmin}
             >
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -742,9 +751,14 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
             </Select>
           </div>
           <div>
-            <Label className="text-xs">% comissão</Label>
-            <Input type="number" step="0.01" min={0} value={head.comissao_percentual ?? 0}
-              onChange={(e) => set("comissao_percentual", Number(e.target.value))} className="h-9" disabled={bloqueado || !isAdmin} />
+            <Label className="text-xs">{isAdmin ? "% comissão" : "Comissionamento"}</Label>
+            <div className="h-9 flex items-center text-[13px] font-semibold tabular-nums">
+              {isAdmin
+                ? `${comissaoPercentualEfetiva(head).toFixed(2).replace(".", ",")}%`
+                : (head.comissionado_id
+                    ? `Com comissão — ${comissionados.find((c) => c.id === head.comissionado_id)?.nome ?? "—"}`
+                    : "Sem comissão")}
+            </div>
           </div>
         </div>
 
@@ -779,13 +793,13 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
             <thead className="bg-muted/20">
               <tr className="text-xs">
                 <th className="p-1.5 text-left">Produto</th>
-                <th className="p-1.5 text-center w-20">Qtd</th>
+                <th className="p-1.5 text-center w-28">Qtd</th>
                 <th className="p-1.5 text-center w-20">Un.</th>
                 {isAdmin && <th className="p-1.5 text-right w-28">Preço tabela</th>}
                 <th className="p-1.5 text-right w-28">Preço negociado</th>
                 <th className="p-1.5 text-right w-28">Subtotal</th>
                 {isAdmin && <th className="p-1.5 text-right w-28">Economia</th>}
-                <th className="p-1.5 text-center w-24">Recebido</th>
+                <th className="p-1.5 text-center w-28">Recebido</th>
                 <th className="p-1.5 w-10"></th>
               </tr>
             </thead>
@@ -844,19 +858,19 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
                     })()}
                   </td>
                   <td className="p-1.5">
-                    <Input type="number" step="0.001" min={0} value={l.quantidade}
-                      onChange={(e) => setLinha(i, { quantidade: Number(e.target.value) })} className="h-8 text-center" disabled={bloqueado} />
+                    <NumberInput decimais={casasDecimaisUnidade(l.unidade)} min={0} value={l.quantidade}
+                      onValueChange={(v) => setLinha(i, { quantidade: v })} className="h-8 w-full" disabled={bloqueado} />
                   </td>
                   <td className="p-1.5 text-center">{l.unidade}</td>
                   {isAdmin && (
                     <td className="p-1.5">
-                      <Input type="number" step="0.01" min={0} value={l.preco_tabela}
-                        onChange={(e) => setLinha(i, { preco_tabela: Number(e.target.value) })} className="h-8 text-right" disabled={bloqueado} />
+                      <NumberInput decimais={2} min={0} value={l.preco_tabela}
+                        onValueChange={(v) => setLinha(i, { preco_tabela: v })} className="h-8 w-full" disabled={bloqueado} />
                     </td>
                   )}
                   <td className="p-1.5">
-                    <Input type="number" step="0.01" min={0} value={l.preco_negociado}
-                      onChange={(e) => setLinha(i, { preco_negociado: Number(e.target.value) })} className="h-8 text-right" disabled={bloqueado} />
+                    <NumberInput decimais={2} min={0} value={l.preco_negociado}
+                      onValueChange={(v) => setLinha(i, { preco_negociado: v })} className="h-8 w-full" disabled={bloqueado} />
                     {l.produto_id && negociadoCadastro(l.produto_id) > 0
                       && n(l.preco_negociado) === negociadoCadastro(l.produto_id) && (
                       <div className="text-[10.5px] text-teal-700 mt-0.5 text-right">preço negociado do cadastro</div>
@@ -868,9 +882,10 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
                     <td className="p-1.5 text-right font-semibold tabular-nums text-emerald-700">{fmtMoeda(economiaItem(l))}</td>
                   )}
                   <td className="p-1.5">
-                    <Input type="number" step="0.001" min={0} max={l.quantidade} value={l.quantidade_recebida}
-                      onChange={(e) => setLinha(i, { quantidade_recebida: Math.min(n(l.quantidade), Number(e.target.value)) })}
-                      className="h-8 text-center" disabled={bloqueado || status === "rascunho"} />
+                    <NumberInput decimais={casasDecimaisUnidade(l.unidade)} min={0} max={n(l.quantidade)}
+                      value={l.quantidade_recebida}
+                      onValueChange={(v) => setLinha(i, { quantidade_recebida: Math.min(n(l.quantidade), v) })}
+                      className="h-8 w-full" disabled={bloqueado || status === "rascunho"} />
                   </td>
                   <td className="p-1.5 text-center">
                     <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-600" onClick={() => removerLinha(i)} disabled={bloqueado}>
