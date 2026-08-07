@@ -274,7 +274,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
       const comb = combinacaoDaLinha(proximo);
       if (!comb) return { ...proximo, variacao_preco_id: null };
       const tabela = comb.preco_tabela == null ? proximo.preco_tabela : n(comb.preco_tabela);
-      const neg = comb.preco_negociado == null ? tabela : n(comb.preco_negociado);
+      const neg = n(comb.preco_negociado) > 0 ? n(comb.preco_negociado) : tabela;
       return { ...proximo, variacao_preco_id: comb.id, preco_tabela: tabela, preco_negociado: neg };
     }));
   }
