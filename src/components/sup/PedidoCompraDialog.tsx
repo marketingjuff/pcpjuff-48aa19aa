@@ -726,7 +726,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
             </div>
           </div>
           <div>
-            <Label className="text-xs">{isAdmin ? "Comissionado" : "Comissionamento"}</Label>
+            <Label className="text-xs">Comissionado</Label>
             <Select
               value={head.comissionado_id ?? "nenhum"}
               onValueChange={(v) => {

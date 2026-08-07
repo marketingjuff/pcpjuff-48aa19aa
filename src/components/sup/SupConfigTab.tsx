@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -113,11 +114,13 @@ export function SupConfigTab() {
         <div className="text-xs font-semibold uppercase tracking-wider">Regras de comissão</div>
         <div>
           <Label className="text-xs">Percentual padrão sobre a economia (%)</Label>
-          <Input value={percentual} onChange={(e) => setPercentual(e.target.value)} className="h-9 w-40" />
+          <NumberInput decimais={2} min={0} max={100} value={Number(String(percentual).replace(",", ".")) || 0}
+            onValueChange={(v) => setPercentual(String(v))} className="h-9 w-40" />
         </div>
         <div>
           <Label className="text-xs">Dias de carência após o recebimento total</Label>
-          <Input type="number" min={0} value={carencia} onChange={(e) => setCarencia(e.target.value)} className="h-9 w-40" />
+          <NumberInput decimais={0} min={0} value={Number(carencia) || 0}
+            onValueChange={(v) => setCarencia(String(v))} className="h-9 w-40" />
           <p className="text-[11px] text-muted-foreground mt-1">
             A comissão só entra na competência depois desse prazo, contado da data de recebimento total do pedido.
           </p>
@@ -193,8 +196,8 @@ export function SupConfigTab() {
             </div>
             <div>
               <Label className="text-xs">Percentual (%)</Label>
-              <Input type="number" step="0.01" min={0} max={100} value={form.percentual ?? 0}
-                onChange={(e) => setForm((f) => ({ ...f, percentual: Number(e.target.value) }))} className="h-9 w-32" />
+              <NumberInput decimais={2} min={0} max={100} value={form.percentual ?? 0}
+                onValueChange={(v) => setForm((f) => ({ ...f, percentual: v }))} className="h-9 w-32" />
             </div>
             <div>
               <Label className="text-xs">Situação</Label>
