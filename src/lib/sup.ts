@@ -243,6 +243,19 @@ export function n(v: unknown): number {
   return Number.isFinite(x) ? x : 0;
 }
 
+/** Comissão efetiva do pedido: sem comissionado, não há comissão. */
+export function comissaoPercentualEfetiva(p: {
+  comissionado_id?: string | null;
+  comissao_percentual?: unknown;
+}): number {
+  return p.comissionado_id ? n(p.comissao_percentual) : 0;
+}
+
+/** Casas decimais permitidas na quantidade, conforme a unidade do item. */
+export function casasDecimaisUnidade(unidade?: string | null): number {
+  return unidade === "kg" || unidade === "litro" || unidade === "metro" ? 3 : 0;
+}
+
 /** Economia da linha. Nunca negativa. */
 export function economiaItem(item: { preco_tabela?: unknown; preco_negociado?: unknown; quantidade?: unknown }): number {
   const diff = n(item.preco_tabela) - n(item.preco_negociado);

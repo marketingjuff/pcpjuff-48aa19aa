@@ -13,7 +13,7 @@ import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { PedidoCompraDialog } from "@/components/sup/PedidoCompraDialog";
 import {
   SUP_EMPRESAS, SUP_EMPRESA_LABEL, SUP_STATUS_CLASSE, SUP_STATUS_LABEL, SUP_STATUS_PC,
-  calcTotaisPedido, fmtDataBR, fmtMoeda, n,
+  calcTotaisPedido, comissaoPercentualEfetiva, fmtDataBR, fmtMoeda, n,
   type SupPedidoCompra, type SupPedidoItem, type SupStatusPc,
 } from "@/lib/sup";
 import { useIsAdmin } from "@/hooks/use-role";
@@ -99,7 +99,7 @@ export function PedidosCompraTab({ pcId, fornecedorId }: Props) {
           desconto_global_tipo: p.desconto_global_tipo,
           desconto_global_valor: p.desconto_global_valor,
           frete_valor: p.frete_valor,
-          comissao_percentual: p.comissao_percentual,
+          comissao_percentual: comissaoPercentualEfetiva(p),
         });
         return { p, its, t };
       });
