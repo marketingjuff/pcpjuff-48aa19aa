@@ -113,7 +113,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
         quantidade: n(i.quantidade),
         unidade: i.unidade,
         preco_tabela: n(i.preco_tabela),
-        preco_negociado: n(i.preco_negociado),
+        preco_negociado: n(i.preco_negociado) > 0 ? n(i.preco_negociado) : n(i.preco_tabela),
         preco_historico_id: i.preco_historico_id,
         quantidade_recebida: n(i.quantidade_recebida),
         variacao_1_valor: i.variacao_1_valor ?? "",
@@ -274,7 +274,7 @@ export function PedidoCompraDialog({ open, onOpenChange, pedidoId }: Props) {
       const comb = combinacaoDaLinha(proximo);
       if (!comb) return { ...proximo, variacao_preco_id: null };
       const tabela = comb.preco_tabela == null ? proximo.preco_tabela : n(comb.preco_tabela);
-      const neg = comb.preco_negociado == null ? tabela : n(comb.preco_negociado);
+      const neg = n(comb.preco_negociado) > 0 ? n(comb.preco_negociado) : tabela;
       return { ...proximo, variacao_preco_id: comb.id, preco_tabela: tabela, preco_negociado: neg };
     }));
   }
