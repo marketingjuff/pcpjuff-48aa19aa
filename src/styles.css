@@ -224,12 +224,13 @@
 
 @layer base {
   /* COP: sem setinhas de incremento nos campos numéricos (UX de digitação). */
-  .cop-scope input[type="number"] {
+  /* Campos numéricos em todo o sistema: sem setinhas de incremento. */
+  input[type="number"] {
     -moz-appearance: textfield;
     appearance: textfield;
   }
-  .cop-scope input[type="number"]::-webkit-outer-spin-button,
-  .cop-scope input[type="number"]::-webkit-inner-spin-button {
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
     appearance: none;
     margin: 0;
