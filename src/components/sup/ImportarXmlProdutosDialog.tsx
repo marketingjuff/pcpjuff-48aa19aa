@@ -87,6 +87,9 @@ export function ImportarXmlProdutosDialog({
   const [confirmar, setConfirmar] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [trocando, setTrocando] = useState<string | null>(null);
+  const [massaUnidade, setMassaUnidade] = useState("");
+  const [massaDep, setMassaDep] = useState("");
+  const [massaGrupo, setMassaGrupo] = useState("");
 
   const produtosDoFornecedor = useMemo(
     () => (fornecedor ? produtos.filter((p) => p.fornecedor_id === fornecedor.id) : []),
