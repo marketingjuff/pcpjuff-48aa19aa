@@ -268,13 +268,22 @@ export function ImportarXmlProdutosDialog({
     if (inputRef.current) inputRef.current.value = "";
   }
 
-  // Abertura por controle externo: pede o arquivo na hora.
   useEffect(() => {
     if (!controlado || !open) return;
     if (linhas.length > 0) return;
     inputRef.current?.click();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controlado, open]);
+
+  // Cancelar a seleção de arquivo não pode deixar dialog vazio na tela.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el || !controlado) return;
+    const aoCancelar = () => setOpen(false);
+    el.addEventListener("cancel", aoCancelar);
+    return () => el.removeEventListener("cancel", aoCancelar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controlado]);
 
   return (
     <>
@@ -283,9 +292,6 @@ export function ImportarXmlProdutosDialog({
         type="file"
         accept=".xml"
         hidden
-        onCancel={() => {
-          if (controlado && linhas.length === 0) setOpen(false);
-        }}
         onChange={async (e) => {
           const f = e.target.files?.[0];
           const ok = f ? await aoEscolherArquivo(f) : false;
