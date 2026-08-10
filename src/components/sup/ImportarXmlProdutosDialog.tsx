@@ -60,9 +60,13 @@ type Linha = {
 
 export function ImportarXmlProdutosDialog({
   fornecedor, produtos, vinculos, departamentos, grupos, unidades, onImportado,
+  mostrarBotao = true, open: openProp, onOpenChange: onOpenChangeProp,
 }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [open, setOpen] = useState(false);
+  const controlado = openProp !== undefined && !!onOpenChangeProp;
+  const [openInterno, setOpenInterno] = useState(false);
+  const open = controlado ? !!openProp : openInterno;
+  const setOpen = (v: boolean) => (controlado ? onOpenChangeProp!(v) : setOpenInterno(v));
   const [nota, setNota] = useState<NFeNota | null>(null);
   const [emitenteNome, setEmitenteNome] = useState("");
   const [semCnpj, setSemCnpj] = useState(false);
