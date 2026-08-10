@@ -10,13 +10,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Pencil, Copy, CopyPlus, Trash2, TrendingDown, TrendingUp, FilterX } from "lucide-react";
+import { Plus, Pencil, Copy, CopyPlus, Trash2, TrendingDown, TrendingUp, FilterX, FileUp } from "lucide-react";
 import { SortTh, useTableSort } from "@/components/shared/sortable";
 import { TABLE_FONT_STYLE, TABLE_WRAPPER_CLASS, TH_CLASS, TD_CLASS, BADGE_SM_CLASS } from "@/components/shared/table-styles";
 import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { FornecedorDialog } from "@/components/sup/FornecedorDialog";
-import { ImportarXmlFornecedorButton } from "@/components/sup/ImportarXmlFornecedorButton";
+
 import { ImportarXmlProdutosDialog } from "@/components/sup/ImportarXmlProdutosDialog";
 import { useSupDepartamentos } from "@/components/sup/DepartamentosTab";
 import { useAppList } from "@/lib/app-lists";
@@ -304,6 +304,12 @@ export function ProdutosTab() {
   const [selId, setSelId] = useState<string | null>(null);
 
   const [prodOpen, setProdOpen] = useState(false);
+  const [importXmlOpen, setImportXmlOpen] = useState(false);
+
+  function abrirImportacaoXml() {
+    setProdOpen(false);
+    setImportXmlOpen(true);
+  }
   const [form, setForm] = useState<ProdForm>(formVazio());
   const [precoOriginal, setPrecoOriginal] = useState<number | null>(null);
   const [negociadoOriginal, setNegociadoOriginal] = useState<number | null>(null);
@@ -979,10 +985,6 @@ export function ProdutosTab() {
             <Button size="sm" variant="outline" onClick={() => { setFornEdit(null); setFornDialogOpen(true); }}>
               <Plus className="h-3.5 w-3.5 mr-1" /> Novo fornecedor
             </Button>
-            <ImportarXmlFornecedorButton
-              fornecedores={fornecedores}
-              onSelecionarFornecedor={selecionarFornecedor}
-            />
 
             {fornecedorSel && (
               <Button size="sm" variant="outline" onClick={() => { setFornEdit(fornecedorSel); setFornDialogOpen(true); }}>
@@ -1136,15 +1138,6 @@ export function ProdutosTab() {
                   >
                     <FilterX className="h-3.5 w-3.5 mr-1" /> Limpar Filtros
                   </Button>
-                  <ImportarXmlProdutosDialog
-                    fornecedor={fornecedorSel}
-                    produtos={produtos}
-                    vinculos={vinculos}
-                    departamentos={departamentos}
-                    grupos={grupos}
-                    unidades={unidades}
-                    onImportado={invalidarTudo}
-                  />
                 </div>
               </div>
 
@@ -1416,6 +1409,18 @@ export function ProdutosTab() {
               {(form.id ? "Editar produto" : "Novo produto") + (fornecedorSel ? ` — ${fornecedorSel.nome_fantasia || fornecedorSel.razao_social}` : "")}
             </DialogTitle>
           </DialogHeader>
+
+          {!form.id && (
+            <div className="flex items-center justify-between gap-2 rounded-md border border-violet-200 bg-violet-50/60 dark:border-violet-900 dark:bg-violet-950/20 px-2.5 py-2">
+              <span className="text-[11.5px] text-muted-foreground">
+                Tem o XML da NF-e? Importe vários produtos de uma vez.
+              </span>
+              <Button type="button" size="sm" variant="outline" className="h-7" onClick={abrirImportacaoXml}>
+                <FileUp className="h-3.5 w-3.5 mr-1" /> Importar XML
+              </Button>
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
               <Label className="text-xs">Nome *</Label>
@@ -1882,6 +1887,19 @@ export function ProdutosTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportarXmlProdutosDialog
+        fornecedor={fornecedorSel}
+        produtos={produtos}
+        vinculos={vinculos}
+        departamentos={departamentos}
+        grupos={grupos}
+        unidades={unidades}
+        onImportado={invalidarTudo}
+        mostrarBotao={false}
+        open={importXmlOpen}
+        onOpenChange={setImportXmlOpen}
+      />
 
     </div>
 
