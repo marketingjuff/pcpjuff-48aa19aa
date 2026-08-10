@@ -1298,6 +1298,97 @@ export function ProdutosTab() {
         </Card>
       )}
 
+      <Card className="border-l-4 border-l-teal-500 bg-teal-50/40 dark:bg-teal-950/10">
+        <CardHeader className="py-2">
+          <div className="flex items-baseline justify-between gap-2">
+            <CardTitle className="text-base text-teal-700 dark:text-teal-400">Fornecedores</CardTitle>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {fornecedoresFiltrados.length} {fornecedoresFiltrados.length === 1 ? "registro" : "registros"}
+            </span>
+          </div>
+        </CardHeader>
+        <CardContent className="p-3 pt-0 space-y-2">
+          <div className="flex items-end gap-3 flex-wrap">
+            <div className="space-y-0.5 w-full sm:w-72">
+              <Label className="text-xs text-muted-foreground font-medium">Buscar fornecedor</Label>
+              <Input value={buscaForn} onChange={(e) => setBuscaForn(e.target.value)} placeholder="Razão social, fantasia…" className="h-8" />
+            </div>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground h-8">
+              <Checkbox checked={mostrarInativos} onCheckedChange={(v) => setMostrarInativos(v === true)} />
+              Mostrar inativos
+            </label>
+          </div>
+
+          <div className={`${TABLE_WRAPPER_CLASS} max-h-[45vh] overflow-y-auto`} style={TABLE_FONT_STYLE}>
+            <table className="w-full">
+              <thead className="bg-muted/40 sticky top-0 z-10">
+                <tr>
+                  <SortTh label="Fornecedor" sortKey="nome" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={`${TH_CLASS} text-left`} />
+                  <SortTh label="Razão social" sortKey="razao_social" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={`${TH_CLASS} text-left`} />
+                  <SortTh label="CNPJ / Doc." sortKey="documento" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={`${TH_CLASS} text-left`} />
+                  <SortTh label="Contato" sortKey="contato" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={`${TH_CLASS} text-left`} />
+                  <SortTh label="Telefone" sortKey="telefone" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={TH_CLASS} />
+                  <SortTh label="Cidade / UF" sortKey="cidade" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={`${TH_CLASS} text-left`} />
+                  <SortTh label="Cond. pagamento" sortKey="condicao" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={`${TH_CLASS} text-left`} />
+                  <SortTh label="Produtos" sortKey="produtos" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={TH_CLASS} />
+                  <SortTh label="Situação" sortKey="ativo" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={TH_CLASS} />
+                  <th className={`${TH_CLASS} w-16`}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {fornecedoresOrdenados.length === 0 ? (
+                  <tr><td colSpan={10} className="p-4 text-center text-muted-foreground">Nenhum fornecedor.</td></tr>
+                ) : fornecedoresOrdenados.map((f) => (
+                  <tr
+                    key={f.id}
+                    onClick={() => selecionarFornecedor(f.id)}
+                    className={`border-t cursor-pointer hover:bg-muted/20 ${fornId === f.id ? "bg-teal-100/70 dark:bg-teal-900/30" : ""}`}
+                  >
+                    <td className={`${TD_CLASS} text-left font-medium`}>{f.nome_fantasia || f.razao_social}</td>
+                    <td className={`${TD_CLASS} text-left`}>{f.razao_social}</td>
+                    <td className={`${TD_CLASS} text-left`}>{f.documento ?? "—"}</td>
+                    <td className={`${TD_CLASS} text-left`}>{f.contato_nome ?? "—"}</td>
+                    <td className={TD_CLASS}>{f.contato_telefone ?? "—"}</td>
+                    <td className={`${TD_CLASS} text-left`}>
+                      {f.cidade ? `${f.cidade}${f.uf ? ` — ${f.uf}` : ""}` : (f.uf || "—")}
+                    </td>
+                    <td className={`${TD_CLASS} text-left`}>{f.condicao_pagamento_padrao ?? "—"}</td>
+                    <td className={`${TD_CLASS} tabular-nums`}>{contagem.get(f.id) ?? 0}</td>
+                    <td className={TD_CLASS}>
+                      <span className={`rounded font-semibold ${BADGE_SM_CLASS} ${
+                        f.ativo
+                          ? "bg-teal-100 text-teal-900 dark:bg-teal-900/40 dark:text-teal-200"
+                          : "bg-muted text-muted-foreground"
+                      }`}>
+                        {f.ativo ? "Ativo" : "Inativo"}
+                      </span>
+                    </td>
+                    <td className={TD_CLASS}>
+                      <div className="flex items-center justify-center gap-0.5">
+                        <Button
+                          size="icon" variant="ghost" className="h-6 w-6" title="Editar fornecedor"
+                          onClick={(e) => { e.stopPropagation(); setFornEdit(f); setFornDialogOpen(true); }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-rose-700" title="Apagar fornecedor"
+                          onClick={(e) => { e.stopPropagation(); setExcluirForn(f); }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+
+
 
       <Dialog open={prodOpen} onOpenChange={setProdOpen}>
         <DialogContent className="max-w-[720px]">
