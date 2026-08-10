@@ -625,11 +625,14 @@ export function ImportarXmlProdutosDialog({
                             )}
                           </div>
                         </td>
-                        <td className={TD_CLASS}>
+                        <td
+                          className={TD_CLASS}
+                          title={podeDefinir(l, "departamento") ? undefined : "Já definido no cadastro — a importação não altera."}
+                        >
                           <Select
                             value={l.departamento || "__none"}
                             onValueChange={(v) => atualizar(l.key, { departamento: v === "__none" ? "" : v })}
-                            disabled={l.status === "existe"}
+                            disabled={!podeDefinir(l, "departamento")}
                           >
                             <SelectTrigger className="h-7 text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
                             <SelectContent>
@@ -640,11 +643,14 @@ export function ImportarXmlProdutosDialog({
                             </SelectContent>
                           </Select>
                         </td>
-                        <td className={TD_CLASS}>
+                        <td
+                          className={TD_CLASS}
+                          title={podeDefinir(l, "grupo_id") ? undefined : "Já definido no cadastro — a importação não altera."}
+                        >
                           <Select
                             value={l.grupo_id || "__none"}
                             onValueChange={(v) => atualizar(l.key, { grupo_id: v === "__none" ? "" : v })}
-                            disabled={l.status === "existe"}
+                            disabled={!podeDefinir(l, "grupo_id")}
                           >
                             <SelectTrigger className="h-7 text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
                             <SelectContent>
