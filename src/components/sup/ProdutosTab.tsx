@@ -16,7 +16,7 @@ import { TABLE_FONT_STYLE, TABLE_WRAPPER_CLASS, TH_CLASS, TD_CLASS, BADGE_SM_CLA
 import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { FornecedorDialog } from "@/components/sup/FornecedorDialog";
-import { ImportarXmlFornecedorButton } from "@/components/sup/ImportarXmlFornecedorButton";
+
 import { ImportarXmlProdutosDialog } from "@/components/sup/ImportarXmlProdutosDialog";
 import { useSupDepartamentos } from "@/components/sup/DepartamentosTab";
 import { useAppList } from "@/lib/app-lists";
