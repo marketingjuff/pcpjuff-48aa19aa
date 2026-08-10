@@ -330,7 +330,7 @@ export async function parseVendasOlist(
   /* Conferência de sanidade do desconto — informativa, nunca bloqueia a gravação. */
   const subtotalPorPedido = new Map<string, number>();
   for (const i of acc.itens) {
-    const bruto = i.qtd * i.valor_unitario - i.desconto_item;
+    const bruto = i.qtd * i.valor_unitario;
     subtotalPorPedido.set(i.numero_pedido, (subtotalPorPedido.get(i.numero_pedido) ?? 0) + bruto);
   }
   const pedidosDescontoSuspeito: PedidoDescontoSuspeito[] = [];

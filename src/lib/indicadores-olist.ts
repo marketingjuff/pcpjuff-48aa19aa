@@ -7,7 +7,7 @@
  *
  * Regras obrigatórias:
  *  - Faturamento = Σ líquido do pedido. Frete e despesas NUNCA entram.
- *  - subtotal_item   = qtd × valor_unitario − desconto_item
+ *  - subtotal_item   = qtd × valor_unitario  (desconto_item da Olist é ignorado: o valor unitário já vem líquido)
  *  - subtotal_pedido = Σ subtotal_item
  *  - liquido_pedido  = subtotal_pedido − desconto_valor
  *                      − (subtotal_pedido × desconto_percentual / 100)
@@ -63,7 +63,7 @@ export interface ItemCalc {
   tamanho: string | null;
   qtd: number;
   is_servico: boolean;
-  /** qtd × valor_unitario − desconto_item */
+  /** qtd × valor_unitario (desconto_item ignorado) */
   subtotal: number;
 }
 
@@ -123,7 +123,7 @@ export function calcularPedidos(
   const porPedido = new Map<string, ItemCalc[]>();
   for (const it of itens) {
     const qtd = n(it.qtd);
-    const subtotal = qtd * n(it.valor_unitario) - n(it.desconto_item);
+    const subtotal = qtd * n(it.valor_unitario);
     const produto = it.produto_olist ?? null;
     const arr = porPedido.get(it.numero_pedido) ?? [];
     arr.push({
