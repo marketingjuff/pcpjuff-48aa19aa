@@ -268,6 +268,14 @@ export function ImportarXmlProdutosDialog({
     if (inputRef.current) inputRef.current.value = "";
   }
 
+  // Abertura por controle externo: pede o arquivo na hora.
+  useEffect(() => {
+    if (!controlado || !open) return;
+    if (linhas.length > 0) return;
+    inputRef.current?.click();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controlado, open]);
+
   return (
     <>
       <input
@@ -275,22 +283,28 @@ export function ImportarXmlProdutosDialog({
         type="file"
         accept=".xml"
         hidden
+        onCancel={() => {
+          if (controlado && linhas.length === 0) setOpen(false);
+        }}
         onChange={async (e) => {
           const f = e.target.files?.[0];
-          if (f) await aoEscolherArquivo(f);
+          const ok = f ? await aoEscolherArquivo(f) : false;
           if (inputRef.current) inputRef.current.value = "";
+          if (!ok && controlado) setOpen(false);
         }}
       />
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-8"
-        disabled={!fornecedor}
-        onClick={() => inputRef.current?.click()}
-      >
-        <FileUp className="h-4 w-4 mr-1" />
-        Importar XML
-      </Button>
+      {mostrarBotao && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8"
+          disabled={!fornecedor}
+          onClick={() => inputRef.current?.click()}
+        >
+          <FileUp className="h-4 w-4 mr-1" />
+          Importar XML
+        </Button>
+      )}
 
       <AlertDialog open={!!bloqueio} onOpenChange={(v) => !v && setBloqueio(null)}>
         <AlertDialogContent>
@@ -307,7 +321,7 @@ export function ImportarXmlProdutosDialog({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : fechar())}>
+      <Dialog open={open && linhas.length > 0} onOpenChange={(v) => (v ? setOpen(true) : fechar())}>
         <DialogContent className="max-w-[95vw] sm:max-w-[1200px]">
           <DialogHeader>
             <DialogTitle>Conferir itens da NF-e</DialogTitle>
