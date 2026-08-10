@@ -1132,15 +1132,6 @@ export function ProdutosTab() {
                   >
                     <FilterX className="h-3.5 w-3.5 mr-1" /> Limpar Filtros
                   </Button>
-                  <ImportarXmlProdutosDialog
-                    fornecedor={fornecedorSel}
-                    produtos={produtos}
-                    vinculos={vinculos}
-                    departamentos={departamentos}
-                    grupos={grupos}
-                    unidades={unidades}
-                    onImportado={invalidarTudo}
-                  />
                 </div>
               </div>
 
