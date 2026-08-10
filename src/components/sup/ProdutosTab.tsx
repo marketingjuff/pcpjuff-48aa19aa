@@ -16,6 +16,8 @@ import { TABLE_FONT_STYLE, TABLE_WRAPPER_CLASS, TH_CLASS, TD_CLASS, BADGE_SM_CLA
 import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { FornecedorDialog } from "@/components/sup/FornecedorDialog";
+import { ImportarXmlFornecedorButton } from "@/components/sup/ImportarXmlFornecedorButton";
+import { ImportarXmlProdutosDialog } from "@/components/sup/ImportarXmlProdutosDialog";
 import { useSupDepartamentos } from "@/components/sup/DepartamentosTab";
 import { useAppList } from "@/lib/app-lists";
 import {
@@ -1122,13 +1124,25 @@ export function ProdutosTab() {
                 </Select>
               </div>
               <div className="space-y-0.5 flex flex-col justify-end">
-                <Button
-                  variant="outline" size="sm"
-                  onClick={() => { setBusca(""); setFiltroDepto("todos"); setFiltroSituacao("todos"); }}
-                >
-                  <FilterX className="h-3.5 w-3.5 mr-1" /> Limpar Filtros
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline" size="sm"
+                    onClick={() => { setBusca(""); setFiltroDepto("todos"); setFiltroSituacao("todos"); }}
+                  >
+                    <FilterX className="h-3.5 w-3.5 mr-1" /> Limpar Filtros
+                  </Button>
+                  <ImportarXmlProdutosDialog
+                    fornecedor={fornecedorSel}
+                    produtos={produtos}
+                    vinculos={vinculos}
+                    departamentos={departamentos}
+                    grupos={grupos}
+                    unidades={unidades}
+                    onImportado={invalidarTudo}
+                  />
+                </div>
               </div>
+
             </div>
 
             <div className={`${TABLE_WRAPPER_CLASS} max-h-[60vh] overflow-y-auto`} style={TABLE_FONT_STYLE}>
