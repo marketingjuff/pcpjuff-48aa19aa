@@ -477,7 +477,13 @@ export function ImportarXmlProdutosDialog({
                       </SelectTrigger>
                       <SelectContent>
                         {c.opcoes.map((o) => (
-                          <SelectItem key={o.v} value={o.v}>{o.label}</SelectItem>
+                          <SelectItem
+                            key={o.v}
+                            value={o.v}
+                            onClick={() => aplicarEmMassa(c.campo, o.v, true)}
+                          >
+                            {o.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -486,15 +492,7 @@ export function ImportarXmlProdutosDialog({
                       variant="outline"
                       className="h-7 text-[10.5px]"
                       disabled={!c.valor}
-                      onClick={() => aplicarEmMassa(c.campo, c.valor, true)}
-                    >
-                      Preencher vazias
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-[10.5px]"
-                      disabled={!c.valor}
+                      title="Sobrescreve o valor em todas as linhas marcadas que a importação pode alterar."
                       onClick={() => aplicarEmMassa(c.campo, c.valor, false)}
                     >
                       Aplicar em todas
