@@ -9,8 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, Copy, CopyPlus, Trash2, TrendingDown, TrendingUp } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Pencil, Copy, CopyPlus, Trash2, TrendingDown, TrendingUp, FilterX } from "lucide-react";
 import { SortTh, useTableSort } from "@/components/shared/sortable";
+import { TABLE_FONT_STYLE, TABLE_WRAPPER_CLASS, TH_CLASS, TD_CLASS, BADGE_SM_CLASS } from "@/components/shared/table-styles";
 import { Combobox } from "@/components/shared/combobox";
 import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
 import { FornecedorDialog } from "@/components/sup/FornecedorDialog";
@@ -295,6 +297,8 @@ export function ProdutosTab() {
   const [fornEdit, setFornEdit] = useState<SupFornecedor | null>(null);
 
   const [busca, setBusca] = useState("");
+  const [filtroDepto, setFiltroDepto] = useState("todos");
+  const [filtroSituacao, setFiltroSituacao] = useState("todos");
   const [selId, setSelId] = useState<string | null>(null);
 
   const [prodOpen, setProdOpen] = useState(false);
@@ -450,13 +454,25 @@ export function ProdutosTab() {
 
   const fornecedorSel = fornecedores.find((f) => f.id === fornId) ?? null;
 
+  const baseProdutosForn = useMemo(
+    () => (fornId ? produtos.filter((p) => p.fornecedor_id === fornId) : ([] as SupProduto[])),
+    [produtos, fornId],
+  );
+
+  const deptoOpcoes = useMemo(() => {
+    const s = new Set<string>();
+    for (const p of baseProdutosForn) if (p.departamento) s.add(p.departamento);
+    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [baseProdutosForn]);
+
   const filtrados = useMemo(() => {
     if (!fornId) return [] as SupProduto[];
     const b = norm(busca);
-    return produtos
-      .filter((p) => p.fornecedor_id === fornId)
-      .filter((p) => !b || [p.nome, p.departamento, p.especificacao].some((v) => (v ?? "").toLowerCase().includes(b)));
-  }, [produtos, fornId, busca]);
+    return baseProdutosForn
+      .filter((p) => !b || [p.nome, p.departamento, p.especificacao].some((v) => (v ?? "").toLowerCase().includes(b)))
+      .filter((p) => filtroDepto === "todos" || (p.departamento ?? "") === filtroDepto)
+      .filter((p) => filtroSituacao === "todos" || (filtroSituacao === "ativos" ? p.ativo : !p.ativo));
+  }, [baseProdutosForn, fornId, busca, filtroDepto, filtroSituacao]);
 
   const { rows: ordenados, sortKey, sortDir, toggle } = useTableSort(filtrados, {
     nome: (r) => r.nome,
@@ -916,170 +932,320 @@ export function ProdutosTab() {
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-xs font-semibold uppercase tracking-wider">Fornecedores</div>
-          <Button
-            size="sm"
-            className="h-7 bg-teal-600 hover:bg-teal-700 text-white"
-            onClick={() => { setFornEdit(null); setFornDialogOpen(true); }}
-          >
-            <Plus className="h-3.5 w-3.5 mr-1" /> Novo
-          </Button>
-        </div>
-        <div>
-          <Label className="text-xs">Buscar fornecedor</Label>
-          <Input value={buscaForn} onChange={(e) => setBuscaForn(e.target.value)} placeholder="Razão social, fantasia…" className="h-9" />
-        </div>
-        <label className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Checkbox checked={mostrarInativos} onCheckedChange={(v) => setMostrarInativos(v === true)} />
-          Mostrar inativos
-        </label>
-        <div className="rounded-md border bg-card overflow-auto max-h-[70vh]">
-          {fornecedoresFiltrados.length === 0 ? (
-            <div className="p-4 text-sm text-muted-foreground text-center">Nenhum fornecedor.</div>
-          ) : fornecedoresFiltrados.map((f) => (
-            <div
-              key={f.id}
-              className={`flex items-stretch border-b last:border-b-0 ${fornId === f.id ? "bg-teal-50" : ""}`}
-            >
-              <button
-                type="button"
-                onClick={() => { setFornId(f.id); setSelId(null); }}
-                className="flex-1 min-w-0 text-left px-3 py-2 hover:bg-muted/20"
-              >
-                <div className="text-[13px] font-medium flex items-center justify-between gap-2">
-                  <span className="truncate">{f.nome_fantasia || f.razao_social}</span>
-                  <span className="text-[11px] text-muted-foreground whitespace-nowrap tabular-nums">
-                    {contagem.get(f.id) ?? 0} produtos
-                  </span>
-                </div>
-                {!f.ativo && <div className="text-[11px] text-muted-foreground">inativo</div>}
-              </button>
-              <button
-                type="button"
-                title="Editar fornecedor"
-                onClick={() => { setFornEdit(f); setFornDialogOpen(true); }}
-                className="px-2 text-muted-foreground hover:text-foreground hover:bg-muted/30"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                title="Apagar fornecedor"
-                onClick={() => setExcluirForn(f)}
-                className="px-2 text-muted-foreground hover:text-rose-700 hover:bg-rose-50"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+    <div className="space-y-3">
+      <Card className="border-primary/30">
+        <CardContent className="py-2 flex items-center justify-between flex-wrap gap-3">
+          <div className="min-w-0">
+            <div className="text-xs uppercase text-muted-foreground tracking-wider">Fornecedor</div>
+            <div className="text-2xl sm:text-4xl font-bold truncate">
+              {fornecedorSel ? (fornecedorSel.nome_fantasia || fornecedorSel.razao_social) : "—"}
             </div>
-          ))}
-        </div>
+            {fornecedorSel && (
+              <div className="text-xs text-muted-foreground tabular-nums">
+                {contagem.get(fornecedorSel.id) ?? 0} produto(s) ativo(s)
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant="outline" onClick={() => { setFornEdit(null); setFornDialogOpen(true); }}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> Novo fornecedor
+            </Button>
+            {fornecedorSel && (
+              <Button size="sm" variant="outline" onClick={() => { setFornEdit(fornecedorSel); setFornDialogOpen(true); }}>
+                <Pencil className="h-3.5 w-3.5 mr-1" /> Editar fornecedor
+              </Button>
+            )}
+            <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-white" disabled={!fornId} onClick={abrirNovo}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> Novo produto
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-3 lg:grid-cols-[320px_1fr]">
+        <Card className="border-l-4 border-l-teal-500 bg-teal-50/40 dark:bg-teal-950/10">
+          <CardHeader className="py-2">
+            <div className="flex items-baseline justify-between gap-2">
+              <CardTitle className="text-base text-teal-700 dark:text-teal-400">Fornecedores</CardTitle>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {fornecedoresFiltrados.length} {fornecedoresFiltrados.length === 1 ? "registro" : "registros"}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="p-3 pt-0 space-y-2">
+            <div className="space-y-0.5">
+              <Label className="text-xs text-muted-foreground font-medium">Buscar fornecedor</Label>
+              <Input value={buscaForn} onChange={(e) => setBuscaForn(e.target.value)} placeholder="Razão social, fantasia…" className="h-8" />
+            </div>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox checked={mostrarInativos} onCheckedChange={(v) => setMostrarInativos(v === true)} />
+              Mostrar inativos
+            </label>
+            <div className="rounded-lg border border-border/60 bg-card overflow-auto max-h-[60vh] shadow-xs" style={TABLE_FONT_STYLE}>
+              {fornecedoresFiltrados.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground text-center">Nenhum fornecedor.</div>
+              ) : fornecedoresFiltrados.map((f) => (
+                <div
+                  key={f.id}
+                  className={`flex items-stretch border-b last:border-b-0 border-l-2 ${
+                    fornId === f.id ? "bg-teal-100/70 dark:bg-teal-900/30 border-l-teal-500" : "border-l-transparent"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => { setFornId(f.id); setSelId(null); }}
+                    className="flex-1 min-w-0 text-left px-3 py-2 hover:bg-muted/20"
+                  >
+                    <div className="text-[13px] font-medium flex items-center justify-between gap-2">
+                      <span className="truncate">{f.nome_fantasia || f.razao_social}</span>
+                      <span className="text-[11px] text-muted-foreground whitespace-nowrap tabular-nums">
+                        {contagem.get(f.id) ?? 0} produtos
+                      </span>
+                    </div>
+                    {!f.ativo && <div className="text-[11px] text-muted-foreground">inativo</div>}
+                  </button>
+                  <button
+                    type="button"
+                    title="Editar fornecedor"
+                    onClick={() => { setFornEdit(f); setFornDialogOpen(true); }}
+                    className="px-2 text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Apagar fornecedor"
+                    onClick={() => setExcluirForn(f)}
+                    className="px-2 text-muted-foreground hover:text-rose-700 hover:bg-rose-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {fornecedorSel && (
+              <div className="rounded-lg border border-teal-200 dark:border-teal-900 bg-card/70 p-2.5 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-400">
+                    Dados do fornecedor
+                  </span>
+                  <Button
+                    size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
+                    onClick={() => { setFornEdit(fornecedorSel); setFornDialogOpen(true); }}
+                  >
+                    <Pencil className="h-3 w-3 mr-1" /> Editar
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                  <div className="min-w-0 col-span-2">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Razão social</div>
+                    <div className="text-[12px] font-medium truncate">{fornecedorSel.razao_social || "—"}</div>
+                  </div>
+                  <div className="min-w-0 col-span-2">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Nome fantasia</div>
+                    <div className="text-[12px] font-medium truncate">{fornecedorSel.nome_fantasia || "—"}</div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">CNPJ / Doc.</div>
+                    <div className="text-[12px] font-medium truncate">{fornecedorSel.documento || "—"}</div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Situação</div>
+                    <div className="text-[12px] font-medium truncate">
+                      <span className={`rounded font-semibold ${BADGE_SM_CLASS} ${
+                        fornecedorSel.ativo
+                          ? "bg-teal-100 text-teal-900 dark:bg-teal-900/40 dark:text-teal-200"
+                          : "bg-muted text-muted-foreground"
+                      }`}>
+                        {fornecedorSel.ativo ? "Ativo" : "Inativo"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Contato</div>
+                    <div className="text-[12px] font-medium truncate">{fornecedorSel.contato_nome || "—"}</div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Telefone</div>
+                    <div className="text-[12px] font-medium truncate">
+                      {fornecedorSel.contato_telefone
+                        ? <a href={`tel:${fornecedorSel.contato_telefone}`} className="hover:underline">{fornecedorSel.contato_telefone}</a>
+                        : "—"}
+                    </div>
+                  </div>
+                  <div className="min-w-0 col-span-2">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">E-mail</div>
+                    <div className="text-[12px] font-medium truncate">
+                      {fornecedorSel.contato_email
+                        ? <a href={`mailto:${fornecedorSel.contato_email}`} className="hover:underline truncate">{fornecedorSel.contato_email}</a>
+                        : "—"}
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Cidade / UF</div>
+                    <div className="text-[12px] font-medium truncate">
+                      {fornecedorSel.cidade
+                        ? `${fornecedorSel.cidade}${fornecedorSel.uf ? ` — ${fornecedorSel.uf}` : ""}`
+                        : (fornecedorSel.uf || "—")}
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Condição de pagamento</div>
+                    <div className="text-[12px] font-medium truncate">{fornecedorSel.condicao_pagamento_padrao || "—"}</div>
+                  </div>
+                  {fornecedorSel.observacoes && (
+                    <div className="min-w-0 col-span-2">
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Observações</div>
+                      <div className="whitespace-pre-wrap text-[11.5px] font-normal text-muted-foreground max-h-24 overflow-auto">
+                        {fornecedorSel.observacoes}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-violet-500 bg-violet-50/40 dark:bg-violet-950/10">
+          <CardHeader className="py-2">
+            <div className="flex items-baseline justify-between gap-2">
+              <CardTitle className="text-base text-violet-700 dark:text-violet-400">
+                {fornecedorSel ? `Produtos — ${fornecedorSel.nome_fantasia || fornecedorSel.razao_social}` : "Produtos"}
+              </CardTitle>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {ordenados.length} {ordenados.length === 1 ? "registro" : "registros"}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="p-3 pt-0 space-y-2">
+            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-0.5">
+                <Label className="text-xs text-muted-foreground font-medium">Buscar</Label>
+                <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nome, departamento, especificação…" className="h-8" disabled={!fornId} />
+              </div>
+              <div className="space-y-0.5">
+                <Label className="text-xs text-muted-foreground font-medium">Departamento</Label>
+                <Select value={filtroDepto} onValueChange={setFiltroDepto}>
+                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos departamentos</SelectItem>
+                    {deptoOpcoes.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-0.5">
+                <Label className="text-xs text-muted-foreground font-medium">Situação</Label>
+                <Select value={filtroSituacao} onValueChange={setFiltroSituacao}>
+                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todas</SelectItem>
+                    <SelectItem value="ativos">Somente ativos</SelectItem>
+                    <SelectItem value="inativos">Somente inativos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-0.5 flex flex-col justify-end">
+                <Button
+                  variant="outline" size="sm"
+                  onClick={() => { setBusca(""); setFiltroDepto("todos"); setFiltroSituacao("todos"); }}
+                >
+                  <FilterX className="h-3.5 w-3.5 mr-1" /> Limpar Filtros
+                </Button>
+              </div>
+            </div>
+
+            <div className={`${TABLE_WRAPPER_CLASS} max-h-[60vh] overflow-y-auto`} style={TABLE_FONT_STYLE}>
+              <table className="w-full">
+                <thead className="bg-muted/40 sticky top-0 z-10">
+                  <tr>
+                    <SortTh label="Produto" sortKey="nome" current={sortKey} dir={sortDir} onSort={toggle} className={`${TH_CLASS} text-left`} />
+                    <SortTh label="Departamento" sortKey="departamento" current={sortKey} dir={sortDir} onSort={toggle} className={`${TH_CLASS} text-left`} />
+                    <SortTh label="Unidade" sortKey="unidade" current={sortKey} dir={sortDir} onSort={toggle} className={TH_CLASS} />
+                    <SortTh label="Preço de tabela" sortKey="preco" current={sortKey} dir={sortDir} onSort={toggle} className={`${TH_CLASS} text-right`} />
+                    <SortTh label="Preço negociado" sortKey="negociado" current={sortKey} dir={sortDir} onSort={toggle} className={`${TH_CLASS} text-right`} />
+                    <SortTh label="Grupo" sortKey="grupo" current={sortKey} dir={sortDir} onSort={toggle} className={`${TH_CLASS} text-left`} />
+                    <SortTh label="Preço/un. ref." sortKey="por_ref" current={sortKey} dir={sortDir} onSort={toggle} className={`${TH_CLASS} text-right`} />
+                    <SortTh label="Qtd. mínima" sortKey="qtd_min" current={sortKey} dir={sortDir} onSort={toggle} className={TH_CLASS} />
+                    <SortTh label="Prazo" sortKey="prazo" current={sortKey} dir={sortDir} onSort={toggle} className={TH_CLASS} />
+                    <SortTh label="Situação" sortKey="ativo" current={sortKey} dir={sortDir} onSort={toggle} className={TH_CLASS} />
+                    <th className={`${TH_CLASS} w-20`}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!fornId ? (
+                    <tr><td colSpan={11} className="p-4 text-center text-muted-foreground text-[11px]">Selecione um fornecedor para ver e cadastrar os produtos dele.</td></tr>
+                  ) : isLoading ? (
+                    <tr><td colSpan={11} className="p-4 text-center text-muted-foreground text-[11px]">Carregando…</td></tr>
+                  ) : ordenados.length === 0 ? (
+                    <tr><td colSpan={11} className="p-4 text-center text-muted-foreground text-[11px]">Nenhum produto cadastrado para este fornecedor.</td></tr>
+                  ) : ordenados.map((p) => {
+                    const v = vinculoDoProduto(p.id);
+                    const grupo = grupos.find((g) => g.id === p.grupo_id) ?? null;
+                    const porRef = precoPorUnidadeRef(precoVigente(v), p.fator_conversao);
+                    return (
+                      <tr
+                        key={p.id}
+                        className={`border-t cursor-pointer hover:bg-muted/20 ${selId === p.id ? "bg-violet-100/70 dark:bg-violet-900/30" : ""}`}
+                        onClick={() => setSelId(p.id)}
+                      >
+                        <td className={`${TD_CLASS} text-left font-medium`}>{p.nome}</td>
+                        <td className={`${TD_CLASS} text-left`}>{p.departamento ?? "—"}</td>
+                        <td className={TD_CLASS}>{p.unidade}</td>
+                        <td className={`${TD_CLASS} text-right tabular-nums`}>{v?.preco_tabela == null ? "—" : fmtMoeda(v.preco_tabela)}</td>
+                        <td className={`${TD_CLASS} text-right font-semibold tabular-nums text-teal-800 dark:text-teal-300`}>
+                          {v?.preco_negociado == null ? "—" : fmtMoeda(v.preco_negociado)}
+                        </td>
+                        <td className={`${TD_CLASS} text-left`}>{grupo ? grupo.nome : "—"}</td>
+                        <td className={`${TD_CLASS} text-right tabular-nums`}>
+                          {porRef == null || !grupo ? "—" : `${fmtMoeda(porRef)}/${grupo.unidade_referencia}`}
+                        </td>
+                        <td className={`${TD_CLASS} tabular-nums`}>{v?.quantidade_minima ?? "—"}</td>
+                        <td className={`${TD_CLASS} tabular-nums`}>{v?.prazo_entrega_dias == null ? "—" : `${v.prazo_entrega_dias} d`}</td>
+                        <td className={TD_CLASS}>
+                          <span className={`rounded font-semibold ${BADGE_SM_CLASS} ${p.ativo ? "bg-teal-100 text-teal-900" : "bg-muted text-muted-foreground"}`}>
+                            {p.ativo ? "Ativo" : "Inativo"}
+                          </span>
+                        </td>
+                        <td className={`${TD_CLASS} whitespace-nowrap`}>
+                          <Button size="icon" variant="ghost" className="h-6 w-6" title="Editar" onClick={(e) => { e.stopPropagation(); abrirEdicao(p); }}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon" variant="ghost" className="h-6 w-6" title="Duplicar produto neste fornecedor"
+                            onClick={(e) => { e.stopPropagation(); abrirDuplicar(p); }}
+                          >
+                            <CopyPlus className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon" variant="ghost" className="h-6 w-6" title="Copiar para outro fornecedor"
+                            onClick={(e) => { e.stopPropagation(); setCopiarAlvo(p); setCopiarDestino(""); setCopiarOpen(true); }}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-rose-700" title="Apagar produto"
+                            onClick={(e) => { e.stopPropagation(); setExcluirProd(p); }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-
-      <div className="space-y-3">
-        <div className="flex items-end gap-2">
-          <div className="flex-1">
-            <Label className="text-xs">
-              {fornecedorSel ? `Produtos de ${fornecedorSel.nome_fantasia || fornecedorSel.razao_social}` : "Produtos"}
-            </Label>
-            <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nome, departamento, especificação…" className="h-9" disabled={!fornId} />
-          </div>
-          <Button className="h-9 bg-teal-600 hover:bg-teal-700 text-white" disabled={!fornId} onClick={abrirNovo}>
-            <Plus className="h-4 w-4 mr-1" /> Novo produto
-          </Button>
-        </div>
-
-        <div className="rounded-md border bg-card overflow-auto max-h-[60vh]">
-          <table className="w-full text-[13px] tbl-congelada">
-            <thead className="bg-muted/40">
-              <tr className="text-xs">
-                <SortTh label="Produto" sortKey="nome" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
-                <SortTh label="Departamento" sortKey="departamento" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
-                <SortTh label="Unidade" sortKey="unidade" current={sortKey} dir={sortDir} onSort={toggle} />
-                <SortTh label="Preço de tabela" sortKey="preco" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
-                <SortTh label="Preço negociado" sortKey="negociado" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
-                <SortTh label="Grupo" sortKey="grupo" current={sortKey} dir={sortDir} onSort={toggle} className="text-left" />
-                <SortTh label="Preço/un. ref." sortKey="por_ref" current={sortKey} dir={sortDir} onSort={toggle} className="text-right" />
-                <SortTh label="Qtd. mínima" sortKey="qtd_min" current={sortKey} dir={sortDir} onSort={toggle} />
-                <SortTh label="Prazo" sortKey="prazo" current={sortKey} dir={sortDir} onSort={toggle} />
-                <SortTh label="Situação" sortKey="ativo" current={sortKey} dir={sortDir} onSort={toggle} />
-                <th className="p-1.5 w-20"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {!fornId ? (
-                <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">Selecione um fornecedor para ver e cadastrar os produtos dele.</td></tr>
-              ) : isLoading ? (
-                <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">Carregando…</td></tr>
-              ) : ordenados.length === 0 ? (
-                <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">Nenhum produto cadastrado para este fornecedor.</td></tr>
-              ) : ordenados.map((p) => {
-                const v = vinculoDoProduto(p.id);
-                const grupo = grupos.find((g) => g.id === p.grupo_id) ?? null;
-                const porRef = precoPorUnidadeRef(precoVigente(v), p.fator_conversao);
-                return (
-                  <tr
-                    key={p.id}
-                    className={`border-t cursor-pointer hover:bg-muted/20 ${selId === p.id ? "bg-teal-50" : ""}`}
-                    onClick={() => setSelId(p.id)}
-                  >
-                    <td className="p-1.5 font-medium">{p.nome}</td>
-                    <td className="p-1.5">{p.departamento ?? "—"}</td>
-                    <td className="p-1.5 text-center">{p.unidade}</td>
-                    <td className="p-1.5 text-right tabular-nums">{v?.preco_tabela == null ? "—" : fmtMoeda(v.preco_tabela)}</td>
-                    <td className="p-1.5 text-right font-semibold tabular-nums text-teal-800">
-                      {v?.preco_negociado == null ? "—" : fmtMoeda(v.preco_negociado)}
-                    </td>
-                    <td className="p-1.5">{grupo ? grupo.nome : "—"}</td>
-                    <td className="p-1.5 text-right tabular-nums">
-                      {porRef == null || !grupo ? "—" : `${fmtMoeda(porRef)}/${grupo.unidade_referencia}`}
-                    </td>
-                    <td className="p-1.5 text-center tabular-nums">{v?.quantidade_minima ?? "—"}</td>
-                    <td className="p-1.5 text-center tabular-nums">{v?.prazo_entrega_dias == null ? "—" : `${v.prazo_entrega_dias} d`}</td>
-                    <td className="p-1.5 text-center">
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${p.ativo ? "bg-teal-100 text-teal-900" : "bg-muted text-muted-foreground"}`}>
-                        {p.ativo ? "Ativo" : "Inativo"}
-                      </span>
-                    </td>
-                    <td className="p-1.5 text-center whitespace-nowrap">
-                      <Button size="icon" variant="ghost" className="h-7 w-7" title="Editar" onClick={(e) => { e.stopPropagation(); abrirEdicao(p); }}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="icon" variant="ghost" className="h-7 w-7" title="Duplicar produto neste fornecedor"
-                        onClick={(e) => { e.stopPropagation(); abrirDuplicar(p); }}
-                      >
-                        <CopyPlus className="h-3.5 w-3.5" />
-                      </Button>
-
-                      <Button
-                        size="icon" variant="ghost" className="h-7 w-7" title="Copiar para outro fornecedor"
-                        onClick={(e) => { e.stopPropagation(); setCopiarAlvo(p); setCopiarDestino(""); setCopiarOpen(true); }}
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-rose-700" title="Apagar produto"
-                        onClick={(e) => { e.stopPropagation(); setExcluirProd(p); }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-
-        {sel && (
-          <div className="rounded-md border bg-card overflow-hidden">
-            <div className="px-3 py-2 bg-muted/40 flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Histórico de preço — {sel.nome}</span>
+      {sel && (
+        <Card>
+          <CardHeader className="py-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <CardTitle className="text-base">Histórico de preço — {sel.nome}</CardTitle>
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-1.5 text-[11.5px] cursor-pointer">
                   <Checkbox checked={histAnulados} onCheckedChange={(v) => setHistAnulados(!!v)} />
@@ -1095,50 +1261,52 @@ export function ProdutosTab() {
                 </Select>
               </div>
             </div>
-            <div className="max-h-[40vh] overflow-auto">
-              <table className="w-full text-[12.5px]">
-                <thead className="bg-muted/20">
-                  <tr className="text-xs">
-                    <th className="p-1.5 text-left">Quando</th>
-                    <th className="p-1.5 text-center">Tipo</th>
-                    <th className="p-1.5 text-right">De</th>
-                    <th className="p-1.5 text-right">Para</th>
-                    <th className="p-1.5 text-center">Variação</th>
-                    <th className="p-1.5 text-left">Motivo</th>
-                    <th className="p-1.5 text-center">Revisão</th>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <div className={`${TABLE_WRAPPER_CLASS} max-h-[40vh] overflow-y-auto`} style={TABLE_FONT_STYLE}>
+              <table className="w-full">
+                <thead className="bg-muted/40 sticky top-0 z-10">
+                  <tr>
+                    <th className={`${TH_CLASS} text-left`}>Quando</th>
+                    <th className={TH_CLASS}>Tipo</th>
+                    <th className={`${TH_CLASS} text-right`}>De</th>
+                    <th className={`${TH_CLASS} text-right`}>Para</th>
+                    <th className={TH_CLASS}>Variação</th>
+                    <th className={`${TH_CLASS} text-left`}>Motivo</th>
+                    <th className={TH_CLASS}>Revisão</th>
                   </tr>
                 </thead>
                 <tbody>
                   {historicoFiltrado.length === 0 ? (
-                    <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">Sem histórico.</td></tr>
+                    <tr><td colSpan={7} className="p-3 text-center text-muted-foreground text-[11px]">Sem histórico.</td></tr>
                   ) : historicoFiltrado.map((h) => {
                     const varPct = variacaoPercentual(h.preco_anterior, n(h.preco_novo));
                     return (
                       <tr key={h.id} className={`border-t ${h.anulado ? "line-through text-muted-foreground" : ""}`}>
-                        <td className="p-1.5 whitespace-nowrap">{new Date(h.created_at).toLocaleString("pt-BR")}</td>
-                        <td className="p-1.5 text-center">
-                          <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${h.tipo === "negociado" ? "bg-teal-100 text-teal-900" : "bg-muted text-muted-foreground"}`}>
+                        <td className={`${TD_CLASS} text-left whitespace-nowrap`}>{new Date(h.created_at).toLocaleString("pt-BR")}</td>
+                        <td className={TD_CLASS}>
+                          <span className={`rounded font-semibold ${BADGE_SM_CLASS} ${h.tipo === "negociado" ? "bg-teal-100 text-teal-900" : "bg-muted text-muted-foreground"}`}>
                             {h.tipo === "negociado" ? "Negociado" : "Tabela"}
                           </span>
                         </td>
-                        <td className="p-1.5 text-right tabular-nums">{h.preco_anterior == null ? "—" : fmtMoeda(h.preco_anterior)}</td>
-                        <td className="p-1.5 text-right font-semibold tabular-nums">{fmtMoeda(h.preco_novo)}</td>
-                        <td className="p-1.5 text-center">
+                        <td className={`${TD_CLASS} text-right tabular-nums`}>{h.preco_anterior == null ? "—" : fmtMoeda(h.preco_anterior)}</td>
+                        <td className={`${TD_CLASS} text-right font-semibold tabular-nums`}>{fmtMoeda(h.preco_novo)}</td>
+                        <td className={TD_CLASS}>
                           <span className={`inline-flex items-center gap-1 font-semibold tabular-nums ${h.direcao === "alta" ? "text-rose-700" : h.direcao === "baixa" ? "text-emerald-700" : "text-muted-foreground"}`}>
                             {h.direcao === "alta" ? <TrendingUp className="h-3 w-3" /> : h.direcao === "baixa" ? <TrendingDown className="h-3 w-3" /> : null}
                             {varPct == null ? "inicial" : `${varPct > 0 ? "+" : ""}${varPct.toFixed(1)}%`}
                           </span>
                         </td>
-                        <td className="p-1.5">
+                        <td className={`${TD_CLASS} text-left`}>
                           {h.anulado && (
-                            <span className="no-underline mr-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10.5px] font-semibold align-middle">
+                            <span className={`no-underline mr-1 rounded bg-muted text-muted-foreground font-semibold align-middle ${BADGE_SM_CLASS}`}>
                               Anulado
                             </span>
                           )}
                           {h.anulado ? (h.anulado_motivo ?? "—") : (h.motivo ?? "—")}
                         </td>
-                        <td className="p-1.5 text-center">
-                          <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                        <td className={TD_CLASS}>
+                          <span className={`rounded font-semibold ${BADGE_SM_CLASS} ${
                             h.status_revisao === "pendente" ? "bg-amber-100 text-amber-900"
                             : h.status_revisao === "contestada" ? "bg-rose-100 text-rose-900"
                             : "bg-emerald-100 text-emerald-900"}`}>
@@ -1151,10 +1319,10 @@ export function ProdutosTab() {
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+          </CardContent>
+        </Card>
+      )}
 
-      </div>
 
       <Dialog open={prodOpen} onOpenChange={setProdOpen}>
         <DialogContent className="max-w-[720px]">
