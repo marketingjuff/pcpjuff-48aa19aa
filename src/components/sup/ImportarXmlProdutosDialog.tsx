@@ -402,6 +402,77 @@ export function ImportarXmlProdutosDialog({
               </Button>
             </div>
 
+            {semUnidade > 0 && (
+              <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                {semUnidade} linha(s) marcada(s) sem unidade. Preencha a unidade para continuar.
+              </div>
+            )}
+
+            <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 space-y-1.5">
+              <div className="text-[11px] text-muted-foreground">
+                Preencher nas linhas marcadas:
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                {[
+                  {
+                    campo: "unidade" as const,
+                    rotulo: "Unidade",
+                    valor: massaUnidade,
+                    set: setMassaUnidade,
+                    opcoes: unidades.map((u) => ({ v: u, label: u })),
+                  },
+                  {
+                    campo: "departamento" as const,
+                    rotulo: "Departamento",
+                    valor: massaDep,
+                    set: setMassaDep,
+                    opcoes: departamentos.filter((d) => d.ativo).map((d) => ({ v: d.nome, label: d.nome })),
+                  },
+                  {
+                    campo: "grupo_id" as const,
+                    rotulo: "Grupo",
+                    valor: massaGrupo,
+                    set: setMassaGrupo,
+                    opcoes: grupos.filter((g) => g.ativo).map((g) => ({ v: g.id, label: g.nome })),
+                  },
+                ].map((c) => (
+                  <div key={c.campo} className="flex items-center gap-1.5">
+                    <Select value={c.valor} onValueChange={c.set}>
+                      <SelectTrigger className="h-7 w-[150px] text-[11px]">
+                        <SelectValue placeholder={c.rotulo} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {c.opcoes.map((o) => (
+                          <SelectItem key={o.v} value={o.v}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[10.5px]"
+                      disabled={!c.valor}
+                      onClick={() => aplicarEmMassa(c.campo, c.valor, true)}
+                    >
+                      Preencher vazias
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-[10.5px]"
+                      disabled={!c.valor}
+                      onClick={() => aplicarEmMassa(c.campo, c.valor, false)}
+                    >
+                      Aplicar em todas
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+
+
             <div className={`${TABLE_WRAPPER_CLASS} max-h-[55vh] overflow-y-auto`} style={TABLE_FONT_STYLE}>
               <table className="w-full">
                 <thead className="bg-muted/40 sticky top-0 z-10">
