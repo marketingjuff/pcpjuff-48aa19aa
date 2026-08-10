@@ -486,7 +486,9 @@ export function ImportarXmlProdutosDialog({
                     <th className={TH_CLASS}>Departamento</th>
                     <th className={TH_CLASS}>Grupo</th>
                     <th className={TH_CLASS}>Qtd</th>
-                    <th className={TH_CLASS}>Preço NF</th>
+                    <th className={TH_CLASS} title="Preço de uma unidade, conforme o valor unitário da nota">
+                      Preço unit.
+                    </th>
                     <th className={TH_CLASS}>Preço atual</th>
                     <th className={TH_CLASS}>CFOP</th>
                   </tr>
@@ -564,17 +566,28 @@ export function ImportarXmlProdutosDialog({
                           )}
                         </td>
                         <td className={TD_CLASS}>
-                          <Select
-                            value={l.unidade}
-                            onValueChange={(v) => atualizar(l.key, { unidade: v })}
-                          >
-                            <SelectTrigger className="h-7 text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
-                            <SelectContent>
-                              {unidades.map((u) => (
-                                <SelectItem key={u} value={u}>{u}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-1">
+                            <Select
+                              value={l.unidade}
+                              onValueChange={(v) => atualizar(l.key, { unidade: v })}
+                            >
+                              <SelectTrigger className="h-7 text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
+                              <SelectContent>
+                                {unidades.map((u) => (
+                                  <SelectItem key={u} value={u}>{u}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {!l.unidade && l.uCom && (
+                              <Badge
+                                variant="secondary"
+                                className={BADGE_SM_CLASS}
+                                title="Sigla da unidade conforme a nota"
+                              >
+                                {l.uCom}
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className={TD_CLASS}>
                           <Select
@@ -606,12 +619,21 @@ export function ImportarXmlProdutosDialog({
                             </SelectContent>
                           </Select>
                         </td>
-                        <td className={`${TD_CLASS} tabular-nums`}>{l.qtd}</td>
+                        <td className={`${TD_CLASS} tabular-nums`}>
+                          {l.qtd}
+                          {l.qtd > 1 && (
+                            <div className="text-[10px] text-muted-foreground">
+                              {l.qtd} × {fmtBR2(novoPreco)} = {fmtBR2(l.qtd * novoPreco)}
+                            </div>
+                          )}
+                        </td>
                         <td className={TD_CLASS}>
                           <Input
                             value={l.preco}
                             onChange={(e) => atualizar(l.key, { preco: e.target.value })}
-                            className="h-7 w-20 text-[11px] tabular-nums"
+                            onBlur={() => atualizar(l.key, { preco: fmtBR2(precoNum(l.preco)) })}
+                            onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                            className="h-7 w-24 text-[11px] tabular-nums text-right"
                             inputMode="decimal"
                           />
                         </td>
