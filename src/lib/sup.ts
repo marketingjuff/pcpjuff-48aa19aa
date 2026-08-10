@@ -137,6 +137,7 @@ export type SupFornecedorProduto = {
   quantidade_minima: number | null;
   prazo_entrega_dias: number | null;
   ativo: boolean;
+  cod_fornecedor?: string | null;
 };
 
 export type SupPrecoHistorico = {
