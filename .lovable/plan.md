@@ -65,7 +65,10 @@ Botão desabilitado sem fornecedor selecionado.
   Casamento: `cod_fornecedor` → nome normalizado → `novo`.
 - Tabela de conferência com as constantes de `shared/table-styles`; colunas
   ☑, Status, Cód. NF, Descrição na nota, Produto (input ou combobox "trocar"),
-  Unidade, Departamento, Grupo, Qtd, Preço NF, Preço atual (com variação %), CFOP.
+  Unidade (Select com a lista `unidades`), Departamento (Select filtrando
+  `d.ativo`, `key={d.id}`, `value={d.nome}`, igual à linha 1411 do ProdutosTab),
+  Grupo, Qtd, Preço NF, Preço atual (com variação %), CFOP.
+
   Resumo da nota, contadores, faixa amarela para CFOP fora de compra,
   "Marcar/Desmarcar todos".
 - Importação sequencial, após AlertDialog de confirmação:
