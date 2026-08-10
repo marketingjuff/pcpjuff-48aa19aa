@@ -58,6 +58,18 @@ type Linha = {
   produto_id: string | null;
 };
 
+/** 1113.1 → "1.113,10" (formato brasileiro, 2 casas). */
+function fmtBR2(v: number): string {
+  return n(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** "1.113,10" / "1113,10" / "1113.10" → número, coagido pelo n() de sup.ts. */
+function precoNum(texto: string): number {
+  const t = String(texto ?? "").trim().replace(/\s/g, "");
+  const canonico = t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : t;
+  return n(canonico);
+}
+
 export function ImportarXmlProdutosDialog({
   fornecedor, produtos, vinculos, departamentos, grupos, unidades, onImportado,
   mostrarBotao = true, open: openProp, onOpenChange: onOpenChangeProp,
@@ -75,6 +87,9 @@ export function ImportarXmlProdutosDialog({
   const [confirmar, setConfirmar] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [trocando, setTrocando] = useState<string | null>(null);
+  const [massaUnidade, setMassaUnidade] = useState("");
+  const [massaDep, setMassaDep] = useState("");
+  const [massaGrupo, setMassaGrupo] = useState("");
 
   const produtosDoFornecedor = useMemo(
     () => (fornecedor ? produtos.filter((p) => p.fornecedor_id === fornecedor.id) : []),
@@ -119,7 +134,7 @@ export function ImportarXmlProdutosDialog({
         unidade: prod?.unidade || mapearUnidadeNFe(item.uCom, unidades),
         departamento: "",
         grupo_id: "",
-        preco: String(item.vUnCom),
+        preco: fmtBR2(item.vUnCom),
         status: prod ? "existe" : "novo",
         produto_id: prod?.id ?? null,
       };
@@ -159,6 +174,20 @@ export function ImportarXmlProdutosDialog({
   const qtdNovos = marcados.filter((l) => l.status === "novo").length;
   const qtdExistentes = marcados.filter((l) => l.status === "existe").length;
   const foraCompra = linhas.filter((l) => !cfopEhCompra(l.cfop)).length;
+  const semUnidade = marcados.filter((l) => !l.unidade).length;
+
+  /** Aplica um campo nas linhas marcadas: todas, ou só as que estão vazias. */
+  function aplicarEmMassa(campo: "unidade" | "departamento" | "grupo_id", valor: string, soVazias: boolean) {
+    if (!valor) return;
+    setLinhas((ls) =>
+      ls.map((l) => {
+        if (!l.marcado) return l;
+        if (soVazias && l[campo]) return l;
+        if (campo !== "unidade" && l.status === "existe") return l;
+        return { ...l, [campo]: valor };
+      }),
+    );
+  }
 
   function precoAtualDe(l: Linha): number | null {
     if (!l.produto_id) return null;
@@ -215,7 +244,7 @@ export function ImportarXmlProdutosDialog({
             if (e2) throw e2;
             criados += 1;
 
-            const preco = n(l.preco.replace(",", "."));
+            const preco = precoNum(l.preco);
             if (preco > 0) {
               await aplicarPrecoTabela({
                 fornecedor_produto_id: vinc.id,
@@ -236,7 +265,7 @@ export function ImportarXmlProdutosDialog({
               if (error) throw error;
             }
             const atual = n(vinc.preco_tabela);
-            const novoPreco = n(l.preco.replace(",", "."));
+            const novoPreco = precoNum(l.preco);
             if (novoPreco > 0 && novoPreco !== atual) {
               await aplicarPrecoTabela({
                 fornecedor_produto_id: vinc.id,
@@ -373,6 +402,77 @@ export function ImportarXmlProdutosDialog({
               </Button>
             </div>
 
+            {semUnidade > 0 && (
+              <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                {semUnidade} linha(s) marcada(s) sem unidade. Preencha a unidade para continuar.
+              </div>
+            )}
+
+            <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 space-y-1.5">
+              <div className="text-[11px] text-muted-foreground">
+                Preencher nas linhas marcadas:
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                {[
+                  {
+                    campo: "unidade" as const,
+                    rotulo: "Unidade",
+                    valor: massaUnidade,
+                    set: setMassaUnidade,
+                    opcoes: unidades.map((u) => ({ v: u, label: u })),
+                  },
+                  {
+                    campo: "departamento" as const,
+                    rotulo: "Departamento",
+                    valor: massaDep,
+                    set: setMassaDep,
+                    opcoes: departamentos.filter((d) => d.ativo).map((d) => ({ v: d.nome, label: d.nome })),
+                  },
+                  {
+                    campo: "grupo_id" as const,
+                    rotulo: "Grupo",
+                    valor: massaGrupo,
+                    set: setMassaGrupo,
+                    opcoes: grupos.filter((g) => g.ativo).map((g) => ({ v: g.id, label: g.nome })),
+                  },
+                ].map((c) => (
+                  <div key={c.campo} className="flex items-center gap-1.5">
+                    <Select value={c.valor} onValueChange={c.set}>
+                      <SelectTrigger className="h-7 w-[150px] text-[11px]">
+                        <SelectValue placeholder={c.rotulo} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {c.opcoes.map((o) => (
+                          <SelectItem key={o.v} value={o.v}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[10.5px]"
+                      disabled={!c.valor}
+                      onClick={() => aplicarEmMassa(c.campo, c.valor, true)}
+                    >
+                      Preencher vazias
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-[10.5px]"
+                      disabled={!c.valor}
+                      onClick={() => aplicarEmMassa(c.campo, c.valor, false)}
+                    >
+                      Aplicar em todas
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+
+
             <div className={`${TABLE_WRAPPER_CLASS} max-h-[55vh] overflow-y-auto`} style={TABLE_FONT_STYLE}>
               <table className="w-full">
                 <thead className="bg-muted/40 sticky top-0 z-10">
@@ -386,7 +486,9 @@ export function ImportarXmlProdutosDialog({
                     <th className={TH_CLASS}>Departamento</th>
                     <th className={TH_CLASS}>Grupo</th>
                     <th className={TH_CLASS}>Qtd</th>
-                    <th className={TH_CLASS}>Preço NF</th>
+                    <th className={TH_CLASS} title="Preço de uma unidade, conforme o valor unitário da nota">
+                      Preço unit.
+                    </th>
                     <th className={TH_CLASS}>Preço atual</th>
                     <th className={TH_CLASS}>CFOP</th>
                   </tr>
@@ -394,13 +496,18 @@ export function ImportarXmlProdutosDialog({
                 <tbody>
                   {linhas.map((l) => {
                     const atual = precoAtualDe(l);
-                    const novoPreco = n(l.preco.replace(",", "."));
+                    const novoPreco = precoNum(l.preco);
                     const varPct = atual != null ? variacaoPercentual(atual, novoPreco) : null;
                     const nomeCad = l.produto_id
                       ? produtosDoFornecedor.find((p) => p.id === l.produto_id)?.nome ?? ""
                       : "";
                     return (
-                      <tr key={l.key} className="border-t border-border/50">
+                      <tr
+                        key={l.key}
+                        className={`border-t border-border/50 ${
+                          l.marcado && !l.unidade ? "ring-1 ring-inset ring-amber-400 bg-amber-50/40 dark:bg-amber-950/10" : ""
+                        }`}
+                      >
                         <td className={TD_CLASS}>
                           <Checkbox
                             checked={l.marcado}
@@ -464,17 +571,28 @@ export function ImportarXmlProdutosDialog({
                           )}
                         </td>
                         <td className={TD_CLASS}>
-                          <Select
-                            value={l.unidade}
-                            onValueChange={(v) => atualizar(l.key, { unidade: v })}
-                          >
-                            <SelectTrigger className="h-7 text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
-                            <SelectContent>
-                              {unidades.map((u) => (
-                                <SelectItem key={u} value={u}>{u}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-1">
+                            <Select
+                              value={l.unidade}
+                              onValueChange={(v) => atualizar(l.key, { unidade: v })}
+                            >
+                              <SelectTrigger className="h-7 text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
+                              <SelectContent>
+                                {unidades.map((u) => (
+                                  <SelectItem key={u} value={u}>{u}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {!l.unidade && l.uCom && (
+                              <Badge
+                                variant="secondary"
+                                className={BADGE_SM_CLASS}
+                                title="Sigla da unidade conforme a nota"
+                              >
+                                {l.uCom}
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className={TD_CLASS}>
                           <Select
@@ -506,12 +624,21 @@ export function ImportarXmlProdutosDialog({
                             </SelectContent>
                           </Select>
                         </td>
-                        <td className={`${TD_CLASS} tabular-nums`}>{l.qtd}</td>
+                        <td className={`${TD_CLASS} tabular-nums`}>
+                          {l.qtd}
+                          {l.qtd > 1 && (
+                            <div className="text-[10px] text-muted-foreground">
+                              {l.qtd} × {fmtBR2(novoPreco)} = {fmtBR2(l.qtd * novoPreco)}
+                            </div>
+                          )}
+                        </td>
                         <td className={TD_CLASS}>
                           <Input
                             value={l.preco}
                             onChange={(e) => atualizar(l.key, { preco: e.target.value })}
-                            className="h-7 w-20 text-[11px] tabular-nums"
+                            onBlur={() => atualizar(l.key, { preco: fmtBR2(precoNum(l.preco)) })}
+                            onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                            className="h-7 w-24 text-[11px] tabular-nums text-right"
                             inputMode="decimal"
                           />
                         </td>
@@ -548,7 +675,11 @@ export function ImportarXmlProdutosDialog({
 
           <DialogFooter>
             <Button variant="outline" onClick={fechar}>Cancelar</Button>
-            <Button disabled={marcados.length === 0 || salvando} onClick={() => setConfirmar(true)}>
+            <Button
+              disabled={marcados.length === 0 || semUnidade > 0 || salvando}
+              title={semUnidade > 0 ? "Preencha a unidade das linhas marcadas" : undefined}
+              onClick={() => setConfirmar(true)}
+            >
               {salvando && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               Importar selecionados
             </Button>
