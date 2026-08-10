@@ -1,0 +1,2 @@
+alter table public.sup_fornecedor_produtos add column if not exists cod_fornecedor text;
+create index if not exists idx_sup_forn_prod_cod on public.sup_fornecedor_produtos (fornecedor_id, cod_fornecedor);
