@@ -454,13 +454,25 @@ export function ProdutosTab() {
 
   const fornecedorSel = fornecedores.find((f) => f.id === fornId) ?? null;
 
+  const baseProdutosForn = useMemo(
+    () => (fornId ? produtos.filter((p) => p.fornecedor_id === fornId) : ([] as SupProduto[])),
+    [produtos, fornId],
+  );
+
+  const deptoOpcoes = useMemo(() => {
+    const s = new Set<string>();
+    for (const p of baseProdutosForn) if (p.departamento) s.add(p.departamento);
+    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [baseProdutosForn]);
+
   const filtrados = useMemo(() => {
     if (!fornId) return [] as SupProduto[];
     const b = norm(busca);
-    return produtos
-      .filter((p) => p.fornecedor_id === fornId)
-      .filter((p) => !b || [p.nome, p.departamento, p.especificacao].some((v) => (v ?? "").toLowerCase().includes(b)));
-  }, [produtos, fornId, busca]);
+    return baseProdutosForn
+      .filter((p) => !b || [p.nome, p.departamento, p.especificacao].some((v) => (v ?? "").toLowerCase().includes(b)))
+      .filter((p) => filtroDepto === "todos" || (p.departamento ?? "") === filtroDepto)
+      .filter((p) => filtroSituacao === "todos" || (filtroSituacao === "ativos" ? p.ativo : !p.ativo));
+  }, [baseProdutosForn, fornId, busca, filtroDepto, filtroSituacao]);
 
   const { rows: ordenados, sortKey, sortDir, toggle } = useTableSort(filtrados, {
     nome: (r) => r.nome,
