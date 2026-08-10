@@ -171,6 +171,20 @@ export function ImportarXmlProdutosDialog({
   const qtdNovos = marcados.filter((l) => l.status === "novo").length;
   const qtdExistentes = marcados.filter((l) => l.status === "existe").length;
   const foraCompra = linhas.filter((l) => !cfopEhCompra(l.cfop)).length;
+  const semUnidade = marcados.filter((l) => !l.unidade).length;
+
+  /** Aplica um campo nas linhas marcadas: todas, ou só as que estão vazias. */
+  function aplicarEmMassa(campo: "unidade" | "departamento" | "grupo_id", valor: string, soVazias: boolean) {
+    if (!valor) return;
+    setLinhas((ls) =>
+      ls.map((l) => {
+        if (!l.marcado) return l;
+        if (soVazias && l[campo]) return l;
+        if (campo !== "unidade" && l.status === "existe") return l;
+        return { ...l, [campo]: valor };
+      }),
+    );
+  }
 
   function precoAtualDe(l: Linha): number | null {
     if (!l.produto_id) return null;
