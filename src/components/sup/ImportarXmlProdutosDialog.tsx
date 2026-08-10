@@ -196,25 +196,16 @@ export function ImportarXmlProdutosDialog({
   /** Aplica um campo nas linhas marcadas: todas, ou só as que estão vazias. Sempre dá feedback. */
   function aplicarEmMassa(campo: "unidade" | "departamento" | "grupo_id", valor: string, soVazias: boolean) {
     if (!valor) return;
-    let aplicadas = 0;
-    let bloqueadas = 0;
-    let jaPreenchidas = 0;
     const marcadasAgora = linhas.filter((l) => l.marcado);
-    setLinhas((ls) =>
-      ls.map((l) => {
-        if (!l.marcado) return l;
-        if (!podeDefinir(l, campo)) {
-          bloqueadas += 1;
-          return l;
-        }
-        if (soVazias && l[campo]) {
-          jaPreenchidas += 1;
-          return l;
-        }
-        aplicadas += 1;
-        return { ...l, [campo]: valor };
-      }),
-    );
+    const elegiveis = marcadasAgora.filter((l) => podeDefinir(l, campo));
+    const bloqueadas = marcadasAgora.length - elegiveis.length;
+    const alvos = soVazias ? elegiveis.filter((l) => !l[campo]) : elegiveis;
+    const jaPreenchidas = elegiveis.length - alvos.length;
+    const aplicadas = alvos.length;
+    if (aplicadas > 0) {
+      const chaves = new Set(alvos.map((l) => l.key));
+      setLinhas((ls) => ls.map((l) => (chaves.has(l.key) ? { ...l, [campo]: valor } : l)));
+    }
     if (aplicadas > 0) {
       const extra = bloqueadas > 0 ? ` ${bloqueadas} ignorada(s): já definido no cadastro.` : "";
       toast.success(`Preenchido em ${aplicadas} linha(s).${extra}`);
