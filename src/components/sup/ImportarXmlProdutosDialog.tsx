@@ -297,6 +297,17 @@ export function ImportarXmlProdutosDialog({
                 .eq("id", vinc.id);
               if (error) throw error;
             }
+            // Só preenche campo vago do cadastro — nunca sobrescreve.
+            const patch: Record<string, string> = {};
+            if (l.departamento && podeDefinir(l, "departamento")) patch.departamento = l.departamento;
+            if (l.grupo_id && podeDefinir(l, "grupo_id")) patch.grupo_id = l.grupo_id;
+            if (Object.keys(patch).length > 0 && l.produto_id) {
+              const { error } = await (supabase as any)
+                .from("sup_produtos")
+                .update(patch)
+                .eq("id", l.produto_id);
+              if (error) throw error;
+            }
             const atual = n(vinc.preco_tabela);
             const novoPreco = precoNum(l.preco);
             if (novoPreco > 0 && novoPreco !== atual) {
