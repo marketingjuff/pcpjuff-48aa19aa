@@ -1785,6 +1785,7 @@ export type Database = {
       sup_fornecedor_produtos: {
         Row: {
           ativo: boolean
+          cod_fornecedor: string | null
           created_at: string
           fornecedor_id: string
           id: string
@@ -1797,6 +1798,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          cod_fornecedor?: string | null
           created_at?: string
           fornecedor_id: string
           id?: string
@@ -1809,6 +1811,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          cod_fornecedor?: string | null
           created_at?: string
           fornecedor_id?: string
           id?: string
