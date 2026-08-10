@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Pencil, Copy, CopyPlus, Trash2, TrendingDown, TrendingUp, FilterX } from "lucide-react";
+import { Plus, Pencil, Copy, CopyPlus, Trash2, TrendingDown, TrendingUp, FilterX, FileUp } from "lucide-react";
 import { SortTh, useTableSort } from "@/components/shared/sortable";
 import { TABLE_FONT_STYLE, TABLE_WRAPPER_CLASS, TH_CLASS, TD_CLASS, BADGE_SM_CLASS } from "@/components/shared/table-styles";
 import { Combobox } from "@/components/shared/combobox";
