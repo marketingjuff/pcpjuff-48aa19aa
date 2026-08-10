@@ -58,6 +58,18 @@ type Linha = {
   produto_id: string | null;
 };
 
+/** 1113.1 → "1.113,10" (formato brasileiro, 2 casas). */
+function fmtBR2(v: number): string {
+  return n(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** "1.113,10" / "1113,10" / "1113.10" → número, coagido pelo n() de sup.ts. */
+function precoNum(texto: string): number {
+  const t = String(texto ?? "").trim().replace(/\s/g, "");
+  const canonico = t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : t;
+  return n(canonico);
+}
+
 export function ImportarXmlProdutosDialog({
   fornecedor, produtos, vinculos, departamentos, grupos, unidades, onImportado,
   mostrarBotao = true, open: openProp, onOpenChange: onOpenChangeProp,
@@ -119,7 +131,7 @@ export function ImportarXmlProdutosDialog({
         unidade: prod?.unidade || mapearUnidadeNFe(item.uCom, unidades),
         departamento: "",
         grupo_id: "",
-        preco: String(item.vUnCom),
+        preco: fmtBR2(item.vUnCom),
         status: prod ? "existe" : "novo",
         produto_id: prod?.id ?? null,
       };
@@ -215,7 +227,7 @@ export function ImportarXmlProdutosDialog({
             if (e2) throw e2;
             criados += 1;
 
-            const preco = n(l.preco.replace(",", "."));
+            const preco = precoNum(l.preco);
             if (preco > 0) {
               await aplicarPrecoTabela({
                 fornecedor_produto_id: vinc.id,
@@ -236,7 +248,7 @@ export function ImportarXmlProdutosDialog({
               if (error) throw error;
             }
             const atual = n(vinc.preco_tabela);
-            const novoPreco = n(l.preco.replace(",", "."));
+            const novoPreco = precoNum(l.preco);
             if (novoPreco > 0 && novoPreco !== atual) {
               await aplicarPrecoTabela({
                 fornecedor_produto_id: vinc.id,
@@ -394,7 +406,7 @@ export function ImportarXmlProdutosDialog({
                 <tbody>
                   {linhas.map((l) => {
                     const atual = precoAtualDe(l);
-                    const novoPreco = n(l.preco.replace(",", "."));
+                    const novoPreco = precoNum(l.preco);
                     const varPct = atual != null ? variacaoPercentual(atual, novoPreco) : null;
                     const nomeCad = l.produto_id
                       ? produtosDoFornecedor.find((p) => p.id === l.produto_id)?.nome ?? ""
