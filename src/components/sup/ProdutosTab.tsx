@@ -1075,6 +1075,10 @@ export function ProdutosTab() {
                   )}
                 </div>
               </div>
+            ) : (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                Selecione um fornecedor na lista abaixo.
+              </div>
             )}
           </CardContent>
         </Card>
