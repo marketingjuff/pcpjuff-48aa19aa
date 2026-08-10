@@ -24,8 +24,12 @@ que não seja NF-e.
 
 Exports: `parseNFe(xmlText)` retornando `{ emitente, nota, itens }` com os tipos
 `NFeEmitente`, `NFeItem`, `NFeNota`, `NFeParsed` exatamente como especificado;
-`mapearUnidadeNFe`, `condicaoPagamentoNFe`, `cfopEhCompra`, `rotuloCfop`,
-`normalizarNome`.
+`mapearUnidadeNFe(uCom, unidades)`, `condicaoPagamentoNFe`, `cfopEhCompra`,
+`rotuloCfop`, `normalizarNome`.
+
+`mapearUnidadeNFe` aplica o de-para e depois confere o resultado contra a lista
+`unidades` recebida (a configurada em `app_lists`); se não estiver lá, retorna `""`.
+
 
 Regras: CNPJ/CPF só dígitos; números com fallback 0 (`vDesc` → null); `chave` do
 atributo `Id` sem prefixo `NFe`; `emissao` = 10 primeiros de `dhEmi`/`dEmi`;
@@ -49,7 +53,9 @@ Fluxo: parse → procura por CNPJ, depois por nome normalizado.
 
 ## 3. `ImportarXmlProdutosDialog.tsx`
 
-Props: `fornecedor`, `produtos`, `vinculos`, `departamentos`, `grupos`, `onImportado`.
+Props: `fornecedor`, `produtos`, `vinculos`, `departamentos: SupDepartamento[]`,
+`grupos`, `unidades: string[]`, `onImportado`.
+
 Botão desabilitado sem fornecedor selecionado.
 
 - Validação do emitente: CNPJ bate → segue; fornecedor sem CNPJ → aviso amarelo;
