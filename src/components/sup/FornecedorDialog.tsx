@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AlertTriangle, FileUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { SUP_CONDICOES_PAGAMENTO, type SupFornecedor } from "@/lib/sup";
+import { fmtDataBR, SUP_CONDICOES_PAGAMENTO, type SupFornecedor } from "@/lib/sup";
 import { maskCpfCnpj } from "@/lib/format";
+import { useSupFornecedores } from "@/components/sup/FornecedoresTab";
+import { condicaoPagamentoNFe, parseNFe, soDigitos } from "@/lib/nfe-xml";
 
 const VAZIO: Partial<SupFornecedor> = { ativo: true };
 
@@ -23,10 +26,58 @@ type Props = {
 export function FornecedorDialog({ open, onOpenChange, fornecedor, onSaved }: Props) {
   const qc = useQueryClient();
   const [form, setForm] = useState<Partial<SupFornecedor>>(VAZIO);
+  const inputXmlRef = useRef<HTMLInputElement | null>(null);
+  const [avisoDuplicado, setAvisoDuplicado] = useState<string | null>(null);
+  const { data: fornecedores = [] } = useSupFornecedores();
 
   useEffect(() => {
-    if (open) setForm(fornecedor ? { ...fornecedor } : { ...VAZIO });
+    if (open) {
+      setForm(fornecedor ? { ...fornecedor } : { ...VAZIO });
+      setAvisoDuplicado(null);
+    }
   }, [open, fornecedor]);
+
+  function vazio(v: unknown) {
+    return v == null || (typeof v === "string" && v.trim() === "");
+  }
+
+  async function aoEscolherXml(file: File) {
+    try {
+      const p = parseNFe(await file.text());
+      const { emitente, nota } = p;
+      const doXml: Partial<SupFornecedor> = {
+        razao_social: emitente.razao_social,
+        nome_fantasia: emitente.nome_fantasia,
+        documento: emitente.cnpj ? maskCpfCnpj(emitente.cnpj) : null,
+        contato_telefone: emitente.telefone,
+        cidade: emitente.cidade,
+        uf: emitente.uf,
+        condicao_pagamento_padrao: condicaoPagamentoNFe(nota.emissao, nota.vencimentos),
+        observacoes: `Importado do XML da NF-e nº ${nota.numero ?? "—"} (${fmtDataBR(nota.emissao)}).`,
+      } as Partial<SupFornecedor>;
+
+      setForm((f) => {
+        const next: Record<string, unknown> = { ...(f as Record<string, unknown>) };
+        for (const [k, v] of Object.entries(doXml as Record<string, unknown>)) {
+          if (vazio(v)) continue;
+          if (f.id && !vazio(next[k])) continue;
+          next[k] = v;
+        }
+        return next as Partial<SupFornecedor>;
+      });
+
+      const dig = emitente.cnpj;
+      const outro = dig
+        ? fornecedores.find((o) => soDigitos(o.documento) === dig && o.id !== form.id)
+        : undefined;
+      setAvisoDuplicado(outro ? outro.razao_social || outro.nome_fantasia || "outro fornecedor" : null);
+
+      if (form.id) toast.success("Campos vazios preenchidos com os dados do XML.");
+      else toast.success("Cadastro preenchido com os dados do XML.");
+    } catch (e: any) {
+      toast.error(e?.message || "Não foi possível ler o XML.");
+    }
+  }
 
   const salvar = useMutation({
     mutationFn: async (f: Partial<SupFornecedor>) => {
