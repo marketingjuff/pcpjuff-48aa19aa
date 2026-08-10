@@ -126,6 +126,37 @@ export function FornecedorDialog({ open, onOpenChange, fornecedor, onSaved }: Pr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[820px]">
         <DialogHeader><DialogTitle>{form.id ? "Editar fornecedor" : "Novo fornecedor"}</DialogTitle></DialogHeader>
+
+        <div className="flex items-center justify-between gap-2 rounded-md border border-teal-200 bg-teal-50/60 dark:border-teal-900 dark:bg-teal-950/20 px-2.5 py-2">
+          <span className="text-[11.5px] text-muted-foreground">
+            Tem o XML da NF-e deste fornecedor? Preencha o cadastro automaticamente.
+          </span>
+          <Button type="button" size="sm" variant="outline" className="h-7" onClick={() => inputXmlRef.current?.click()}>
+            <FileUp className="h-3.5 w-3.5 mr-1" /> Importar XML
+          </Button>
+          <input
+            ref={inputXmlRef}
+            type="file"
+            accept=".xml,text/xml,application/xml"
+            hidden
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (f) await aoEscolherXml(f);
+              if (inputXmlRef.current) inputXmlRef.current.value = "";
+            }}
+          />
+        </div>
+
+        {avisoDuplicado && (
+          <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-2.5 py-2 text-[11.5px] text-amber-900 dark:text-amber-200">
+            <AlertTriangle className="h-3.5 w-3.5 mt-[1px] shrink-0" />
+            <span>
+              Já existe <strong>{avisoDuplicado}</strong> cadastrado com este CNPJ. Verifique antes de
+              salvar para não duplicar.
+            </span>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
             <Label className="text-xs">Razão social *</Label>
