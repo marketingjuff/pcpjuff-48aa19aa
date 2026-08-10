@@ -979,10 +979,6 @@ export function ProdutosTab() {
             <Button size="sm" variant="outline" onClick={() => { setFornEdit(null); setFornDialogOpen(true); }}>
               <Plus className="h-3.5 w-3.5 mr-1" /> Novo fornecedor
             </Button>
-            <ImportarXmlFornecedorButton
-              fornecedores={fornecedores}
-              onSelecionarFornecedor={selecionarFornecedor}
-            />
 
             {fornecedorSel && (
               <Button size="sm" variant="outline" onClick={() => { setFornEdit(fornecedorSel); setFornDialogOpen(true); }}>
