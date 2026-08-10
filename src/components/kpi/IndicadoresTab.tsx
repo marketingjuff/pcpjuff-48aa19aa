@@ -388,9 +388,9 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   const base = useMemo(() => {
     const todos = data?.calc ?? [];
     const store = data?.pedidosStore ?? new Set<string>();
-    const doEscopo = todos.filter((p) =>
-      escopo === "store" ? store.has(p.numero_pedido) : !store.has(p.numero_pedido),
-    );
+    const ehStorePedido = (p: (typeof todos)[number]) =>
+      store.has(p.numero_pedido) && p.empresa === "JOKE";
+    const doEscopo = todos.filter((p) => (escopo === "store" ? ehStorePedido(p) : !ehStorePedido(p)));
     if (escopo !== "store") return doEscopo;
 
     /* Na Store o modelo/cor/tamanho vêm do parse próprio (nada de olist_produto_map).
@@ -476,7 +476,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
     () => ({
       de: intervalo.de,
       ate: intervalo.ate,
-      empresa,
+      empresa: escopo === "store" ? "CONSOLIDADO" : empresa,
       vendedores,
       modelos,
       cores,
@@ -484,7 +484,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       situacoes,
       grupos: soPcpAtivo ? grupos : (["casados", "so_olist"] as Grupo[]),
     }),
-    [intervalo, empresa, vendedores, modelos, cores, tamanhos, situacoes, grupos, soPcpAtivo],
+    [intervalo, empresa, escopo, vendedores, modelos, cores, tamanhos, situacoes, grupos, soPcpAtivo],
   );
 
   const ctx = useMemo(
@@ -630,7 +630,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       comparar,
       periodoAnterior: comparar ? periodoAnterior(intervalo.de, intervalo.ate) : null,
       filtros: {
-        empresa,
+        empresa: escopo === "store" ? "JOKE" : empresa,
         vendedores: labelsVendSelecionados,
 
         modelos,
@@ -718,16 +718,18 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
             </Label>
           </div>
 
-          <Select value={empresa} onValueChange={(v) => setEmpresa(v as EmpresaFiltro)}>
-            <SelectTrigger className="h-9 w-[150px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="CONSOLIDADO">Consolidado</SelectItem>
-              <SelectItem value="JOKE">JOKE</SelectItem>
-              <SelectItem value="JUFF">JUFF</SelectItem>
-            </SelectContent>
-          </Select>
+          {escopo !== "store" && (
+            <Select value={empresa} onValueChange={(v) => setEmpresa(v as EmpresaFiltro)}>
+              <SelectTrigger className="h-9 w-[150px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CONSOLIDADO">Consolidado</SelectItem>
+                <SelectItem value="JOKE">JOKE</SelectItem>
+                <SelectItem value="JUFF">JUFF</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
 
           <Button variant="outline" size="sm" className="h-9 gap-2" onClick={exportarPdf} disabled={isLoading}>
             <FileDown className="h-4 w-4" /> Exportar PDF
