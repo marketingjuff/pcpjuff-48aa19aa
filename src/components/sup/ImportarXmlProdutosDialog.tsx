@@ -35,6 +35,9 @@ type Props = {
   grupos: SupProdutoGrupo[];
   unidades: string[];
   onImportado: () => void;
+  mostrarBotao?: boolean;
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
 };
 
 type Linha = {
