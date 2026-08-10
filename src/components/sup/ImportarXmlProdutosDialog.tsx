@@ -502,7 +502,12 @@ export function ImportarXmlProdutosDialog({
                       ? produtosDoFornecedor.find((p) => p.id === l.produto_id)?.nome ?? ""
                       : "";
                     return (
-                      <tr key={l.key} className="border-t border-border/50">
+                      <tr
+                        key={l.key}
+                        className={`border-t border-border/50 ${
+                          l.marcado && !l.unidade ? "ring-1 ring-inset ring-amber-400 bg-amber-50/40 dark:bg-amber-950/10" : ""
+                        }`}
+                      >
                         <td className={TD_CLASS}>
                           <Checkbox
                             checked={l.marcado}
@@ -670,7 +675,11 @@ export function ImportarXmlProdutosDialog({
 
           <DialogFooter>
             <Button variant="outline" onClick={fechar}>Cancelar</Button>
-            <Button disabled={marcados.length === 0 || salvando} onClick={() => setConfirmar(true)}>
+            <Button
+              disabled={marcados.length === 0 || semUnidade > 0 || salvando}
+              title={semUnidade > 0 ? "Preencha a unidade das linhas marcadas" : undefined}
+              onClick={() => setConfirmar(true)}
+            >
               {salvando && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               Importar selecionados
             </Button>
