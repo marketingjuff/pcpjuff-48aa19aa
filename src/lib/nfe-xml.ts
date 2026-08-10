@@ -139,11 +139,18 @@ const DE_PARA_UNIDADE: Record<string, string> = {
   UN: "unidade", UNID: "unidade", UND: "unidade", UNIDADE: "unidade",
   PC: "peça", PÇ: "peça", PECA: "peça", PEÇA: "peça",
   KG: "kg", QUILO: "kg",
-  LT: "litro", L: "litro", LITRO: "litro",
+  // "LT" é ambíguo (lata × litro) → não mapeia, o usuário escolhe.
+  L: "litro", LITRO: "litro", LITROS: "litro",
   MT: "metro", M: "metro", METRO: "metro", ML: "metro",
-  RL: "rolo", ROLO: "rolo", BOB: "rolo", BOBINA: "rolo",
+  RL: "rolo", ROLO: "rolo",
+  BB: "bobina", BOB: "bobina", BOBINA: "bobina",
   CX: "caixa", CAIXA: "caixa",
   PCT: "pacote", PACOTE: "pacote", FD: "pacote", FARDO: "pacote",
+  GL: "galão", GAL: "galão", GALAO: "galão", GALÃO: "galão",
+  BD: "balde", BALDE: "balde",
+  FR: "frasco", FRASCO: "frasco",
+  LATA: "lata",
+  SC: "saco", SACO: "saco", SACA: "saco",
 };
 
 /** "Un" → "unidade". Só devolve valor que exista na lista de unidades configurada. */
