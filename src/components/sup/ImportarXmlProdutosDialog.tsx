@@ -122,14 +122,14 @@ export function ImportarXmlProdutosDialog({
     });
   }
 
-  async function aoEscolherArquivo(file: File) {
-    if (!fornecedor) return;
+  async function aoEscolherArquivo(file: File): Promise<boolean> {
+    if (!fornecedor) return false;
     let parsed: NFeParsed;
     try {
       parsed = parseNFe(await file.text());
     } catch (e: any) {
       toast.error(e?.message || "Não foi possível ler o XML.");
-      return;
+      return false;
     }
     const docForn = soDigitos(fornecedor.documento);
     const cnpjEmit = parsed.emitente.cnpj;
@@ -138,13 +138,14 @@ export function ImportarXmlProdutosDialog({
         emitente: parsed.emitente.razao_social,
         forn: fornecedor.nome_fantasia || fornecedor.razao_social,
       });
-      return;
+      return false;
     }
     setSemCnpj(!docForn);
     setEmitenteNome(parsed.emitente.razao_social);
     setNota(parsed.nota);
     setLinhas(montarLinhas(parsed));
     setOpen(true);
+    return true;
   }
 
   const atualizar = (key: string, patch: Partial<Linha>) =>
