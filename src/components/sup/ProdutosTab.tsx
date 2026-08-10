@@ -297,6 +297,8 @@ export function ProdutosTab() {
   const [fornEdit, setFornEdit] = useState<SupFornecedor | null>(null);
 
   const [busca, setBusca] = useState("");
+  const [filtroDepto, setFiltroDepto] = useState("todos");
+  const [filtroSituacao, setFiltroSituacao] = useState("todos");
   const [selId, setSelId] = useState<string | null>(null);
 
   const [prodOpen, setProdOpen] = useState(false);
