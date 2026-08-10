@@ -132,8 +132,8 @@ export function ImportarXmlProdutosDialog({
         marcado: cfopEhCompra(item.cfop),
         nome: item.xProd,
         unidade: prod?.unidade || mapearUnidadeNFe(item.uCom, unidades),
-        departamento: "",
-        grupo_id: "",
+        departamento: prod?.departamento ?? "",
+        grupo_id: prod?.grupo_id ?? "",
         preco: fmtBR2(item.vUnCom),
         status: prod ? "existe" : "novo",
         produto_id: prod?.id ?? null,
@@ -176,17 +176,59 @@ export function ImportarXmlProdutosDialog({
   const foraCompra = linhas.filter((l) => !cfopEhCompra(l.cfop)).length;
   const semUnidade = marcados.filter((l) => !l.unidade).length;
 
-  /** Aplica um campo nas linhas marcadas: todas, ou só as que estão vazias. */
+  const produtoCadastradoDe = (l: Linha) =>
+    l.produto_id ? produtosDoFornecedor.find((p) => p.id === l.produto_id) ?? null : null;
+
+  /** A importação pode definir este campo? Preencher campo vago ≠ sobrescrever. */
+  function podeDefinir(l: Linha, campo: "unidade" | "departamento" | "grupo_id"): boolean {
+    if (campo === "unidade") return true;
+    if (l.status === "novo") return true;
+    const p = produtoCadastradoDe(l);
+    return campo === "departamento" ? !p?.departamento : !p?.grupo_id;
+  }
+
+  const LABEL_CAMPO: Record<"unidade" | "departamento" | "grupo_id", string> = {
+    unidade: "Unidade",
+    departamento: "Departamento",
+    grupo_id: "Grupo",
+  };
+
+  /** Aplica um campo nas linhas marcadas: todas, ou só as que estão vazias. Sempre dá feedback. */
   function aplicarEmMassa(campo: "unidade" | "departamento" | "grupo_id", valor: string, soVazias: boolean) {
     if (!valor) return;
+    let aplicadas = 0;
+    let bloqueadas = 0;
+    let jaPreenchidas = 0;
+    const marcadasAgora = linhas.filter((l) => l.marcado);
     setLinhas((ls) =>
       ls.map((l) => {
         if (!l.marcado) return l;
-        if (soVazias && l[campo]) return l;
-        if (campo !== "unidade" && l.status === "existe") return l;
+        if (!podeDefinir(l, campo)) {
+          bloqueadas += 1;
+          return l;
+        }
+        if (soVazias && l[campo]) {
+          jaPreenchidas += 1;
+          return l;
+        }
+        aplicadas += 1;
         return { ...l, [campo]: valor };
       }),
     );
+    if (aplicadas > 0) {
+      const extra = bloqueadas > 0 ? ` ${bloqueadas} ignorada(s): já definido no cadastro.` : "";
+      toast.success(`Preenchido em ${aplicadas} linha(s).${extra}`);
+      return;
+    }
+    if (marcadasAgora.length === 0) {
+      toast.warning("Nenhuma linha marcada.");
+      return;
+    }
+    if (bloqueadas >= jaPreenchidas) {
+      toast.warning(`As linhas marcadas já têm ${LABEL_CAMPO[campo]} definido no cadastro.`);
+      return;
+    }
+    toast.warning("As linhas marcadas já estão preenchidas.");
   }
 
   function precoAtualDe(l: Linha): number | null {
