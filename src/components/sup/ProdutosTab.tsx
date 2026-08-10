@@ -1888,6 +1888,19 @@ export function ProdutosTab() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <ImportarXmlProdutosDialog
+        fornecedor={fornecedorSel}
+        produtos={produtos}
+        vinculos={vinculos}
+        departamentos={departamentos}
+        grupos={grupos}
+        unidades={unidades}
+        onImportado={invalidarTudo}
+        mostrarBotao={false}
+        open={importXmlOpen}
+        onOpenChange={setImportXmlOpen}
+      />
+
     </div>
 
   );
