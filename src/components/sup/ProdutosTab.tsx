@@ -304,6 +304,12 @@ export function ProdutosTab() {
   const [selId, setSelId] = useState<string | null>(null);
 
   const [prodOpen, setProdOpen] = useState(false);
+  const [importXmlOpen, setImportXmlOpen] = useState(false);
+
+  function abrirImportacaoXml() {
+    setProdOpen(false);
+    setImportXmlOpen(true);
+  }
   const [form, setForm] = useState<ProdForm>(formVazio());
   const [precoOriginal, setPrecoOriginal] = useState<number | null>(null);
   const [negociadoOriginal, setNegociadoOriginal] = useState<number | null>(null);
