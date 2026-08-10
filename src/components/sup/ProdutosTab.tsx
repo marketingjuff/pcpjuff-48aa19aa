@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -453,6 +453,33 @@ export function ProdutosTab() {
   }, [produtos]);
 
   const fornecedorSel = fornecedores.find((f) => f.id === fornId) ?? null;
+
+  const topoRef = useRef<HTMLDivElement | null>(null);
+
+  function selecionarFornecedor(id: string) {
+    setFornId(id);
+    setSelId(null);
+    setTimeout(() => {
+      topoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
+  const {
+    rows: fornecedoresOrdenados,
+    sortKey: fornSortKey,
+    sortDir: fornSortDir,
+    toggle: fornToggle,
+  } = useTableSort(fornecedoresFiltrados, {
+    nome: (r) => r.nome_fantasia || r.razao_social,
+    razao_social: (r) => r.razao_social,
+    documento: (r) => r.documento ?? "",
+    contato: (r) => r.contato_nome ?? "",
+    telefone: (r) => r.contato_telefone ?? "",
+    cidade: (r) => r.cidade ?? "",
+    condicao: (r) => r.condicao_pagamento_padrao ?? "",
+    produtos: (r) => contagem.get(r.id) ?? 0,
+    ativo: (r) => (r.ativo ? 1 : 0),
+  }, { key: "nome" });
 
   const baseProdutosForn = useMemo(
     () => (fornId ? produtos.filter((p) => p.fornecedor_id === fornId) : ([] as SupProduto[])),
@@ -932,7 +959,7 @@ export function ProdutosTab() {
 
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" ref={topoRef}>
       <Card className="border-primary/30">
         <CardContent className="py-2 flex items-center justify-between flex-wrap gap-3">
           <div className="min-w-0">
@@ -962,81 +989,25 @@ export function ProdutosTab() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-3 lg:grid-cols-[320px_1fr]">
+      <div className="grid gap-3 lg:grid-cols-[360px_1fr]">
         <Card className="border-l-4 border-l-teal-500 bg-teal-50/40 dark:bg-teal-950/10">
           <CardHeader className="py-2">
-            <div className="flex items-baseline justify-between gap-2">
-              <CardTitle className="text-base text-teal-700 dark:text-teal-400">Fornecedores</CardTitle>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {fornecedoresFiltrados.length} {fornecedoresFiltrados.length === 1 ? "registro" : "registros"}
-              </span>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base text-teal-700 dark:text-teal-400">Dados do fornecedor</CardTitle>
+              {fornecedorSel && (
+                <Button
+                  size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
+                  onClick={() => { setFornEdit(fornecedorSel); setFornDialogOpen(true); }}
+                >
+                  <Pencil className="h-3 w-3 mr-1" /> Editar
+                </Button>
+              )}
             </div>
           </CardHeader>
-          <CardContent className="p-3 pt-0 space-y-2">
-            <div className="space-y-0.5">
-              <Label className="text-xs text-muted-foreground font-medium">Buscar fornecedor</Label>
-              <Input value={buscaForn} onChange={(e) => setBuscaForn(e.target.value)} placeholder="Razão social, fantasia…" className="h-8" />
-            </div>
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Checkbox checked={mostrarInativos} onCheckedChange={(v) => setMostrarInativos(v === true)} />
-              Mostrar inativos
-            </label>
-            <div className="rounded-lg border border-border/60 bg-card overflow-auto max-h-[60vh] shadow-xs" style={TABLE_FONT_STYLE}>
-              {fornecedoresFiltrados.length === 0 ? (
-                <div className="p-4 text-sm text-muted-foreground text-center">Nenhum fornecedor.</div>
-              ) : fornecedoresFiltrados.map((f) => (
-                <div
-                  key={f.id}
-                  className={`flex items-stretch border-b last:border-b-0 border-l-2 ${
-                    fornId === f.id ? "bg-teal-100/70 dark:bg-teal-900/30 border-l-teal-500" : "border-l-transparent"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => { setFornId(f.id); setSelId(null); }}
-                    className="flex-1 min-w-0 text-left px-3 py-2 hover:bg-muted/20"
-                  >
-                    <div className="text-[13px] font-medium flex items-center justify-between gap-2">
-                      <span className="truncate">{f.nome_fantasia || f.razao_social}</span>
-                      <span className="text-[11px] text-muted-foreground whitespace-nowrap tabular-nums">
-                        {contagem.get(f.id) ?? 0} produtos
-                      </span>
-                    </div>
-                    {!f.ativo && <div className="text-[11px] text-muted-foreground">inativo</div>}
-                  </button>
-                  <button
-                    type="button"
-                    title="Editar fornecedor"
-                    onClick={() => { setFornEdit(f); setFornDialogOpen(true); }}
-                    className="px-2 text-muted-foreground hover:text-foreground hover:bg-muted/30"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    title="Apagar fornecedor"
-                    onClick={() => setExcluirForn(f)}
-                    className="px-2 text-muted-foreground hover:text-rose-700 hover:bg-rose-50"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {fornecedorSel && (
+          <CardContent className="p-3 pt-0">
+            {fornecedorSel ? (
               <div className="rounded-lg border border-teal-200 dark:border-teal-900 bg-card/70 p-2.5 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-400">
-                    Dados do fornecedor
-                  </span>
-                  <Button
-                    size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
-                    onClick={() => { setFornEdit(fornecedorSel); setFornDialogOpen(true); }}
-                  >
-                    <Pencil className="h-3 w-3 mr-1" /> Editar
-                  </Button>
-                </div>
+
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                   <div className="min-w-0 col-span-2">
                     <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Razão social</div>
@@ -1103,6 +1074,10 @@ export function ProdutosTab() {
                     </div>
                   )}
                 </div>
+              </div>
+            ) : (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                Selecione um fornecedor na lista abaixo.
               </div>
             )}
           </CardContent>
@@ -1322,6 +1297,97 @@ export function ProdutosTab() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="border-l-4 border-l-teal-500 bg-teal-50/40 dark:bg-teal-950/10">
+        <CardHeader className="py-2">
+          <div className="flex items-baseline justify-between gap-2">
+            <CardTitle className="text-base text-teal-700 dark:text-teal-400">Fornecedores</CardTitle>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {fornecedoresFiltrados.length} {fornecedoresFiltrados.length === 1 ? "registro" : "registros"}
+            </span>
+          </div>
+        </CardHeader>
+        <CardContent className="p-3 pt-0 space-y-2">
+          <div className="flex items-end gap-3 flex-wrap">
+            <div className="space-y-0.5 w-full sm:w-72">
+              <Label className="text-xs text-muted-foreground font-medium">Buscar fornecedor</Label>
+              <Input value={buscaForn} onChange={(e) => setBuscaForn(e.target.value)} placeholder="Razão social, fantasia…" className="h-8" />
+            </div>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground h-8">
+              <Checkbox checked={mostrarInativos} onCheckedChange={(v) => setMostrarInativos(v === true)} />
+              Mostrar inativos
+            </label>
+          </div>
+
+          <div className={`${TABLE_WRAPPER_CLASS} max-h-[45vh] overflow-y-auto`} style={TABLE_FONT_STYLE}>
+            <table className="w-full">
+              <thead className="bg-muted/40 sticky top-0 z-10">
+                <tr>
+                  <SortTh label="Fornecedor" sortKey="nome" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={`${TH_CLASS} text-left`} />
+                  <SortTh label="Razão social" sortKey="razao_social" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={`${TH_CLASS} text-left`} />
+                  <SortTh label="CNPJ / Doc." sortKey="documento" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={`${TH_CLASS} text-left`} />
+                  <SortTh label="Contato" sortKey="contato" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={`${TH_CLASS} text-left`} />
+                  <SortTh label="Telefone" sortKey="telefone" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={TH_CLASS} />
+                  <SortTh label="Cidade / UF" sortKey="cidade" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={`${TH_CLASS} text-left`} />
+                  <SortTh label="Cond. pagamento" sortKey="condicao" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={`${TH_CLASS} text-left`} />
+                  <SortTh label="Produtos" sortKey="produtos" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={TH_CLASS} />
+                  <SortTh label="Situação" sortKey="ativo" current={fornSortKey} dir={fornSortDir} onSort={fornToggle} className={TH_CLASS} />
+                  <th className={`${TH_CLASS} w-16`}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {fornecedoresOrdenados.length === 0 ? (
+                  <tr><td colSpan={10} className="p-4 text-center text-muted-foreground">Nenhum fornecedor.</td></tr>
+                ) : fornecedoresOrdenados.map((f) => (
+                  <tr
+                    key={f.id}
+                    onClick={() => selecionarFornecedor(f.id)}
+                    className={`border-t cursor-pointer hover:bg-muted/20 ${fornId === f.id ? "bg-teal-100/70 dark:bg-teal-900/30" : ""}`}
+                  >
+                    <td className={`${TD_CLASS} text-left font-medium`}>{f.nome_fantasia || f.razao_social}</td>
+                    <td className={`${TD_CLASS} text-left`}>{f.razao_social}</td>
+                    <td className={`${TD_CLASS} text-left`}>{f.documento ?? "—"}</td>
+                    <td className={`${TD_CLASS} text-left`}>{f.contato_nome ?? "—"}</td>
+                    <td className={TD_CLASS}>{f.contato_telefone ?? "—"}</td>
+                    <td className={`${TD_CLASS} text-left`}>
+                      {f.cidade ? `${f.cidade}${f.uf ? ` — ${f.uf}` : ""}` : (f.uf || "—")}
+                    </td>
+                    <td className={`${TD_CLASS} text-left`}>{f.condicao_pagamento_padrao ?? "—"}</td>
+                    <td className={`${TD_CLASS} tabular-nums`}>{contagem.get(f.id) ?? 0}</td>
+                    <td className={TD_CLASS}>
+                      <span className={`rounded font-semibold ${BADGE_SM_CLASS} ${
+                        f.ativo
+                          ? "bg-teal-100 text-teal-900 dark:bg-teal-900/40 dark:text-teal-200"
+                          : "bg-muted text-muted-foreground"
+                      }`}>
+                        {f.ativo ? "Ativo" : "Inativo"}
+                      </span>
+                    </td>
+                    <td className={TD_CLASS}>
+                      <div className="flex items-center justify-center gap-0.5">
+                        <Button
+                          size="icon" variant="ghost" className="h-6 w-6" title="Editar fornecedor"
+                          onClick={(e) => { e.stopPropagation(); setFornEdit(f); setFornDialogOpen(true); }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-rose-700" title="Apagar fornecedor"
+                          onClick={(e) => { e.stopPropagation(); setExcluirForn(f); }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+
 
 
       <Dialog open={prodOpen} onOpenChange={setProdOpen}>
