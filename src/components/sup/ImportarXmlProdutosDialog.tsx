@@ -60,22 +60,22 @@ type Linha = {
   produto_id: string | null;
 };
 
-type IndLinha = {
-  rotulo: string;
-  qtd: number;
-  preco: string;
-  marcado: boolean;
-  cod: string | null;
-};
-
-type IndBloco = {
+/** Uma linha da tabela do modo industrialização = um produto próprio do fornecedor. */
+type IndProduto = {
+  key: string;
   tipo: "tingimento" | "maoobra";
+  numeroCor: string;
+  corNome: string;
   nome: string;
+  codFornecedor: string;
+  qtd: number;
+  marcado: boolean;
   unidade: string;
   departamento: string;
   grupo_id: string;
-  linhas: IndLinha[];
+  preco: string;
 };
+
 
 /** 1113.1 → "1.113,10" (formato brasileiro, 2 casas). */
 function fmtBR2(v: number): string {
