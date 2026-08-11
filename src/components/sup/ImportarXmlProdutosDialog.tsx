@@ -399,6 +399,183 @@ export function ImportarXmlProdutosDialog({
     }
   }
 
+  // ── Modo industrialização ────────────────────────────────────────────────
+  const indMarcadas = blocos.reduce((t, b) => t + b.linhas.filter((l) => l.marcado).length, 0);
+  const indSemUnidade = blocos.some((b) => b.linhas.some((l) => l.marcado) && !b.unidade);
+
+  const atualizarBloco = (tipo: IndBloco["tipo"], patch: Partial<IndBloco>) =>
+    setBlocos((bs) => bs.map((b) => (b.tipo === tipo ? { ...b, ...patch } : b)));
+
+  const atualizarIndLinha = (tipo: IndBloco["tipo"], rotulo: string, patch: Partial<IndLinha>) =>
+    setBlocos((bs) =>
+      bs.map((b) =>
+        b.tipo === tipo
+          ? { ...b, linhas: b.linhas.map((l) => (l.rotulo === rotulo ? { ...l, ...patch } : l)) }
+          : b,
+      ),
+    );
+
+  const produtoDoBloco = (nome: string) =>
+    produtosDoFornecedor.find((p) => normalizarNome(p.nome) === normalizarNome(nome)) ?? null;
+
+  function combinacaoExistente(nomeBloco: string, rotulo: string) {
+    const prod = produtoDoBloco(nomeBloco);
+    if (!prod) return null;
+    const v = vinculoDoProduto(prod.id);
+    if (!v) return null;
+    return (
+      variacaoPrecos.find(
+        (c) =>
+          c.fornecedor_produto_id === v.id &&
+          normalizarNome(String(c.variacao_1_valor ?? "")) === normalizarNome(rotulo),
+      ) ?? null
+    );
+  }
+
+  const custoTotalCor = (rotulo: string) =>
+    blocos.reduce((t, b) => {
+      const l = b.linhas.find((x) => x.rotulo === rotulo);
+      return t + (l ? precoNum(l.preco) : 0);
+    }, 0);
+
+  async function importarIndustrializacao() {
+    if (!fornecedor || !nota || !ind) return;
+    setSalvando(true);
+    const motivo = `Importação XML NF-e nº ${nota.numero ?? "—"} (industrialização)`;
+    const erros: string[] = [];
+    let criados = 0;
+    let precos = 0;
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      let corVarId = variacoes.find((v) => v.ativo && normalizarNome(v.nome) === "cor")?.id ?? null;
+      if (!corVarId) {
+        const { data, error } = await (supabase as any)
+          .from("sup_variacoes").insert({ nome: "Cor" }).select("id").single();
+        if (error) throw error;
+        corVarId = data.id as string;
+      }
+
+      for (const bloco of blocos) {
+        const marcadas = bloco.linhas.filter((l) => l.marcado);
+        if (marcadas.length === 0) continue;
+        try {
+          if (!bloco.nome.trim()) throw new Error("nome vazio");
+          if (!bloco.unidade) throw new Error("unidade não informada");
+
+          const { data: vals, error: eV } = await (supabase as any)
+            .from("sup_variacao_valores").select("id,valor").eq("variacao_id", corVarId);
+          if (eV) throw eV;
+          const jaTem = new Set((vals ?? []).map((v: any) => normalizarNome(String(v.valor))));
+          for (const l of marcadas) {
+            if (jaTem.has(normalizarNome(l.rotulo))) continue;
+            const { error } = await (supabase as any)
+              .from("sup_variacao_valores").insert({ variacao_id: corVarId, valor: l.rotulo });
+            if (error) throw error;
+            jaTem.add(normalizarNome(l.rotulo));
+          }
+
+          const prod = produtoDoBloco(bloco.nome) as any;
+          let produtoId: string | null = prod?.id ?? null;
+          if (!produtoId) {
+            const { data, error } = await (supabase as any)
+              .from("sup_produtos")
+              .insert({
+                nome: bloco.nome.trim(),
+                unidade: bloco.unidade,
+                departamento: bloco.departamento || null,
+                grupo_id: bloco.grupo_id || null,
+                ativo: true,
+                fornecedor_id: fornecedor.id,
+                preco_por_variacao: true,
+                variacao_1_id: corVarId,
+                created_by: u.user?.id ?? null,
+              })
+              .select("id")
+              .single();
+            if (error) throw error;
+            produtoId = data.id as string;
+            criados += 1;
+          } else if (!prod.preco_por_variacao || !prod.variacao_1_id) {
+            const { error } = await (supabase as any)
+              .from("sup_produtos")
+              .update({ preco_por_variacao: true, variacao_1_id: corVarId })
+              .eq("id", produtoId);
+            if (error) throw error;
+          }
+
+          const codigos = new Set(marcadas.map((l) => l.cod ?? ""));
+          const codUnico = codigos.size === 1 ? (marcadas[0].cod || null) : null;
+          const vincExistente = vinculos.find(
+            (v) => v.fornecedor_id === fornecedor.id && v.produto_id === produtoId,
+          ) ?? null;
+          let vincId = vincExistente?.id ?? null;
+          if (!vincId) {
+            const { data, error } = await (supabase as any)
+              .from("sup_fornecedor_produtos")
+              .insert({ fornecedor_id: fornecedor.id, produto_id: produtoId, cod_fornecedor: codUnico })
+              .select("id")
+              .single();
+            if (error) throw error;
+            vincId = data.id as string;
+          } else if (codUnico && !vincExistente?.cod_fornecedor) {
+            const { error } = await (supabase as any)
+              .from("sup_fornecedor_produtos").update({ cod_fornecedor: codUnico }).eq("id", vincId);
+            if (error) throw error;
+          }
+
+          const { data: combs, error: eC } = await (supabase as any)
+            .from("sup_produto_variacao_precos").select("*").eq("fornecedor_produto_id", vincId);
+          if (eC) throw eC;
+
+          for (const l of marcadas) {
+            const novoPreco = precoNum(l.preco);
+            if (novoPreco <= 0) continue;
+            const c = (combs ?? []).find(
+              (x: any) => normalizarNome(String(x.variacao_1_valor ?? "")) === normalizarNome(l.rotulo),
+            );
+            if (!c) {
+              const { data: nc, error } = await (supabase as any)
+                .from("sup_produto_variacao_precos")
+                .insert({ fornecedor_produto_id: vincId, variacao_1_valor: l.rotulo, variacao_2_valor: null })
+                .select("id")
+                .single();
+              if (error) throw error;
+              await aplicarPrecoVariacaoTabela({
+                fornecedor_produto_id: vincId!,
+                variacao_preco_id: nc.id,
+                preco_anterior: null,
+                preco_novo: novoPreco,
+                motivo,
+              });
+              precos += 1;
+            } else {
+              const atual = n(c.preco_tabela);
+              if (novoPreco !== atual) {
+                await aplicarPrecoVariacaoTabela({
+                  fornecedor_produto_id: vincId!,
+                  variacao_preco_id: c.id,
+                  preco_anterior: atual > 0 ? atual : null,
+                  preco_novo: novoPreco,
+                  motivo,
+                });
+                precos += 1;
+              }
+            }
+          }
+        } catch (e: any) {
+          erros.push(`${bloco.nome}: ${e?.message || "erro ao importar"}`);
+        }
+      }
+      toast.success(`${criados} produtos cadastrados · ${precos} preços atualizados`);
+      if (erros.length) toast.error(`Falhas:\n${erros.join("\n")}`);
+      onImportado();
+      fechar();
+    } finally {
+      setSalvando(false);
+      setConfirmar(false);
+    }
+  }
+
   function fechar() {
     setOpen(false);
     setLinhas([]);
@@ -474,6 +651,186 @@ export function ImportarXmlProdutosDialog({
             <DialogTitle>Conferir itens da NF-e</DialogTitle>
           </DialogHeader>
 
+          {ind && (
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <span>
+                  Nota de industrialização detectada. As linhas de retorno (CFOP 5925) são material do
+                  cliente e não entram no cadastro — só os itens de industrialização serão importados.
+                </span>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                NF-e nº {nota?.numero ?? "—"} — {emitenteNome} — emissão {fmtDataBR(nota?.emissao)} —{" "}
+                {ind.cores.length} cor(es)
+              </div>
+
+              {ind.naoIdentificados.length > 0 && (
+                <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+                  {ind.naoIdentificados.length} linha(s) não foram associadas a uma cor e não serão
+                  importadas: {ind.naoIdentificados.map((i) => i.xProd).join(", ")}
+                </div>
+              )}
+
+              <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+                {blocos.map((b) => (
+                  <div key={b.tipo} className="rounded-md border border-border/60 p-3 space-y-2">
+                    <div className="flex flex-wrap items-end gap-2">
+                      <div className="space-y-1">
+                        <div className="text-[10.5px] text-muted-foreground">Produto</div>
+                        <Input
+                          value={b.nome}
+                          onChange={(e) => atualizarBloco(b.tipo, { nome: e.target.value })}
+                          className="h-7 w-[220px] text-[11px]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-[10.5px] text-muted-foreground">Unidade</div>
+                        <Select value={b.unidade} onValueChange={(v) => atualizarBloco(b.tipo, { unidade: v })}>
+                          <SelectTrigger className="h-7 w-[120px] text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
+                          <SelectContent>
+                            {unidades.map((u) => (<SelectItem key={u} value={u}>{u}</SelectItem>))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-[10.5px] text-muted-foreground">Departamento</div>
+                        <Select
+                          value={b.departamento || "__none"}
+                          onValueChange={(v) => atualizarBloco(b.tipo, { departamento: v === "__none" ? "" : v })}
+                        >
+                          <SelectTrigger className="h-7 w-[160px] text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none">—</SelectItem>
+                            {departamentos.filter((d) => d.ativo).map((d) => (
+                              <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-[10.5px] text-muted-foreground">Grupo</div>
+                        <Select
+                          value={b.grupo_id || "__none"}
+                          onValueChange={(v) => atualizarBloco(b.tipo, { grupo_id: v === "__none" ? "" : v })}
+                        >
+                          <SelectTrigger className="h-7 w-[160px] text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none">—</SelectItem>
+                            {grupos.filter((g) => g.ativo).map((g) => (
+                              <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className={TABLE_WRAPPER_CLASS} style={TABLE_FONT_STYLE}>
+                      <table className="w-full">
+                        <thead className="bg-muted/40">
+                          <tr>
+                            <th className={TH_CLASS} />
+                            <th className={`${TH_CLASS} text-left`}>Cor</th>
+                            <th className={TH_CLASS}>Qtd</th>
+                            <th className={TH_CLASS}>Preço unit.</th>
+                            <th className={TH_CLASS}>Status</th>
+                            <th className={TH_CLASS}>Preço atual</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {b.linhas.map((l) => {
+                            const comb = combinacaoExistente(b.nome, l.rotulo);
+                            const atual = comb ? (n(comb.preco_tabela) > 0 ? n(comb.preco_tabela) : null) : null;
+                            const varPct = atual != null ? variacaoPercentual(atual, precoNum(l.preco)) : null;
+                            return (
+                              <tr key={l.rotulo} className="border-t border-border/50">
+                                <td className={TD_CLASS}>
+                                  <Checkbox
+                                    checked={l.marcado}
+                                    onCheckedChange={(v) => atualizarIndLinha(b.tipo, l.rotulo, { marcado: v === true })}
+                                  />
+                                </td>
+                                <td className={`${TD_CLASS} text-left`}>{l.rotulo}</td>
+                                <td className={`${TD_CLASS} tabular-nums`}>{fmtBR2(l.qtd)}</td>
+                                <td className={TD_CLASS}>
+                                  <Input
+                                    value={l.preco}
+                                    onChange={(e) => atualizarIndLinha(b.tipo, l.rotulo, { preco: e.target.value })}
+                                    onBlur={() => atualizarIndLinha(b.tipo, l.rotulo, { preco: fmtBR4(precoNum(l.preco)) })}
+                                    className="h-7 w-24 text-[11px] tabular-nums text-right"
+                                    inputMode="decimal"
+                                  />
+                                </td>
+                                <td className={TD_CLASS}>
+                                  {comb ? (
+                                    <Badge className={`${BADGE_SM_CLASS} bg-amber-100 text-amber-900`}>Já existe</Badge>
+                                  ) : (
+                                    <Badge className={`${BADGE_SM_CLASS} bg-sky-100 text-sky-900`}>Novo</Badge>
+                                  )}
+                                </td>
+                                <td className={`${TD_CLASS} tabular-nums`}>
+                                  {atual == null ? "—" : (
+                                    <span>
+                                      {fmtMoeda(atual)}
+                                      {varPct != null && (
+                                        <span className={varPct < 0 ? "text-emerald-600 ml-1" : "text-rose-600 ml-1"}>
+                                          {varPct > 0 ? "+" : ""}{varPct.toFixed(1)}%
+                                        </span>
+                                      )}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 space-y-1">
+                  <div className="text-[10.5px] text-muted-foreground">Custo total por cor</div>
+                  {ind.cores.map((c) => {
+                    const ting = blocos.find((b) => b.tipo === "tingimento")?.linhas.find((l) => l.rotulo === c.rotulo);
+                    const mo = blocos.find((b) => b.tipo === "maoobra")?.linhas.find((l) => l.rotulo === c.rotulo);
+                    return (
+                      <div key={c.rotulo} className="text-[11px] tabular-nums">
+                        {c.nome} — {fmtBR2(c.qtdTingimento)} {blocos[0]?.unidade || c.uCom} —{" "}
+                        {ting ? fmtBR4(precoNum(ting.preco)) : "—"}
+                        {mo ? ` + ${fmtBR4(precoNum(mo.preco))}` : ""} = {fmtMoeda(custoTotalCor(c.rotulo))}/
+                        {blocos[0]?.unidade || c.uCom}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {ind.retorno.length > 0 && (
+                  <div className="rounded-md border border-border/60 px-3 py-2 text-muted-foreground">
+                    <button
+                      type="button"
+                      className="text-[11px] underline"
+                      onClick={() => setVerRetorno((v) => !v)}
+                    >
+                      Retorno de industrialização (não entra no cadastro) — {ind.retorno.length} item(ns)
+                    </button>
+                    {verRetorno && (
+                      <div className="mt-1 space-y-0.5">
+                        {ind.retorno.map((i) => (
+                          <div key={i.nItem} className="text-[11px] tabular-nums">
+                            {i.cProd} — {i.xProd} — {fmtBR2(i.qCom)} {i.uCom} — CFOP {i.cfop}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!ind && (
           <div className="space-y-2">
             {semCnpj && (
               <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
@@ -788,12 +1145,17 @@ export function ImportarXmlProdutosDialog({
               </table>
             </div>
           </div>
+          )}
 
           <DialogFooter>
             <Button variant="outline" onClick={fechar}>Cancelar</Button>
             <Button
-              disabled={marcados.length === 0 || semUnidade > 0 || salvando}
-              title={semUnidade > 0 ? "Preencha a unidade das linhas marcadas" : undefined}
+              disabled={
+                ind
+                  ? indMarcadas === 0 || indSemUnidade || salvando
+                  : marcados.length === 0 || semUnidade > 0 || salvando
+              }
+              title={(ind ? indSemUnidade : semUnidade > 0) ? "Preencha a unidade das linhas marcadas" : undefined}
               onClick={() => setConfirmar(true)}
             >
               {salvando && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
@@ -808,13 +1170,14 @@ export function ImportarXmlProdutosDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar importação</AlertDialogTitle>
             <AlertDialogDescription>
-              Serão cadastrados {qtdNovos} produtos novos e atualizados até {qtdExistentes} preços.
-              Confirma?
+              {ind
+                ? `Serão criados/atualizados ${blocos.filter((b) => b.linhas.some((l) => l.marcado)).length} produto(s) e até ${indMarcadas} preço(s) por cor. Confirma?`
+                : `Serão cadastrados ${qtdNovos} produtos novos e atualizados até ${qtdExistentes} preços. Confirma?`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void importar()}>Confirmar</AlertDialogAction>
+            <AlertDialogAction onClick={() => void (ind ? importarIndustrializacao() : importar())}>Confirmar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
