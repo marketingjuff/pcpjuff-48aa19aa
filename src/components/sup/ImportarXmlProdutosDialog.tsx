@@ -221,13 +221,16 @@ export function ImportarXmlProdutosDialog({
     if (notaEhIndustrializacao(parsed.itens)) {
       const g = agruparNotaIndustrializacao(parsed.itens);
       setInd(g);
-      setBlocos(montarBlocos(g));
+      setIndProdutos(montarIndProdutos(g));
+      setFalhas([]);
+      setNadaGravado(false);
       setLinhas([]);
     } else {
       setInd(null);
-      setBlocos([]);
+      setIndProdutos([]);
       setLinhas(montarLinhas(parsed));
     }
+
     setOpen(true);
     return true;
   }
