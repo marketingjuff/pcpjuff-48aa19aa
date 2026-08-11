@@ -115,10 +115,11 @@ export function ImportarXmlProdutosDialog({
   const [massaDep, setMassaDep] = useState("");
   const [massaGrupo, setMassaGrupo] = useState("");
   const [ind, setInd] = useState<NotaIndustrializacao | null>(null);
-  const [blocos, setBlocos] = useState<IndBloco[]>([]);
+  const [indProdutos, setIndProdutos] = useState<IndProduto[]>([]);
+  const [falhas, setFalhas] = useState<{ produto: string; erro: string }[]>([]);
+  const [nadaGravado, setNadaGravado] = useState(false);
   const [verRetorno, setVerRetorno] = useState(false);
-  const { data: variacoes = [] } = useSupVariacoes();
-  const { data: variacaoPrecos = [] } = useSupVariacaoPrecos();
+
 
   const produtosDoFornecedor = useMemo(
     () => (fornecedor ? produtos.filter((p) => p.fornecedor_id === fornecedor.id) : []),
