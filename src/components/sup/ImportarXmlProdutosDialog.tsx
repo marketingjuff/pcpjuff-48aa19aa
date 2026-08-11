@@ -1205,7 +1205,7 @@ export function ImportarXmlProdutosDialog({
               type="button"
               disabled={
                 ind
-                  ? indMarcadas === 0 || indSemUnidade || salvando
+                  ? indMarcados.length === 0 || indSemUnidade || salvando
                   : marcados.length === 0 || semUnidade > 0 || salvando
               }
               title={(ind ? indSemUnidade : semUnidade > 0) ? "Preencha a unidade das linhas marcadas" : undefined}
@@ -1213,6 +1213,7 @@ export function ImportarXmlProdutosDialog({
             >
               {salvando && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               Importar selecionados
+
             </Button>
           </DialogFooter>
 
