@@ -619,6 +619,7 @@ export function ImportarXmlProdutosDialog({
       />
       {mostrarBotao && (
         <Button
+          type="button"
           size="sm"
           variant="outline"
           className="h-8"
@@ -854,6 +855,7 @@ export function ImportarXmlProdutosDialog({
             )}
             <div className="flex gap-2">
               <Button
+                type="button"
                 size="sm"
                 variant="outline"
                 className="h-7"
@@ -862,6 +864,7 @@ export function ImportarXmlProdutosDialog({
                 Marcar todos
               </Button>
               <Button
+                type="button"
                 size="sm"
                 variant="outline"
                 className="h-7"
@@ -924,6 +927,7 @@ export function ImportarXmlProdutosDialog({
                       </SelectContent>
                     </Select>
                     <Button
+                      type="button"
                       size="sm"
                       variant="outline"
                       className="h-7 text-[10.5px]"
@@ -1027,6 +1031,7 @@ export function ImportarXmlProdutosDialog({
                             <div className="flex items-center gap-1">
                               <span className="truncate" title={nomeCad}>{nomeCad}</span>
                               <Button
+                                type="button"
                                 size="sm"
                                 variant="ghost"
                                 className="h-6 px-1 text-[10px]"
@@ -1148,8 +1153,9 @@ export function ImportarXmlProdutosDialog({
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={fechar}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={fechar}>Cancelar</Button>
             <Button
+              type="button"
               disabled={
                 ind
                   ? indMarcadas === 0 || indSemUnidade || salvando
@@ -1162,6 +1168,7 @@ export function ImportarXmlProdutosDialog({
               Importar selecionados
             </Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
 
@@ -1176,8 +1183,17 @@ export function ImportarXmlProdutosDialog({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void (ind ? importarIndustrializacao() : importar())}>Confirmar</AlertDialogAction>
+            <AlertDialogCancel type="button">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                void (ind ? importarIndustrializacao() : importar());
+              }}
+            >
+              Confirmar
+            </AlertDialogAction>
+
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
