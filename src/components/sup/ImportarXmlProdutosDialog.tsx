@@ -1148,8 +1148,9 @@ export function ImportarXmlProdutosDialog({
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={fechar}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={fechar}>Cancelar</Button>
             <Button
+              type="button"
               disabled={
                 ind
                   ? indMarcadas === 0 || indSemUnidade || salvando
@@ -1162,6 +1163,7 @@ export function ImportarXmlProdutosDialog({
               Importar selecionados
             </Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
 
