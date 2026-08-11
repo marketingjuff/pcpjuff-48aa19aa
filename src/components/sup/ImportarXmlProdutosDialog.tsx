@@ -16,8 +16,7 @@ import { Combobox } from "@/components/shared/combobox";
 import {
   TABLE_FONT_STYLE, TABLE_WRAPPER_CLASS, TH_CLASS, TD_CLASS, BADGE_SM_CLASS,
 } from "@/components/shared/table-styles";
-import { aplicarPrecoTabela, aplicarPrecoVariacaoTabela, useSupVariacaoPrecos } from "@/components/sup/ProdutosTab";
-import { useSupVariacoes } from "@/components/sup/VariacoesConfig";
+import { aplicarPrecoTabela } from "@/components/sup/ProdutosTab";
 import {
   fmtDataBR, fmtMoeda, n, variacaoPercentual,
   type SupDepartamento, type SupFornecedor, type SupFornecedorProduto,
@@ -25,9 +24,10 @@ import {
 } from "@/lib/sup";
 import {
   agruparNotaIndustrializacao, cfopEhCompra, mapearUnidadeNFe, normalizarNome, notaEhIndustrializacao,
-  parseNFe, rotuloCfop, soDigitos,
+  numeroCorDeCodigo, parseNFe, rotuloCfop, soDigitos,
   type NFeItem, type NFeNota, type NFeParsed, type NotaIndustrializacao,
 } from "@/lib/nfe-xml";
+
 
 type Props = {
   fornecedor: SupFornecedor | null;
