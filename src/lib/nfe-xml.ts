@@ -257,10 +257,17 @@ export function extrairCorItem(
   return { numero: m[1], nome };
 }
 
-/** Rótulo do valor da variação Cor. */
+/** Rótulo da cor — só exibição na tela. */
 export function rotuloCor(numero: string, nome: string): string {
   return `${numero} - ${nome}`.trim();
 }
+
+/** "C20869V2587" → "20869". Reconhece o produto quando a versão do código muda. */
+export function numeroCorDeCodigo(cod: string): string | null {
+  const m = /^C(\d+)V(\d+)$/i.exec(String(cod ?? "").trim());
+  return m ? m[1] : null;
+}
+
 
 export type IndCor = {
   numero: string;
