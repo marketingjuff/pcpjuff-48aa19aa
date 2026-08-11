@@ -573,14 +573,22 @@ export function ImportarXmlProdutosDialog({
           erros.push(`${bloco.nome}: ${e?.message || "erro ao importar"}`);
         }
       }
-      toast.success(`${criados} produtos cadastrados · ${precos} preços atualizados`);
-      if (erros.length) toast.error(`Falhas:\n${erros.join("\n")}`);
+      if (criados === 0 && precos === 0 && erros.length === 0) {
+        toast.warning("Nada para importar: marque ao menos uma cor com preço.");
+      } else {
+        toast.success(`${criados} produtos cadastrados · ${precos} preços atualizados`);
+      }
+      if (erros.length) toast.error(`Falhas: ${erros.join(" | ")}`);
       onImportado();
-      fechar();
+      if (erros.length === 0) fechar();
+    } catch (e: any) {
+      console.error("[XML industrialização] falha:", e);
+      toast.error(e?.message || "Erro ao importar industrialização.");
     } finally {
       setSalvando(false);
       setConfirmar(false);
     }
+
   }
 
   function fechar() {
