@@ -221,6 +221,8 @@ export function rotuloCfop(cfop: string): string {
 // Nota de industrialização (tinturaria)
 // ─────────────────────────────────────────────────────────────────────────────
 
+const nq = (v: unknown): number => (Number.isFinite(Number(v)) ? Number(v) : 0);
+
 /** CFOP 5125/6125 — industrialização efetuada para outra empresa. */
 export function cfopEhIndustrializacao(cfop: string): boolean {
   return soDigitos(cfop).slice(-3) === "125";
@@ -298,10 +300,10 @@ export function agruparNotaIndustrializacao(itens: NFeItem[]): NotaIndustrializa
       const chave = `${cor.numero}||${normalizarNome(cor.nome)}`;
       const atual = mapa.get(chave);
       if (atual) {
-        atual.qtdTingimento += n(it.qCom);
+        atual.qtdTingimento += nq(it.qCom);
         if (it.nItem >= atual._nItemTing) {
           atual._nItemTing = it.nItem;
-          atual.precoTingimento = n(it.vUnCom);
+          atual.precoTingimento = nq(it.vUnCom);
         }
       } else {
         mapa.set(chave, {
@@ -309,8 +311,8 @@ export function agruparNotaIndustrializacao(itens: NFeItem[]): NotaIndustrializa
           nome: cor.nome,
           rotulo: rotuloCor(cor.numero, cor.nome),
           codTingimento: it.cProd,
-          qtdTingimento: n(it.qCom),
-          precoTingimento: n(it.vUnCom),
+          qtdTingimento: nq(it.qCom),
+          precoTingimento: nq(it.vUnCom),
           codMaoObra: null,
           qtdMaoObra: 0,
           precoMaoObra: null,
@@ -319,19 +321,19 @@ export function agruparNotaIndustrializacao(itens: NFeItem[]): NotaIndustrializa
           _nItemMo: -1,
         });
       }
-      corrente = { chave, qtd: n(it.qCom) };
+      corrente = { chave, qtd: nq(it.qCom) };
       continue;
     }
     const acc = corrente ? mapa.get(corrente.chave) : null;
-    if (!acc || !corrente || n(it.qCom) !== corrente.qtd) {
+    if (!acc || !corrente || nq(it.qCom) !== corrente.qtd) {
       naoIdentificados.push(it);
       continue;
     }
     acc.codMaoObra = it.cProd || acc.codMaoObra;
-    acc.qtdMaoObra += n(it.qCom);
+    acc.qtdMaoObra += nq(it.qCom);
     if (it.nItem >= acc._nItemMo) {
       acc._nItemMo = it.nItem;
-      acc.precoMaoObra = n(it.vUnCom);
+      acc.precoMaoObra = nq(it.vUnCom);
     }
   }
 
