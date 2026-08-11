@@ -216,3 +216,129 @@ export function rotuloCfop(cfop: string): string {
   const s = soDigitos(cfop).slice(-3);
   return CFOP_ROTULO[s] ?? "Outro";
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Nota de industrialização (tinturaria)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const nq = (v: unknown): number => (Number.isFinite(Number(v)) ? Number(v) : 0);
+
+/** CFOP 5125/6125 — industrialização efetuada para outra empresa. */
+export function cfopEhIndustrializacao(cfop: string): boolean {
+  return soDigitos(cfop).slice(-3) === "125";
+}
+
+const CFOP_RETORNO_IND = new Set([
+  "924", "925", "926", "901", "902", "903", "904", "905", "906", "907",
+]);
+
+/** CFOP de retorno de material do cliente (não entra no cadastro). */
+export function cfopEhRetornoIndustrializacao(cfop: string): boolean {
+  return CFOP_RETORNO_IND.has(soDigitos(cfop).slice(-3));
+}
+
+/** A nota é de industrialização quando algum item tem CFOP terminando em 125. */
+export function notaEhIndustrializacao(itens: NFeItem[]): boolean {
+  return itens.some((it) => cfopEhIndustrializacao(it.cfop));
+}
+
+/** "C20869V2587" + "Cod Prod 250209 Lote=3570/2 AMARELO CANARIO" → { numero, nome }. */
+export function extrairCorItem(
+  cProd: string,
+  xProd: string,
+): { numero: string; nome: string } | null {
+  const m = /^C(\d+)V(\d+)$/i.exec(String(cProd ?? "").trim());
+  if (!m) return null;
+  const nome = String(xProd ?? "")
+    .replace(/cod\s*prod\s*\d+/i, " ")
+    .replace(/lote\s*=\s*\S+/i, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return { numero: m[1], nome };
+}
+
+/** Rótulo do valor da variação Cor. */
+export function rotuloCor(numero: string, nome: string): string {
+  return `${numero} - ${nome}`.trim();
+}
+
+export type IndCor = {
+  numero: string;
+  nome: string;
+  rotulo: string;
+  codTingimento: string;
+  qtdTingimento: number;
+  precoTingimento: number;
+  codMaoObra: string | null;
+  qtdMaoObra: number;
+  precoMaoObra: number | null;
+  uCom: string;
+};
+
+export type NotaIndustrializacao = {
+  cores: IndCor[];
+  retorno: NFeItem[];
+  naoIdentificados: NFeItem[];
+};
+
+/** Consolida a nota de industrialização por cor. Lote nunca aparece na saída. */
+export function agruparNotaIndustrializacao(itens: NFeItem[]): NotaIndustrializacao {
+  const retorno = itens.filter((it) => cfopEhRetornoIndustrializacao(it.cfop));
+  const naoIdentificados: NFeItem[] = [];
+  const ordenados = itens
+    .filter((it) => cfopEhIndustrializacao(it.cfop))
+    .slice()
+    .sort((a, b) => a.nItem - b.nItem);
+
+  type Acc = IndCor & { _nItemTing: number; _nItemMo: number };
+  const mapa = new Map<string, Acc>();
+  let corrente: { chave: string; qtd: number } | null = null;
+
+  for (const it of ordenados) {
+    const cor = extrairCorItem(it.cProd, it.xProd);
+    if (cor) {
+      const chave = `${cor.numero}||${normalizarNome(cor.nome)}`;
+      const atual = mapa.get(chave);
+      if (atual) {
+        atual.qtdTingimento += nq(it.qCom);
+        if (it.nItem >= atual._nItemTing) {
+          atual._nItemTing = it.nItem;
+          atual.precoTingimento = nq(it.vUnCom);
+        }
+      } else {
+        mapa.set(chave, {
+          numero: cor.numero,
+          nome: cor.nome,
+          rotulo: rotuloCor(cor.numero, cor.nome),
+          codTingimento: it.cProd,
+          qtdTingimento: nq(it.qCom),
+          precoTingimento: nq(it.vUnCom),
+          codMaoObra: null,
+          qtdMaoObra: 0,
+          precoMaoObra: null,
+          uCom: it.uCom,
+          _nItemTing: it.nItem,
+          _nItemMo: -1,
+        });
+      }
+      corrente = { chave, qtd: nq(it.qCom) };
+      continue;
+    }
+    const acc = corrente ? mapa.get(corrente.chave) : null;
+    if (!acc || !corrente || nq(it.qCom) !== corrente.qtd) {
+      naoIdentificados.push(it);
+      continue;
+    }
+    acc.codMaoObra = it.cProd || acc.codMaoObra;
+    acc.qtdMaoObra += nq(it.qCom);
+    if (it.nItem >= acc._nItemMo) {
+      acc._nItemMo = it.nItem;
+      acc.precoMaoObra = nq(it.vUnCom);
+    }
+  }
+
+  const cores: IndCor[] = Array.from(mapa.values()).map(
+    ({ _nItemTing, _nItemMo, ...c }) => c,
+  );
+  return { cores, retorno, naoIdentificados };
+}
