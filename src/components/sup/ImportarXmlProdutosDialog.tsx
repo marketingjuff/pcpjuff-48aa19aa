@@ -16,15 +16,17 @@ import { Combobox } from "@/components/shared/combobox";
 import {
   TABLE_FONT_STYLE, TABLE_WRAPPER_CLASS, TH_CLASS, TD_CLASS, BADGE_SM_CLASS,
 } from "@/components/shared/table-styles";
-import { aplicarPrecoTabela } from "@/components/sup/ProdutosTab";
+import { aplicarPrecoTabela, aplicarPrecoVariacaoTabela, useSupVariacaoPrecos } from "@/components/sup/ProdutosTab";
+import { useSupVariacoes } from "@/components/sup/VariacoesConfig";
 import {
   fmtDataBR, fmtMoeda, n, variacaoPercentual,
   type SupDepartamento, type SupFornecedor, type SupFornecedorProduto,
   type SupProduto, type SupProdutoGrupo,
 } from "@/lib/sup";
 import {
-  cfopEhCompra, mapearUnidadeNFe, normalizarNome, parseNFe, rotuloCfop, soDigitos,
-  type NFeItem, type NFeNota, type NFeParsed,
+  agruparNotaIndustrializacao, cfopEhCompra, mapearUnidadeNFe, normalizarNome, notaEhIndustrializacao,
+  parseNFe, rotuloCfop, soDigitos,
+  type NFeItem, type NFeNota, type NFeParsed, type NotaIndustrializacao,
 } from "@/lib/nfe-xml";
 
 type Props = {
@@ -58,9 +60,31 @@ type Linha = {
   produto_id: string | null;
 };
 
+type IndLinha = {
+  rotulo: string;
+  qtd: number;
+  preco: string;
+  marcado: boolean;
+  cod: string | null;
+};
+
+type IndBloco = {
+  tipo: "tingimento" | "maoobra";
+  nome: string;
+  unidade: string;
+  departamento: string;
+  grupo_id: string;
+  linhas: IndLinha[];
+};
+
 /** 1113.1 → "1.113,10" (formato brasileiro, 2 casas). */
 function fmtBR2(v: number): string {
   return n(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** 4,4819 → "4,4819" (até 4 casas, formato brasileiro). */
+function fmtBR4(v: number): string {
+  return n(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 }
 
 /** "1.113,10" / "1113,10" / "1113.10" → número, coagido pelo n() de sup.ts. */
@@ -90,6 +114,11 @@ export function ImportarXmlProdutosDialog({
   const [massaUnidade, setMassaUnidade] = useState("");
   const [massaDep, setMassaDep] = useState("");
   const [massaGrupo, setMassaGrupo] = useState("");
+  const [ind, setInd] = useState<NotaIndustrializacao | null>(null);
+  const [blocos, setBlocos] = useState<IndBloco[]>([]);
+  const [verRetorno, setVerRetorno] = useState(false);
+  const { data: variacoes = [] } = useSupVariacoes();
+  const { data: variacaoPrecos = [] } = useSupVariacaoPrecos();
 
   const produtosDoFornecedor = useMemo(
     () => (fornecedor ? produtos.filter((p) => p.fornecedor_id === fornecedor.id) : []),
@@ -141,6 +170,33 @@ export function ImportarXmlProdutosDialog({
     });
   }
 
+  function montarBlocos(g: NotaIndustrializacao): IndBloco[] {
+    const uni = mapearUnidadeNFe(g.cores[0]?.uCom ?? "", unidades);
+    const base = { unidade: uni, departamento: "", grupo_id: "" };
+    const out: IndBloco[] = [{
+      ...base,
+      tipo: "tingimento",
+      nome: "Tingimento",
+      linhas: g.cores.map((c) => ({
+        rotulo: c.rotulo, qtd: c.qtdTingimento, preco: fmtBR4(c.precoTingimento),
+        marcado: true, cod: c.codTingimento || null,
+      })),
+    }];
+    const comMo = g.cores.filter((c) => c.precoMaoObra != null);
+    if (comMo.length > 0) {
+      out.push({
+        ...base,
+        tipo: "maoobra",
+        nome: "Mão de obra",
+        linhas: comMo.map((c) => ({
+          rotulo: c.rotulo, qtd: c.qtdMaoObra, preco: fmtBR4(c.precoMaoObra ?? 0),
+          marcado: true, cod: c.codMaoObra || null,
+        })),
+      });
+    }
+    return out;
+  }
+
   async function aoEscolherArquivo(file: File): Promise<boolean> {
     if (!fornecedor) return false;
     let parsed: NFeParsed;
@@ -162,7 +218,16 @@ export function ImportarXmlProdutosDialog({
     setSemCnpj(!docForn);
     setEmitenteNome(parsed.emitente.razao_social);
     setNota(parsed.nota);
-    setLinhas(montarLinhas(parsed));
+    if (notaEhIndustrializacao(parsed.itens)) {
+      const g = agruparNotaIndustrializacao(parsed.itens);
+      setInd(g);
+      setBlocos(montarBlocos(g));
+      setLinhas([]);
+    } else {
+      setInd(null);
+      setBlocos([]);
+      setLinhas(montarLinhas(parsed));
+    }
     setOpen(true);
     return true;
   }
@@ -337,13 +402,16 @@ export function ImportarXmlProdutosDialog({
   function fechar() {
     setOpen(false);
     setLinhas([]);
+    setInd(null);
+    setBlocos([]);
+    setVerRetorno(false);
     setNota(null);
     if (inputRef.current) inputRef.current.value = "";
   }
 
   useEffect(() => {
     if (!controlado || !open) return;
-    if (linhas.length > 0) return;
+    if (linhas.length > 0 || ind) return;
     inputRef.current?.click();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controlado, open]);
@@ -400,7 +468,7 @@ export function ImportarXmlProdutosDialog({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={open && linhas.length > 0} onOpenChange={(v) => (v ? setOpen(true) : fechar())}>
+      <Dialog open={open && (linhas.length > 0 || !!ind)} onOpenChange={(v) => (v ? setOpen(true) : fechar())}>
         <DialogContent className="max-w-[95vw] sm:max-w-[1200px]">
           <DialogHeader>
             <DialogTitle>Conferir itens da NF-e</DialogTitle>
