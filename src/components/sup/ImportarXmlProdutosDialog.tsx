@@ -704,15 +704,34 @@ export function ImportarXmlProdutosDialog({
               <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 <span>
-                  Nota de industrialização detectada. As linhas de retorno (CFOP 5925) são material do
-                  cliente e não entram no cadastro — só os itens de industrialização serão importados.
+                  Nota de industrialização detectada. Cada cor gera dois produtos próprios
+                  (tingimento e mão de obra). As linhas de retorno (CFOP 5925) são material do
+                  cliente e não entram no cadastro.
                 </span>
               </div>
 
               <div className="text-xs text-muted-foreground">
                 NF-e nº {nota?.numero ?? "—"} — {emitenteNome} — emissão {fmtDataBR(nota?.emissao)} —{" "}
-                {ind.cores.length} cor(es)
+                {ind.cores.length} cor(es) · {indProdutos.length} produto(s)
               </div>
+
+              {falhas.length > 0 && (
+                <div className="rounded-md border border-rose-400 bg-rose-50 dark:bg-rose-950/20 px-3 py-2 text-xs text-rose-900 dark:text-rose-200 space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <strong>
+                      {nadaGravado ? "Nenhum produto foi cadastrado." : "Algumas linhas falharam."}
+                    </strong>
+                    <button type="button" className="underline" onClick={() => setFalhas([])}>
+                      fechar
+                    </button>
+                  </div>
+                  {falhas.map((f, i) => (
+                    <div key={`${f.produto}-${i}`}>
+                      {f.produto}: {f.erro}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {ind.naoIdentificados.length > 0 && (
                 <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
@@ -721,134 +740,184 @@ export function ImportarXmlProdutosDialog({
                 </div>
               )}
 
-              <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
-                {blocos.map((b) => (
-                  <div key={b.tipo} className="rounded-md border border-border/60 p-3 space-y-2">
-                    <div className="flex flex-wrap items-end gap-2">
-                      <div className="space-y-1">
-                        <div className="text-[10.5px] text-muted-foreground">Produto</div>
-                        <Input
-                          value={b.nome}
-                          onChange={(e) => atualizarBloco(b.tipo, { nome: e.target.value })}
-                          className="h-7 w-[220px] text-[11px]"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-[10.5px] text-muted-foreground">Unidade</div>
-                        <Select value={b.unidade} onValueChange={(v) => atualizarBloco(b.tipo, { unidade: v })}>
-                          <SelectTrigger className="h-7 w-[120px] text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
-                          <SelectContent>
-                            {unidades.map((u) => (<SelectItem key={u} value={u}>{u}</SelectItem>))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-[10.5px] text-muted-foreground">Departamento</div>
-                        <Select
-                          value={b.departamento || "__none"}
-                          onValueChange={(v) => atualizarBloco(b.tipo, { departamento: v === "__none" ? "" : v })}
-                        >
-                          <SelectTrigger className="h-7 w-[160px] text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none">—</SelectItem>
-                            {departamentos.filter((d) => d.ativo).map((d) => (
-                              <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-[10.5px] text-muted-foreground">Grupo</div>
-                        <Select
-                          value={b.grupo_id || "__none"}
-                          onValueChange={(v) => atualizarBloco(b.tipo, { grupo_id: v === "__none" ? "" : v })}
-                        >
-                          <SelectTrigger className="h-7 w-[160px] text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none">—</SelectItem>
-                            {grupos.filter((g) => g.ativo).map((g) => (
-                              <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+              {indSemUnidade && (
+                <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  Há linha(s) marcada(s) sem unidade. Preencha a unidade para continuar.
+                </div>
+              )}
 
-                    <div className={TABLE_WRAPPER_CLASS} style={TABLE_FONT_STYLE}>
-                      <table className="w-full">
-                        <thead className="bg-muted/40">
-                          <tr>
-                            <th className={TH_CLASS} />
-                            <th className={`${TH_CLASS} text-left`}>Cor</th>
-                            <th className={TH_CLASS}>Qtd</th>
-                            <th className={TH_CLASS}>Preço unit.</th>
-                            <th className={TH_CLASS}>Status</th>
-                            <th className={TH_CLASS}>Preço atual</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {b.linhas.map((l) => {
-                            const comb = combinacaoExistente(b.nome, l.rotulo);
-                            const atual = comb ? (n(comb.preco_tabela) > 0 ? n(comb.preco_tabela) : null) : null;
-                            const varPct = atual != null ? variacaoPercentual(atual, precoNum(l.preco)) : null;
-                            return (
-                              <tr key={l.rotulo} className="border-t border-border/50">
-                                <td className={TD_CLASS}>
-                                  <Checkbox
-                                    checked={l.marcado}
-                                    onCheckedChange={(v) => atualizarIndLinha(b.tipo, l.rotulo, { marcado: v === true })}
-                                  />
-                                </td>
-                                <td className={`${TD_CLASS} text-left`}>{l.rotulo}</td>
-                                <td className={`${TD_CLASS} tabular-nums`}>{fmtBR2(l.qtd)}</td>
-                                <td className={TD_CLASS}>
-                                  <Input
-                                    value={l.preco}
-                                    onChange={(e) => atualizarIndLinha(b.tipo, l.rotulo, { preco: e.target.value })}
-                                    onBlur={() => atualizarIndLinha(b.tipo, l.rotulo, { preco: fmtBR4(precoNum(l.preco)) })}
-                                    className="h-7 w-24 text-[11px] tabular-nums text-right"
-                                    inputMode="decimal"
-                                  />
-                                </td>
-                                <td className={TD_CLASS}>
-                                  {comb ? (
-                                    <Badge className={`${BADGE_SM_CLASS} bg-amber-100 text-amber-900`}>Já existe</Badge>
-                                  ) : (
-                                    <Badge className={`${BADGE_SM_CLASS} bg-sky-100 text-sky-900`}>Novo</Badge>
-                                  )}
-                                </td>
-                                <td className={`${TD_CLASS} tabular-nums`}>
-                                  {atual == null ? "—" : (
-                                    <span>
-                                      {fmtMoeda(atual)}
-                                      {varPct != null && (
-                                        <span className={varPct < 0 ? "text-emerald-600 ml-1" : "text-rose-600 ml-1"}>
-                                          {varPct > 0 ? "+" : ""}{varPct.toFixed(1)}%
-                                        </span>
-                                      )}
+              <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 space-y-1.5">
+                <div className="text-[11px] text-muted-foreground">Preencher nas linhas marcadas:</div>
+                <div className="flex flex-wrap items-center gap-3">
+                  {[
+                    { campo: "unidade" as const, rotulo: "Unidade", valor: massaUnidade, set: setMassaUnidade, opcoes: unidades.map((u) => ({ v: u, label: u })) },
+                    { campo: "departamento" as const, rotulo: "Departamento", valor: massaDep, set: setMassaDep, opcoes: departamentos.filter((d) => d.ativo).map((d) => ({ v: d.nome, label: d.nome })) },
+                    { campo: "grupo_id" as const, rotulo: "Grupo", valor: massaGrupo, set: setMassaGrupo, opcoes: grupos.filter((g) => g.ativo).map((g) => ({ v: g.id, label: g.nome })) },
+                  ].map((c) => (
+                    <div key={c.campo} className="flex items-center gap-1.5">
+                      <Select value={c.valor} onValueChange={(v) => { c.set(v); aplicarEmMassaInd(c.campo, v, true); }}>
+                        <SelectTrigger className="h-7 w-[150px] text-[11px]">
+                          <SelectValue placeholder={c.rotulo} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {c.opcoes.map((o) => (
+                            <SelectItem key={o.v} value={o.v}>{o.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-[10.5px]"
+                        disabled={!c.valor}
+                        onClick={() => aplicarEmMassaInd(c.campo, c.valor, false)}
+                      >
+                        Aplicar em todas
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-[55vh] overflow-y-auto pr-1">
+                <div className={TABLE_WRAPPER_CLASS} style={TABLE_FONT_STYLE}>
+                  <table className="w-full">
+                    <thead className="bg-muted/40 sticky top-0 z-10">
+                      <tr>
+                        <th className={TH_CLASS} />
+                        <th className={TH_CLASS}>Status</th>
+                        <th className={`${TH_CLASS} text-left`}>Produto</th>
+                        <th className={`${TH_CLASS} text-left`}>Cód. fornecedor</th>
+                        <th className={TH_CLASS}>Qtd</th>
+                        <th className={TH_CLASS}>Unidade</th>
+                        <th className={TH_CLASS}>Departamento</th>
+                        <th className={TH_CLASS}>Grupo</th>
+                        <th className={TH_CLASS}>Preço unit.</th>
+                        <th className={TH_CLASS}>Preço atual</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {indProdutos.map((p) => {
+                        const m = indCasar(p);
+                        const atualNum = n(m.vinculo?.preco_tabela);
+                        const atual = atualNum > 0 ? atualNum : null;
+                        const varPct = atual != null ? variacaoPercentual(atual, precoNum(p.preco)) : null;
+                        return (
+                          <tr
+                            key={p.key}
+                            className={`border-t border-border/50 ${
+                              p.marcado && !p.unidade ? "ring-1 ring-inset ring-amber-400 bg-amber-50/40 dark:bg-amber-950/10" : ""
+                            }`}
+                          >
+                            <td className={TD_CLASS}>
+                              <Checkbox
+                                checked={p.marcado}
+                                onCheckedChange={(v) => atualizarInd(p.key, { marcado: v === true })}
+                              />
+                            </td>
+                            <td className={TD_CLASS}>
+                              {m.produto ? (
+                                <Badge className={`${BADGE_SM_CLASS} bg-amber-100 text-amber-900`}>Já existe</Badge>
+                              ) : (
+                                <Badge className={`${BADGE_SM_CLASS} bg-sky-100 text-sky-900`}>Novo</Badge>
+                              )}
+                            </td>
+                            <td className={`${TD_CLASS} text-left min-w-[240px]`}>
+                              <Input
+                                value={p.nome}
+                                onChange={(e) => atualizarInd(p.key, { nome: e.target.value })}
+                                className="h-7 text-[11px]"
+                              />
+                            </td>
+                            <td className={`${TD_CLASS} text-left text-muted-foreground`}>{p.codFornecedor || "—"}</td>
+                            <td className={`${TD_CLASS} tabular-nums`}>{fmtBR2(p.qtd)}</td>
+                            <td className={TD_CLASS}>
+                              <Select value={p.unidade} onValueChange={(v) => atualizarInd(p.key, { unidade: v })}>
+                                <SelectTrigger className="h-7 text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
+                                <SelectContent>
+                                  {unidades.map((u) => (<SelectItem key={u} value={u}>{u}</SelectItem>))}
+                                </SelectContent>
+                              </Select>
+                            </td>
+                            <td
+                              className={TD_CLASS}
+                              title={indPodeDefinir(p, "departamento") ? undefined : "Já definido no cadastro — a importação não altera."}
+                            >
+                              <Select
+                                value={p.departamento || "__none"}
+                                onValueChange={(v) => atualizarInd(p.key, { departamento: v === "__none" ? "" : v })}
+                                disabled={!indPodeDefinir(p, "departamento")}
+                              >
+                                <SelectTrigger className="h-7 text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__none">—</SelectItem>
+                                  {departamentos.filter((d) => d.ativo).map((d) => (
+                                    <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </td>
+                            <td
+                              className={TD_CLASS}
+                              title={indPodeDefinir(p, "grupo_id") ? undefined : "Já definido no cadastro — a importação não altera."}
+                            >
+                              <Select
+                                value={p.grupo_id || "__none"}
+                                onValueChange={(v) => atualizarInd(p.key, { grupo_id: v === "__none" ? "" : v })}
+                                disabled={!indPodeDefinir(p, "grupo_id")}
+                              >
+                                <SelectTrigger className="h-7 text-[11px]"><SelectValue placeholder="—" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__none">—</SelectItem>
+                                  {grupos.filter((g) => g.ativo).map((g) => (
+                                    <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </td>
+                            <td className={TD_CLASS}>
+                              <Input
+                                value={p.preco}
+                                onChange={(e) => atualizarInd(p.key, { preco: e.target.value })}
+                                onBlur={() => atualizarInd(p.key, { preco: fmtBR4(precoNum(p.preco)) })}
+                                onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+                                className="h-7 w-24 text-[11px] tabular-nums text-right"
+                                inputMode="decimal"
+                              />
+                            </td>
+                            <td className={`${TD_CLASS} tabular-nums`}>
+                              {atual == null ? "—" : (
+                                <span>
+                                  {fmtMoeda(atual)}
+                                  {varPct != null && (
+                                    <span className={varPct < 0 ? "text-emerald-600 ml-1" : "text-rose-600 ml-1"}>
+                                      {varPct > 0 ? "+" : ""}{varPct.toFixed(1)}%
                                     </span>
                                   )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                ))}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
 
                 <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 space-y-1">
-                  <div className="text-[10.5px] text-muted-foreground">Custo total por cor</div>
+                  <div className="text-[10.5px] text-muted-foreground">Custo total por cor (só exibição)</div>
                   {ind.cores.map((c) => {
-                    const ting = blocos.find((b) => b.tipo === "tingimento")?.linhas.find((l) => l.rotulo === c.rotulo);
-                    const mo = blocos.find((b) => b.tipo === "maoobra")?.linhas.find((l) => l.rotulo === c.rotulo);
+                    const ting = indProdutos.find((p) => p.tipo === "tingimento" && p.numeroCor === c.numero);
+                    const mo = indProdutos.find((p) => p.tipo === "maoobra" && p.numeroCor === c.numero);
+                    const uni = ting?.unidade || mo?.unidade || c.uCom;
+                    const soma = precoNum(ting?.preco ?? "0") + precoNum(mo?.preco ?? "0");
                     return (
-                      <div key={c.rotulo} className="text-[11px] tabular-nums">
-                        {c.nome} — {fmtBR2(c.qtdTingimento)} {blocos[0]?.unidade || c.uCom} —{" "}
+                      <div key={c.numero} className="text-[11px] tabular-nums">
+                        {c.nome} — {fmtBR2(c.qtdTingimento)} {uni} —{" "}
                         {ting ? fmtBR4(precoNum(ting.preco)) : "—"}
-                        {mo ? ` + ${fmtBR4(precoNum(mo.preco))}` : ""} = {fmtMoeda(custoTotalCor(c.rotulo))}/
-                        {blocos[0]?.unidade || c.uCom}
+                        {mo ? ` + ${fmtBR4(precoNum(mo.preco))}` : ""} = {fmtMoeda(soma)}/{uni}
                       </div>
                     );
                   })}
@@ -877,6 +946,7 @@ export function ImportarXmlProdutosDialog({
               </div>
             </div>
           )}
+
 
           {!ind && (
           <div className="space-y-2">
