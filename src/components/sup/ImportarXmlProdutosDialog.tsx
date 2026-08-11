@@ -1178,8 +1178,17 @@ export function ImportarXmlProdutosDialog({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void (ind ? importarIndustrializacao() : importar())}>Confirmar</AlertDialogAction>
+            <AlertDialogCancel type="button">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                void (ind ? importarIndustrializacao() : importar());
+              }}
+            >
+              Confirmar
+            </AlertDialogAction>
+
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
