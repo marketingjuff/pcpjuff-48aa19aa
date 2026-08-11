@@ -786,10 +786,14 @@ export function ProdutosTab() {
       const { error: eH } = await (supabase as any)
         .from("sup_preco_historico").delete().in("fornecedor_produto_id", vIds);
       if (eH) throw eH;
+      const { error: eVP } = await (supabase as any)
+        .from("sup_produto_variacao_precos").delete().in("fornecedor_produto_id", vIds);
+      if (eVP) throw eVP;
       const { error: eFP } = await (supabase as any)
         .from("sup_fornecedor_produtos").delete().in("id", vIds);
       if (eFP) throw eFP;
     }
+
     const { error: eP } = await (supabase as any).from("sup_produtos").delete().in("id", ids);
     if (eP) throw eP;
   }
