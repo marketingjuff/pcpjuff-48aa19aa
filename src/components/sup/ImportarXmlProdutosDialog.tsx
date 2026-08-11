@@ -454,12 +454,42 @@ export function ImportarXmlProdutosDialog({
     try {
 
       const { data: u } = await supabase.auth.getUser();
-      let corVarId = variacoes.find((v) => v.ativo && normalizarNome(v.nome) === "cor")?.id ?? null;
-      if (!corVarId) {
+      const { data: variacoesAtuais, error: erroVariacoes } = await (supabase as any)
+        .from("sup_variacoes")
+        .select("id,nome,ativo");
+      if (erroVariacoes) throw erroVariacoes;
+
+      let variacaoCor = (variacoesAtuais ?? []).find(
+        (v: any) => normalizarNome(String(v.nome ?? "")) === "cor",
+      ) ?? null;
+
+      if (!variacaoCor) {
         const { data, error } = await (supabase as any)
-          .from("sup_variacoes").insert({ nome: "Cor" }).select("id").single();
+          .from("sup_variacoes").insert({ nome: "Cor" }).select("id,nome,ativo").single();
+        if (error?.code === "23505") {
+          const { data: existentes, error: erroBusca } = await (supabase as any)
+            .from("sup_variacoes")
+            .select("id,nome,ativo");
+          if (erroBusca) throw erroBusca;
+          variacaoCor = (existentes ?? []).find(
+            (v: any) => normalizarNome(String(v.nome ?? "")) === "cor",
+          ) ?? null;
+          if (!variacaoCor) throw error;
+        } else if (error) {
+          throw error;
+        } else {
+          variacaoCor = data;
+        }
+      }
+
+      const corVarId = variacaoCor?.id as string | undefined;
+      if (!corVarId) throw new Error("Não foi possível localizar a variação Cor.");
+      if (!variacaoCor.ativo) {
+        const { error } = await (supabase as any)
+          .from("sup_variacoes")
+          .update({ ativo: true })
+          .eq("id", corVarId);
         if (error) throw error;
-        corVarId = data.id as string;
       }
 
       for (const bloco of blocos) {
