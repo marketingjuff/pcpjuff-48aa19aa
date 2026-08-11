@@ -439,13 +439,20 @@ export function ImportarXmlProdutosDialog({
     }, 0);
 
   async function importarIndustrializacao() {
-    if (!fornecedor || !nota || !ind) return;
+    if (!fornecedor || !nota || !ind) {
+      toast.error(
+        !fornecedor ? "Selecione o fornecedor antes de importar." : "Nota inválida para importação.",
+      );
+      setConfirmar(false);
+      return;
+    }
     setSalvando(true);
     const motivo = `Importação XML NF-e nº ${nota.numero ?? "—"} (industrialização)`;
     const erros: string[] = [];
     let criados = 0;
     let precos = 0;
     try {
+
       const { data: u } = await supabase.auth.getUser();
       let corVarId = variacoes.find((v) => v.ativo && normalizarNome(v.nome) === "cor")?.id ?? null;
       if (!corVarId) {
@@ -563,17 +570,27 @@ export function ImportarXmlProdutosDialog({
             }
           }
         } catch (e: any) {
-          erros.push(`${bloco.nome}: ${e?.message || "erro ao importar"}`);
+          console.error("[XML industrialização] bloco", bloco.tipo, e);
+          erros.push(`${bloco.nome}: ${e?.message || e?.details || "erro ao importar"}`);
         }
+
       }
-      toast.success(`${criados} produtos cadastrados · ${precos} preços atualizados`);
-      if (erros.length) toast.error(`Falhas:\n${erros.join("\n")}`);
+      if (criados === 0 && precos === 0 && erros.length === 0) {
+        toast.warning("Nada para importar: marque ao menos uma cor com preço.");
+      } else {
+        toast.success(`${criados} produtos cadastrados · ${precos} preços atualizados`);
+      }
+      if (erros.length) toast.error(`Falhas: ${erros.join(" | ")}`);
       onImportado();
-      fechar();
+      if (erros.length === 0) fechar();
+    } catch (e: any) {
+      console.error("[XML industrialização] falha:", e);
+      toast.error(e?.message || "Erro ao importar industrialização.");
     } finally {
       setSalvando(false);
       setConfirmar(false);
     }
+
   }
 
   function fechar() {
