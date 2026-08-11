@@ -570,8 +570,10 @@ export function ImportarXmlProdutosDialog({
             }
           }
         } catch (e: any) {
-          erros.push(`${bloco.nome}: ${e?.message || "erro ao importar"}`);
+          console.error("[XML industrialização] bloco", bloco.tipo, e);
+          erros.push(`${bloco.nome}: ${e?.message || e?.details || "erro ao importar"}`);
         }
+
       }
       if (criados === 0 && precos === 0 && erros.length === 0) {
         toast.warning("Nada para importar: marque ao menos uma cor com preço.");
