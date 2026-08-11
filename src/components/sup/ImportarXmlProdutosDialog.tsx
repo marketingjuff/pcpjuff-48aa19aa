@@ -400,131 +400,100 @@ export function ImportarXmlProdutosDialog({
   }
 
   // ── Modo industrialização ────────────────────────────────────────────────
-  const indMarcadas = blocos.reduce((t, b) => t + b.linhas.filter((l) => l.marcado).length, 0);
-  const indSemUnidade = blocos.some((b) => b.linhas.some((l) => l.marcado) && !b.unidade);
+  const indMarcados = indProdutos.filter((p) => p.marcado);
+  const indSemUnidade = indMarcados.some((p) => !p.unidade);
 
-  const atualizarBloco = (tipo: IndBloco["tipo"], patch: Partial<IndBloco>) =>
-    setBlocos((bs) => bs.map((b) => (b.tipo === tipo ? { ...b, ...patch } : b)));
+  const atualizarInd = (key: string, patch: Partial<IndProduto>) =>
+    setIndProdutos((ps) => ps.map((p) => (p.key === key ? { ...p, ...patch } : p)));
 
-  const atualizarIndLinha = (tipo: IndBloco["tipo"], rotulo: string, patch: Partial<IndLinha>) =>
-    setBlocos((bs) =>
-      bs.map((b) =>
-        b.tipo === tipo
-          ? { ...b, linhas: b.linhas.map((l) => (l.rotulo === rotulo ? { ...l, ...patch } : l)) }
-          : b,
-      ),
-    );
-
-  const produtoDoBloco = (nome: string) =>
-    produtosDoFornecedor.find((p) => normalizarNome(p.nome) === normalizarNome(nome)) ?? null;
-
-  function combinacaoExistente(nomeBloco: string, rotulo: string) {
-    const prod = produtoDoBloco(nomeBloco);
-    if (!prod) return null;
-    const v = vinculoDoProduto(prod.id);
-    if (!v) return null;
-    return (
-      variacaoPrecos.find(
-        (c) =>
-          c.fornecedor_produto_id === v.id &&
-          normalizarNome(String(c.variacao_1_valor ?? "")) === normalizarNome(rotulo),
-      ) ?? null
-    );
+  /** Casa a linha proposta com o cadastro do fornecedor. */
+  function indCasar(p: IndProduto): { produto: SupProduto | null; vinculo: SupFornecedorProduto | null } {
+    let prod: SupProduto | null = null;
+    if (p.tipo === "tingimento" && p.numeroCor) {
+      const v = vinculos.find(
+        (x) =>
+          x.fornecedor_id === fornecedor?.id &&
+          numeroCorDeCodigo(String(x.cod_fornecedor ?? "")) === p.numeroCor,
+      );
+      if (v) prod = produtosDoFornecedor.find((x) => x.id === v.produto_id) ?? null;
+    }
+    if (!prod) {
+      const alvo = normalizarNome(p.nome);
+      prod = produtosDoFornecedor.find((x) => normalizarNome(x.nome) === alvo) ?? null;
+    }
+    const vinc = prod ? vinculoDoProduto(prod.id) : null;
+    return { produto: prod, vinculo: vinc };
   }
 
-  const custoTotalCor = (rotulo: string) =>
-    blocos.reduce((t, b) => {
-      const l = b.linhas.find((x) => x.rotulo === rotulo);
-      return t + (l ? precoNum(l.preco) : 0);
-    }, 0);
+  /** Preencher campo vago ≠ sobrescrever. */
+  function indPodeDefinir(p: IndProduto, campo: "unidade" | "departamento" | "grupo_id"): boolean {
+    if (campo === "unidade") return true;
+    const prod = indCasar(p).produto;
+    if (!prod) return true;
+    return campo === "departamento" ? !prod.departamento : !prod.grupo_id;
+  }
+
+  function aplicarEmMassaInd(campo: "unidade" | "departamento" | "grupo_id", valor: string, soVazias: boolean) {
+    if (!valor) return;
+    const marcadasAgora = indProdutos.filter((p) => p.marcado);
+    const elegiveis = marcadasAgora.filter((p) => indPodeDefinir(p, campo));
+    const bloqueadas = marcadasAgora.length - elegiveis.length;
+    const alvos = soVazias ? elegiveis.filter((p) => !p[campo]) : elegiveis;
+    if (alvos.length > 0) {
+      const chaves = new Set(alvos.map((p) => p.key));
+      setIndProdutos((ps) => ps.map((p) => (chaves.has(p.key) ? { ...p, [campo]: valor } : p)));
+      const extra = bloqueadas > 0 ? ` ${bloqueadas} ignorada(s): já definido no cadastro.` : "";
+      toast.success(`Preenchido em ${alvos.length} linha(s).${extra}`);
+      return;
+    }
+    if (marcadasAgora.length === 0) toast.warning("Nenhuma linha marcada.");
+    else toast.warning(`As linhas marcadas já têm ${LABEL_CAMPO[campo]} definido.`);
+  }
 
   async function importarIndustrializacao() {
     if (!fornecedor || !nota || !ind) {
-      toast.error(
-        !fornecedor ? "Selecione o fornecedor antes de importar." : "Nota inválida para importação.",
-      );
+      setFalhas([{
+        produto: "Importação",
+        erro: !fornecedor ? "Selecione o fornecedor antes de importar." : "Nota inválida para importação.",
+      }]);
+      setNadaGravado(true);
       setConfirmar(false);
       return;
     }
     setSalvando(true);
+    setFalhas([]);
+    setNadaGravado(false);
     const motivo = `Importação XML NF-e nº ${nota.numero ?? "—"} (industrialização)`;
-    const erros: string[] = [];
+    const novasFalhas: { produto: string; erro: string }[] = [];
     let criados = 0;
     let precos = 0;
     try {
-
+      const marcadas = indProdutos.filter((p) => p.marcado);
+      if (marcadas.length === 0) {
+        novasFalhas.push({ produto: "Importação", erro: "Nenhuma linha marcada." });
+        return;
+      }
       const { data: u } = await supabase.auth.getUser();
-      const { data: variacoesAtuais, error: erroVariacoes } = await (supabase as any)
-        .from("sup_variacoes")
-        .select("id,nome,ativo");
-      if (erroVariacoes) throw erroVariacoes;
-
-      let variacaoCor = (variacoesAtuais ?? []).find(
-        (v: any) => normalizarNome(String(v.nome ?? "")) === "cor",
-      ) ?? null;
-
-      if (!variacaoCor) {
-        const { data, error } = await (supabase as any)
-          .from("sup_variacoes").insert({ nome: "Cor" }).select("id,nome,ativo").single();
-        if (error?.code === "23505") {
-          const { data: existentes, error: erroBusca } = await (supabase as any)
-            .from("sup_variacoes")
-            .select("id,nome,ativo");
-          if (erroBusca) throw erroBusca;
-          variacaoCor = (existentes ?? []).find(
-            (v: any) => normalizarNome(String(v.nome ?? "")) === "cor",
-          ) ?? null;
-          if (!variacaoCor) throw error;
-        } else if (error) {
-          throw error;
-        } else {
-          variacaoCor = data;
-        }
-      }
-
-      const corVarId = variacaoCor?.id as string | undefined;
-      if (!corVarId) throw new Error("Não foi possível localizar a variação Cor.");
-      if (!variacaoCor.ativo) {
-        const { error } = await (supabase as any)
-          .from("sup_variacoes")
-          .update({ ativo: true })
-          .eq("id", corVarId);
-        if (error) throw error;
-      }
-
-      for (const bloco of blocos) {
-        const marcadas = bloco.linhas.filter((l) => l.marcado);
-        if (marcadas.length === 0) continue;
+      for (const p of marcadas) {
         try {
-          if (!bloco.nome.trim()) throw new Error("nome vazio");
-          if (!bloco.unidade) throw new Error("unidade não informada");
+          if (!p.nome.trim()) throw new Error("nome vazio");
+          if (!p.unidade) throw new Error("unidade não informada");
+          const preco = precoNum(p.preco);
+          const { produto, vinculo } = indCasar(p);
+          let produtoId = produto?.id ?? null;
 
-          const { data: vals, error: eV } = await (supabase as any)
-            .from("sup_variacao_valores").select("id,valor").eq("variacao_id", corVarId);
-          if (eV) throw eV;
-          const jaTem = new Set((vals ?? []).map((v: any) => normalizarNome(String(v.valor))));
-          for (const l of marcadas) {
-            if (jaTem.has(normalizarNome(l.rotulo))) continue;
-            const { error } = await (supabase as any)
-              .from("sup_variacao_valores").insert({ variacao_id: corVarId, valor: l.rotulo });
-            if (error) throw error;
-            jaTem.add(normalizarNome(l.rotulo));
-          }
-
-          const prod = produtoDoBloco(bloco.nome) as any;
-          let produtoId: string | null = prod?.id ?? null;
           if (!produtoId) {
             const { data, error } = await (supabase as any)
               .from("sup_produtos")
               .insert({
-                nome: bloco.nome.trim(),
-                unidade: bloco.unidade,
-                departamento: bloco.departamento || null,
-                grupo_id: bloco.grupo_id || null,
+                nome: p.nome.trim(),
+                unidade: p.unidade,
+                departamento: p.departamento || null,
+                grupo_id: p.grupo_id || null,
                 ativo: true,
                 fornecedor_id: fornecedor.id,
-                preco_por_variacao: true,
-                variacao_1_id: corVarId,
+                preco_por_variacao: false,
+                variacao_1_id: null,
                 created_by: u.user?.id ?? null,
               })
               .select("id")
@@ -532,106 +501,83 @@ export function ImportarXmlProdutosDialog({
             if (error) throw error;
             produtoId = data.id as string;
             criados += 1;
-          } else if (!prod.preco_por_variacao || !prod.variacao_1_id) {
-            const { error } = await (supabase as any)
-              .from("sup_produtos")
-              .update({ preco_por_variacao: true, variacao_1_id: corVarId })
-              .eq("id", produtoId);
-            if (error) throw error;
+          } else {
+            const patch: Record<string, string> = {};
+            if (!produto?.unidade && p.unidade) patch.unidade = p.unidade;
+            if (p.departamento && !produto?.departamento) patch.departamento = p.departamento;
+            if (p.grupo_id && !produto?.grupo_id) patch.grupo_id = p.grupo_id;
+            if (Object.keys(patch).length > 0) {
+              const { error } = await (supabase as any)
+                .from("sup_produtos").update(patch).eq("id", produtoId);
+              if (error) throw error;
+            }
           }
 
-          const codigos = new Set(marcadas.map((l) => l.cod ?? ""));
-          const codUnico = codigos.size === 1 ? (marcadas[0].cod || null) : null;
-          const vincExistente = vinculos.find(
-            (v) => v.fornecedor_id === fornecedor.id && v.produto_id === produtoId,
-          ) ?? null;
-          let vincId = vincExistente?.id ?? null;
+          let vincId = vinculo?.id ?? null;
+          let precoAtual = n(vinculo?.preco_tabela);
           if (!vincId) {
             const { data, error } = await (supabase as any)
               .from("sup_fornecedor_produtos")
-              .insert({ fornecedor_id: fornecedor.id, produto_id: produtoId, cod_fornecedor: codUnico })
+              .insert({
+                fornecedor_id: fornecedor.id,
+                produto_id: produtoId,
+                cod_fornecedor: p.codFornecedor || null,
+              })
               .select("id")
               .single();
             if (error) throw error;
             vincId = data.id as string;
-          } else if (codUnico && !vincExistente?.cod_fornecedor) {
+            precoAtual = 0;
+          } else if (p.codFornecedor && vinculo?.cod_fornecedor !== p.codFornecedor) {
             const { error } = await (supabase as any)
-              .from("sup_fornecedor_produtos").update({ cod_fornecedor: codUnico }).eq("id", vincId);
+              .from("sup_fornecedor_produtos")
+              .update({ cod_fornecedor: p.codFornecedor })
+              .eq("id", vincId);
             if (error) throw error;
           }
 
-          const { data: combs, error: eC } = await (supabase as any)
-            .from("sup_produto_variacao_precos").select("*").eq("fornecedor_produto_id", vincId);
-          if (eC) throw eC;
-
-          for (const l of marcadas) {
-            const novoPreco = precoNum(l.preco);
-            if (novoPreco <= 0) continue;
-            const c = (combs ?? []).find(
-              (x: any) => normalizarNome(String(x.variacao_1_valor ?? "")) === normalizarNome(l.rotulo),
-            );
-            if (!c) {
-              const { data: nc, error } = await (supabase as any)
-                .from("sup_produto_variacao_precos")
-                .insert({ fornecedor_produto_id: vincId, variacao_1_valor: l.rotulo, variacao_2_valor: null })
-                .select("id")
-                .single();
-              if (error) throw error;
-              await aplicarPrecoVariacaoTabela({
-                fornecedor_produto_id: vincId!,
-                variacao_preco_id: nc.id,
-                preco_anterior: null,
-                preco_novo: novoPreco,
-                motivo,
-              });
-              precos += 1;
-            } else {
-              const atual = n(c.preco_tabela);
-              if (novoPreco !== atual) {
-                await aplicarPrecoVariacaoTabela({
-                  fornecedor_produto_id: vincId!,
-                  variacao_preco_id: c.id,
-                  preco_anterior: atual > 0 ? atual : null,
-                  preco_novo: novoPreco,
-                  motivo,
-                });
-                precos += 1;
-              }
-            }
+          if (preco > 0 && preco !== precoAtual) {
+            await aplicarPrecoTabela({
+              fornecedor_produto_id: vincId!,
+              preco_anterior: precoAtual > 0 ? precoAtual : null,
+              preco_novo: preco,
+              motivo,
+            });
+            precos += 1;
           }
         } catch (e: any) {
-          console.error("[XML industrialização] bloco", bloco.tipo, e);
-          erros.push(`${bloco.nome}: ${e?.message || e?.details || "erro ao importar"}`);
+          console.error("[XML industrialização]", p.nome, e);
+          novasFalhas.push({ produto: p.nome, erro: e?.message || e?.details || "erro ao gravar" });
         }
-
       }
-      if (criados === 0 && precos === 0 && erros.length === 0) {
-        toast.warning("Nada para importar: marque ao menos uma cor com preço.");
-      } else {
-        toast.success(`${criados} produtos cadastrados · ${precos} preços atualizados`);
-      }
-      if (erros.length) toast.error(`Falhas: ${erros.join(" | ")}`);
-      onImportado();
-      if (erros.length === 0) fechar();
     } catch (e: any) {
       console.error("[XML industrialização] falha:", e);
-      toast.error(e?.message || "Erro ao importar industrialização.");
+      novasFalhas.push({ produto: "Importação", erro: e?.message || "erro inesperado" });
     } finally {
       setSalvando(false);
       setConfirmar(false);
+      setFalhas(novasFalhas);
+      setNadaGravado(criados === 0 && precos === 0);
+      if (criados > 0 || precos > 0) {
+        toast.success(`${criados} produtos cadastrados · ${precos} preços atualizados`);
+        onImportado();
+      }
+      if (novasFalhas.length === 0 && (criados > 0 || precos > 0)) fechar();
     }
-
   }
 
   function fechar() {
     setOpen(false);
     setLinhas([]);
     setInd(null);
-    setBlocos([]);
+    setIndProdutos([]);
+    setFalhas([]);
+    setNadaGravado(false);
     setVerRetorno(false);
     setNota(null);
     if (inputRef.current) inputRef.current.value = "";
   }
+
 
   useEffect(() => {
     if (!controlado || !open) return;
