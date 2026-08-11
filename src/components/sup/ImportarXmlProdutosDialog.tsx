@@ -1225,8 +1225,9 @@ export function ImportarXmlProdutosDialog({
             <AlertDialogTitle>Confirmar importação</AlertDialogTitle>
             <AlertDialogDescription>
               {ind
-                ? `Serão criados/atualizados ${blocos.filter((b) => b.linhas.some((l) => l.marcado)).length} produto(s) e até ${indMarcadas} preço(s) por cor. Confirma?`
+                ? `Serão criados/atualizados ${indMarcados.length} produto(s) e seus preços por kg. Confirma?`
                 : `Serão cadastrados ${qtdNovos} produtos novos e atualizados até ${qtdExistentes} preços. Confirma?`}
+
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
