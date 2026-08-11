@@ -170,32 +170,51 @@ export function ImportarXmlProdutosDialog({
     });
   }
 
-  function montarBlocos(g: NotaIndustrializacao): IndBloco[] {
-    const uni = mapearUnidadeNFe(g.cores[0]?.uCom ?? "", unidades);
-    const base = { unidade: uni, departamento: "", grupo_id: "" };
-    const out: IndBloco[] = [{
-      ...base,
-      tipo: "tingimento",
-      nome: "Tingimento",
-      linhas: g.cores.map((c) => ({
-        rotulo: c.rotulo, qtd: c.qtdTingimento, preco: fmtBR4(c.precoTingimento),
-        marcado: true, cod: c.codTingimento || null,
-      })),
-    }];
-    const comMo = g.cores.filter((c) => c.precoMaoObra != null);
-    if (comMo.length > 0) {
+  /** Duas linhas por cor: tingimento e mão de obra. Cada uma é um produto próprio. */
+  function montarIndProdutos(g: NotaIndustrializacao): IndProduto[] {
+    const out: IndProduto[] = [];
+    for (const c of g.cores) {
+      const uni = mapearUnidadeNFe(c.uCom, unidades);
+      const base = {
+        numeroCor: c.numero,
+        corNome: c.nome,
+        marcado: true,
+        unidade: uni,
+        departamento: "",
+        grupo_id: "",
+      };
       out.push({
         ...base,
-        tipo: "maoobra",
-        nome: "Mão de obra",
-        linhas: comMo.map((c) => ({
-          rotulo: c.rotulo, qtd: c.qtdMaoObra, preco: fmtBR4(c.precoMaoObra ?? 0),
-          marcado: true, cod: c.codMaoObra || null,
-        })),
+        key: `ting-${c.numero}`,
+        tipo: "tingimento",
+        nome: `Tingimento ${c.nome} ${c.numero}`.trim(),
+        codFornecedor: c.codTingimento || "",
+        qtd: c.qtdTingimento,
+        preco: fmtBR4(c.precoTingimento),
       });
+      if (c.precoMaoObra != null) {
+        out.push({
+          ...base,
+          key: `mo-${c.numero}`,
+          tipo: "maoobra",
+          nome: `Mão de obra ${c.nome} ${c.numero}`.trim(),
+          codFornecedor: c.codMaoObra || "",
+          qtd: c.qtdMaoObra,
+          preco: fmtBR4(c.precoMaoObra),
+        });
+      }
     }
-    return out;
+    return out.map((p) => {
+      const prod = produtosDoFornecedor.find((x) => normalizarNome(x.nome) === normalizarNome(p.nome)) ?? null;
+      return {
+        ...p,
+        unidade: prod?.unidade || p.unidade,
+        departamento: prod?.departamento ?? "",
+        grupo_id: prod?.grupo_id ?? "",
+      };
+    });
   }
+
 
   async function aoEscolherArquivo(file: File): Promise<boolean> {
     if (!fornecedor) return false;
