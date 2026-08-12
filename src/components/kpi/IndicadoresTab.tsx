@@ -38,6 +38,12 @@ import {
   abcClientes,
   porSituacao,
   porVendedor,
+  FAIXAS_QTD,
+  faixaDoPedido,
+  filtrarPorFaixaQtd,
+  porFaixaQtd,
+  type FaixaQtd,
+
   primeiraCompraPorCliente,
   ranking,
   resumo,
