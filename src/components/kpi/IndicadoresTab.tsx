@@ -1520,6 +1520,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                 <th className="px-2 py-1 text-right">Pedidos</th>
                 <th className="px-2 py-1 text-right">Peças</th>
                 <th className="px-2 py-1 text-right">Ticket médio</th>
+                <th className="px-2 py-1 text-right">Preço médio/peça</th>
                 <th className="px-2 py-1 text-right">Desconto (R$)</th>
                 <th className="px-2 py-1 text-right">Desconto médio (%)</th>
               </tr>
