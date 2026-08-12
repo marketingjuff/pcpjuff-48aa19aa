@@ -3,43 +3,8 @@ import { useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
   STATUS_PECAS_OPCOES, TIPOS_ESTAMPA,
-  calcularEtapaAtual, statusPrazo, tipoIncluiDTF, tipoIncluiSilk, totalProducao,
+  calcularEtapaAtual, statusPrazo, tipoIncluiDTF, tipoIncluiSilk,
 } from "@/lib/pedidos";
-
-type FaixaQtd =
-  | "todas" | "ate9" | "f10_50" | "f51_100" | "f101_200"
-  | "f201_300" | "f301_400" | "f401_500" | "f501_1000" | "acima1000";
-
-const FAIXAS_QTD: { value: FaixaQtd; label: string }[] = [
-  { value: "todas", label: "Todas as faixas" },
-  { value: "ate9", label: "< 10 pçs" },
-  { value: "f10_50", label: "10 a 50 pçs" },
-  { value: "f51_100", label: "51 a 100 pçs" },
-  { value: "f101_200", label: "101 a 200 pçs" },
-  { value: "f201_300", label: "201 a 300 pçs" },
-  { value: "f301_400", label: "301 a 400 pçs" },
-  { value: "f401_500", label: "401 a 500 pçs" },
-  { value: "f501_1000", label: "501 a 1000 pçs" },
-  { value: "acima1000", label: "> 1000 pçs" },
-];
-
-function pedidoNaFaixa(p: Pedido, f: FaixaQtd): boolean {
-  if (f === "todas") return true;
-  const total = totalProducao(p).total;
-  switch (f) {
-    case "ate9": return total >= 1 && total <= 9;
-    case "f10_50": return total >= 10 && total <= 50;
-    case "f51_100": return total >= 51 && total <= 100;
-    case "f101_200": return total >= 101 && total <= 200;
-    case "f201_300": return total >= 201 && total <= 300;
-    case "f301_400": return total >= 301 && total <= 400;
-    case "f401_500": return total >= 401 && total <= 500;
-    case "f501_1000": return total >= 501 && total <= 1000;
-    case "acima1000": return total > 1000;
-    default: return true;
-  }
-}
-
 
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,7 +49,6 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const [tipo, setTipo] = useState<string>("todos");
   const [etapa, setEtapa] = useState<Etapa>("ativas");
   const [dataEntrega, setDataEntrega] = useState("");
-  const [faixaQtd, setFaixaQtd] = useState<FaixaQtd>("todas");
 
   
   const [search, setSearch] = useState("");
@@ -125,7 +89,6 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       if (status !== "todos" && p.status_pecas !== status) return false;
       if (tipo !== "todos" && p.tipo_estampa !== tipo) return false;
       if (dataEntrega && p.data_entrega !== dataEntrega) return false;
-      if (!pedidoNaFaixa(p, faixaQtd)) return false;
       if (search && !`${p.pedido_olist} ${p.orcamento}`.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
@@ -172,7 +135,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       });
     }
     return arr;
-  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, faixaQtd, search, sort.key, sort.dir, feriados]);
+  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, search, sort.key, sort.dir, feriados]);
 
   const stats = useMemo(() => {
     const ativos = pedidos.filter((p) => pedidoAtivoNasAreas(p));
@@ -234,7 +197,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
           </div>
         </CardHeader>
         <CardContent className="p-3 pt-0 space-y-2">
-          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
             <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Etapa</label>
               <Select value={etapa} onValueChange={(v) => setEtapa(v as Etapa)}>
@@ -293,21 +256,12 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
               </Select>
             </div>
             <div className="space-y-0.5">
-              <label className="text-xs text-muted-foreground font-medium">Faixa de Qtd</label>
-              <Select value={faixaQtd} onValueChange={(v) => setFaixaQtd(v as FaixaQtd)}>
-                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {FAIXAS_QTD.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Data Entrega</label>
               <DateInputBR className="h-8" value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
             </div>
           </div>
           <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => { setVendedor("todos"); setStatus("todos"); setTipo("todos"); setEtapa("ativas"); setDataEntrega(""); setFaixaQtd("todas"); setSearch(""); }}>
+            <Button variant="outline" size="sm" onClick={() => { setVendedor("todos"); setStatus("todos"); setTipo("todos"); setEtapa("ativas"); setDataEntrega(""); setSearch(""); }}>
               <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
             </Button>
           </div>
