@@ -1586,6 +1586,131 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
         </CardContent>
       </Card>
 
+      {/* ---------------- Faixas de tamanho de pedido (só Custom) ---------------- */}
+      {soPcpAtivo && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Faixas de tamanho de pedido</CardTitle>
+            <CardDescription>Peças por pedido · período e demais filtros aplicados</CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-auto">
+            <table className="tbl-congelada w-full text-xs">
+              <thead>
+                <tr>
+                  <th className="px-2 py-1 text-left">Faixa</th>
+                  <th className="px-2 py-1 text-right">Pedidos</th>
+                  <th className="px-2 py-1 text-right">% pedidos</th>
+                  <th className="px-2 py-1 text-right">Peças</th>
+                  <th className="px-2 py-1 text-right">Faturamento</th>
+                  <th className="px-2 py-1 text-right">% faturamento</th>
+                  <th className="px-2 py-1 text-right">Ticket médio</th>
+                </tr>
+              </thead>
+              <tbody>
+                {faixasLinhas.map((l) => {
+                  const sel = faixaQtd === l.faixa;
+                  const pedidosFaixa = atuaisSemFaixa.filter((p) => faixaDoPedido(p) === l.faixa);
+                  return (
+                    <tr key={l.faixa} className={`border-t ${sel ? "bg-muted/50 font-semibold" : ""}`}>
+                      <td className="px-2 py-1">
+                        <button
+                          type="button"
+                          className="text-left underline-offset-2 hover:underline"
+                          onClick={() => setFaixaQtd(sel ? "todas" : l.faixa)}
+                        >
+                          {l.label}
+                        </button>
+                      </td>
+                      <td className="px-2 py-1 text-right tabular-nums">
+                        {l.pedidos > 0 ? (
+                          <ValorDrill
+                            onDrill={abrirDrill}
+                            build={() =>
+                              drillPedidos(pedidosFaixa, {
+                                titulo: `Pedidos — ${l.label}`,
+                                subtitulo: subOlist,
+                                indicadorLabel: fmtNum(l.pedidos),
+                                indicadorValor: l.pedidos,
+                                campo: "linhas",
+                              })
+                            }
+                          >
+                            {fmtNum(l.pedidos)}
+                          </ValorDrill>
+                        ) : (
+                          fmtNum(l.pedidos)
+                        )}
+                      </td>
+                      <td className="px-2 py-1 text-right tabular-nums">{l.pctPedidos.toFixed(1)}%</td>
+                      <td className="px-2 py-1 text-right tabular-nums">
+                        {l.pecas > 0 ? (
+                          <ValorDrill
+                            onDrill={abrirDrill}
+                            build={() =>
+                              drillPedidos(pedidosFaixa, {
+                                titulo: `Peças — ${l.label}`,
+                                subtitulo: subOlist,
+                                indicadorLabel: fmtNum(l.pecas),
+                                indicadorValor: l.pecas,
+                                campo: "pecas",
+                              })
+                            }
+                          >
+                            {fmtNum(l.pecas)}
+                          </ValorDrill>
+                        ) : (
+                          fmtNum(l.pecas)
+                        )}
+                      </td>
+                      <td className="px-2 py-1 text-right font-semibold tabular-nums">
+                        {l.pedidos > 0 ? (
+                          <ValorDrill
+                            onDrill={abrirDrill}
+                            build={() =>
+                              drillPedidos(pedidosFaixa, {
+                                titulo: `Faturamento — ${l.label}`,
+                                subtitulo: subOlist,
+                                indicadorLabel: fmtMoeda(l.faturamento),
+                                indicadorValor: l.faturamento,
+                                campo: "faturamento",
+                              })
+                            }
+                          >
+                            {fmtMoeda(l.faturamento)}
+                          </ValorDrill>
+                        ) : (
+                          fmtMoeda(l.faturamento)
+                        )}
+                      </td>
+                      <td className="px-2 py-1 text-right tabular-nums">{l.pctFaturamento.toFixed(1)}%</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(l.ticket)}</td>
+                    </tr>
+                  );
+                })}
+                {(() => {
+                  const tPed = faixasLinhas.reduce((s, l) => s + l.pedidos, 0);
+                  const tPec = faixasLinhas.reduce((s, l) => s + l.pecas, 0);
+                  const tFat = faixasLinhas.reduce((s, l) => s + l.faturamento, 0);
+                  return (
+                    <tr className="border-t-2 font-semibold">
+                      <td className="px-2 py-1">Total</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(tPed)}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{tPed ? "100,0%" : "0,0%"}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{fmtNum(tPec)}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(tFat)}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{tFat ? "100,0%" : "0,0%"}</td>
+                      <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(tPed ? tFat / tPed : 0)}</td>
+                    </tr>
+                  );
+                })()}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+
+
       {/* ---------------- Bloco 10 — Frete ---------------- */}
       <Card>
         <CardHeader className="pb-2">
