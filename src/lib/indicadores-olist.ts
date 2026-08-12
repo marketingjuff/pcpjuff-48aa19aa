@@ -957,3 +957,88 @@ export function saudeCadastro(
   };
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Faixas de tamanho de pedido (peças por pedido) — só Juff Custom     */
+/* ------------------------------------------------------------------ */
+
+export type FaixaQtd =
+  | "todas"
+  | "ate9"
+  | "f10_50"
+  | "f51_100"
+  | "f101_200"
+  | "f201_300"
+  | "f301_400"
+  | "f401_500"
+  | "f501_1000"
+  | "acima1000";
+
+export const FAIXAS_QTD: { v: Exclude<FaixaQtd, "todas">; label: string; min: number; max: number }[] = [
+  { v: "ate9", label: "< 10 pçs", min: 1, max: 9 },
+  { v: "f10_50", label: "10 a 50 pçs", min: 10, max: 50 },
+  { v: "f51_100", label: "51 a 100 pçs", min: 51, max: 100 },
+  { v: "f101_200", label: "101 a 200 pçs", min: 101, max: 200 },
+  { v: "f201_300", label: "201 a 300 pçs", min: 201, max: 300 },
+  { v: "f301_400", label: "301 a 400 pçs", min: 301, max: 400 },
+  { v: "f401_500", label: "401 a 500 pçs", min: 401, max: 500 },
+  { v: "f501_1000", label: "501 a 1000 pçs", min: 501, max: 1000 },
+  { v: "acima1000", label: "> 1000 pçs", min: 1001, max: Infinity },
+];
+
+/** Faixa do pedido a partir de pecasSel; null quando o pedido não tem peças. */
+export function faixaDoPedido(p: PedidoFiltrado): FaixaQtd | null {
+  const q = p.pecasSel;
+  if (!q || q <= 0) return null;
+  const f = FAIXAS_QTD.find((x) => q >= x.min && q <= x.max);
+  return f ? f.v : null;
+}
+
+export function filtrarPorFaixaQtd(pedidos: PedidoFiltrado[], f: FaixaQtd): PedidoFiltrado[] {
+  if (f === "todas") return pedidos;
+  return pedidos.filter((p) => faixaDoPedido(p) === f);
+}
+
+export interface LinhaFaixaQtd {
+  faixa: Exclude<FaixaQtd, "todas">;
+  label: string;
+  pedidos: number;
+  pecas: number;
+  faturamento: number;
+  ticket: number;
+  pctFaturamento: number;
+  pctPedidos: number;
+}
+
+export function porFaixaQtd(pedidos: PedidoFiltrado[]): LinhaFaixaQtd[] {
+  const linhas: LinhaFaixaQtd[] = FAIXAS_QTD.map((f) => ({
+    faixa: f.v,
+    label: f.label,
+    pedidos: 0,
+    pecas: 0,
+    faturamento: 0,
+    ticket: 0,
+    pctFaturamento: 0,
+    pctPedidos: 0,
+  }));
+  const idx = new Map(linhas.map((l) => [l.faixa, l]));
+
+  for (const p of pedidos) {
+    const f = faixaDoPedido(p);
+    if (!f || f === "todas") continue;
+    const l = idx.get(f);
+    if (!l) continue;
+    l.pedidos += 1;
+    l.pecas += p.pecasSel;
+    l.faturamento += p.liquidoSel;
+  }
+
+  const totPed = linhas.reduce((s, l) => s + l.pedidos, 0);
+  const totFat = linhas.reduce((s, l) => s + l.faturamento, 0);
+  for (const l of linhas) {
+    l.ticket = l.pedidos ? l.faturamento / l.pedidos : 0;
+    l.pctPedidos = totPed ? (l.pedidos / totPed) * 100 : 0;
+    l.pctFaturamento = totFat ? (l.faturamento / totFat) * 100 : 0;
+  }
+  return linhas;
+}
