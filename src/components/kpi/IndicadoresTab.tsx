@@ -766,6 +766,22 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
           <MultiSelect label="Cor" opcoes={opcoes.cores} valor={cores} onChange={setCores} />
           <MultiSelect label="Tamanho" opcoes={opcoes.tamanhos} valor={tamanhos} onChange={setTamanhos} />
           <MultiSelect label="Situação" opcoes={opcoes.situacoes} valor={situacoes} onChange={setSituacoes} />
+          {soPcpAtivo && (
+            <Select value={faixaQtd} onValueChange={(v) => setFaixaQtd(v as FaixaQtd)}>
+              <SelectTrigger className="h-9 w-[150px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as faixas</SelectItem>
+                {FAIXAS_QTD.map((f) => (
+                  <SelectItem key={f.v} value={f.v}>
+                    {f.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           {ehStore && (
             <>
               <Select value={tipoPeca} onValueChange={(v) => setTipoPeca(v as typeof tipoPeca)}>
