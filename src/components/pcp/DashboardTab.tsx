@@ -125,6 +125,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       if (status !== "todos" && p.status_pecas !== status) return false;
       if (tipo !== "todos" && p.tipo_estampa !== tipo) return false;
       if (dataEntrega && p.data_entrega !== dataEntrega) return false;
+      if (!pedidoNaFaixa(p, faixaQtd)) return false;
       if (search && !`${p.pedido_olist} ${p.orcamento}`.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
@@ -171,7 +172,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       });
     }
     return arr;
-  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, search, sort.key, sort.dir, feriados]);
+  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, faixaQtd, search, sort.key, sort.dir, feriados]);
 
   const stats = useMemo(() => {
     const ativos = pedidos.filter((p) => pedidoAtivoNasAreas(p));
@@ -233,7 +234,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
           </div>
         </CardHeader>
         <CardContent className="p-3 pt-0 space-y-2">
-          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7">
             <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Etapa</label>
               <Select value={etapa} onValueChange={(v) => setEtapa(v as Etapa)}>
@@ -292,12 +293,21 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
               </Select>
             </div>
             <div className="space-y-0.5">
+              <label className="text-xs text-muted-foreground font-medium">Faixa de Qtd</label>
+              <Select value={faixaQtd} onValueChange={(v) => setFaixaQtd(v as FaixaQtd)}>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {FAIXAS_QTD.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Data Entrega</label>
               <DateInputBR className="h-8" value={dataEntrega} onChange={(v) => setDataEntrega(v ?? "")} />
             </div>
           </div>
           <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => { setVendedor("todos"); setStatus("todos"); setTipo("todos"); setEtapa("ativas"); setDataEntrega(""); setSearch(""); }}>
+            <Button variant="outline" size="sm" onClick={() => { setVendedor("todos"); setStatus("todos"); setTipo("todos"); setEtapa("ativas"); setDataEntrega(""); setFaixaQtd("todas"); setSearch(""); }}>
               <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
             </Button>
           </div>
