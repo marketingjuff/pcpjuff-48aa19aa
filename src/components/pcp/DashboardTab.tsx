@@ -3,8 +3,43 @@ import { useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
   STATUS_PECAS_OPCOES, TIPOS_ESTAMPA,
-  calcularEtapaAtual, statusPrazo, tipoIncluiDTF, tipoIncluiSilk,
+  calcularEtapaAtual, statusPrazo, tipoIncluiDTF, tipoIncluiSilk, totalProducao,
 } from "@/lib/pedidos";
+
+type FaixaQtd =
+  | "todas" | "ate9" | "f10_50" | "f51_100" | "f101_200"
+  | "f201_300" | "f301_400" | "f401_500" | "f501_1000" | "acima1000";
+
+const FAIXAS_QTD: { value: FaixaQtd; label: string }[] = [
+  { value: "todas", label: "Todas as faixas" },
+  { value: "ate9", label: "< 10 pçs" },
+  { value: "f10_50", label: "10 a 50 pçs" },
+  { value: "f51_100", label: "51 a 100 pçs" },
+  { value: "f101_200", label: "101 a 200 pçs" },
+  { value: "f201_300", label: "201 a 300 pçs" },
+  { value: "f301_400", label: "301 a 400 pçs" },
+  { value: "f401_500", label: "401 a 500 pçs" },
+  { value: "f501_1000", label: "501 a 1000 pçs" },
+  { value: "acima1000", label: "> 1000 pçs" },
+];
+
+function pedidoNaFaixa(p: Pedido, f: FaixaQtd): boolean {
+  if (f === "todas") return true;
+  const total = totalProducao(p).total;
+  switch (f) {
+    case "ate9": return total >= 1 && total <= 9;
+    case "f10_50": return total >= 10 && total <= 50;
+    case "f51_100": return total >= 51 && total <= 100;
+    case "f101_200": return total >= 101 && total <= 200;
+    case "f201_300": return total >= 201 && total <= 300;
+    case "f301_400": return total >= 301 && total <= 400;
+    case "f401_500": return total >= 401 && total <= 500;
+    case "f501_1000": return total >= 501 && total <= 1000;
+    case "acima1000": return total > 1000;
+    default: return true;
+  }
+}
+
 
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
