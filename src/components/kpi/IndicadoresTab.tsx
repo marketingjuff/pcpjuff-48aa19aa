@@ -1520,6 +1520,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                 <th className="px-2 py-1 text-right">Pedidos</th>
                 <th className="px-2 py-1 text-right">Peças</th>
                 <th className="px-2 py-1 text-right">Ticket médio</th>
+                <th className="px-2 py-1 text-right">Preço médio/peça</th>
                 <th className="px-2 py-1 text-right">Desconto (R$)</th>
                 <th className="px-2 py-1 text-right">Desconto médio (%)</th>
               </tr>
@@ -1604,6 +1605,30 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                     >
                       {fmtMoeda(v.ticket)}
                     </ValorDrill>
+                  </td>
+                  <td className="px-2 py-1 text-right tabular-nums">
+                    {v.pecas > 0 ? (
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillPedidos(
+                            atuais.filter((p) => p.vendedor === v.vendedor),
+                            {
+                              titulo: `Preço médio/peça — ${v.vendedor}`,
+                              subtitulo: subOlist,
+                              indicadorLabel: fmtMoeda(v.faturamento / v.pecas),
+                              indicadorValor: v.faturamento / v.pecas,
+                              campo: "faturamento",
+                              media: true,
+                            },
+                          )
+                        }
+                      >
+                        {fmtMoeda(v.faturamento / v.pecas)}
+                      </ValorDrill>
+                    ) : (
+                      fmtMoeda(0)
+                    )}
                   </td>
                   <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(v.descontoValor)}</td>
                   <td className="px-2 py-1 text-right tabular-nums">{v.descontoPerc.toFixed(1)}%</td>
