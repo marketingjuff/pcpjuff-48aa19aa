@@ -84,6 +84,8 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const [tipo, setTipo] = useState<string>("todos");
   const [etapa, setEtapa] = useState<Etapa>("ativas");
   const [dataEntrega, setDataEntrega] = useState("");
+  const [faixaQtd, setFaixaQtd] = useState<FaixaQtd>("todas");
+
   
   const [search, setSearch] = useState("");
   const sort = useSort<"qtd"|"entrada"|"arte"|"inicio"|"termino"|"inicioAcab"|"acabamento"|"exped"|"saida"|"entrega"|"dias"|"etapa"|"pedido"|"orcamento"|"vendedor"|"estampa"|"statusPecas"|"frete"|"uf">("saida", "asc");
