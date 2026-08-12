@@ -504,7 +504,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   );
 
   // O recorte por vendedor sai do aplicarFiltros e passa a usar a regra de união (Olist OU PCP).
-  const atuais = useMemo(
+  const atuaisSemFaixa = useMemo(
     () =>
       filtrarPorVendedor(
         aplicarFiltros(base, { ...filtros, vendedores: [] }, ctx),
@@ -513,7 +513,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       ),
     [base, filtros, ctx, vendedores, vendedorPcpPorPedido],
   );
-  const anteriores = useMemo(() => {
+  const anterioresSemFaixa = useMemo(() => {
     if (!comparar) return [];
     const p = periodoAnterior(intervalo.de, intervalo.ate);
     return filtrarPorVendedor(
@@ -522,6 +522,17 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       vendedorPcpPorPedido,
     );
   }, [comparar, base, filtros, ctx, intervalo, vendedores, vendedorPcpPorPedido]);
+
+  const atuais = useMemo(
+    () => filtrarPorFaixaQtd(atuaisSemFaixa, faixaQtd),
+    [atuaisSemFaixa, faixaQtd],
+  );
+  const anteriores = useMemo(
+    () => filtrarPorFaixaQtd(anterioresSemFaixa, faixaQtd),
+    [anterioresSemFaixa, faixaQtd],
+  );
+  const faixasLinhas = useMemo(() => porFaixaQtd(atuaisSemFaixa), [atuaisSemFaixa]);
+
 
 
   const r = useMemo(() => resumo(atuais), [atuais]);
