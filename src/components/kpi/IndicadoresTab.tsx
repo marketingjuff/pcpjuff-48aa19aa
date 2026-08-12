@@ -85,6 +85,7 @@ import { useFeriados } from "@/hooks/use-feriados";
 
 import { useProfilesMap } from "@/hooks/use-profiles-map";
 import { abrirIndicadoresParaImpressao } from "@/lib/indicadores-pdf";
+import { abrirFaixasQtdParaImpressao } from "@/lib/faixas-qtd-pdf";
 import {
   opcoesVendedores,
   mapaVendedorPcp,
@@ -676,6 +677,33 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       composicaoStore: composicao ?? undefined,
       rankingEstampas: ehStore ? rankEstampas : undefined,
 
+    });
+  };
+
+  const exportarPdfFaixas = () => {
+    const linhas = faixasLinhas.map((l) => {
+      const pedidosFaixa = atuaisSemFaixa.filter((p) => faixaDoPedido(p) === l.faixa);
+      const top = ranking(pedidosFaixa, "modelo")[0] ?? null;
+      return {
+        ...l,
+        precoMedio: l.pecas ? l.faturamento / l.pecas : 0,
+        topModelo: top ? { nome: top.chave, pecas: top.pecas } : null,
+      };
+    });
+    const topGeral = ranking(atuaisSemFaixa, "modelo")[0] ?? null;
+    void abrirFaixasQtdParaImpressao({
+      periodo: intervalo,
+      filtros: {
+        empresa: escopo === "store" ? "JOKE" : empresa,
+        vendedores: labelsVendSelecionados,
+        modelos,
+        cores,
+        tamanhos,
+        situacoes,
+        grupos: soPcpAtivo ? grupos.map((g) => GRUPOS.find((x) => x.v === g)?.label ?? g) : [],
+      },
+      linhas,
+      totalTopModelo: topGeral ? { nome: topGeral.chave, pecas: topGeral.pecas } : null,
     });
   };
 
@@ -1589,9 +1617,14 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       {/* ---------------- Faixas de tamanho de pedido (só Custom) ---------------- */}
       {soPcpAtivo && (
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Faixas de tamanho de pedido</CardTitle>
-            <CardDescription>Peças por pedido · período e demais filtros aplicados</CardDescription>
+          <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
+            <div className="space-y-1.5">
+              <CardTitle className="text-base">Faixas de tamanho de pedido</CardTitle>
+              <CardDescription>Peças por pedido · período e demais filtros aplicados</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" className="h-8 gap-2" onClick={exportarPdfFaixas} disabled={isLoading}>
+              <FileDown className="h-4 w-4" /> PDF por faixa
+            </Button>
           </CardHeader>
           <CardContent className="overflow-auto">
             <table className="tbl-congelada w-full text-xs">
