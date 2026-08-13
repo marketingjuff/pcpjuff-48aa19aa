@@ -403,24 +403,75 @@ export function KpiPcpTab() {
       </Bloco>
 
       {/* Bloco 4 */}
-      <Bloco titulo="Onde o tempo está indo">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {tempos.etapas.map((e) => (
-            <Kpi
-              key={e.etapa}
-              titulo={`Tempo médio de ${e.etapa}`}
-              apoio={`${nf.format(e.pedidos)} pedido(s) com as duas datas registradas.`}
-              valor={e.medio == null ? null : `${nf1.format(e.medio)} dias`}
-              vazio="Sem datas suficientes no período."
-            />
-          ))}
+      <Bloco
+        titulo="Planejado vs. Real"
+        apoio="Compara o prazo planejado no Input de Produção com o que a produção levou de fato. Pedidos com refação ficam de fora."
+      >
+        <p className={tempos.cobertura.perc < 50 ? "text-xs text-amber-600" : "text-xs text-muted-foreground"}>
+          {nf.format(tempos.cobertura.elegiveis)} de {nf.format(tempos.cobertura.total)} pedidos do período têm a cadeia de
+          datas completa e sem refação ({nf1.format(tempos.cobertura.perc)}%).
+          {tempos.cobertura.perc < 50 &&
+            " Com essa cobertura, os números abaixo são indicativos — vale conferir se as datas estão sendo preenchidas na hora."}
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
           <Kpi
-            titulo="Etapa mais demorada do período"
-            apoio="É a etapa que mais segurou os pedidos nesse período."
+            titulo="Onde sobra mais prazo"
+            apoio="Etapa onde o planejamento é mais folgado que a execução. É por aqui que dá pra apertar."
+            valor={tempos.maiorFolga}
+            vazio="Sem dados suficientes no período."
+          />
+          <Kpi
+            titulo="Etapa mais demorada"
+            apoio="Maior tempo real médio. É o gargalo de verdade."
             valor={tempos.gargalo}
-            vazio="Sem datas suficientes no período."
+            vazio="Sem dados suficientes no período."
           />
         </div>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Planejado vs. real por etapa</CardTitle></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Etapa</TableHead>
+                  <TableHead className="text-right">Planejado</TableHead>
+                  <TableHead className="text-right">Real</TableHead>
+                  <TableHead className="text-right">Diferença</TableHead>
+                  <TableHead className="text-right">Sugestão (P80)</TableHead>
+                  <TableHead className="text-right">Pedidos</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tempos.etapas.map((e) => {
+                  const esconde = e.amostraPequena;
+                  const dia = (v: number | null) => (esconde || v == null ? "—" : `${nf1.format(v)} d`);
+                  const dif =
+                    esconde || e.diferenca == null
+                      ? "—"
+                      : `${e.diferenca >= 0 ? "+" : "−"}${nf1.format(Math.abs(e.diferenca))} d`;
+                  const difCor =
+                    esconde || e.diferenca == null ? "" : e.diferenca >= 0 ? "text-emerald-600" : "text-red-600";
+                  return (
+                    <TableRow key={e.etapa}>
+                      <TableCell>{e.etapa}</TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums">{dia(e.planejadoMedio)}</TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums">{dia(e.realMedio)}</TableCell>
+                      <TableCell className={`text-right font-semibold tabular-nums ${difCor}`}>{dif}</TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums">
+                        {esconde || e.realP80 == null ? "—" : `${nf.format(Math.ceil(e.realP80))} d`}
+                      </TableCell>
+                      <TableCell className={`text-right font-semibold tabular-nums ${esconde ? "text-muted-foreground" : ""}`}>
+                        {nf.format(e.n)}
+                        {esconde && " (poucos)"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
         <div className="grid gap-3 lg:grid-cols-2">
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-base">Tempo médio do pedido mês a mês</CardTitle></CardHeader>
