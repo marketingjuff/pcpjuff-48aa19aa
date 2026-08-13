@@ -6,7 +6,7 @@ import { parsePeople } from "@/components/pcp/MultiSelectPeople";
 
 export type Feriados = Set<string>;
 
-export type BaseContagem = "entrada" | "saida";
+export type BaseContagem = "entrada" | "saida" | "finalizado";
 
 export interface KpiFiltro {
   de: string;
@@ -46,7 +46,9 @@ export function pessoasDoPedido(p: Pedido): string[] {
 }
 
 function dataBase(p: Pedido, base: BaseContagem): string | null {
-  return base === "saida" ? (p.saida_juff ?? p.finalizado_em?.slice(0, 10) ?? null) : p.entrada_pedido;
+  if (base === "entrada") return p.entrada_pedido;
+  if (base === "saida") return p.saida_juff ?? p.finalizado_em?.slice(0, 10) ?? null;
+  return p.finalizado_em?.slice(0, 10) ?? null;
 }
 
 /** Aplica período + vendedor + tipo de estampa + pessoa. */
