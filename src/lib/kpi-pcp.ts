@@ -1,7 +1,7 @@
 // KPI PCP — cálculos puros sobre os pedidos do PCP.
 // Nada aqui toca banco: recebe os registros já lidos e o conjunto de feriados.
 import { diasUteisEntre } from "@/lib/dias-uteis";
-import { calcularEtapaAtual, type Pedido, type RefacaoEpisodio } from "@/lib/pedidos";
+import { calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk, type Pedido, type RefacaoEpisodio } from "@/lib/pedidos";
 import { parsePeople } from "@/components/pcp/MultiSelectPeople";
 
 export type Feriados = Set<string>;
