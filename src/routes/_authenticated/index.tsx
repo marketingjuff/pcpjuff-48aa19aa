@@ -349,7 +349,18 @@ function AppHomeInner() {
               />
             </TabsContent>
           )}
+          {pode("pcp.frete") && (
+            <TabsContent value="frete" forceMount hidden={tab !== "frete"}>
+              <FreteTab
+                pedidos={pedidos}
+                onSave={(p) => upsert.mutate(p)}
+                saving={upsert.isPending}
+                soLeitura={soLeitura("pcp.frete")}
+              />
+            </TabsContent>
+          )}
           {pode("pcp.finalizados") && (
+
             <TabsContent value="fin" forceMount hidden={tab !== "fin"}>
               <FinalizadosTab
                 pedidos={pedidos}
