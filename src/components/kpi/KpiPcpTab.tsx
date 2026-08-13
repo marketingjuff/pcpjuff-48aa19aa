@@ -344,8 +344,7 @@ export function KpiPcpTab() {
                       <TableRow>
                         <TableHead>Pessoa</TableHead>
                         <TableHead className="text-right">Pedidos</TableHead>
-                        <TableHead className="text-right">Peças</TableHead>
-                        {batidas && <TableHead className="text-right">Batidas</TableHead>}
+                        <TableHead className="text-right">{batidas ? "Batidas" : "Peças"}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -353,19 +352,26 @@ export function KpiPcpTab() {
                         <TableRow key={l.pessoa}>
                           <TableCell>
                             {l.pessoa}
-                            {l.estimado && (
-                              <span className="block text-[11px] text-muted-foreground">
-                                Número dividido igualmente — o pedido não registrou quanto cada um fez.
-                              </span>
-                            )}
+                            {batidas
+                              ? l.batidasEstimadas && (
+                                  <span className="block text-[11px] text-muted-foreground">
+                                    Batidas divididas igualmente entre quem bateu o pedido.
+                                  </span>
+                                )
+                              : l.estimado && (
+                                  <span className="block text-[11px] text-muted-foreground">
+                                    Número dividido igualmente — o pedido não registrou quanto cada um fez.
+                                  </span>
+                                )}
                           </TableCell>
                           <TableCell className="text-right font-semibold tabular-nums">{nf.format(l.pedidos)}</TableCell>
-                          <TableCell className="text-right font-semibold tabular-nums">{nf.format(l.pecas)}</TableCell>
-                          {batidas && <TableCell className="text-right font-semibold tabular-nums">{nf.format(l.batidas)}</TableCell>}
+                          <TableCell className="text-right font-semibold tabular-nums">
+                            {nf.format(batidas ? l.batidas : l.pecas)}
+                          </TableCell>
                         </TableRow>
                       ))}
                       {linhas.length === 0 && (
-                        <TableRow><TableCell colSpan={batidas ? 4 : 3} className="text-sm text-muted-foreground">Sem registro no período.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={3} className="text-sm text-muted-foreground">Sem registro no período.</TableCell></TableRow>
                       )}
                     </TableBody>
                   </Table>
