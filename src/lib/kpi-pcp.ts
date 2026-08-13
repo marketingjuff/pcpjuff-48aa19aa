@@ -260,28 +260,110 @@ export function pecasPorPessoaPorDia(regs: Pedido[], feriados: Feriados): { pess
 /* Bloco 4 — Onde o tempo está indo                                    */
 /* ------------------------------------------------------------------ */
 
+export interface EtapaTempo {
+  etapa: string;
+  n: number;
+  planejadoMedio: number | null;
+  realMedio: number | null;
+  diferenca: number | null;
+  realP80: number | null;
+  amostraPequena: boolean;
+}
+
 export interface TempoBloco {
-  etapas: { etapa: string; medio: number | null; pedidos: number }[];
+  etapas: EtapaTempo[];
+  /** Etapa com a maior diferença positiva, considerando só etapas com n >= 5. */
+  maiorFolga: string | null;
+  /** Etapa com o maior realMedio, considerando só etapas com n >= 5. */
   gargalo: string | null;
+  cobertura: { elegiveis: number; total: number; perc: number };
   porMes: { mes: string; medio: number | null; pedidos: number }[];
   faixas: { faixa: string; pedidos: number; perc: number }[];
 }
 
+const maxData = (a: string | null | undefined, b: string | null | undefined): string | null => {
+  if (!a || !b) return null;
+  return a > b ? a : b;
+};
+
+function arteLiberouDtf(p: Pedido): string | null {
+  return maxData(p.dtf_executado, p.dtf_cortado_data);
+}
+
+function arteLiberouSilk(p: Pedido): string | null {
+  return p.fotolito_executado ?? null;
+}
+
+function arteLiberou(p: Pedido): string | null {
+  const dtf = tipoIncluiDTF(p.tipo_estampa);
+  const silk = tipoIncluiSilk(p.tipo_estampa);
+  if (dtf && silk) return maxData(arteLiberouDtf(p), arteLiberouSilk(p));
+  if (dtf) return arteLiberouDtf(p);
+  if (silk) return arteLiberouSilk(p);
+  return null;
+}
+
+function fimEstamparia(p: Pedido): string | null {
+  const dtf = tipoIncluiDTF(p.tipo_estampa);
+  const silk = tipoIncluiSilk(p.tipo_estampa);
+  if (dtf && silk) return maxData(p.dtf_data_executada, p.silk_data_executada);
+  if (dtf) return p.dtf_data_executada ?? null;
+  if (silk) return p.silk_data_executada ?? null;
+  return null;
+}
+
+function p80(arr: number[]): number | null {
+  if (!arr.length) return null;
+  const s = [...arr].sort((a, b) => a - b);
+  const i = Math.min(s.length - 1, Math.max(0, Math.ceil(0.8 * s.length) - 1));
+  return s[i]!;
+}
+
+const ETAPAS_TEMPO = ["Arte", "Estamparia DTF", "Estamparia Silk", "Acabamento", "Expedição"] as const;
+
 export function tempoBloco(regs: Pedido[], feriados: Feriados): TempoBloco {
-  const dias = (a: string | null, b: string | null) => (a && b ? diasUteisEntre(a, b, feriados) : null);
-  const vals: Record<string, number[]> = { Arte: [], Estamparia: [], Acabamento: [], Expedição: [] };
+  const dias = (a: string | null | undefined, b: string | null | undefined) =>
+    a && b ? diasUteisEntre(a, b, feriados) : null;
+  const plan: Record<string, number[]> = {};
+  const real: Record<string, number[]> = {};
+  for (const e of ETAPAS_TEMPO) {
+    plan[e] = [];
+    real[e] = [];
+  }
   const porMes = new Map<string, number[]>();
   const faixas = { "Até 5 dias": 0, "6 a 10 dias": 0, "11 a 15 dias": 0, "Mais de 15 dias": 0 } as Record<string, number>;
   let totalFaixa = 0;
+  let elegiveis = 0;
 
   for (const p of regs) {
-    const push = (k: string, v: number | null) => {
-      if (v != null) vals[k]!.push(v);
-    };
-    push("Arte", dias(p.entrada_pedido, p.arte_data));
-    push("Estamparia", dias(p.inicio_estamparia, p.termino_estamparia));
-    push("Acabamento", dias(p.inicio_acabamento, p.termino_acabamento));
-    push("Expedição", dias(p.termino_acabamento, p.saida_juff));
+    if (refs(p).length === 0) {
+      let entrou = false;
+      const par = (etapa: string, pa: string | null | undefined, pb: string | null | undefined, ra: string | null | undefined, rb: string | null | undefined) => {
+        const dp = dias(pa, pb);
+        const dr = dias(ra, rb);
+        if (dp == null || dr == null) return;
+        plan[etapa]!.push(dp);
+        real[etapa]!.push(dr);
+        entrou = true;
+      };
+      const tipo = p.tipo_estampa;
+      const dtf = tipoIncluiDTF(tipo);
+      const silk = tipoIncluiSilk(tipo);
+      const lisa = !dtf && !silk;
+
+      if (!lisa) par("Arte", p.entrada_pedido, p.arte_data, p.entrada_pedido, arteLiberou(p));
+      if (dtf) par("Estamparia DTF", p.inicio_estamparia, p.termino_estamparia, arteLiberouDtf(p), p.dtf_data_executada);
+      if (silk) par("Estamparia Silk", p.inicio_estamparia, p.termino_estamparia, arteLiberouSilk(p), p.silk_data_executada);
+      par(
+        "Acabamento",
+        p.inicio_acabamento,
+        p.termino_acabamento,
+        lisa ? p.inicio_acabamento : fimEstamparia(p),
+        p.data_saida_juff,
+      );
+      par("Expedição", p.termino_acabamento, p.saida_juff, p.data_saida_juff, p.exp_despachado_em);
+      if (entrou) elegiveis++;
+    }
 
     const total = dias(p.entrada_pedido, p.saida_juff);
     if (total != null) {
@@ -299,15 +381,37 @@ export function tempoBloco(regs: Pedido[], feriados: Feriados): TempoBloco {
     }
   }
 
-  const etapas = Object.entries(vals).map(([etapa, v]) => ({ etapa, medio: media(v), pedidos: v.length }));
-  const comValor = etapas.filter((e) => e.medio != null);
-  const gargalo = comValor.length
-    ? comValor.reduce((a, b) => ((b.medio ?? 0) > (a.medio ?? 0) ? b : a)).etapa
+  const etapas: EtapaTempo[] = ETAPAS_TEMPO.map((etapa) => {
+    const pv = plan[etapa]!;
+    const rv = real[etapa]!;
+    const pm = media(pv);
+    const rm = media(rv);
+    return {
+      etapa,
+      n: rv.length,
+      planejadoMedio: pm,
+      realMedio: rm,
+      diferenca: pm != null && rm != null ? pm - rm : null,
+      realP80: p80(rv),
+      amostraPequena: rv.length < 5,
+    };
+  });
+
+  const qualificadas = etapas.filter((e) => e.n >= 5);
+  const folgas = qualificadas.filter((e) => (e.diferenca ?? 0) > 0);
+  const maiorFolga = folgas.length
+    ? folgas.reduce((a, b) => ((b.diferenca ?? 0) > (a.diferenca ?? 0) ? b : a)).etapa
+    : null;
+  const comReal = qualificadas.filter((e) => e.realMedio != null);
+  const gargalo = comReal.length
+    ? comReal.reduce((a, b) => ((b.realMedio ?? 0) > (a.realMedio ?? 0) ? b : a)).etapa
     : null;
 
   return {
     etapas,
+    maiorFolga,
     gargalo,
+    cobertura: { elegiveis, total: regs.length, perc: regs.length ? (elegiveis / regs.length) * 100 : 0 },
     porMes: [...porMes.entries()]
       .map(([mes, v]) => ({ mes, medio: media(v), pedidos: v.length }))
       .sort((a, b) => a.mes.localeCompare(b.mes)),
@@ -318,6 +422,7 @@ export function tempoBloco(regs: Pedido[], feriados: Feriados): TempoBloco {
     })),
   };
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Bloco 5 — Situação de agora (independe do período)                  */
