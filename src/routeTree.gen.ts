@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedSupRouteImport } from './routes/_authenticated/sup'
 import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/map'
 import { Route as AuthenticatedKpiRouteImport } from './routes/_authenticated/kpi'
+import { Route as AuthenticatedEntregasRouteImport } from './routes/_authenticated/entregas'
 import { Route as AuthenticatedCopRouteImport } from './routes/_authenticated/cop'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 
@@ -47,6 +48,11 @@ const AuthenticatedKpiRoute = AuthenticatedKpiRouteImport.update({
   path: '/kpi',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEntregasRoute = AuthenticatedEntregasRouteImport.update({
+  id: '/entregas',
+  path: '/entregas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCopRoute = AuthenticatedCopRouteImport.update({
   id: '/cop',
   path: '/cop',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/cop': typeof AuthenticatedCopRoute
+  '/entregas': typeof AuthenticatedEntregasRoute
   '/kpi': typeof AuthenticatedKpiRoute
   '/map': typeof AuthenticatedMapRoute
   '/sup': typeof AuthenticatedSupRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/cop': typeof AuthenticatedCopRoute
+  '/entregas': typeof AuthenticatedEntregasRoute
   '/kpi': typeof AuthenticatedKpiRoute
   '/map': typeof AuthenticatedMapRoute
   '/sup': typeof AuthenticatedSupRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/cop': typeof AuthenticatedCopRoute
+  '/_authenticated/entregas': typeof AuthenticatedEntregasRoute
   '/_authenticated/kpi': typeof AuthenticatedKpiRoute
   '/_authenticated/map': typeof AuthenticatedMapRoute
   '/_authenticated/sup': typeof AuthenticatedSupRoute
@@ -95,17 +104,27 @@ export interface FileRouteTypes {
     | '/auth'
     | '/configuracoes'
     | '/cop'
+    | '/entregas'
     | '/kpi'
     | '/map'
     | '/sup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/configuracoes' | '/cop' | '/kpi' | '/map' | '/sup' | '/'
+  to:
+    | '/auth'
+    | '/configuracoes'
+    | '/cop'
+    | '/entregas'
+    | '/kpi'
+    | '/map'
+    | '/sup'
+    | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/configuracoes'
     | '/_authenticated/cop'
+    | '/_authenticated/entregas'
     | '/_authenticated/kpi'
     | '/_authenticated/map'
     | '/_authenticated/sup'
@@ -161,6 +180,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedKpiRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/entregas': {
+      id: '/_authenticated/entregas'
+      path: '/entregas'
+      fullPath: '/entregas'
+      preLoaderRoute: typeof AuthenticatedEntregasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/cop': {
       id: '/_authenticated/cop'
       path: '/cop'
@@ -181,6 +207,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCopRoute: typeof AuthenticatedCopRoute
+  AuthenticatedEntregasRoute: typeof AuthenticatedEntregasRoute
   AuthenticatedKpiRoute: typeof AuthenticatedKpiRoute
   AuthenticatedMapRoute: typeof AuthenticatedMapRoute
   AuthenticatedSupRoute: typeof AuthenticatedSupRoute
@@ -190,6 +217,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedCopRoute: AuthenticatedCopRoute,
+  AuthenticatedEntregasRoute: AuthenticatedEntregasRoute,
   AuthenticatedKpiRoute: AuthenticatedKpiRoute,
   AuthenticatedMapRoute: AuthenticatedMapRoute,
   AuthenticatedSupRoute: AuthenticatedSupRoute,
