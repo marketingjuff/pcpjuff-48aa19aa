@@ -173,6 +173,8 @@ export type Pedido = PedidoBase & {
   exp_despachado_em: string | null;
   exp_frete_solicitado_em: string | null;
   exp_observacoes: string | null;
+  /** Fotos do canhoto (append-only). */
+  canhoto_fotos?: Array<{ path: string; em: string; por: string | null }> | null;
   data_entrega_proposta: string | null;
   data_entrega_proposta_em: string | null;
   data_entrega_proposta_por: string | null;
@@ -236,6 +238,7 @@ export type PedidoInsert = PedidoInsertBase & {
   exp_despachado_em?: string | null;
   exp_frete_solicitado_em?: string | null;
   exp_observacoes?: string | null;
+  canhoto_fotos?: Array<{ path: string; em: string; por: string | null }> | null;
   data_entrega_proposta?: string | null;
   data_entrega_proposta_em?: string | null;
   data_entrega_proposta_por?: string | null;

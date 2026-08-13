@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { CanhotoFotoViewer } from "./CanhotoFotoViewer";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Pedido } from "@/lib/pedidos";
 import { supabase } from "@/integrations/supabase/client";
@@ -335,6 +336,7 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true, soLeitur
                     <Chip label="Resp" value={p.responsavel_acabamento} />
                     <Chip label="Finalizado" value={formatDateBR(p.finalizado_em?.slice(0,10)) || "—"} />
                   </div>
+                  <div className="mt-2"><CanhotoFotoViewer pedido={p} label="Ver canhoto" /></div>
                   {podeReabrir && (
                     <div className="mt-2">
                       <Button size="sm" onClick={() => onReabrir(p.id)} className="w-full" style={btnStyle("reabrir")}>
@@ -396,7 +398,8 @@ export function FinalizadosTab({ pedidos, onReabrir, canReabrir = true, soLeitur
                     <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.data_saida_juff)}</td>
                     <td className="px-1.5 py-0.5 text-xs">{p.responsavel_acabamento ?? "—"}</td>
                     <td className="px-1.5 py-0.5 text-xs whitespace-nowrap">{formatDateBR(p.finalizado_em?.slice(0,10))}</td>
-                    <td className="px-1.5 py-0.5 text-right" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-1.5 py-0.5 text-right space-x-1" onClick={(e) => e.stopPropagation()}>
+                      <CanhotoFotoViewer pedido={p} label="Canhoto" />
                       {podeReabrir && (
                         <Button size="sm" onClick={() => onReabrir(p.id)} style={btnStyle("reabrir")}>
                           <RotateCcw className="h-3 w-3 mr-1" /> Reabrir

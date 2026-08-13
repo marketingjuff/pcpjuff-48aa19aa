@@ -103,6 +103,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
       exp_etiqueta: form.exp_etiqueta ?? null,
       exp_frete_solicitado: form.exp_frete_solicitado ?? null,
       exp_despachado: form.exp_despachado ?? null,
+      exp_destino_humberto: form.exp_destino_humberto ?? false,
       exp_despachado_em: form.exp_despachado_em ?? null,
       exp_frete_solicitado_em: form.exp_frete_solicitado_em ?? null,
       exp_observacoes: form.exp_observacoes ?? null,
@@ -119,6 +120,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
       exp_etiqueta: form.exp_etiqueta ?? null,
       exp_frete_solicitado: form.exp_frete_solicitado ?? null,
       exp_despachado: form.exp_despachado ?? null,
+      exp_destino_humberto: form.exp_destino_humberto ?? false,
       exp_despachado_em: form.exp_despachado_em ?? null,
       exp_frete_solicitado_em: form.exp_frete_solicitado_em ?? null,
       exp_observacoes: form.exp_observacoes ?? null,
@@ -239,6 +241,25 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               const comData: ItemKey[] = (["exp_frete_solicitado", "exp_despachado"] as ItemKey[]).filter((k) => itens.includes(k));
               const renderStatus = (key: ItemKey) => {
                 const val = form[key];
+                if (key === "exp_despachado") {
+                  const humberto = form.exp_destino_humberto === true;
+                  return (
+                    <Select
+                      value={humberto ? "Humberto" : val === true ? "Sim" : val === false ? "Não" : ""}
+                      onValueChange={(v) => {
+                        toggleItem(key, v !== "Não");
+                        set("exp_destino_humberto", v === "Humberto");
+                      }}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Sim">Sim</SelectItem>
+                        <SelectItem value="Humberto">Sim, para o Humberto</SelectItem>
+                        <SelectItem value="Não">Não</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  );
+                }
                 return (
                   <Select
                     value={val === true ? "Sim" : val === false ? "Não" : ""}
@@ -252,6 +273,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   </Select>
                 );
               };
+
               return (
                 <>
                   {simples.length > 0 && (
