@@ -1162,6 +1162,9 @@ export type Database = {
           arte_data: string | null
           arte_observacao: string | null
           arte_warning: boolean
+          canhoto_fotos: Json
+          canhoto_horario_comercial: boolean
+          canhoto_impresso_em: string | null
           correcoes_etapa: Json
           created_at: string
           data_entrega: string | null
@@ -1180,9 +1183,12 @@ export type Database = {
           dtf_pessoas_qtd: Json | null
           embalado: string | null
           entrada_pedido: string | null
+          entrega_confirmada_em: string | null
+          entrega_confirmada_por: string | null
           exp_cobranca_pagamento: boolean | null
           exp_despachado: boolean | null
           exp_despachado_em: string | null
+          exp_destino_humberto: boolean
           exp_etiqueta: boolean | null
           exp_frete_solicitado: boolean | null
           exp_frete_solicitado_em: string | null
@@ -1247,6 +1253,9 @@ export type Database = {
           arte_data?: string | null
           arte_observacao?: string | null
           arte_warning?: boolean
+          canhoto_fotos?: Json
+          canhoto_horario_comercial?: boolean
+          canhoto_impresso_em?: string | null
           correcoes_etapa?: Json
           created_at?: string
           data_entrega?: string | null
@@ -1265,9 +1274,12 @@ export type Database = {
           dtf_pessoas_qtd?: Json | null
           embalado?: string | null
           entrada_pedido?: string | null
+          entrega_confirmada_em?: string | null
+          entrega_confirmada_por?: string | null
           exp_cobranca_pagamento?: boolean | null
           exp_despachado?: boolean | null
           exp_despachado_em?: string | null
+          exp_destino_humberto?: boolean
           exp_etiqueta?: boolean | null
           exp_frete_solicitado?: boolean | null
           exp_frete_solicitado_em?: string | null
@@ -1332,6 +1344,9 @@ export type Database = {
           arte_data?: string | null
           arte_observacao?: string | null
           arte_warning?: boolean
+          canhoto_fotos?: Json
+          canhoto_horario_comercial?: boolean
+          canhoto_impresso_em?: string | null
           correcoes_etapa?: Json
           created_at?: string
           data_entrega?: string | null
@@ -1350,9 +1365,12 @@ export type Database = {
           dtf_pessoas_qtd?: Json | null
           embalado?: string | null
           entrada_pedido?: string | null
+          entrega_confirmada_em?: string | null
+          entrega_confirmada_por?: string | null
           exp_cobranca_pagamento?: boolean | null
           exp_despachado?: boolean | null
           exp_despachado_em?: string | null
+          exp_destino_humberto?: boolean
           exp_etiqueta?: boolean | null
           exp_frete_solicitado?: boolean | null
           exp_frete_solicitado_em?: string | null
