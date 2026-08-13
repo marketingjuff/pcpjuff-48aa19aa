@@ -100,7 +100,7 @@ export function KpiPcpTab() {
   const [de, setDe] = useState(inicial.de);
   const [ate, setAte] = useState(inicial.ate);
   const [comparar, setComparar] = useState(false);
-  const [base, setBase] = useState<"entrada" | "saida">("entrada");
+  const [base, setBase] = useState<"entrada" | "saida" | "finalizado">("saida");
   const [vendedor, setVendedor] = useState("todos");
   const [tipoEstampa, setTipoEstampa] = useState("todos");
   const [pessoa, setPessoa] = useState("todos");
@@ -171,11 +171,12 @@ export function KpiPcpTab() {
           </div>
           <div className="w-52">
             <Label className="text-xs">Contar pelo quê</Label>
-            <Select value={base} onValueChange={(v) => setBase(v as "entrada" | "saida")}>
+            <Select value={base} onValueChange={(v) => setBase(v as "entrada" | "saida" | "finalizado")}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="entrada">Data de entrada do pedido</SelectItem>
                 <SelectItem value="saida">Data de saída da Juff</SelectItem>
+                <SelectItem value="finalizado">Data de finalização do pedido</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -215,7 +216,7 @@ export function KpiPcpTab() {
           </label>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Entrada mostra o que chegou no período. Saída mostra o que saiu da Juff no período.
+          Entrada mostra o que chegou no período. Saída mostra o que saiu da Juff no período. Finalização mostra o que foi finalizado na produção no período.
         </p>
       </div>
 
