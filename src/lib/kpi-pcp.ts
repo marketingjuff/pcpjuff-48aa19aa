@@ -195,6 +195,8 @@ export interface LinhaPessoa {
   batidas: number;
   /** true quando alguma peça foi rateada igualmente por falta de registro. */
   estimado: boolean;
+  /** true quando alguma batida foi rateada por haver mais de uma pessoa no pedido. */
+  batidasEstimadas: boolean;
   numeros: string[];
 }
 
@@ -202,7 +204,7 @@ export interface LinhaPessoa {
 export function porPessoa(regs: Pedido[], campo: CampoPessoa): LinhaPessoa[] {
   const map = new Map<string, LinhaPessoa>();
   const pega = (nome: string) =>
-    map.get(nome) ?? { pessoa: nome, pedidos: 0, pecas: 0, batidas: 0, estimado: false, numeros: [] };
+    map.get(nome) ?? { pessoa: nome, pedidos: 0, pecas: 0, batidas: 0, estimado: false, batidasEstimadas: false, numeros: [] };
 
   for (const p of regs) {
     const pessoas = parsePeople((p as any)[campo] as string | null);
@@ -223,11 +225,13 @@ export function porPessoa(regs: Pedido[], campo: CampoPessoa): LinhaPessoa[] {
         if (pessoas.length > 1) l.estimado = true;
       }
       l.batidas += batidas / pessoas.length;
+      if (pessoas.length > 1 && batidas > 0) l.batidasEstimadas = true;
       l.numeros.push(numero);
       map.set(nome, l);
     }
   }
-  return [...map.values()].sort((a, b) => b.pecas - a.pecas);
+  const porBatidas = campo === "quem_bateu_silk" || campo === "quem_bateu_dtf";
+  return [...map.values()].sort((a, b) => (porBatidas ? b.batidas - a.batidas : b.pecas - a.pecas));
 }
 
 /** Peças por pessoa por dia útil em que ela aparece em algum pedido. Aproximado. */
