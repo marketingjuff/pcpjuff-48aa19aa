@@ -21,6 +21,7 @@ import { DashboardTab } from "@/components/pcp/DashboardTab";
 import { MonitorPcpTab } from "@/components/pcp/monitor/MonitorPcpTab";
 import { FinalizadosTab } from "@/components/pcp/FinalizadosTab";
 import { ExpedicaoTab } from "@/components/pcp/ExpedicaoTab";
+import { FreteTab } from "@/components/pcp/FreteTab";
 import { RetrabalhoTab } from "@/components/pcp/RetrabalhoTab";
 import { HistoricoTab } from "@/components/pcp/HistoricoTab";
 import { DirtyFormProvider } from "@/components/pcp/dirty-form-context";
@@ -353,7 +354,7 @@ function AppHomeInner() {
             <TabsContent value="frete" forceMount hidden={tab !== "frete"}>
               <FreteTab
                 pedidos={pedidos}
-                onSave={(p) => upsert.mutate(p)}
+                onSave={(p: Partial<Pedido> & { id?: string }) => upsert.mutate(p)}
                 saving={upsert.isPending}
                 soLeitura={soLeitura("pcp.frete")}
               />
