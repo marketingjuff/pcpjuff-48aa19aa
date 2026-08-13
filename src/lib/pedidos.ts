@@ -173,6 +173,12 @@ export type Pedido = PedidoBase & {
   exp_despachado_em: string | null;
   exp_frete_solicitado_em: string | null;
   exp_observacoes: string | null;
+  exp_destino_humberto: boolean | null;
+  canhoto_horario_comercial: boolean | null;
+  canhoto_impresso_em: string | null;
+  canhoto_fotos: Array<{ path: string; em: string; por: string | null }> | null;
+  entrega_confirmada_em: string | null;
+  entrega_confirmada_por: string | null;
   data_entrega_proposta: string | null;
   data_entrega_proposta_em: string | null;
   data_entrega_proposta_por: string | null;
@@ -236,6 +242,12 @@ export type PedidoInsert = PedidoInsertBase & {
   exp_despachado_em?: string | null;
   exp_frete_solicitado_em?: string | null;
   exp_observacoes?: string | null;
+  exp_destino_humberto?: boolean | null;
+  canhoto_horario_comercial?: boolean | null;
+  canhoto_impresso_em?: string | null;
+  canhoto_fotos?: Array<{ path: string; em: string; por: string | null }> | null;
+  entrega_confirmada_em?: string | null;
+  entrega_confirmada_por?: string | null;
   data_entrega_proposta?: string | null;
   data_entrega_proposta_em?: string | null;
   data_entrega_proposta_por?: string | null;

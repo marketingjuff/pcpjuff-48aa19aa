@@ -7,7 +7,7 @@
 
 import type { AppRole } from "@/integrations/supabase/schema-extras";
 
-export type ModuloKey = "pcp" | "cop" | "map" | "sup" | "kpi";
+export type ModuloKey = "pcp" | "cop" | "map" | "sup" | "kpi" | "entregas";
 
 export type PermissaoKey = string; // "modulo.aba"
 
@@ -28,6 +28,7 @@ export const MODULOS: { key: ModuloKey; label: string; rota: string }[] = [
   { key: "map", label: "MAP — Matéria Prima", rota: "/map" },
   { key: "sup", label: "SUP — Suprimentos", rota: "/sup" },
   { key: "kpi", label: "KPI — Indicadores", rota: "/kpi" },
+  { key: "entregas", label: "Entregas — Motorista", rota: "/entregas" },
 ];
 
 export const CATALOGO_PERMISSOES: AbaPermissao[] = [
@@ -40,6 +41,7 @@ export const CATALOGO_PERMISSOES: AbaPermissao[] = [
   { key: "pcp.silk", modulo: "pcp", tabValue: "silk", label: "Silk Screen", nivelConfiguravel: true },
   { key: "pcp.acabamento", modulo: "pcp", tabValue: "acab", label: "Acabamento", nivelConfiguravel: true },
   { key: "pcp.expedicao", modulo: "pcp", tabValue: "exp", label: "Expedição", nivelConfiguravel: true },
+  { key: "pcp.frete", modulo: "pcp", tabValue: "frete", label: "Frete", nivelConfiguravel: true },
   { key: "pcp.finalizados", modulo: "pcp", tabValue: "fin", label: "Finalizados", nivelConfiguravel: true },
   { key: "pcp.retrabalho", modulo: "pcp", tabValue: "retrab", label: "Retrabalho", nivelConfiguravel: true },
   { key: "pcp.monitor", modulo: "pcp", tabValue: "monitor", label: "Monitor PCP", nivelConfiguravel: true },
@@ -72,6 +74,8 @@ export const CATALOGO_PERMISSOES: AbaPermissao[] = [
   { key: "kpi.custom", modulo: "kpi", tabValue: "custom", label: "KPI Juff Custom", nivelConfiguravel: false },
   { key: "kpi.store", modulo: "kpi", tabValue: "store", label: "KPI Juff Store", nivelConfiguravel: false },
   { key: "kpi.pcp", modulo: "kpi", tabValue: "pcp", label: "KPI PCP", nivelConfiguravel: false },
+  // Entregas (motorista)
+  { key: "entregas.motorista", modulo: "entregas", tabValue: "entregas", label: "Entregas (motorista)", nivelConfiguravel: false },
 ];
 
 const POR_KEY = new Map(CATALOGO_PERMISSOES.map((a) => [a.key, a]));
@@ -234,11 +238,12 @@ export const PRESETS: Preset[] = [
   {
     id: "operador_expedicao",
     label: "Operador — Expedição",
-    permissoes: ["pcp.expedicao", "pcp.finalizados"],
+    permissoes: ["pcp.expedicao", "pcp.frete", "pcp.finalizados"],
   },
   { id: "pcp_completo", label: "PCP completo", permissoes: permissoesDoModulo("pcp") },
   { id: "cop_completo", label: "COP completo", permissoes: permissoesDoModulo("cop") },
   { id: "map_completo", label: "MAP completo", permissoes: permissoesDoModulo("map") },
   { id: "sup_completo", label: "SUP completo", permissoes: permissoesDoModulo("sup") },
   { id: "kpi_completo", label: "KPI completo", permissoes: permissoesDoModulo("kpi") },
+  { id: "motorista", label: "Motorista — só Entregas", permissoes: ["entregas.motorista"] },
 ];
