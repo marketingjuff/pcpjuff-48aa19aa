@@ -224,7 +224,7 @@ export function KpiPcpTab() {
       <Bloco titulo="Resumo do período">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Kpi
-            titulo="Pedidos finalizados"
+            titulo="Quantidade de pedidos"
             apoio="Pedidos que ficaram prontos no período."
             valor={nf.format(resumo.pedidosFinalizados)}
             variacao={variacao(resumo.pedidosFinalizados, resumoAnt?.pedidosFinalizados)}
