@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { FilterX, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
-import { Th, TH_RAW_CLASS, TD_RAW_CLASS, EmptyState } from "./shared";
+import { Th, TH_RAW_CLASS, TD_RAW_CLASS } from "./shared";
 import { CanhotoFotoViewer } from "./CanhotoFotoViewer";
 import { abrirPdfCanhotos } from "@/lib/canhoto-pdf";
 import { enviarFotoCanhoto, fotosDoPedido } from "@/lib/entregas";
@@ -142,7 +142,7 @@ export function FreteTab({ pedidos, onSave, saving, soLeitura = false }: Props) 
           </div>
 
           {lista.length === 0 ? (
-            <EmptyState>Nenhum pedido despachado para o Humberto no momento.</EmptyState>
+            <div className="text-sm text-muted-foreground py-6 text-center">Nenhum pedido despachado para o Humberto no momento.</div>
           ) : (
             <div className="overflow-auto rounded-md border tbl-congelada">
               <Table>
