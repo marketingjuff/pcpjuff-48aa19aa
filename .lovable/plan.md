@@ -22,7 +22,7 @@ Adicionar `arte_iniciou_em: "Entrada na Arte (automático)"`. Nada mais.
 ## 3. `src/lib/kpi-pcp.ts`
 
 - `ETAPAS_TEMPO` passa a começar com `"Espera no Dados In"`.
-- Helper local `arteIniciou(p)` devolvendo `YYYY-MM-DD` de `arte_iniciou_em` (lido via cast, sem tocar o tipo `Pedido`) ou `null`.
+- Helper local `arteIniciou(p)` devolvendo `YYYY-MM-DD` de `arte_iniciou_em` (lido via cast, sem tocar o tipo `Pedido`) ou `null`. Sem qualquer conversão de fuso aqui — o ajuste de Brasília já foi feito no trigger, aplicar de novo duplicaria.
 - Dentro de `tempoBloco`, helper `soReal(etapa, ra, rb)`: empurra só em `real[etapa]`, não em `plan`, e não marca `entrou` (cobertura/`elegiveis` inalterados).
 - `soReal("Espera no Dados In", p.entrada_pedido, arteIniciou(p))` para todos os tipos, inclusive Lisa.
 - Arte passa a `par("Arte", arteIniciou(p), p.arte_data, arteIniciou(p), arteLiberou(p))`.
