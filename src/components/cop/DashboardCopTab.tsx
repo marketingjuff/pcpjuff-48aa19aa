@@ -216,7 +216,7 @@ export function DashboardCopTab() {
                 <tbody>
                   {topNegSort.rows.map((x, i) => (
                     <tr key={i} className="border-t">
-                      <td className="p-1">{x.modelo} · {x.cor} · {x.tamanho}</td>
+                      <td className="p-1">{x.modelo} · <CorChip cor={x.cor} /> · {x.tamanho}</td>
                       <td className="p-1 text-right text-red-700 font-bold tabular-nums">{x.saldo}</td>
                     </tr>
                   ))}
@@ -306,5 +306,19 @@ export function DashboardCopTab() {
       {/* Para usar rotuloCop no futuro caso seja necessário no dashboard */}
       <div className="hidden">{rotuloCop(0, null)}</div>
     </div>
+  );
+}
+
+/** Chip padrão de cor de peça: fundo = hex da cor, texto legível por contraste. */
+function CorChip({ cor }: { cor: string | null | undefined }) {
+  if (!cor) return <>—</>;
+  const hex = corHex(cor);
+  return (
+    <span
+      className="inline-block rounded-full px-2 py-0.5 font-medium"
+      style={{ backgroundColor: hex, color: corTextoSobre(hex) }}
+    >
+      {cor}
+    </span>
   );
 }

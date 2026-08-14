@@ -46,6 +46,7 @@ export const REFACAO_TAMANHOS = ["PP", "P", "M", "G", "GG", "EXG", "EXXG"] as co
 export const REFACAO_CORES: { nome: string; hex: string }[] = [
   { nome: "amarelo",        hex: "#ffe938" },
   { nome: "amarelo flúor",  hex: "#e0ff00" },
+  { nome: "areia",          hex: "#d6d1c9" },
   { nome: "azul índigo",    hex: "#4d6694" },
   { nome: "bordô",          hex: "#551b2a" },
   { nome: "branco",         hex: "#f6f6fb" },
@@ -55,6 +56,7 @@ export const REFACAO_CORES: { nome: string; hex: string }[] = [
   { nome: "laranja",        hex: "#e36837" },
   { nome: "laranja ultra",  hex: "#fd5f2f" },
   { nome: "marinho",        hex: "#1d2546" },
+  { nome: "marrom",         hex: "#342423" },
   { nome: "menta",          hex: "#93a393" },
   { nome: "pink",           hex: "#b7357a" },
   { nome: "preto",          hex: "#212120" },

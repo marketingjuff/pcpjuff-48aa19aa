@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useAppList } from "@/lib/app-lists";
 import { useKgPorPeca, useCorAcabamentos, corComAcabamento } from "@/lib/map";
 import { REFACAO_CORES } from "@/lib/pedidos";
+import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
 const SEM_ACABAMENTO = "__none__";
 
@@ -45,7 +46,6 @@ function CoresAcabamentoCard() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12"></TableHead>
               <TableHead>Cor</TableHead>
               <TableHead className="w-56">Acabamento</TableHead>
               <TableHead>Prévia</TableHead>
@@ -56,13 +56,7 @@ function CoresAcabamentoCard() {
               const current = mapa?.[c.nome] ?? SEM_ACABAMENTO;
               return (
                 <TableRow key={c.nome}>
-                  <TableCell>
-                    <span
-                      className="inline-block h-5 w-5 rounded-full border border-border"
-                      style={{ backgroundColor: c.hex }}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{c.nome}</TableCell>
+                  <TableCell><CorChip cor={c.nome} /></TableCell>
                   <TableCell>
                     <Select value={current} onValueChange={(v) => handleChange(c.nome, v)} disabled={save.isPending}>
                       <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
@@ -105,5 +99,19 @@ function KgPorPecaCard() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/** Chip padrão de cor de peça: fundo = hex da cor, texto legível por contraste. */
+function CorChip({ cor }: { cor: string | null | undefined }) {
+  if (!cor) return <>—</>;
+  const hex = corHex(cor);
+  return (
+    <span
+      className="inline-block rounded-full px-2 py-0.5 font-medium"
+      style={{ backgroundColor: hex, color: corTextoSobre(hex) }}
+    >
+      {cor}
+    </span>
   );
 }

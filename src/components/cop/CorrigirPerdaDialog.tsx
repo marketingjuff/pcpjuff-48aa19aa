@@ -12,6 +12,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppList } from "@/lib/app-lists";
 import { MOTIVOS_PERDA_PADRAO, type Oficina } from "@/lib/cop";
 import type { PerdaConsolidada } from "@/lib/perdas-consolidado";
+import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
 export function CorrigirPerdaDialog({
   perda, open, onOpenChange,
@@ -89,7 +90,7 @@ export function CorrigirPerdaDialog({
         <DialogHeader><DialogTitle>Corrigir perda (reclassificar)</DialogTitle></DialogHeader>
         <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-1">
           <div><span className="text-muted-foreground">Pedido:</span> <span className="font-medium">{perda.identificacao ?? "—"}</span></div>
-          <div><span className="text-muted-foreground">Item:</span> <span className="font-medium">{perda.modelo} · {perda.cor} · {perda.tamanho}</span></div>
+          <div><span className="text-muted-foreground">Item:</span> <span className="font-medium">{perda.modelo} · <CorChip cor={perda.cor} /> · {perda.tamanho}</span></div>
           <div><span className="text-muted-foreground">Motivo original:</span> {perda.motivo ?? "—"}</div>
           <div><span className="text-muted-foreground">Área original:</span> {perda.erro_producao ? "Produção" : (perda.area_erro ?? "—")}</div>
           <div><span className="text-muted-foreground">Restante:</span> <span className="font-semibold tabular-nums">{perda.qtd}</span> peça(s)</div>
@@ -140,5 +141,19 @@ export function CorrigirPerdaDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Chip padrão de cor de peça: fundo = hex da cor, texto legível por contraste. */
+function CorChip({ cor }: { cor: string | null | undefined }) {
+  if (!cor) return <>—</>;
+  const hex = corHex(cor);
+  return (
+    <span
+      className="inline-block rounded-full px-2 py-0.5 font-medium"
+      style={{ backgroundColor: hex, color: corTextoSobre(hex) }}
+    >
+      {cor}
+    </span>
   );
 }

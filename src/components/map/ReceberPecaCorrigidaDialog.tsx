@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { patchEstoquePeca, type HistoricoCorrecaoEvento, type MapEstoquePeca } from "@/lib/map";
+import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
 interface Props {
   open: boolean;
@@ -90,7 +91,7 @@ export function ReceberPecaCorrigidaDialog({ open, onOpenChange, peca, onDone }:
             <Input type="date" value={dataEntrada} onChange={(e) => setDataEntrada(e.target.value)} />
           </div>
           <div className="col-span-2 text-[11px] text-muted-foreground">
-            Cor ao voltar: <span className="font-semibold">{peca.cor_nova ?? peca.cor ?? "—"}</span> · metragem e largura mantidas.
+            Cor ao voltar: <CorChip cor={peca.cor_nova ?? peca.cor} /> · metragem e largura mantidas.
           </div>
         </div>
         <DialogFooter>
@@ -99,5 +100,19 @@ export function ReceberPecaCorrigidaDialog({ open, onOpenChange, peca, onDone }:
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Chip padrão de cor de peça: fundo = hex da cor, texto legível por contraste. */
+function CorChip({ cor }: { cor: string | null | undefined }) {
+  if (!cor) return <>—</>;
+  const hex = corHex(cor);
+  return (
+    <span
+      className="inline-block rounded-full px-2 py-0.5 font-medium"
+      style={{ backgroundColor: hex, color: corTextoSobre(hex) }}
+    >
+      {cor}
+    </span>
   );
 }

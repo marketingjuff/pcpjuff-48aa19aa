@@ -820,7 +820,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                             const ok = r === p.qtd;
                             return (
                               <tr key={i} className="border-t">
-                                <td className="p-2">{p.modelo} · {p.cor} · {p.tamanho}</td>
+                                <td className="p-2">{p.modelo} · <CorChip cor={p.cor} /> · {p.tamanho}</td>
                                 <td className="p-2 text-right tabular-nums">{p.qtd}</td>
                                 <td className={`p-2 text-right tabular-nums ${ok ? "text-green-700" : "text-amber-700"}`}>{r}</td>
                               </tr>
@@ -1015,7 +1015,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                               {selectedHist.itens.map((item: any, idx: number) => (
                                 <tr key={idx} className="border-t">
                                   <td className="p-2">{item.modelo}</td>
-                                  <td className="p-2">{item.cor}</td>
+                                  <td className="p-2"><CorChip cor={item.cor} /></td>
                                   <td className="p-2">{item.tamanho}</td>
                                   <td className={`p-2 text-right tabular-nums font-semibold ${selectedHist.tipo === "perda" ? "text-purple-700" : ""}`}>
                                     {selectedHist.tipo === "perda" ? item.qtd : item.qtd_recebida}
@@ -1422,5 +1422,16 @@ function RomaneioPecasTable({
   );
 }
 
-
-
+/** Chip padrão de cor de peça: fundo = hex da cor, texto legível por contraste. */
+function CorChip({ cor }: { cor: string | null | undefined }) {
+  if (!cor) return <>—</>;
+  const hex = corHex(cor);
+  return (
+    <span
+      className="inline-block rounded-full px-2 py-0.5 font-medium"
+      style={{ backgroundColor: hex, color: corTextoSobre(hex) }}
+    >
+      {cor}
+    </span>
+  );
+}

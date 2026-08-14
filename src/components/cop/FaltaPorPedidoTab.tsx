@@ -453,7 +453,7 @@ export function FaltaPorPedidoTab() {
                     <tr key={i} className="border-t">
                       <td className="p-2 font-mono text-xs">{new Date(log.em).toLocaleString("pt-BR")}</td>
                       <td className="p-2">{log.modelo}</td>
-                      <td className="p-2">{log.cor}</td>
+                      <td className="p-2"><CorChip cor={log.cor} /></td>
                       <td className="p-2">{log.tamanho}</td>
                       <td className="p-2 text-right tabular-nums">{log.qtd}</td>
                       <td className="p-2 font-mono">{log.cop_numero != null ? rotuloCop(log.cop_numero, log.cop_letra ?? null) : "—"}</td>
@@ -480,5 +480,19 @@ export function FaltaPorPedidoTab() {
         />
       )}
     </div>
+  );
+}
+
+/** Chip padrão de cor de peça: fundo = hex da cor, texto legível por contraste. */
+function CorChip({ cor }: { cor: string | null | undefined }) {
+  if (!cor) return <>—</>;
+  const hex = corHex(cor);
+  return (
+    <span
+      className="inline-block rounded-full px-2 py-0.5 font-medium"
+      style={{ backgroundColor: hex, color: corTextoSobre(hex) }}
+    >
+      {cor}
+    </span>
   );
 }
