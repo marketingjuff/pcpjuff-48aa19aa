@@ -1224,6 +1224,7 @@ export type Database = {
           quem_revelou_tela: string | null
           reaberto: boolean
           refacoes: Json
+          refacoes_desfeitas: Json
           responsavel_acabamento: string | null
           responsavel_conferencia: string | null
           saida_juff: string | null
@@ -1315,6 +1316,7 @@ export type Database = {
           quem_revelou_tela?: string | null
           reaberto?: boolean
           refacoes?: Json
+          refacoes_desfeitas?: Json
           responsavel_acabamento?: string | null
           responsavel_conferencia?: string | null
           saida_juff?: string | null
@@ -1406,6 +1408,7 @@ export type Database = {
           quem_revelou_tela?: string | null
           reaberto?: boolean
           refacoes?: Json
+          refacoes_desfeitas?: Json
           responsavel_acabamento?: string | null
           responsavel_conferencia?: string | null
           saida_juff?: string | null
