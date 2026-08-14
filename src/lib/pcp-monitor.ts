@@ -25,7 +25,10 @@ export const TETO_PADRAO: Record<Etapa, number> = { arte: 900, dtf: 700, silk: 9
 /**
  * A1 — Início de Acabamento.
  * Corpo movido literalmente do useMemo de DadosInTab.tsx (mesma ordem de condições).
- * Silk/Silk+DTF: término_estamparia + dias_secagem + 1 dia corrido, depois próximo dia útil.
+ * Silk/Silk+DTF com dias_secagem > 0: término_estamparia + dias_secagem + 1 dia corrido,
+ * depois próximo dia útil.
+ * Silk/Silk+DTF com dias_secagem = 0 (secagem forçada, produção no mesmo dia):
+ * igual ao término_estamparia, sem pular dia corrido nem dia útil.
  * Só DTF: igual ao término_estamparia.
  */
 export function calcInicioAcabamento(
@@ -39,6 +42,8 @@ export function calcInicioAcabamento(
   if (!termino_estamparia || isLisa) return null;
   if (soDTF) return termino_estamparia;
   if (!incluiSilk) return null;
+  // Secagem zero: pedido de emergência produzido inteiramente no mesmo dia → início = término.
+  if (diasSecagemNum <= 0) return termino_estamparia;
   // término dia 1, secagem N dias → início no dia (1 + N + 1); o dia do término e o dia do início não contam.
   const base = addDiasCorridos(termino_estamparia, diasSecagemNum + 1);
   return proximoDiaUtil(base, feriados);
