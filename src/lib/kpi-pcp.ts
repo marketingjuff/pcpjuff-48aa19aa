@@ -323,7 +323,13 @@ function p80(arr: number[]): number | null {
   return s[i]!;
 }
 
-const ETAPAS_TEMPO = ["Arte", "Estamparia DTF", "Estamparia Silk", "Acabamento", "Expedição"] as const;
+const ETAPAS_TEMPO = ["Espera no Dados In", "Arte", "Estamparia DTF", "Estamparia Silk", "Acabamento", "Expedição"] as const;
+
+/** Data (YYYY-MM-DD) da entrada real na Arte, gravada pelo banco no 1o save do Input de Producao. */
+function arteIniciou(p: Pedido): string | null {
+  const v = (p as unknown as { arte_iniciou_em?: string | null }).arte_iniciou_em;
+  return v ? v.slice(0, 10) : null;
+}
 
 export function tempoBloco(regs: Pedido[], feriados: Feriados): TempoBloco {
   const dias = (a: string | null | undefined, b: string | null | undefined) =>
