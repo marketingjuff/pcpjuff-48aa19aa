@@ -25,6 +25,7 @@ const LABELS: Record<string, string> = {
   data_saida_juff: "Data de saída da Juff",
   acabamento_data: "Data do acabamento",
   arte_data: "Data da arte",
+  arte_iniciou_em: "Entrada na Arte (automático)",
   dtf_data_executada: "Data do DTF estampado",
   silk_data_executada: "Data do Silk feito",
   dtf_estampado: "DTF estampado",
