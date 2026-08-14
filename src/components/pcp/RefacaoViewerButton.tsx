@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { History, Save } from "lucide-react";
 import { PecasPerdidasEditor, pecaLinhaCompleta, somaPecas } from "./PecasPerdidasEditor";
 import { useReclassificacoesDoPedido } from "@/lib/perdas-consolidado";
+import { DesfazerRefacaoButton } from "./DesfazerRefacaoButton";
 
 const ORANGE = "#ff8c2f";
 
@@ -62,7 +63,7 @@ function fmtEtapa(v: string | null | undefined): string {
   return ETAPA_LABEL_MAP[v] ?? v;
 }
 
-const CAMPO_LABEL: Record<string, string> = {
+export const CAMPO_LABEL: Record<string, string> = {
   status_pecas: "Status de peças", tipo_estampa: "Tipo de estampa", arte_data: "Arte (limite)",
   inicio_estamparia: "Início estamparia", termino_estamparia: "Término estamparia",
   status_arte: "Status da arte", arte_observacao: "Observação da arte",
@@ -251,6 +252,12 @@ function EpisodioRead({
         <Badge variant={episodio.aberto ? "default" : "secondary"} className="ml-auto">
           {episodio.aberto ? "Em aberto" : "Encerrado"}
         </Badge>
+        <DesfazerRefacaoButton
+          pedido={pedido}
+          episodio={episodio}
+          index={index}
+          bloqueadoPorReclass={reclassDoEpisodio.length > 0}
+        />
       </div>
       {reclassDoEpisodio.length > 0 && (
         <div className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900 flex items-center gap-2">
