@@ -60,7 +60,7 @@ export function DesfazerRefacaoButton({ pedido, episodio, index, bloqueadoPorRec
   const [motivo, setMotivo] = useState("");
   const [saving, setSaving] = useState(false);
   const qc = useQueryClient();
-  const { data: profilesMap = {} } = useProfilesMap();
+  const profilesMap = useProfilesMap();
 
   const refsAtuais: RefacaoEpisodio[] = Array.isArray(pedido.refacoes) ? pedido.refacoes : [];
   const isUltimo = index === refsAtuais.length - 1;
