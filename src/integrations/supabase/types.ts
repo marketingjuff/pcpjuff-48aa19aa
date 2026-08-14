@@ -1160,6 +1160,7 @@ export type Database = {
           acabamento_data: string | null
           acabamento_observacao: string | null
           arte_data: string | null
+          arte_iniciou_em: string | null
           arte_observacao: string | null
           arte_warning: boolean
           canhoto_fotos: Json
@@ -1252,6 +1253,7 @@ export type Database = {
           acabamento_data?: string | null
           acabamento_observacao?: string | null
           arte_data?: string | null
+          arte_iniciou_em?: string | null
           arte_observacao?: string | null
           arte_warning?: boolean
           canhoto_fotos?: Json
@@ -1344,6 +1346,7 @@ export type Database = {
           acabamento_data?: string | null
           acabamento_observacao?: string | null
           arte_data?: string | null
+          arte_iniciou_em?: string | null
           arte_observacao?: string | null
           arte_warning?: boolean
           canhoto_fotos?: Json

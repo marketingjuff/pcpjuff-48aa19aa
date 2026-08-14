@@ -323,7 +323,13 @@ function p80(arr: number[]): number | null {
   return s[i]!;
 }
 
-const ETAPAS_TEMPO = ["Arte", "Estamparia DTF", "Estamparia Silk", "Acabamento", "Expedição"] as const;
+const ETAPAS_TEMPO = ["Espera no Dados In", "Arte", "Estamparia DTF", "Estamparia Silk", "Acabamento", "Expedição"] as const;
+
+/** Data (YYYY-MM-DD) da entrada real na Arte, gravada pelo banco no 1o save do Input de Producao. */
+function arteIniciou(p: Pedido): string | null {
+  const v = (p as unknown as { arte_iniciou_em?: string | null }).arte_iniciou_em;
+  return v ? v.slice(0, 10) : null;
+}
 
 export function tempoBloco(regs: Pedido[], feriados: Feriados): TempoBloco {
   const dias = (a: string | null | undefined, b: string | null | undefined) =>
@@ -350,12 +356,19 @@ export function tempoBloco(regs: Pedido[], feriados: Feriados): TempoBloco {
         real[etapa]!.push(dr);
         entrou = true;
       };
+      // Etapa somente-real: nao tem planejado e nao conta para cobertura/elegiveis.
+      const soReal = (etapa: string, ra: string | null | undefined, rb: string | null | undefined) => {
+        const dr = dias(ra, rb);
+        if (dr == null) return;
+        real[etapa]!.push(dr);
+      };
       const tipo = p.tipo_estampa;
       const dtf = tipoIncluiDTF(tipo);
       const silk = tipoIncluiSilk(tipo);
       const lisa = !dtf && !silk;
 
-      if (!lisa) par("Arte", p.entrada_pedido, p.arte_data, p.entrada_pedido, arteLiberou(p));
+      soReal("Espera no Dados In", p.entrada_pedido, arteIniciou(p));
+      if (!lisa) par("Arte", arteIniciou(p), p.arte_data, arteIniciou(p), arteLiberou(p));
       if (dtf) par("Estamparia DTF", p.inicio_estamparia, p.termino_estamparia, arteLiberouDtf(p), p.dtf_data_executada);
       if (silk) par("Estamparia Silk", p.inicio_estamparia, p.termino_estamparia, arteLiberouSilk(p), p.silk_data_executada);
       par(

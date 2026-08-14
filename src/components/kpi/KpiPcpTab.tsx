@@ -475,6 +475,11 @@ export function KpiPcpTab() {
                 })}
               </TableBody>
             </Table>
+            <p className="mt-2 text-xs text-muted-foreground">
+              "Espera no Dados In" é o tempo entre a entrada do pedido e o primeiro salvamento do Input de Produção, quando
+              o pedido realmente chega na Arte. Esse tempo saiu de dentro da Arte. Não tem planejado, por isso Planejado e
+              Diferença aparecem como "—". Pedidos anteriores ao registro automático dessa data não entram na conta.
+            </p>
           </CardContent>
         </Card>
 
