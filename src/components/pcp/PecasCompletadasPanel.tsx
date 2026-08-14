@@ -10,7 +10,7 @@ import {
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Pencil, Undo2 } from "lucide-react";
-import { CorChip } from "@/components/shared/cor-chip";
+import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
 interface Props {
   pedido: Pedido | null;
@@ -194,5 +194,19 @@ export function PecasCompletadasPanel({ pedido, onEditarPecas, onAfterSave }: Pr
         ))}
       </ul>
     </div>
+  );
+}
+
+/** Chip padrão de cor de peça: fundo = hex da cor, texto legível por contraste. */
+function CorChip({ cor }: { cor: string | null | undefined }) {
+  if (!cor) return <>—</>;
+  const hex = corHex(cor);
+  return (
+    <span
+      className="inline-block rounded-full px-2 py-0.5 font-medium"
+      style={{ backgroundColor: hex, color: corTextoSobre(hex) }}
+    >
+      {cor}
+    </span>
   );
 }

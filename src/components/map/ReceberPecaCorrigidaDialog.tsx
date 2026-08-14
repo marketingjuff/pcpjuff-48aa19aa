@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { patchEstoquePeca, type HistoricoCorrecaoEvento, type MapEstoquePeca } from "@/lib/map";
-import { CorChip } from "@/components/shared/cor-chip";
+import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
 interface Props {
   open: boolean;
@@ -100,5 +100,19 @@ export function ReceberPecaCorrigidaDialog({ open, onOpenChange, peca, onDone }:
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Chip padrão de cor de peça: fundo = hex da cor, texto legível por contraste. */
+function CorChip({ cor }: { cor: string | null | undefined }) {
+  if (!cor) return <>—</>;
+  const hex = corHex(cor);
+  return (
+    <span
+      className="inline-block rounded-full px-2 py-0.5 font-medium"
+      style={{ backgroundColor: hex, color: corTextoSobre(hex) }}
+    >
+      {cor}
+    </span>
   );
 }

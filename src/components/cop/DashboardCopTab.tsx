@@ -7,7 +7,6 @@ import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { COP_STATUS_LIST, totalPecasCop, rotuloCop, rotuloRomaneio, type Cop, type CopUrgencia } from "@/lib/cop";
 import { REFACAO_TAMANHOS, cmpModeloCor, type Pedido } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import { CorChip } from "@/components/shared/cor-chip";
 import { calcEmProducao, calcFaltantes, calcRecebido, calcPerdas, calcDisponivel, pkKey, dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
 import { formatDateBR } from "@/lib/format";
 import { useTableSort, SortTh } from "@/components/shared/sortable";
@@ -307,5 +306,19 @@ export function DashboardCopTab() {
       {/* Para usar rotuloCop no futuro caso seja necessário no dashboard */}
       <div className="hidden">{rotuloCop(0, null)}</div>
     </div>
+  );
+}
+
+/** Chip padrão de cor de peça: fundo = hex da cor, texto legível por contraste. */
+function CorChip({ cor }: { cor: string | null | undefined }) {
+  if (!cor) return <>—</>;
+  const hex = corHex(cor);
+  return (
+    <span
+      className="inline-block rounded-full px-2 py-0.5 font-medium"
+      style={{ backgroundColor: hex, color: corTextoSobre(hex) }}
+    >
+      {cor}
+    </span>
   );
 }
