@@ -2,13 +2,18 @@
 
 Objetivo: registrar automaticamente no banco o momento em que o pedido realmente chega na Arte (primeiro save do Input de Produção), corrigir o cálculo da etapa Arte no KPI e criar a linha nova "Espera no Dados In" com o tempo que hoje está escondido dentro da Arte.
 
-## 1. Migração nova (`supabase/migrations/<nova>.sql`) — só aditiva
+## 1. Migração nova (`supabase/migrations/<nova>.sql`) — só aditiva, nesta ordem
 
-- `ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS arte_iniciou_em timestamptz NULL;` + `COMMENT ON COLUMN`.
-- `CREATE OR REPLACE FUNCTION public.set_arte_iniciou_em()` (`SECURITY DEFINER`, `SET search_path = public`): se `NEW.arte_iniciou_em IS NULL` e `status_pecas` e `tipo_estampa` estão preenchidos (não nulos, não vazios) → `NEW.arte_iniciou_em := now()`. Nunca sobrescreve valor já existente, nunca zera.
-- `CREATE TRIGGER trg_arte_iniciou_em BEFORE INSERT OR UPDATE ON public.pedidos FOR EACH ROW` (separado do trigger de auditoria, que continua intocado).
-- Backfill: para cada pedido com `arte_iniciou_em IS NULL`, o menor `feito_em` do `pedido_audit_log` entre (a) `acao = 'update'` com elemento de `mudancas` de `campo = 'tipo_estampa'` e `para` não nulo/vazio e (b) `acao = 'insert'` com `linha_completa->>'tipo_estampa'` não nulo/vazio. Sem log → fica `NULL` (sem fallback). `UPDATE ... WHERE arte_iniciou_em IS NULL`, escrevendo só nessa coluna.
-- Sem `DROP`, `TRUNCATE`, `DELETE` ou alteração de coluna existente.
+**Passo 1 — coluna:** `ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS arte_iniciou_em timestamptz NULL;` + `COMMENT ON COLUMN`.
+
+**Passo 2 — backfill (ANTES de criar o trigger):** para cada pedido, o menor `feito_em` do `pedido_audit_log` entre (a) `acao = 'update'` com elemento de `mudancas` de `campo = 'tipo_estampa'` e `para` não nulo/vazio e (b) `acao = 'insert'` com `linha_completa->>'tipo_estampa'` não nulo/vazio. O `UPDATE` roda com `WHERE arte_iniciou_em IS NULL` **e** só atinge pedidos em que esse `feito_em` foi realmente encontrado (subconsulta com valor não nulo) — os demais permanecem `NULL`, sem fallback. Escreve apenas nessa coluna. O backfill vem antes do trigger justamente para que pedidos antigos sem log não recebam a data de hoje.
+
+**Passo 3 — função:** `CREATE OR REPLACE FUNCTION public.set_arte_iniciou_em()` (`SECURITY DEFINER`, `SET search_path = public`): se `NEW.arte_iniciou_em IS NULL` e `status_pecas` e `tipo_estampa` estão preenchidos (não nulos, não vazios) → `NEW.arte_iniciou_em := timezone('America/Sao_Paulo', now())` (horário de Brasília, para o `slice(0, 10)` do KPI cair no dia certo em saves de fim de tarde/noite). Nunca sobrescreve valor já existente, nunca zera.
+
+**Passo 4 — trigger:** `CREATE TRIGGER trg_arte_iniciou_em BEFORE INSERT OR UPDATE ON public.pedidos FOR EACH ROW` (separado do trigger de auditoria, que continua intocado).
+
+Sem `DROP`, `TRUNCATE`, `DELETE` ou alteração de coluna existente.
+
 
 ## 2. `src/lib/audit-labels.ts`
 
@@ -17,7 +22,7 @@ Adicionar `arte_iniciou_em: "Entrada na Arte (automático)"`. Nada mais.
 ## 3. `src/lib/kpi-pcp.ts`
 
 - `ETAPAS_TEMPO` passa a começar com `"Espera no Dados In"`.
-- Helper local `arteIniciou(p)` devolvendo `YYYY-MM-DD` de `arte_iniciou_em` (lido via cast, sem tocar o tipo `Pedido`) ou `null`.
+- Helper local `arteIniciou(p)` devolvendo `YYYY-MM-DD` de `arte_iniciou_em` (lido via cast, sem tocar o tipo `Pedido`) ou `null`. Sem qualquer conversão de fuso aqui — o ajuste de Brasília já foi feito no trigger, aplicar de novo duplicaria.
 - Dentro de `tempoBloco`, helper `soReal(etapa, ra, rb)`: empurra só em `real[etapa]`, não em `plan`, e não marca `entrou` (cobertura/`elegiveis` inalterados).
 - `soReal("Espera no Dados In", p.entrada_pedido, arteIniciou(p))` para todos os tipos, inclusive Lisa.
 - Arte passa a `par("Arte", arteIniciou(p), p.arte_data, arteIniciou(p), arteLiberou(p))`.
