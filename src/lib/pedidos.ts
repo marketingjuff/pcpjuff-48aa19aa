@@ -117,6 +117,23 @@ export type RefacaoEpisodio = {
   qtd_falta_adesivos?: number;
 };
 
+/** Auditoria de uma refação desfeita por admin/gestor (append-only). */
+export type RefacaoDesfeita = {
+  /** ISO datetime em que a refação foi desfeita. */
+  data: string;
+  /** UUID de quem desfez. */
+  usuario_id: string | null;
+  /** Motivo obrigatório informado no dialog. */
+  motivo: string;
+  /** Índice que o episódio ocupava em `refacoes` antes de ser removido. */
+  indice_original: number;
+  /** Cópia integral do episódio removido. */
+  episodio: RefacaoEpisodio;
+  /** Chaves dos campos que foram restaurados a partir do snapshot. */
+  campos_restaurados: string[];
+};
+
+
 export type CorrecaoEtapa = {
   /** ISO datetime da correção. */
   data: string;
@@ -203,6 +220,8 @@ export type Pedido = PedidoBase & {
   }> | null;
   /** Histórico de correções de etapa feitas por gestor (append-only). */
   correcoes_etapa?: CorrecaoEtapa[] | null;
+  /** Histórico de refações desfeitas por admin/gestor (append-only). */
+  refacoes_desfeitas?: RefacaoDesfeita[] | null;
 };
 
 type PedidoInsertBase = Omit<TablesInsert<"pedidos">, "modelo_estampa" | "status">;
