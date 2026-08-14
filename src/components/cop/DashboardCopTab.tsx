@@ -7,6 +7,7 @@ import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { COP_STATUS_LIST, totalPecasCop, rotuloCop, rotuloRomaneio, type Cop, type CopUrgencia } from "@/lib/cop";
 import { REFACAO_TAMANHOS, cmpModeloCor, type Pedido } from "@/lib/pedidos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+import { CorChip } from "@/components/shared/cor-chip";
 import { calcEmProducao, calcFaltantes, calcRecebido, calcPerdas, calcDisponivel, pkKey, dataUrgencia, addDiasUteis } from "@/lib/cop-saldos";
 import { formatDateBR } from "@/lib/format";
 import { useTableSort, SortTh } from "@/components/shared/sortable";
@@ -216,7 +217,7 @@ export function DashboardCopTab() {
                 <tbody>
                   {topNegSort.rows.map((x, i) => (
                     <tr key={i} className="border-t">
-                      <td className="p-1">{x.modelo} · {x.cor} · {x.tamanho}</td>
+                      <td className="p-1">{x.modelo} · <CorChip cor={x.cor} /> · {x.tamanho}</td>
                       <td className="p-1 text-right text-red-700 font-bold tabular-nums">{x.saldo}</td>
                     </tr>
                   ))}

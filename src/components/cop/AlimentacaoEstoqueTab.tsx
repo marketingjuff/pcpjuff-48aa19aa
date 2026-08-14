@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, RefreshCw, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { REFACAO_MODELOS } from "@/lib/pedidos";
+import { CorChip } from "@/components/shared/cor-chip";
 import {
   parsePlanilhaOlist,
   empresaPeloNome,
@@ -342,7 +343,7 @@ export function AlimentacaoEstoqueTab() {
                 ) : previaSort.rows.map((it, i) => (
                   <tr key={i} className={`border-t ${i % 2 ? "bg-muted/30" : ""}`}>
                     <td className="p-2">{it.produto_olist}</td>
-                    <td className="p-2">{it.cor}</td>
+                    <td className="p-2"><CorChip cor={it.cor} /></td>
                     <td className="p-2">{it.tamanho}</td>
                     <td className="p-2 text-right font-semibold tabular-nums">{it.qtd}</td>
                   </tr>

@@ -17,6 +17,7 @@ import { Send, RefreshCw, FileDown, PackageOpen, Split, Check, Undo2, AlertTrian
 import { toast } from "sonner";
 import { useCanAccessCop } from "@/hooks/use-role";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+import { CorChip } from "@/components/shared/cor-chip";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
   type HistoricoRecebimento, type HistoricoPerda, type CopPerdaLinha, type CopUrgencia, type CopUrgenciaLinha, type CopUrgenciaPedido,
@@ -820,7 +821,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                             const ok = r === p.qtd;
                             return (
                               <tr key={i} className="border-t">
-                                <td className="p-2">{p.modelo} · {p.cor} · {p.tamanho}</td>
+                                <td className="p-2">{p.modelo} · <CorChip cor={p.cor} /> · {p.tamanho}</td>
                                 <td className="p-2 text-right tabular-nums">{p.qtd}</td>
                                 <td className={`p-2 text-right tabular-nums ${ok ? "text-green-700" : "text-amber-700"}`}>{r}</td>
                               </tr>
@@ -1015,7 +1016,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                               {selectedHist.itens.map((item: any, idx: number) => (
                                 <tr key={idx} className="border-t">
                                   <td className="p-2">{item.modelo}</td>
-                                  <td className="p-2">{item.cor}</td>
+                                  <td className="p-2"><CorChip cor={item.cor} /></td>
                                   <td className="p-2">{item.tamanho}</td>
                                   <td className={`p-2 text-right tabular-nums font-semibold ${selectedHist.tipo === "perda" ? "text-purple-700" : ""}`}>
                                     {selectedHist.tipo === "perda" ? item.qtd : item.qtd_recebida}

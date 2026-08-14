@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { patchEstoquePeca, type HistoricoCorrecaoEvento, type MapEstoquePeca } from "@/lib/map";
+import { CorChip } from "@/components/shared/cor-chip";
 
 interface Props {
   open: boolean;
@@ -90,7 +91,7 @@ export function ReceberPecaCorrigidaDialog({ open, onOpenChange, peca, onDone }:
             <Input type="date" value={dataEntrada} onChange={(e) => setDataEntrada(e.target.value)} />
           </div>
           <div className="col-span-2 text-[11px] text-muted-foreground">
-            Cor ao voltar: <span className="font-semibold">{peca.cor_nova ?? peca.cor ?? "—"}</span> · metragem e largura mantidas.
+            Cor ao voltar: <CorChip cor={peca.cor_nova ?? peca.cor} /> · metragem e largura mantidas.
           </div>
         </div>
         <DialogFooter>

@@ -10,6 +10,7 @@ import {
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Pencil, Undo2 } from "lucide-react";
+import { CorChip } from "@/components/shared/cor-chip";
 
 interface Props {
   pedido: Pedido | null;
@@ -143,7 +144,7 @@ export function PecasCompletadasPanel({ pedido, onEditarPecas, onAfterSave }: Pr
             <div className="flex-1">
               <span className="font-mono">{new Date(l.em).toLocaleString("pt-BR")}</span>
               {" — "}
-              <b>{l.qtd}×</b> {l.modelo} · {l.cor} · {l.tamanho}
+              <b>{l.qtd}×</b> {l.modelo} · <CorChip cor={l.cor} /> · {l.tamanho}
               {l.cop_numero != null && (
                 <> {" "}<span className="text-emerald-700">(COP {rotuloCop(l.cop_numero, l.cop_letra ?? null)})</span></>
               )}
@@ -176,7 +177,7 @@ export function PecasCompletadasPanel({ pedido, onEditarPecas, onAfterSave }: Pr
                   <AlertDialogHeader>
                     <AlertDialogTitle>Reverter baixa do COP?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Esta baixa de <b>{l.qtd}× {l.modelo} · {l.cor} · {l.tamanho}</b> será revertida,
+                      Esta baixa de <b>{l.qtd}× {l.modelo} · <CorChip cor={l.cor} /> · {l.tamanho}</b> será revertida,
                       voltando como pendência incompleta no COP.
                     </AlertDialogDescription>
                   </AlertDialogHeader>

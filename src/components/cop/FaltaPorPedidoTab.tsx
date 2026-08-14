@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+import { CorChip } from "@/components/shared/cor-chip";
 import type { Pedido, PecaSolicitada } from "@/lib/pedidos";
 import { REFACAO_MODELOS, REFACAO_CORES } from "@/lib/pedidos";
 import { CorSelect } from "@/components/shared/cor-select";
@@ -453,7 +454,7 @@ export function FaltaPorPedidoTab() {
                     <tr key={i} className="border-t">
                       <td className="p-2 font-mono text-xs">{new Date(log.em).toLocaleString("pt-BR")}</td>
                       <td className="p-2">{log.modelo}</td>
-                      <td className="p-2">{log.cor}</td>
+                      <td className="p-2"><CorChip cor={log.cor} /></td>
                       <td className="p-2">{log.tamanho}</td>
                       <td className="p-2 text-right tabular-nums">{log.qtd}</td>
                       <td className="p-2 font-mono">{log.cop_numero != null ? rotuloCop(log.cop_numero, log.cop_letra ?? null) : "—"}</td>

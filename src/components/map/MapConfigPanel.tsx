@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useAppList } from "@/lib/app-lists";
 import { useKgPorPeca, useCorAcabamentos, corComAcabamento } from "@/lib/map";
 import { REFACAO_CORES } from "@/lib/pedidos";
+import { CorChip } from "@/components/shared/cor-chip";
 
 const SEM_ACABAMENTO = "__none__";
 
@@ -45,7 +46,6 @@ function CoresAcabamentoCard() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12"></TableHead>
               <TableHead>Cor</TableHead>
               <TableHead className="w-56">Acabamento</TableHead>
               <TableHead>Prévia</TableHead>
@@ -56,13 +56,7 @@ function CoresAcabamentoCard() {
               const current = mapa?.[c.nome] ?? SEM_ACABAMENTO;
               return (
                 <TableRow key={c.nome}>
-                  <TableCell>
-                    <span
-                      className="inline-block h-5 w-5 rounded-full border border-border"
-                      style={{ backgroundColor: c.hex }}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{c.nome}</TableCell>
+                  <TableCell><CorChip cor={c.nome} /></TableCell>
                   <TableCell>
                     <Select value={current} onValueChange={(v) => handleChange(c.nome, v)} disabled={save.isPending}>
                       <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
