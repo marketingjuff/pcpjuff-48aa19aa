@@ -287,13 +287,115 @@ export type HistoricoRecebimento = {
   letra?: string | null;  // letra do filho gerado, quando partição
 };
 
-/** Registro de uma perda registrada no romaneio (delta). */
+/** Referência a um item de lançamento de perda (usado em correções). */
+export type PerdaItemRef = {
+  modelo: string;
+  cor: string;
+  tamanho: string;
+  qtd: number;
+  motivo: string | null;
+};
+
+/** Registro de uma perda registrada no romaneio (delta), correção ou estorno. */
 export type HistoricoPerda = {
   em: string;              // ISO datetime
-  tipo: "perda";
+  tipo: "perda" | "correcao_perda" | "estorno_perda";
   total: number;           // total perdido nesse evento (delta)
   itens: CopPerdaLinha[];
+  /** correcao_perda e estorno_perda: campo `em` do evento de perda afetado */
+  refere_em?: string;
+  /** correcao_perda: índice do item dentro de `itens` do evento original */
+  item_idx?: number;
+  /** correcao_perda: estado do item antes e depois */
+  antes?: PerdaItemRef;
+  depois?: PerdaItemRef;
+  observacao?: string | null;
+  usuario_id?: string | null;
 };
+
+/** Lançamento de perda vigente, já com correções e estornos aplicados. */
+export type LancamentoPerda = {
+  em: string;              // do evento de perda original
+  item_idx: number;
+  modelo: string;
+  cor: string;
+  tamanho: string;
+  qtd: number;
+  motivo: string | null;
+  corrigido: boolean;
+  estornado: boolean;
+  /** estado original, preenchido quando corrigido */
+  original?: PerdaItemRef;
+};
+
+/** Deriva os lançamentos de perda de um COP com correções e estornos aplicados. */
+export function lancamentosPerda(cop: { historico_perdas?: HistoricoPerda[] | null }): LancamentoPerda[] {
+  const hist = Array.isArray(cop?.historico_perdas) ? [...(cop.historico_perdas as HistoricoPerda[])] : [];
+  hist.sort((a, b) => String(a?.em ?? "").localeCompare(String(b?.em ?? "")));
+
+  const out: LancamentoPerda[] = [];
+  const idx = new Map<string, LancamentoPerda>();
+
+  for (const ev of hist) {
+    if (!ev) continue;
+    if (ev.tipo === "perda") {
+      (ev.itens ?? []).forEach((it, i) => {
+        const l: LancamentoPerda = {
+          em: ev.em,
+          item_idx: i,
+          modelo: it.modelo,
+          cor: it.cor,
+          tamanho: it.tamanho,
+          qtd: Math.max(0, Number(it.qtd) || 0),
+          motivo: it.motivo ?? null,
+          corrigido: false,
+          estornado: false,
+        };
+        out.push(l);
+        idx.set(`${ev.em}|${i}`, l);
+      });
+    } else if (ev.tipo === "correcao_perda") {
+      const alvo = idx.get(`${ev.refere_em}|${ev.item_idx}`);
+      if (!alvo || !ev.depois) continue;
+      if (!alvo.corrigido) {
+        alvo.original = ev.antes ?? {
+          modelo: alvo.modelo, cor: alvo.cor, tamanho: alvo.tamanho, qtd: alvo.qtd, motivo: alvo.motivo,
+        };
+      }
+      alvo.modelo = ev.depois.modelo;
+      alvo.cor = ev.depois.cor;
+      alvo.tamanho = ev.depois.tamanho;
+      alvo.qtd = Math.max(0, Number(ev.depois.qtd) || 0);
+      alvo.motivo = ev.depois.motivo ?? null;
+      alvo.corrigido = true;
+    } else if (ev.tipo === "estorno_perda") {
+      for (const l of out) {
+        if (l.em === ev.refere_em) l.estornado = true;
+      }
+    }
+  }
+
+  return out;
+}
+
+/** Motivos distintos vigentes de uma linha (modelo|cor|tamanho), em ordem cronológica. */
+export function motivosDaLinha(
+  cop: { historico_perdas?: HistoricoPerda[] | null },
+  m: string,
+  c: string,
+  t: string,
+): string[] {
+  const out: string[] = [];
+  for (const l of lancamentosPerda(cop)) {
+    if (l.estornado) continue;
+    if (l.modelo !== m || l.cor !== c || l.tamanho !== t) continue;
+    const mot = (l.motivo ?? "").trim();
+    if (!mot || out.includes(mot)) continue;
+    out.push(mot);
+  }
+  return out;
+}
+
 
 
 export type Oficina = {

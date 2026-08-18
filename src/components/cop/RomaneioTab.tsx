@@ -20,9 +20,11 @@ import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import {
   type Cop, type CopPeca, type CopPecaRecebida, type CopStatus, type Oficina,
   type HistoricoRecebimento, type HistoricoPerda, type CopPerdaLinha, type CopUrgencia, type CopUrgenciaLinha, type CopUrgenciaPedido,
+  type PerdaItemRef, type LancamentoPerda,
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, totalRecebidas,
   todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
   getRecebida, getPerda, colunasTamanhos, mesclarPerdasEmObservacoes, linhaUrgente, refacoesDoCop,
+  somarPerdas, subtrairPerdas, lancamentosPerda, motivosDaLinha,
 } from "@/lib/cop";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { CorSelect } from "@/components/shared/cor-select";
@@ -31,6 +33,7 @@ import { abrirRomaneioParaImpressao } from "@/lib/romaneio-pdf";
 import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
 import { ParticionarRomaneioDialog } from "./ParticionarRomaneioDialog";
 import { RegistrarPerdaDialog } from "./RegistrarPerdaDialog";
+import { CorrigirLancamentoPerdaDialog } from "./CorrigirLancamentoPerdaDialog";
 import { PedirUrgenciaDialog } from "./PedirUrgenciaDialog";
 import { cargaPorOficina } from "@/lib/cop-oficinas";
 
@@ -51,6 +54,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   const { etapaStyle, btnStyle } = useCopColorSettings();
   const canManageCop = useCanAccessCop();
   const [showPerda, setShowPerda] = useState(false);
+  const [corrigirPerdaAlvo, setCorrigirPerdaAlvo] = useState<LancamentoPerda | null>(null);
   const [showUrgencia, setShowUrgencia] = useState(false);
 
   const { data: cops = [], isLoading } = useQuery({
@@ -196,46 +200,98 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
     onError: (e: any) => toast.error(e.message ?? "Erro ao iniciar correção"),
   });
 
+  /** Trava: nenhuma linha do agregado pode passar da qtd cortada. */
+  function validarTetoPerdas(cop: Cop, agregado: CopPerdaLinha[]) {
+    for (const linha of agregado) {
+      const peca = (cop.pecas ?? []).find(
+        (p) => p.modelo === linha.modelo && p.cor === linha.cor && p.tamanho === linha.tamanho,
+      );
+      const teto = Number(peca?.qtd) || 0;
+      if ((Number(linha.qtd) || 0) > teto) {
+        throw new Error(
+          `Perda de ${linha.qtd} peças em ${linha.modelo} ${linha.cor} ${linha.tamanho} acima das ${teto} cortadas.`,
+        );
+      }
+    }
+  }
+
+  /** Recalcula status a partir do agregado novo. */
+  function statusPorAgregado(cop: Cop, perdas: CopPerdaLinha[]): CopStatus {
+    const rec = cop.pecas_recebidas ?? [];
+    const completo = todasCompletas(cop.pecas || [], rec, perdas, refacoesDoCop(cops, cop.id));
+    const algumRecOuPerda = rec.some((r) => r.qtd_recebida > 0) || perdas.some((p) => p.qtd > 0);
+
+    if (completo && (cop.status === "Na Oficina (Costura)" || cop.status === "Romaneio Parcial")) {
+      return "Romaneio Completo";
+    }
+    if (!completo && cop.status === "Romaneio Completo") {
+      return algumRecOuPerda ? "Romaneio Parcial" : "Na Oficina (Costura)";
+    }
+    if (!completo && cop.status === "Romaneio Parcial" && !algumRecOuPerda) {
+      return "Na Oficina (Costura)";
+    }
+    if (!completo && cop.status === "Na Oficina (Costura)" && algumRecOuPerda) {
+      return "Romaneio Parcial";
+    }
+    return cop.status;
+  }
+
+  function garantirEmUnico(historico: HistoricoPerda[], base: string): string {
+    let em = base;
+    let ms = 1;
+    while (historico.some((h) => h?.em === em)) {
+      em = new Date(new Date(base).getTime() + ms).toISOString();
+      ms += 1;
+    }
+    return em;
+  }
+
   const salvarPerdas = useMutation({
-    mutationFn: async ({ cop, perdas }: { cop: Cop; perdas: CopPerdaLinha[] }) => {
-      const obs = mesclarPerdasEmObservacoes(cop.observacoes_romaneio, perdas);
+    mutationFn: async ({ cop, lancamentos }: { cop: Cop; lancamentos: CopPerdaLinha[] }) => {
+      const novos = (lancamentos ?? []).filter((l) => (Number(l.qtd) || 0) > 0);
+      if (novos.length === 0) return;
 
-      // Delta: só o que aumentou vira registro de histórico.
-      const prev = cop.perdas ?? [];
-      const delta: CopPerdaLinha[] = [];
-      for (const p of perdas) {
-        const ant = prev.find((x) => x.modelo === p.modelo && x.cor === p.cor && x.tamanho === p.tamanho);
-        const d = (Number(p.qtd) || 0) - (Number(ant?.qtd) || 0);
-        if (d > 0) delta.push({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: d });
-      }
-      const totalDelta = delta.reduce((s, x) => s + x.qtd, 0);
+      const agregado = somarPerdas(cop.perdas ?? [], novos);
+      validarTetoPerdas(cop, agregado);
 
-      const historico_perdas = [...(cop.historico_perdas ?? [])];
-      if (totalDelta > 0) {
-        historico_perdas.push({
-          em: new Date().toISOString(),
-          tipo: "perda",
-          total: totalDelta,
-          itens: delta,
-        });
-      }
+      // Backfill pontual de motivo vazio no histórico deste COP.
+      const historico_perdas: HistoricoPerda[] = (cop.historico_perdas ?? []).map((ev) => {
+        if (ev?.tipo !== "perda") return ev;
+        return {
+          ...ev,
+          itens: (ev.itens ?? []).map((it) => {
+            if ((it.motivo ?? "").trim()) return it;
+            const iguais = (cop.perdas ?? []).filter(
+              (p) => p.modelo === it.modelo && p.cor === it.cor && p.tamanho === it.tamanho,
+            );
+            if (iguais.length === 1 && (iguais[0].motivo ?? "").trim()) {
+              return { ...it, motivo: iguais[0].motivo ?? null };
+            }
+            return it;
+          }),
+        };
+      });
 
-      // Recalcular status considerando perdas como "entregue" para completude.
-      const rec = cop.pecas_recebidas ?? [];
-      const completo = todasCompletas(cop.pecas || [], rec, perdas, refacoesDoCop(cops, cop.id));
-      const algumRecOuPerda =
-        (rec.some((r) => r.qtd_recebida > 0)) ||
-        (perdas.some((p) => p.qtd > 0));
+      historico_perdas.push({
+        em: garantirEmUnico(historico_perdas, new Date().toISOString()),
+        tipo: "perda",
+        total: novos.reduce((s, x) => s + (Number(x.qtd) || 0), 0),
+        itens: novos.map((x) => ({
+          modelo: x.modelo, cor: x.cor, tamanho: x.tamanho, qtd: Number(x.qtd) || 0, motivo: x.motivo ?? null,
+        })),
+      });
 
-      let novoStatus: CopStatus = cop.status;
-      if (completo && (cop.status === "Na Oficina (Costura)" || cop.status === "Romaneio Parcial")) {
-        novoStatus = "Romaneio Completo";
-      } else if (!completo && cop.status === "Na Oficina (Costura)" && algumRecOuPerda) {
-        novoStatus = "Romaneio Parcial";
-      }
+      // Motivo do agregado = primeiro motivo cronológico vigente (retrocompat).
+      const perdasFinal: CopPerdaLinha[] = agregado.map((linha) => {
+        const mots = motivosDaLinha({ historico_perdas }, linha.modelo, linha.cor, linha.tamanho);
+        return { ...linha, motivo: mots[0] ?? linha.motivo ?? null };
+      });
+
+      const obs = mesclarPerdasEmObservacoes(cop.observacoes_romaneio, perdasFinal);
+      const novoStatus = statusPorAgregado(cop, perdasFinal);
 
       const patch: any = {
-        perdas: perdas as any,
+        perdas: perdasFinal as any,
         observacoes_romaneio: obs,
         historico_perdas: historico_perdas as any,
       };
@@ -246,11 +302,116 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["cops"] });
+      qc.invalidateQueries({ queryKey: ["perdas-cons-cops"] });
       toast.success("Perdas registradas.");
       setShowPerda(false);
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao registrar perdas"),
   });
+
+  const corrigirLancamentoPerda = useMutation({
+    mutationFn: async ({
+      cop, refere_em, item_idx, antes, depois, observacao,
+    }: { cop: Cop; refere_em: string; item_idx: number; antes: PerdaItemRef; depois: PerdaItemRef; observacao: string }) => {
+      if (cop.pagamento_status === "pago" || cop.status === "Finalizado") {
+        throw new Error("COP pago ou finalizado não aceita correção de perda.");
+      }
+      const semAntes = subtrairPerdas(cop.perdas ?? [], [antes]);
+      const agregado = somarPerdas(semAntes, [depois]);
+      validarTetoPerdas(cop, agregado);
+
+      const historico_perdas: HistoricoPerda[] = [...(cop.historico_perdas ?? [])];
+      const { data: ses } = await supabase.auth.getUser();
+      historico_perdas.push({
+        em: garantirEmUnico(historico_perdas, new Date().toISOString()),
+        tipo: "correcao_perda",
+        total: depois.qtd,
+        itens: [depois],
+        refere_em,
+        item_idx,
+        antes,
+        depois,
+        observacao,
+        usuario_id: ses.user?.id ?? null,
+      });
+
+      const perdasFinal: CopPerdaLinha[] = agregado.map((linha) => {
+        const mots = motivosDaLinha({ historico_perdas }, linha.modelo, linha.cor, linha.tamanho);
+        return { ...linha, motivo: mots[0] ?? linha.motivo ?? null };
+      });
+
+      const obs = mesclarPerdasEmObservacoes(cop.observacoes_romaneio, perdasFinal);
+      const novoStatus = statusPorAgregado(cop, perdasFinal);
+
+      const patch: any = {
+        perdas: perdasFinal as any,
+        observacoes_romaneio: obs,
+        historico_perdas: historico_perdas as any,
+      };
+      if (novoStatus !== cop.status) patch.status = novoStatus;
+
+      const { error } = await supabase.from("cops" as any).update(patch).eq("id", cop.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cops"] });
+      qc.invalidateQueries({ queryKey: ["perdas-cons-cops"] });
+      toast.success("Lançamento corrigido.");
+      setCorrigirPerdaAlvo(null);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao corrigir lançamento"),
+  });
+
+  const estornarLancamentoPerda = useMutation({
+    mutationFn: async ({ cop, evento_em }: { cop: Cop; evento_em: string }) => {
+      if (cop.pagamento_status === "pago" || cop.status === "Finalizado") {
+        throw new Error("COP pago ou finalizado não aceita estorno de perda.");
+      }
+      const vigentes = lancamentosPerda(cop)
+        .filter((l) => l.em === evento_em && !l.estornado)
+        .map((l) => ({ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, qtd: l.qtd, motivo: l.motivo }));
+      if (vigentes.length === 0) throw new Error("Lançamento já estornado.");
+
+      const agregado = subtrairPerdas(cop.perdas ?? [], vigentes);
+
+      const historico_perdas: HistoricoPerda[] = [...(cop.historico_perdas ?? [])];
+      const { data: ses } = await supabase.auth.getUser();
+      historico_perdas.push({
+        em: garantirEmUnico(historico_perdas, new Date().toISOString()),
+        tipo: "estorno_perda",
+        total: vigentes.reduce((s, x) => s + x.qtd, 0),
+        itens: vigentes,
+        refere_em: evento_em,
+        observacao: null,
+        usuario_id: ses.user?.id ?? null,
+      });
+
+      const perdasFinal: CopPerdaLinha[] = agregado.map((linha) => {
+        const mots = motivosDaLinha({ historico_perdas }, linha.modelo, linha.cor, linha.tamanho);
+        return { ...linha, motivo: mots[0] ?? linha.motivo ?? null };
+      });
+
+      const obs = mesclarPerdasEmObservacoes(cop.observacoes_romaneio, perdasFinal);
+      const novoStatus = statusPorAgregado(cop, perdasFinal);
+
+      const patch: any = {
+        perdas: perdasFinal as any,
+        observacoes_romaneio: obs,
+        historico_perdas: historico_perdas as any,
+      };
+      if (novoStatus !== cop.status) patch.status = novoStatus;
+
+      const { error } = await supabase.from("cops" as any).update(patch).eq("id", cop.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cops"] });
+      qc.invalidateQueries({ queryKey: ["perdas-cons-cops"] });
+      toast.success("Lançamento estornado.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao estornar lançamento"),
+  });
+
 
   const salvarUrgencia = useMutation({
     mutationFn: async ({ cop, obs, linhas, pedidos }: { cop: Cop; obs: string; linhas: CopUrgenciaLinha[]; pedidos: CopUrgenciaPedido[] }) => {
@@ -1126,9 +1287,22 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             onOpenChange={setShowPerda}
             pecas={selected.pecas || []}
             perdas={(selected.perdas as CopPerdaLinha[]) ?? []}
-            onConfirm={(perdas) => salvarPerdas.mutate({ cop: selected, perdas })}
-            disabled={salvarPerdas.isPending}
+            historico={(selected.historico_perdas as HistoricoPerda[]) ?? []}
+            canManage={canManageCop}
+            onConfirm={(lancamentos) => salvarPerdas.mutate({ cop: selected, lancamentos })}
+            onCorrigir={(l) => setCorrigirPerdaAlvo(l)}
+            onEstornar={(l) => estornarLancamentoPerda.mutate({ cop: selected, evento_em: l.em })}
+            disabled={salvarPerdas.isPending || estornarLancamentoPerda.isPending}
           />
+          <CorrigirLancamentoPerdaDialog
+            open={!!corrigirPerdaAlvo}
+            onOpenChange={(v) => { if (!v) setCorrigirPerdaAlvo(null); }}
+            cop={selected}
+            lancamento={corrigirPerdaAlvo}
+            onConfirm={(p) => corrigirLancamentoPerda.mutate({ cop: selected, ...p })}
+            disabled={corrigirLancamentoPerda.isPending || !canManageCop}
+          />
+
           <PedirUrgenciaDialog
             open={showUrgencia}
             onOpenChange={setShowUrgencia}
