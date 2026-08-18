@@ -215,55 +215,28 @@ export function usePerdasConsolidadas() {
     for (const c of cops) {
       const rotulo = rotuloCop(c.numero, c.letra, !!c.refacao_perda_origem_id);
       const hist = Array.isArray(c.historico_perdas) ? (c.historico_perdas as HistoricoPerda[]) : [];
-      const eventosPerda = hist.filter((h) => h?.tipo === "perda");
-      if (eventosPerda.length > 0) {
-        for (const ev of eventosPerda) {
-          const itens = Array.isArray(ev.itens) ? ev.itens : [];
-          itens.forEach((it, idx) => {
-            const qtdOrig = Number(it.qtd) || 0;
-            if (qtdOrig <= 0) return;
-            const qtd = consumirRefeita(c.id, it.modelo, it.cor, it.tamanho, qtdOrig);
-            if (qtd <= 0) return;
-            out.push({
-              id: `cop-hist:${c.id}:${ev.em}:${idx}`,
-              origem: "cop",
-              identificacao: rotulo,
-              data: ev.em,
-              modelo: it.modelo,
-              cor: it.cor,
-              tamanho: it.tamanho,
-              qtd,
-              motivo: it.motivo ?? null,
-              oficina_id: c.oficina_id ?? null,
-              oficina_nome: oficinaNome(c.oficina_id),
-              fonte: { kind: "cop_historico", copId: c.id, eventoEm: ev.em, itemIdx: idx },
-            });
-          });
-        }
-      } else if (Array.isArray(c.perdas) && c.perdas.length > 0) {
-        // Fallback para dados antigos: usa `cops.perdas` com updated_at.
-        c.perdas.forEach((p: any, idx: number) => {
-          const qtdOrig = Number(p.qtd) || 0;
-          if (qtdOrig <= 0) return;
-          const qtd = consumirRefeita(c.id, p.modelo, p.cor, p.tamanho, qtdOrig);
-          if (qtd <= 0) return;
+      const lancs = lancamentosPerda({ historico_perdas: hist }).filter((l) => !l.estornado && l.qtd > 0);
+      if (hist.some((h) => h?.tipo === "perda")) {
+        for (const l of lancs) {
+          const qtd = consumirRefeita(c.id, l.modelo, l.cor, l.tamanho, l.qtd);
+          if (qtd <= 0) continue;
           out.push({
-            id: `cop-perdafield:${c.id}:${idx}`,
+            id: `cop-hist:${c.id}:${l.em}:${l.item_idx}`,
             origem: "cop",
             identificacao: rotulo,
-            data: c.updated_at,
-            modelo: p.modelo,
-            cor: p.cor,
-            tamanho: p.tamanho,
+            data: l.em,
+            modelo: l.modelo,
+            cor: l.cor,
+            tamanho: l.tamanho,
             qtd,
-            motivo: p.motivo ?? null,
+            motivo: l.motivo ?? null,
             oficina_id: c.oficina_id ?? null,
             oficina_nome: oficinaNome(c.oficina_id),
-            fonte: { kind: "cop_perdas_fallback", copId: c.id, itemIdx: idx },
+            fonte: { kind: "cop_historico", copId: c.id, eventoEm: l.em, itemIdx: l.item_idx },
           });
-        });
+        }
       }
-    }
+
 
     // Fonte B: cop_perdas
     const copsById = new Map(cops.map((c) => [c.id, c] as const));
