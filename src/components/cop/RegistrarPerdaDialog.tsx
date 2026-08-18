@@ -12,7 +12,7 @@ import type { CopPeca, CopPerdaLinha, HistoricoPerda, LancamentoPerda } from "@/
 import { MOTIVOS_PERDA_PADRAO, getPerda, lancamentosPerda, motivosDaLinha } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { useAppList } from "@/lib/app-lists";
-import { ChevronDown, ChevronRight, Info, Pencil, Undo2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Info, Pencil, Plus, Undo2, X } from "lucide-react";
 
 type Props = {
   open: boolean;
