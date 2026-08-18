@@ -49,7 +49,8 @@ export function RegistrarPerdaDialog({
   onConfirm, onCorrigir, onEstornar, disabled,
 }: Props) {
   const key = (m: string, c: string, t: string) => `${m}|${c}|${t}`;
-  const [vals, setVals] = useState<Record<string, { qtd: number; motivo?: string }>>({});
+  type Entrada = { qtd: number; motivo?: string };
+  const [vals, setVals] = useState<Record<string, Entrada[]>>({});
   const [verAnteriores, setVerAnteriores] = useState(false);
   const [estornoAlvo, setEstornoAlvo] = useState<LancamentoPerda | null>(null);
   const { names: motivosDb } = useAppList("motivo_perda");
@@ -62,7 +63,7 @@ export function RegistrarPerdaDialog({
   }, [open]);
 
   const totalLancamento = useMemo(
-    () => Object.values(vals).reduce((a, b) => a + (Number(b.qtd) || 0), 0),
+    () => Object.values(vals).reduce((a, arr) => a + arr.reduce((s, e) => s + (Number(e.qtd) || 0), 0), 0),
     [vals],
   );
   const totalAcumulado = useMemo(
@@ -85,39 +86,52 @@ export function RegistrarPerdaDialog({
     return Math.max(0, (Number(p.qtd) || 0) - getPerda(perdas, p.modelo, p.cor, p.tamanho));
   }
 
-  function setQ(p: CopPeca, raw: string) {
-    const digits = raw.replace(/[^\d]/g, "");
-    const k = key(p.modelo, p.cor, p.tamanho);
-    const max = maxDaLinha(p);
-    const v = Math.min(max, digits === "" ? 0 : parseInt(digits, 10) || 0);
-    setVals((s) => {
-      const next = { ...s };
-      if (v <= 0) delete next[k];
-      else next[k] = { qtd: v, motivo: s[k]?.motivo };
-      return next;
-    });
+  function entradas(p: CopPeca): Entrada[] {
+    return vals[key(p.modelo, p.cor, p.tamanho)] ?? [{ qtd: 0 }];
   }
 
-  function setMotivo(p: CopPeca, motivo: string) {
+  function setEntradas(p: CopPeca, next: Entrada[]) {
     const k = key(p.modelo, p.cor, p.tamanho);
-    const m = motivo === SEM_MOTIVO ? undefined : motivo;
-    setVals((s) => {
-      const cur = s[k];
-      if (!cur) return s;
-      return { ...s, [k]: { ...cur, motivo: m } };
-    });
+    setVals((s) => ({ ...s, [k]: next }));
+  }
+
+  function setQ(p: CopPeca, idx: number, raw: string) {
+    const digits = raw.replace(/[^\d]/g, "");
+    const arr = entradas(p).map((e) => ({ ...e }));
+    const max = maxDaLinha(p);
+    const outros = arr.reduce((s, e, i) => (i === idx ? s : s + (Number(e.qtd) || 0)), 0);
+    const v = Math.max(0, Math.min(Math.max(0, max - outros), digits === "" ? 0 : parseInt(digits, 10) || 0));
+    arr[idx] = { ...arr[idx], qtd: v };
+    setEntradas(p, arr);
+  }
+
+  function setMotivo(p: CopPeca, idx: number, motivo: string) {
+    const arr = entradas(p).map((e) => ({ ...e }));
+    arr[idx] = { ...arr[idx], motivo: motivo === SEM_MOTIVO ? undefined : motivo };
+    setEntradas(p, arr);
+  }
+
+  function addMotivo(p: CopPeca) {
+    setEntradas(p, [...entradas(p), { qtd: 0 }]);
+  }
+
+  function removerMotivo(p: CopPeca, idx: number) {
+    const arr = entradas(p).filter((_, i) => i !== idx);
+    setEntradas(p, arr.length ? arr : [{ qtd: 0 }]);
   }
 
   function confirmar() {
     const out: CopPerdaLinha[] = [];
     for (const p of pecas) {
-      const data = vals[key(p.modelo, p.cor, p.tamanho)];
-      if (data && data.qtd > 0) {
-        out.push({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: data.qtd, motivo: data.motivo ?? null });
+      for (const e of vals[key(p.modelo, p.cor, p.tamanho)] ?? []) {
+        if ((Number(e.qtd) || 0) > 0) {
+          out.push({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: e.qtd, motivo: e.motivo ?? null });
+        }
       }
     }
     onConfirm(out);
   }
+
 
   return (
     <>
