@@ -196,15 +196,45 @@ function EntregasPage() {
             <h2 className="text-sm font-semibold">Entregues nos últimos 30 dias</h2>
             {entregues.map((p) => (
               <Card key={p.id}>
-                <CardContent className="flex items-center justify-between gap-2 py-3">
-                  <div className="min-w-0">
-                    <div className="font-semibold tabular-nums">{p.pedido_olist ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground truncate">{p.orcamento ?? "—"}</div>
+                <CardContent className="space-y-2 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-semibold tabular-nums">{p.pedido_olist ?? "—"}</div>
+                      <div className="text-xs text-muted-foreground truncate">{p.orcamento ?? "—"}</div>
+                    </div>
+                    <Badge variant="outline" className="bg-success/15 text-success border-success/30 whitespace-nowrap">
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                      {fmtDataHora(p.entrega_confirmada_em)}
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className="bg-success/15 text-success border-success/30 whitespace-nowrap">
-                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                    {fmtDataHora(p.entrega_confirmada_em)}
-                  </Badge>
+                  <div className="flex gap-2">
+                    {fotosDoPedido(p).length > 0 && (
+                      <div className="flex-1 [&>button]:w-full [&>button]:h-11">
+                        <CanhotoFotoViewer pedido={p} label="Ver foto" />
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      id={`troca-entregue-${p.id}`}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (f) dispararTroca(p, f);
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      className="flex-1 h-11"
+                      disabled={trocandoId === p.id}
+                      onClick={() => document.getElementById(`troca-entregue-${p.id}`)?.click()}
+                    >
+                      <Camera className="h-4 w-4 mr-2" />
+                      {trocandoId === p.id ? "Enviando foto…" : "Trocar foto"}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
