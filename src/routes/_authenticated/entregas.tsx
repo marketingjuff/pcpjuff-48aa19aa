@@ -159,6 +159,8 @@ function EntregasPage() {
             destaque
             enviando={confirmar.isPending}
             onConfirmar={(file) => confirmar.mutate({ pedido: focado, file })}
+            onTrocarFoto={(file) => dispararTroca(focado, file)}
+            trocando={trocandoId === focado.id}
             onFechar={() => navigate({ to: "/entregas", search: {} as any, replace: true })}
           />
         )}
