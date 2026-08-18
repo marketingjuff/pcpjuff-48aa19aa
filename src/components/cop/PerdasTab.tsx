@@ -397,7 +397,13 @@ export function PerdasTab() {
                         <td className="p-2"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ backgroundColor: hex, color: fg }}>{linha.cor}</span></td>
                         <td className="p-2 text-center">{linha.tamanho}</td>
                         <td className="p-2 text-right tabular-nums">{linha.qtd}</td>
-                        <td className="p-2 text-xs">{linha.motivo ?? "—"}</td>
+                        <td className="p-2 text-xs">
+                          {(() => {
+                            const mots = motivosDaLinha(cop, linha.modelo, linha.cor, linha.tamanho);
+                            if (mots.length > 0) return mots.join(", ");
+                            return linha.motivo ?? "—";
+                          })()}
+                        </td>
                         {canAccessCop && !consolidarMode && (
                           <td className="p-2 text-right align-top">
                             {first && totalRest > 0 && (
