@@ -312,12 +312,17 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   const corrigirLancamentoPerda = useMutation({
     mutationFn: async ({
       cop, refere_em, item_idx, antes, depois, observacao,
-    }: { cop: Cop; refere_em: string; item_idx: number; antes: PerdaItemRef; depois: PerdaItemRef; observacao: string }) => {
+    }: { cop: Cop; refere_em: string; item_idx: number; antes: PerdaItemRef; depois: PerdaItemRef[]; observacao: string }) => {
       if (cop.pagamento_status === "pago" || cop.status === "Finalizado") {
         throw new Error("COP pago ou finalizado não aceita correção de perda.");
       }
+      const itensDepois = (depois ?? []).filter((d) => Number(d.qtd) > 0);
+      if (itensDepois.length === 0) throw new Error("Informe ao menos uma quantidade.");
+      const principal = itensDepois[0];
+      const extras = itensDepois.slice(1);
+
       const semAntes = subtrairPerdas(cop.perdas ?? [], [antes]);
-      const agregado = somarPerdas(semAntes, [depois]);
+      const agregado = somarPerdas(semAntes, itensDepois);
       validarTetoPerdas(cop, agregado);
 
       const historico_perdas: HistoricoPerda[] = [...(cop.historico_perdas ?? [])];
@@ -325,15 +330,25 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
       historico_perdas.push({
         em: garantirEmUnico(historico_perdas, new Date().toISOString()),
         tipo: "correcao_perda",
-        total: depois.qtd,
-        itens: [depois],
+        total: principal.qtd,
+        itens: [principal],
         refere_em,
         item_idx,
         antes,
-        depois,
+        depois: principal,
         observacao,
         usuario_id: ses.user?.id ?? null,
       });
+      if (extras.length > 0) {
+        historico_perdas.push({
+          em: garantirEmUnico(historico_perdas, new Date().toISOString()),
+          tipo: "perda",
+          total: extras.reduce((s, e) => s + Number(e.qtd || 0), 0),
+          itens: extras.map((e) => ({ modelo: e.modelo, cor: e.cor, tamanho: e.tamanho, qtd: e.qtd, motivo: e.motivo ?? null })),
+          observacao: `Desmembrado da correção: ${observacao}`,
+          usuario_id: ses.user?.id ?? null,
+        });
+      }
 
       const perdasFinal: CopPerdaLinha[] = agregado.map((linha) => {
         const mots = motivosDaLinha({ historico_perdas }, linha.modelo, linha.cor, linha.tamanho);

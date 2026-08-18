@@ -9,9 +9,11 @@ import type { Cop, LancamentoPerda, PerdaItemRef } from "@/lib/cop";
 import { MOTIVOS_PERDA_PADRAO, formatCopNumero, getPerda } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { useAppList } from "@/lib/app-lists";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Plus, X } from "lucide-react";
 
 const SEM_MOTIVO = "__sem__";
+
+type Linha = { destino: string; qtd: string; motivo: string };
 
 type Props = {
   open: boolean;
@@ -22,7 +24,7 @@ type Props = {
     refere_em: string;
     item_idx: number;
     antes: PerdaItemRef;
-    depois: PerdaItemRef;
+    depois: PerdaItemRef[];
     observacao: string;
   }) => void | Promise<void>;
   disabled?: boolean;
@@ -48,12 +50,11 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
   const { names: motivosDb } = useAppList("motivo_perda");
   const motivos = motivosDb.length > 0 ? motivosDb : MOTIVOS_PERDA_PADRAO;
 
-  const [destino, setDestino] = useState("");
-  const [qtd, setQtd] = useState("");
-  const [motivo, setMotivo] = useState<string>(SEM_MOTIVO);
+  const [linhas, setLinhas] = useState<Linha[]>([]);
   const [observacao, setObservacao] = useState("");
 
   const bloqueado = !!cop && (cop.pagamento_status === "pago" || cop.status === "Finalizado");
+  const ro = bloqueado || !!disabled;
 
   const opcoes = useMemo(() => {
     const pecas = cop?.pecas ?? [];
@@ -65,24 +66,49 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
 
   useEffect(() => {
     if (!open || !lancamento) return;
-    setDestino(`${lancamento.modelo}|${lancamento.cor}|${lancamento.tamanho}`);
-    setQtd(String(lancamento.qtd));
-    setMotivo(lancamento.motivo ?? SEM_MOTIVO);
+    setLinhas([{
+      destino: `${lancamento.modelo}|${lancamento.cor}|${lancamento.tamanho}`,
+      qtd: String(lancamento.qtd),
+      motivo: lancamento.motivo ?? SEM_MOTIVO,
+    }]);
     setObservacao("");
   }, [open, lancamento]);
 
-  const [dm, dc, dt] = destino ? destino.split("|") : ["", "", ""];
-  const qtdNum = qtd === "" ? 0 : parseInt(qtd, 10) || 0;
-  const linhaDestino = (cop?.pecas ?? []).find((p) => p.modelo === dm && p.cor === dc && p.tamanho === dt);
+  function setLinha(i: number, patch: Partial<Linha>) {
+    setLinhas((arr) => arr.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
+  }
+  function addLinha() {
+    setLinhas((arr) => [...arr, { destino: arr[0]?.destino ?? "", qtd: "", motivo: SEM_MOTIVO }]);
+  }
+  function removerLinha(i: number) {
+    setLinhas((arr) => arr.filter((_, idx) => idx !== i));
+  }
 
-  const mesmaLinha = !!lancamento && lancamento.modelo === dm && lancamento.cor === dc && lancamento.tamanho === dt;
-  const perdaAtualDestino = getPerda(cop?.perdas ?? [], dm, dc, dt);
-  const perdaFinalDestino = perdaAtualDestino - (mesmaLinha ? (lancamento?.qtd ?? 0) : 0) + qtdNum;
-  const tetoDestino = Number(linhaDestino?.qtd) || 0;
-  const estouro = !!destino && perdaFinalDestino > tetoDestino;
+  const itens: PerdaItemRef[] = linhas.map((l) => {
+    const [m, c, t] = l.destino ? l.destino.split("|") : ["", "", ""];
+    return { modelo: m, cor: c, tamanho: t, qtd: l.qtd === "" ? 0 : parseInt(l.qtd, 10) || 0, motivo: l.motivo === SEM_MOTIVO ? null : l.motivo };
+  });
 
-  const podeSalvar =
-    !bloqueado && !disabled && !!destino && qtdNum >= 1 && observacao.trim().length > 0 && !estouro;
+  const total = itens.reduce((s, i) => s + i.qtd, 0);
+  const todasValidas = itens.length > 0 && itens.every((i) => i.modelo && i.qtd >= 1);
+
+  // teto por linha de destino
+  const estouros = useMemo(() => {
+    const out: string[] = [];
+    const chaves = new Set(itens.filter((i) => i.modelo).map((i) => `${i.modelo}|${i.cor}|${i.tamanho}`));
+    for (const k of chaves) {
+      const [m, c, t] = k.split("|");
+      const mesmaLinhaAntes = !!lancamento && lancamento.modelo === m && lancamento.cor === c && lancamento.tamanho === t;
+      const atual = getPerda(cop?.perdas ?? [], m, c, t);
+      const somaNova = itens.filter((i) => i.modelo === m && i.cor === c && i.tamanho === t).reduce((s, i) => s + i.qtd, 0);
+      const final = atual - (mesmaLinhaAntes ? (lancamento?.qtd ?? 0) : 0) + somaNova;
+      const teto = Number((cop?.pecas ?? []).find((p) => p.modelo === m && p.cor === c && p.tamanho === t)?.qtd) || 0;
+      if (final > teto) out.push(`${m} ${c} ${t}: ${final} perdidas para ${teto} cortadas`);
+    }
+    return out;
+  }, [itens, cop, lancamento]);
+
+  const podeSalvar = !ro && todasValidas && observacao.trim().length > 0 && estouros.length === 0;
 
   function salvar() {
     if (!lancamento || !podeSalvar) return;
@@ -93,17 +119,14 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
         modelo: lancamento.modelo, cor: lancamento.cor, tamanho: lancamento.tamanho,
         qtd: lancamento.qtd, motivo: lancamento.motivo ?? null,
       },
-      depois: {
-        modelo: dm, cor: dc, tamanho: dt, qtd: qtdNum,
-        motivo: motivo === SEM_MOTIVO ? null : motivo,
-      },
+      depois: itens,
       observacao: observacao.trim(),
     });
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Corrigir lançamento de perda</DialogTitle>
           <DialogDescription>
@@ -129,43 +152,57 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
         </div>
 
         <div className="rounded-md border p-3 space-y-3">
-          <div className="text-xs font-semibold uppercase text-muted-foreground">Como deve ficar</div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-medium">Linha de destino</label>
-            <Combobox
-              value={destino}
-              onChange={setDestino}
-              options={opcoes}
-              placeholder="Selecione a linha"
-              disabled={bloqueado || disabled}
-            />
-            {dc && <div className="pt-1"><CorChip cor={dc} /></div>}
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-medium">Quantidade</label>
-            <Input
-              inputMode="numeric"
-              className="h-8 w-28 text-right tabular-nums [appearance:textfield]"
-              value={qtd}
-              onChange={(e) => setQtd(e.target.value.replace(/[^\d]/g, ""))}
-              disabled={bloqueado || disabled}
-            />
-            <div className="text-[11px] text-muted-foreground">
-              Para zerar um lançamento use Estornar, não a correção.
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-semibold uppercase text-muted-foreground">Como deve ficar</div>
+            <div className="text-xs text-muted-foreground">
+              Total: <b className="tabular-nums">{total}</b>
+              {lancamento ? <> · original <span className="tabular-nums">{lancamento.qtd}</span></> : null}
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-medium">Motivo</label>
-            <Select value={motivo} onValueChange={setMotivo} disabled={bloqueado || disabled}>
-              <SelectTrigger className="h-8 w-56"><SelectValue placeholder="—" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={SEM_MOTIVO}>—</SelectItem>
-                {motivos.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-[1fr_92px_220px_36px] gap-2 text-[11px] font-medium text-muted-foreground">
+            <span>Linha de destino</span>
+            <span className="text-right">Qtd</span>
+            <span>Motivo</span>
+            <span />
+          </div>
+
+          {linhas.map((l, i) => (
+            <div key={i} className="grid grid-cols-[1fr_92px_220px_36px] gap-2 items-center">
+              <Combobox
+                value={l.destino}
+                onChange={(v) => setLinha(i, { destino: v })}
+                options={opcoes}
+                placeholder="Selecione a linha"
+                disabled={ro}
+              />
+              <Input
+                inputMode="numeric"
+                className="h-8 text-right tabular-nums [appearance:textfield]"
+                value={l.qtd}
+                onChange={(e) => setLinha(i, { qtd: e.target.value.replace(/[^\d]/g, "") })}
+                disabled={ro}
+              />
+              <Select value={l.motivo} onValueChange={(m) => setLinha(i, { motivo: m })} disabled={ro}>
+                <SelectTrigger className="h-8"><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SEM_MOTIVO}>—</SelectItem>
+                  {motivos.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {linhas.length > 1 ? (
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" title="Remover" onClick={() => removerLinha(i)} disabled={ro}>
+                  <X className="h-4 w-4" />
+                </Button>
+              ) : <span />}
+            </div>
+          ))}
+
+          <div className="flex items-center justify-between gap-2">
+            <Button size="sm" variant="outline" className="h-7 px-2" onClick={addLinha} disabled={ro}>
+              <Plus className="h-3.5 w-3.5 mr-1" />Outro motivo
+            </Button>
+            <span className="text-[11px] text-muted-foreground">Para zerar um lançamento use Estornar, não a correção.</span>
           </div>
 
           <div className="space-y-1">
@@ -174,14 +211,15 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
               value={observacao}
               onChange={(e) => setObservacao(e.target.value)}
               placeholder="Explique o que estava errado e o que foi corrigido."
-              disabled={bloqueado || disabled}
+              className="min-h-[64px]"
+              disabled={ro}
             />
           </div>
         </div>
 
-        {estouro && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-            A correção deixaria {perdaFinalDestino} peças perdidas em {dm} {dc} {dt}, acima das {tetoDestino} cortadas nessa linha.
+        {estouros.length > 0 && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive space-y-0.5">
+            {estouros.map((e) => <div key={e}>{e}</div>)}
           </div>
         )}
 
