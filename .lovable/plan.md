@@ -1,36 +1,48 @@
-# Tela do motorista (/entregas): ver e trocar a foto do canhoto
+# COP — Perdas por lançamento, com motivo próprio, correção e estorno
 
-Único arquivo tocado: `src/routes/_authenticated/entregas.tsx`. Zero SQL, zero migração, nenhuma dependência nova.
+Sem migração, sem SQL. Tudo dentro dos JSONB `cops.perdas` (agregado, formato intacto) e `cops.historico_perdas` (append-only).
 
-## 1. Imports
-- `CanhotoFotoViewer` de `@/components/pcp/CanhotoFotoViewer` (só importar).
-- Acrescentar `fotosDoPedido` ao import existente de `@/lib/entregas`.
+## 1. `src/lib/cop.ts`
 
-## 2. Mutation `trocarFoto` (em `EntregasPage`)
-Irmã da `confirmar`: chama `enviarFotoCanhoto(pedido, file)` e faz `update` gravando **somente** `canhoto_fotos`. Não toca em `entrega_confirmada_em` nem `entrega_confirmada_por`, e não navega no sucesso. Invalida `["entregas-pedidos"]` e `["pedidos"]`, toast "Foto do canhoto atualizada."; erro → toast com a mensagem.
+- Ampliar `HistoricoPerda` com `tipo: "perda" | "correcao_perda" | "estorno_perda"` e campos opcionais `refere_em`, `item_idx`, `antes`, `depois`, `observacao`, `usuario_id`. Novo tipo `PerdaItemRef`. `CopPerdaLinha` não muda.
+- Novo `lancamentosPerda(cop)`: percorre o histórico em ordem cronológica, gera um `LancamentoPerda` por item de evento `perda` (`em` + `item_idx`), aplica `correcao_perda` (a mais recente vence, `original` guarda o primeiro estado, alvo inexistente é ignorado) e marca `estornado` pelos eventos `estorno_perda`.
+- Novo `motivosDaLinha(cop, modelo, cor, tamanho)`: motivos distintos vigentes, cronológicos, sem vazios, ignorando estornados.
+- `getPerda`, `somarPerdas`, `subtrairPerdas`, `todasCompletas`, `refacoesDoCop`, `formatPerdasResumo`, `mesclarPerdasEmObservacoes` intactas.
 
-## 3. Estado por pedido
-`const [trocandoId, setTrocandoId] = useState<string | null>(null)` — setado antes do `mutate` e limpo no `onSettled`, para que só o botão do pedido em envio fique desabilitado.
+## 2. `src/components/cop/RegistrarPerdaDialog.tsx`
 
-## 4. `PedidoEntregaCard` — pedido já confirmado
-Abaixo do badge "Entrega confirmada em …", uma linha `flex gap-2`:
-- `CanhotoFotoViewer` com `label="Ver foto enviada"`, renderizado só quando `fotosDoPedido(pedido).length > 0`;
-- botão "Trocar foto" (`variant="outline"`, ícone `Camera`, `h-11 flex-1`), que abre a câmera e chama `onTrocarFoto(file)`; enquanto envia mostra "Enviando foto…" e fica `disabled`.
+Deixa de editar o total e passa a lançar perda nova.
 
-Abaixo: `text-[11px] text-muted-foreground` com "A foto anterior é mantida no histórico — a mais recente é a que vale."
+- Props novas `historico` e `canManage`; `perdas` continua sendo o agregado.
+- Colunas: Modelo · Cor · Tam. · Qtd · Já perdidas · Motivos já lançados · Perda agora · Motivo deste lançamento.
+- "Perda agora" e o motivo começam vazios a cada abertura; motivo habilitado só com qtd > 0.
+- Input de texto com filtro de inteiros (sem `type="number"`); teto por linha `já perdidas + perda agora ≤ qtd`, travando no máximo com célula vermelha e `máx N`.
+- Rodapé: **Total deste lançamento** + linha menor com perdas acumuladas. Botão **Lançar perdas** desabilitado no zero.
+- `onConfirm(lancamentos: CopPerdaLinha[])` — só os lançamentos novos, com motivo por item.
+- Bloco recolhível **Lançamentos anteriores** (mais recente primeiro) com data/hora, qtd, modelo, chip de cor, tamanho e motivo; etiquetas `corrigido` (com original em tooltip) e `estornado` (riscado). Com `canManage`: botões **Corrigir** e **Estornar** (AlertDialog com o texto especificado e aviso de N itens).
 
-**Separação dos caminhos:** dois inputs `type="file"` distintos com refs próprios — `fileRef` (existente, só no caminho de confirmar, renderizado apenas quando não confirmado) e `trocaRef` novo (renderizado apenas no bloco de confirmado, `onChange` → `onTrocarFoto`). Assim é impossível o arquivo de troca cair no `onConfirmar`.
+## 3. `src/components/cop/CorrigirLancamentoPerdaDialog.tsx` (novo)
 
-## 5. Props novas de `PedidoEntregaCard`
-`onTrocarFoto?: (file: File) => void` e `trocando?: boolean`. Sem `onTrocarFoto`, o botão não aparece.
+- Bloco "Como está hoje" somente leitura; bloco "Como deve ficar" com combobox de linha de destino restrito a `cop.pecas`, quantidade inteira (mín. 1, com a dica de usar Estornar para zerar), motivo e observação obrigatória.
+- Validação de teto no destino calculada por delta, com erro em bloco vermelho dentro do diálogo.
+- Modo somente leitura quando o COP está pago ou finalizado; aviso amarelo de impacto no saldo e no pagamento.
 
-## 6. Lista "Entregues nos últimos 30 dias"
-No `map` existente, segunda linha dentro do card com os mesmos dois controles: `CanhotoFotoViewer` (`label="Ver foto"`, só se houver foto) e "Trocar foto" chamando `trocarFoto` para aquele pedido, `disabled` quando `trocandoId === p.id`. Layout empilhado para não estourar ~390px.
+## 4. `src/components/cop/RomaneioTab.tsx`
 
-## 7. Chamadas existentes
-Passar `onTrocarFoto` e `trocando={trocandoId === p.id}` nas duas chamadas atuais (card `focado` do QR e cards de pendentes). Pedido não confirmado continua exatamente como hoje.
+- `salvarPerdas` passa a receber `{ cop, lancamentos }`: filtra qtd > 0, agrega com `somarPerdas`, valida teto contra `cop.pecas`, empilha evento `perda` **com motivo em cada item**, faz o backfill pontual de motivo vazio (só neste COP, só quando há exatamente uma linha correspondente no agregado com motivo), recalcula o campo `motivo` do agregado como o primeiro motivo cronológico, mantém `mesclarPerdasEmObservacoes` / `todasCompletas` / `refacoesDoCop` e atualiza apenas `perdas`, `observacoes_romaneio`, `historico_perdas` e `status`.
+- Nova `corrigirLancamentoPerda`: bloqueia pago/finalizado, ajusta o agregado por `subtrairPerdas(antes)` + `somarPerdas(depois)`, valida teto, empilha `correcao_perda` sem tocar no evento original, recalcula status/observações, invalida `["cops"]` e `["perdas-cons-cops"]`.
+- Nova `estornarLancamentoPerda`: subtrai os itens **vigentes** (derivados de `lancamentosPerda`), empilha `estorno_perda`, recalcula status (volta a Romaneio Parcial ou a Na Oficina quando nada resta).
+- Linha do tempo: `perda` com `−` roxo, `correcao_perda` azul com antes/depois/observação no detalhe, `estorno_perda` com `+` verde. Fallback sintético preservado.
+- Passar `historico`, `canManage`, `onCorrigir`, `onEstornar` ao `RegistrarPerdaDialog` e renderizar o novo diálogo.
 
-## 8. Fora do escopo
-Nada de rota/dialog novo, nada no `ScannerQr`, nada em `pedidosPendentesEntrega`/`pedidosEntreguesRecentes`, nenhuma exclusão de foto, nenhuma lib nova.
+## 5. `src/components/cop/PerdasTab.tsx`
 
-Ao final: rodar o typecheck e mostrar o resultado.
+Coluna Motivo (tabela por COP e bloco inferior) passa a listar todos os motivos vigentes via `motivosDaLinha`, separados por vírgula; traço quando vazio.
+
+## 6. `src/lib/perdas-consolidado.ts`
+
+Fonte A passa a gerar linhas de `lancamentosPerda(c)` filtrando `!estornado`, com valores corrigidos e `id` estável (`evento.em` + `item_idx`). Fallback, Fonte B, perdas manuais, reclassificações e `consumirRefeita` intactos.
+
+## Fora de escopo
+
+`src/lib/cop-saldos.ts` e todos os arquivos da lista protegida. Nenhuma migração, nenhum SQL, nenhum `type="number"` novo. Ao final, typecheck.
