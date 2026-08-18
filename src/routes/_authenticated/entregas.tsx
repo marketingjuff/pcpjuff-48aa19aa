@@ -184,6 +184,8 @@ function EntregasPage() {
                   pedido={p}
                   enviando={confirmar.isPending}
                   onConfirmar={(file) => confirmar.mutate({ pedido: p, file })}
+                  onTrocarFoto={(file) => dispararTroca(p, file)}
+                  trocando={trocandoId === p.id}
                 />
               ))
           )}
