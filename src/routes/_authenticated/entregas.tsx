@@ -277,9 +277,46 @@ function PedidoEntregaCard({
         </div>
 
         {confirmado ? (
-          <Badge variant="outline" className="bg-success/15 text-success border-success/30">
-            Entrega confirmada em {fmtDataHora(pedido.entrega_confirmada_em)}
-          </Badge>
+          <div className="space-y-2">
+            <Badge variant="outline" className="bg-success/15 text-success border-success/30">
+              Entrega confirmada em {fmtDataHora(pedido.entrega_confirmada_em)}
+            </Badge>
+            {onTrocarFoto && (
+              <>
+                <input
+                  ref={trocaRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) onTrocarFoto(f);
+                  }}
+                />
+                <div className="flex gap-2">
+                  {temFoto && (
+                    <div className="flex-1 [&>button]:w-full [&>button]:h-11">
+                      <CanhotoFotoViewer pedido={pedido} label="Ver foto enviada" />
+                    </div>
+                  )}
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-11"
+                    disabled={trocando}
+                    onClick={() => trocaRef.current?.click()}
+                  >
+                    <Camera className="h-4 w-4 mr-2" />
+                    {trocando ? "Enviando foto…" : "Trocar foto"}
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  A foto anterior é mantida no histórico — a mais recente é a que vale.
+                </p>
+              </>
+            )}
+          </div>
         ) : (
           <>
             <input
