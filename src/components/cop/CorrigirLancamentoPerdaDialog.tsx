@@ -9,7 +9,7 @@ import type { Cop, LancamentoPerda, PerdaItemRef } from "@/lib/cop";
 import { MOTIVOS_PERDA_PADRAO, formatCopNumero, getPerda } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { useAppList } from "@/lib/app-lists";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Plus, X } from "lucide-react";
 
 const SEM_MOTIVO = "__sem__";
 
