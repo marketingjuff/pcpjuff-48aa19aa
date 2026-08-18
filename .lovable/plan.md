@@ -1,38 +1,36 @@
-# Início real da Arte + "Espera no Dados In" (KPI PCP)
+# Tela do motorista (/entregas): ver e trocar a foto do canhoto
 
-Objetivo: registrar automaticamente no banco o momento em que o pedido realmente chega na Arte (primeiro save do Input de Produção), corrigir o cálculo da etapa Arte no KPI e criar a linha nova "Espera no Dados In" com o tempo que hoje está escondido dentro da Arte.
+Único arquivo tocado: `src/routes/_authenticated/entregas.tsx`. Zero SQL, zero migração, nenhuma dependência nova.
 
-## 1. Migração nova (`supabase/migrations/<nova>.sql`) — só aditiva, nesta ordem
+## 1. Imports
+- `CanhotoFotoViewer` de `@/components/pcp/CanhotoFotoViewer` (só importar).
+- Acrescentar `fotosDoPedido` ao import existente de `@/lib/entregas`.
 
-**Passo 1 — coluna:** `ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS arte_iniciou_em timestamptz NULL;` + `COMMENT ON COLUMN`.
+## 2. Mutation `trocarFoto` (em `EntregasPage`)
+Irmã da `confirmar`: chama `enviarFotoCanhoto(pedido, file)` e faz `update` gravando **somente** `canhoto_fotos`. Não toca em `entrega_confirmada_em` nem `entrega_confirmada_por`, e não navega no sucesso. Invalida `["entregas-pedidos"]` e `["pedidos"]`, toast "Foto do canhoto atualizada."; erro → toast com a mensagem.
 
-**Passo 2 — backfill (ANTES de criar o trigger):** para cada pedido, o menor `feito_em` do `pedido_audit_log` entre (a) `acao = 'update'` com elemento de `mudancas` de `campo = 'tipo_estampa'` e `para` não nulo/vazio e (b) `acao = 'insert'` com `linha_completa->>'tipo_estampa'` não nulo/vazio. O `UPDATE` roda com `WHERE arte_iniciou_em IS NULL` **e** só atinge pedidos em que esse `feito_em` foi realmente encontrado (subconsulta com valor não nulo) — os demais permanecem `NULL`, sem fallback. Escreve apenas nessa coluna. O backfill vem antes do trigger justamente para que pedidos antigos sem log não recebam a data de hoje.
+## 3. Estado por pedido
+`const [trocandoId, setTrocandoId] = useState<string | null>(null)` — setado antes do `mutate` e limpo no `onSettled`, para que só o botão do pedido em envio fique desabilitado.
 
-**Passo 3 — função:** `CREATE OR REPLACE FUNCTION public.set_arte_iniciou_em()` (`SECURITY DEFINER`, `SET search_path = public`): se `NEW.arte_iniciou_em IS NULL` e `status_pecas` e `tipo_estampa` estão preenchidos (não nulos, não vazios) → `NEW.arte_iniciou_em := timezone('America/Sao_Paulo', now())` (horário de Brasília, para o `slice(0, 10)` do KPI cair no dia certo em saves de fim de tarde/noite). Nunca sobrescreve valor já existente, nunca zera.
+## 4. `PedidoEntregaCard` — pedido já confirmado
+Abaixo do badge "Entrega confirmada em …", uma linha `flex gap-2`:
+- `CanhotoFotoViewer` com `label="Ver foto enviada"`, renderizado só quando `fotosDoPedido(pedido).length > 0`;
+- botão "Trocar foto" (`variant="outline"`, ícone `Camera`, `h-11 flex-1`), que abre a câmera e chama `onTrocarFoto(file)`; enquanto envia mostra "Enviando foto…" e fica `disabled`.
 
-**Passo 4 — trigger:** `CREATE TRIGGER trg_arte_iniciou_em BEFORE INSERT OR UPDATE ON public.pedidos FOR EACH ROW` (separado do trigger de auditoria, que continua intocado).
+Abaixo: `text-[11px] text-muted-foreground` com "A foto anterior é mantida no histórico — a mais recente é a que vale."
 
-Sem `DROP`, `TRUNCATE`, `DELETE` ou alteração de coluna existente.
+**Separação dos caminhos:** dois inputs `type="file"` distintos com refs próprios — `fileRef` (existente, só no caminho de confirmar, renderizado apenas quando não confirmado) e `trocaRef` novo (renderizado apenas no bloco de confirmado, `onChange` → `onTrocarFoto`). Assim é impossível o arquivo de troca cair no `onConfirmar`.
 
+## 5. Props novas de `PedidoEntregaCard`
+`onTrocarFoto?: (file: File) => void` e `trocando?: boolean`. Sem `onTrocarFoto`, o botão não aparece.
 
-## 2. `src/lib/audit-labels.ts`
+## 6. Lista "Entregues nos últimos 30 dias"
+No `map` existente, segunda linha dentro do card com os mesmos dois controles: `CanhotoFotoViewer` (`label="Ver foto"`, só se houver foto) e "Trocar foto" chamando `trocarFoto` para aquele pedido, `disabled` quando `trocandoId === p.id`. Layout empilhado para não estourar ~390px.
 
-Adicionar `arte_iniciou_em: "Entrada na Arte (automático)"`. Nada mais.
+## 7. Chamadas existentes
+Passar `onTrocarFoto` e `trocando={trocandoId === p.id}` nas duas chamadas atuais (card `focado` do QR e cards de pendentes). Pedido não confirmado continua exatamente como hoje.
 
-## 3. `src/lib/kpi-pcp.ts`
+## 8. Fora do escopo
+Nada de rota/dialog novo, nada no `ScannerQr`, nada em `pedidosPendentesEntrega`/`pedidosEntreguesRecentes`, nenhuma exclusão de foto, nenhuma lib nova.
 
-- `ETAPAS_TEMPO` passa a começar com `"Espera no Dados In"`.
-- Helper local `arteIniciou(p)` devolvendo `YYYY-MM-DD` de `arte_iniciou_em` (lido via cast, sem tocar o tipo `Pedido`) ou `null`. Sem qualquer conversão de fuso aqui — o ajuste de Brasília já foi feito no trigger, aplicar de novo duplicaria.
-- Dentro de `tempoBloco`, helper `soReal(etapa, ra, rb)`: empurra só em `real[etapa]`, não em `plan`, e não marca `entrou` (cobertura/`elegiveis` inalterados).
-- `soReal("Espera no Dados In", p.entrada_pedido, arteIniciou(p))` para todos os tipos, inclusive Lisa.
-- Arte passa a `par("Arte", arteIniciou(p), p.arte_data, arteIniciou(p), arteLiberou(p))`.
-- Nenhuma outra mudança de cálculo: `media`, `p80`, `arteLiberou*`, `fimEstamparia`, faixas, `porMes` e o bloco de refação seguem iguais. `maiorFolga` ignora a espera (diferença nula); `gargalo` pode incluí-la.
-
-## 4. `src/components/kpi/KpiPcpTab.tsx`
-
-A tabela já renderiza `—` quando `planejadoMedio`/`diferenca` são nulos, então a linha nova entra sem quebrar. Adicionar abaixo da tabela uma nota em `text-xs text-muted-foreground` explicando o que é "Espera no Dados In" e que pedidos anteriores ao registro automático não entram na conta.
-
-## Observações técnicas
-
-- O campo não aparece em nenhuma tela de operação; só banco, KPI e histórico de auditoria (automático).
-- Fora da allowlist nada é alterado: em `kpi-pcp.ts` o campo é lido por cast, para não editar `src/lib/pedidos.ts`. `src/integrations/supabase/types.ts` só é regenerado automaticamente pela migração.
+Ao final: rodar o typecheck e mostrar o resultado.
