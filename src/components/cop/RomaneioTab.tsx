@@ -1031,8 +1031,21 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                       if (h.tipo === "completo") return "bg-green-100 text-green-800";
                       if (h.tipo === "parcial") return "bg-amber-100 text-amber-800";
                       if (h.tipo === "urgencia") return "bg-red-100 text-red-800";
+                      if (h.tipo === "estorno_perda") return "bg-green-100 text-green-800";
+                      if (h.tipo === "correcao_perda") return "bg-blue-100 text-blue-800";
                       return "bg-purple-100 text-purple-800";
                     };
+                    const rotuloTipo = (h: any) =>
+                      h.tipo === "estorno_perda" ? "perda desfeita"
+                      : h.tipo === "correcao_perda" ? "perda corrigida"
+                      : h.tipo;
+                    const sinal = (h: any) =>
+                      h.tipo === "estorno_perda" ? "+" : h._kind === "perda" && h.tipo === "perda" ? "−" : "";
+                    const corValor = (h: any) =>
+                      h.tipo === "estorno_perda" ? "text-green-700"
+                      : h.tipo === "correcao_perda" ? "text-blue-700"
+                      : h._kind === "perda" ? "text-purple-700"
+                      : h._kind === "urgencia" ? "text-red-700" : "";
                     return (
                       <div className="rounded-md border p-2">
                         <div className="text-xs font-semibold mb-1">Histórico</div>
@@ -1046,7 +1059,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                             >
                               <span className="min-w-0 flex-1 truncate">
                                 <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] mr-1 ${badge(h)}`}>
-                                  {h.tipo}
+                                  {rotuloTipo(h)}
                                 </span>
                                 {new Date(h.em).toLocaleString("pt-BR")}
                                 {h._kind === "recebimento" && h.letra && <> · letra <b>{h.letra}</b></>}
@@ -1054,9 +1067,13 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                                   <span className="ml-1 text-muted-foreground">— {h.observacao}</span>
                                 )}
                               </span>
-                              <span className={`tabular-nums font-semibold shrink-0 ${h._kind === "perda" ? "text-purple-700" : h._kind === "urgencia" ? "text-red-700" : ""}`}>
-                                {h._kind === "perda" ? "−" : ""}{h.total}
+                              <span className={`tabular-nums font-semibold shrink-0 ${corValor(h)}`}>
+                                {sinal(h)}{h.total}
                               </span>
+                            </li>
+                          ))}
+                        </ul>
+
                             </li>
                           ))}
                         </ul>
