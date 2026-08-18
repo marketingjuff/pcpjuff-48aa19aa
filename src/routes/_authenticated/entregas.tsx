@@ -240,16 +240,22 @@ function PedidoEntregaCard({
   destaque = false,
   enviando,
   onConfirmar,
+  onTrocarFoto,
+  trocando = false,
   onFechar,
 }: {
   pedido: Pedido;
   destaque?: boolean;
   enviando: boolean;
   onConfirmar: (file: File) => void;
+  onTrocarFoto?: (file: File) => void;
+  trocando?: boolean;
   onFechar?: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const trocaRef = useRef<HTMLInputElement | null>(null);
   const confirmado = !!pedido.entrega_confirmada_em;
+  const temFoto = fotosDoPedido(pedido).length > 0;
 
   return (
     <Card className={destaque ? "border-primary ring-1 ring-primary/30" : undefined}>
