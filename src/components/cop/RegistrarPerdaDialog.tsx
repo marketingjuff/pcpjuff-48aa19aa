@@ -162,51 +162,80 @@ export function RegistrarPerdaDialog({
                 {pecas.length === 0 ? (
                   <tr><td colSpan={8} className="p-3 text-center text-muted-foreground">Sem peças.</td></tr>
                 ) : pecas.map((p, i) => {
-                  const k = key(p.modelo, p.cor, p.tamanho);
-                  const cur = vals[k];
-                  const v = cur?.qtd ?? 0;
+                  const arr = entradas(p);
+                  const somaLinha = arr.reduce((s, e) => s + (Number(e.qtd) || 0), 0);
                   const ja = getPerda(perdas, p.modelo, p.cor, p.tamanho);
                   const max = maxDaLinha(p);
-                  const noTeto = v > 0 && v >= max;
+                  const noTeto = somaLinha > 0 && somaLinha >= max;
                   const motivosJa = motivosDaLinha(historicoObj, p.modelo, p.cor, p.tamanho);
                   return (
-                    <tr key={i} className="border-t">
+                    <tr key={i} className="border-t align-top">
                       <td className="p-2">{p.modelo}</td>
                       <td className="p-2"><CorChip cor={p.cor} /></td>
                       <td className="p-2 text-center">{p.tamanho}</td>
                       <td className="p-2 text-right tabular-nums">{p.qtd}</td>
                       <td className={`p-2 text-right tabular-nums ${ja > 0 ? "font-semibold text-purple-600" : "text-muted-foreground"}`}>{ja}</td>
                       <td className="p-2 text-xs text-muted-foreground">{motivosJa.length ? motivosJa.join(", ") : "—"}</td>
-                      <td className="p-2 text-right">
-                        <Input
-                          inputMode="numeric"
-                          className={`h-7 w-20 ml-auto text-right tabular-nums [appearance:textfield] ${noTeto ? "border-destructive text-destructive" : ""}`}
-                          value={v || ""}
-                          onChange={(e) => setQ(p, e.target.value)}
-                          disabled={disabled || max === 0}
-                        />
-                        {noTeto && <div className="text-[10px] text-destructive text-right mt-0.5">máx {max}</div>}
-                      </td>
-                      <td className="p-2">
-                        <Select
-                          value={cur?.motivo ?? SEM_MOTIVO}
-                          onValueChange={(m) => setMotivo(p, m)}
-                          disabled={disabled || v === 0}
-                        >
-                          <SelectTrigger className="h-7 w-40">
-                            <SelectValue placeholder="—" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={SEM_MOTIVO}>—</SelectItem>
-                            {motivos.map((m) => (
-                              <SelectItem key={m} value={m}>{m}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <td className="p-2" colSpan={2}>
+                        <div className="flex flex-col gap-1.5">
+                          {arr.map((e, idx) => (
+                            <div key={idx} className="flex items-center gap-2 justify-end">
+                              <Input
+                                inputMode="numeric"
+                                className={`h-7 w-20 text-right tabular-nums [appearance:textfield] ${noTeto ? "border-destructive text-destructive" : ""}`}
+                                value={e.qtd || ""}
+                                onChange={(ev) => setQ(p, idx, ev.target.value)}
+                                disabled={disabled || max === 0}
+                              />
+                              <Select
+                                value={e.motivo ?? SEM_MOTIVO}
+                                onValueChange={(m) => setMotivo(p, idx, m)}
+                                disabled={disabled || (Number(e.qtd) || 0) === 0}
+                              >
+                                <SelectTrigger className="h-7 w-40">
+                                  <SelectValue placeholder="—" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value={SEM_MOTIVO}>—</SelectItem>
+                                  {motivos.map((m) => (
+                                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {arr.length > 1 ? (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 text-destructive"
+                                  title="Remover este motivo"
+                                  onClick={() => removerMotivo(p, idx)}
+                                  disabled={disabled}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              ) : (
+                                <span className="w-7" />
+                              )}
+                            </div>
+                          ))}
+                          <div className="flex items-center justify-between gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2"
+                              onClick={() => addMotivo(p)}
+                              disabled={disabled || max === 0 || somaLinha >= max}
+                            >
+                              <Plus className="h-3.5 w-3.5 mr-1" />Outro motivo
+                            </Button>
+                            {noTeto && <span className="text-[10px] text-destructive">máx {max}</span>}
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   );
                 })}
+
               </tbody>
               <tfoot className="bg-muted/30">
                 <tr>
