@@ -99,6 +99,31 @@ function EntregasPage() {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao confirmar a entrega."),
   });
 
+  const [trocandoId, setTrocandoId] = useState<string | null>(null);
+
+  const trocarFoto = useMutation({
+    mutationFn: async ({ pedido, file }: { pedido: Pedido; file: File }) => {
+      const fotos = await enviarFotoCanhoto(pedido, file);
+      const { error } = await supabase
+        .from("pedidos")
+        .update({ canhoto_fotos: fotos as any })
+        .eq("id", pedido.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["entregas-pedidos"] });
+      qc.invalidateQueries({ queryKey: ["pedidos"] });
+      toast.success("Foto do canhoto atualizada.");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao enviar a foto."),
+    onSettled: () => setTrocandoId(null),
+  });
+
+  function dispararTroca(pedido: Pedido, file: File) {
+    setTrocandoId(pedido.id);
+    trocarFoto.mutate({ pedido, file });
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     qc.clear();
