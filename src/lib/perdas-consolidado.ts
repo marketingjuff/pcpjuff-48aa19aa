@@ -235,7 +235,32 @@ export function usePerdasConsolidadas() {
             fonte: { kind: "cop_historico", copId: c.id, eventoEm: l.em, itemIdx: l.item_idx },
           });
         }
+      } else if (Array.isArray(c.perdas) && c.perdas.length > 0) {
+        // Fallback para dados antigos: usa `cops.perdas` com updated_at.
+        c.perdas.forEach((p: any, idx: number) => {
+          const qtdOrig = Number(p.qtd) || 0;
+          if (qtdOrig <= 0) return;
+          const qtd = consumirRefeita(c.id, p.modelo, p.cor, p.tamanho, qtdOrig);
+          if (qtd <= 0) return;
+          out.push({
+            id: `cop-perdafield:${c.id}:${idx}`,
+            origem: "cop",
+            identificacao: rotulo,
+            data: c.updated_at,
+            modelo: p.modelo,
+            cor: p.cor,
+            tamanho: p.tamanho,
+            qtd,
+            motivo: p.motivo ?? null,
+            oficina_id: c.oficina_id ?? null,
+            oficina_nome: oficinaNome(c.oficina_id),
+            fonte: { kind: "cop_perdas_fallback", copId: c.id, itemIdx: idx },
+          });
+        });
       }
+    }
+
+
 
 
     // Fonte B: cop_perdas
