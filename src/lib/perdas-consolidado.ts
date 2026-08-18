@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Cop, CopPerdaRegistro, Oficina, HistoricoPerda } from "@/lib/cop";
-import { rotuloCop } from "@/lib/cop";
+import { rotuloCop, lancamentosPerda } from "@/lib/cop";
 import type { Pedido, PecaPerdida, RefacaoEpisodio } from "@/lib/pedidos";
 
 export type PerdaOrigem = "pcp" | "cop" | "manual";
