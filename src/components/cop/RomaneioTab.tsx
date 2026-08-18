@@ -1285,9 +1285,22 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             onOpenChange={setShowPerda}
             pecas={selected.pecas || []}
             perdas={(selected.perdas as CopPerdaLinha[]) ?? []}
-            onConfirm={(perdas) => salvarPerdas.mutate({ cop: selected, perdas })}
-            disabled={salvarPerdas.isPending}
+            historico={(selected.historico_perdas as HistoricoPerda[]) ?? []}
+            canManage={canManageCop}
+            onConfirm={(lancamentos) => salvarPerdas.mutate({ cop: selected, lancamentos })}
+            onCorrigir={(l) => setCorrigirPerdaAlvo(l)}
+            onEstornar={(l) => estornarLancamentoPerda.mutate({ cop: selected, evento_em: l.em })}
+            disabled={salvarPerdas.isPending || estornarLancamentoPerda.isPending}
           />
+          <CorrigirLancamentoPerdaDialog
+            open={!!corrigirPerdaAlvo}
+            onOpenChange={(v) => { if (!v) setCorrigirPerdaAlvo(null); }}
+            cop={selected}
+            lancamento={corrigirPerdaAlvo}
+            onConfirm={(p) => corrigirLancamentoPerda.mutate({ cop: selected, ...p })}
+            disabled={corrigirLancamentoPerda.isPending || !canManageCop}
+          />
+
           <PedirUrgenciaDialog
             open={showUrgencia}
             onOpenChange={setShowUrgencia}
