@@ -12,7 +12,8 @@ import type { Pedido } from "@/lib/pedidos";
 import { formatDateBR } from "@/lib/format";
 import { useMinhasPermissoes, useIsAdmin, useMyRoles } from "@/hooks/use-role";
 import { rotaInicial } from "@/lib/permissoes";
-import { enviarFotoCanhoto, pedidosEntreguesRecentes, pedidosPendentesEntrega } from "@/lib/entregas";
+import { enviarFotoCanhoto, fotosDoPedido, pedidosEntreguesRecentes, pedidosPendentesEntrega } from "@/lib/entregas";
+import { CanhotoFotoViewer } from "@/components/pcp/CanhotoFotoViewer";
 
 export const Route = createFileRoute("/_authenticated/entregas")({
   validateSearch: (s: Record<string, unknown>) => ({
