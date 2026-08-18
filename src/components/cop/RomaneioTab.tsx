@@ -1073,10 +1073,6 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                             </li>
                           ))}
                         </ul>
-
-                            </li>
-                          ))}
-                        </ul>
                       </div>
                     );
                   })()}
