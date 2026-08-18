@@ -33,6 +33,7 @@ import { abrirRomaneioParaImpressao } from "@/lib/romaneio-pdf";
 import { EntregaRomaneioDialog } from "./EntregaRomaneioDialog";
 import { ParticionarRomaneioDialog } from "./ParticionarRomaneioDialog";
 import { RegistrarPerdaDialog } from "./RegistrarPerdaDialog";
+import { CorrigirLancamentoPerdaDialog } from "./CorrigirLancamentoPerdaDialog";
 import { PedirUrgenciaDialog } from "./PedirUrgenciaDialog";
 import { cargaPorOficina } from "@/lib/cop-oficinas";
 
