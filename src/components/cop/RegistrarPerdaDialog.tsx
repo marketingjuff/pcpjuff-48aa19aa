@@ -12,7 +12,7 @@ import type { CopPeca, CopPerdaLinha, HistoricoPerda, LancamentoPerda } from "@/
 import { MOTIVOS_PERDA_PADRAO, getPerda, lancamentosPerda, motivosDaLinha } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { useAppList } from "@/lib/app-lists";
-import { ChevronDown, ChevronRight, Info, Pencil, Undo2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Info, Pencil, Plus, Undo2, X } from "lucide-react";
 
 type Props = {
   open: boolean;
@@ -49,7 +49,8 @@ export function RegistrarPerdaDialog({
   onConfirm, onCorrigir, onEstornar, disabled,
 }: Props) {
   const key = (m: string, c: string, t: string) => `${m}|${c}|${t}`;
-  const [vals, setVals] = useState<Record<string, { qtd: number; motivo?: string }>>({});
+  type Entrada = { qtd: number; motivo?: string };
+  const [vals, setVals] = useState<Record<string, Entrada[]>>({});
   const [verAnteriores, setVerAnteriores] = useState(false);
   const [estornoAlvo, setEstornoAlvo] = useState<LancamentoPerda | null>(null);
   const { names: motivosDb } = useAppList("motivo_perda");
@@ -62,7 +63,7 @@ export function RegistrarPerdaDialog({
   }, [open]);
 
   const totalLancamento = useMemo(
-    () => Object.values(vals).reduce((a, b) => a + (Number(b.qtd) || 0), 0),
+    () => Object.values(vals).reduce((a, arr) => a + arr.reduce((s, e) => s + (Number(e.qtd) || 0), 0), 0),
     [vals],
   );
   const totalAcumulado = useMemo(
@@ -85,39 +86,52 @@ export function RegistrarPerdaDialog({
     return Math.max(0, (Number(p.qtd) || 0) - getPerda(perdas, p.modelo, p.cor, p.tamanho));
   }
 
-  function setQ(p: CopPeca, raw: string) {
-    const digits = raw.replace(/[^\d]/g, "");
-    const k = key(p.modelo, p.cor, p.tamanho);
-    const max = maxDaLinha(p);
-    const v = Math.min(max, digits === "" ? 0 : parseInt(digits, 10) || 0);
-    setVals((s) => {
-      const next = { ...s };
-      if (v <= 0) delete next[k];
-      else next[k] = { qtd: v, motivo: s[k]?.motivo };
-      return next;
-    });
+  function entradas(p: CopPeca): Entrada[] {
+    return vals[key(p.modelo, p.cor, p.tamanho)] ?? [{ qtd: 0 }];
   }
 
-  function setMotivo(p: CopPeca, motivo: string) {
+  function setEntradas(p: CopPeca, next: Entrada[]) {
     const k = key(p.modelo, p.cor, p.tamanho);
-    const m = motivo === SEM_MOTIVO ? undefined : motivo;
-    setVals((s) => {
-      const cur = s[k];
-      if (!cur) return s;
-      return { ...s, [k]: { ...cur, motivo: m } };
-    });
+    setVals((s) => ({ ...s, [k]: next }));
+  }
+
+  function setQ(p: CopPeca, idx: number, raw: string) {
+    const digits = raw.replace(/[^\d]/g, "");
+    const arr = entradas(p).map((e) => ({ ...e }));
+    const max = maxDaLinha(p);
+    const outros = arr.reduce((s, e, i) => (i === idx ? s : s + (Number(e.qtd) || 0)), 0);
+    const v = Math.max(0, Math.min(Math.max(0, max - outros), digits === "" ? 0 : parseInt(digits, 10) || 0));
+    arr[idx] = { ...arr[idx], qtd: v };
+    setEntradas(p, arr);
+  }
+
+  function setMotivo(p: CopPeca, idx: number, motivo: string) {
+    const arr = entradas(p).map((e) => ({ ...e }));
+    arr[idx] = { ...arr[idx], motivo: motivo === SEM_MOTIVO ? undefined : motivo };
+    setEntradas(p, arr);
+  }
+
+  function addMotivo(p: CopPeca) {
+    setEntradas(p, [...entradas(p), { qtd: 0 }]);
+  }
+
+  function removerMotivo(p: CopPeca, idx: number) {
+    const arr = entradas(p).filter((_, i) => i !== idx);
+    setEntradas(p, arr.length ? arr : [{ qtd: 0 }]);
   }
 
   function confirmar() {
     const out: CopPerdaLinha[] = [];
     for (const p of pecas) {
-      const data = vals[key(p.modelo, p.cor, p.tamanho)];
-      if (data && data.qtd > 0) {
-        out.push({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: data.qtd, motivo: data.motivo ?? null });
+      for (const e of vals[key(p.modelo, p.cor, p.tamanho)] ?? []) {
+        if ((Number(e.qtd) || 0) > 0) {
+          out.push({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: e.qtd, motivo: e.motivo ?? null });
+        }
       }
     }
     onConfirm(out);
   }
+
 
   return (
     <>
@@ -148,51 +162,80 @@ export function RegistrarPerdaDialog({
                 {pecas.length === 0 ? (
                   <tr><td colSpan={8} className="p-3 text-center text-muted-foreground">Sem peças.</td></tr>
                 ) : pecas.map((p, i) => {
-                  const k = key(p.modelo, p.cor, p.tamanho);
-                  const cur = vals[k];
-                  const v = cur?.qtd ?? 0;
+                  const arr = entradas(p);
+                  const somaLinha = arr.reduce((s, e) => s + (Number(e.qtd) || 0), 0);
                   const ja = getPerda(perdas, p.modelo, p.cor, p.tamanho);
                   const max = maxDaLinha(p);
-                  const noTeto = v > 0 && v >= max;
+                  const noTeto = somaLinha > 0 && somaLinha >= max;
                   const motivosJa = motivosDaLinha(historicoObj, p.modelo, p.cor, p.tamanho);
                   return (
-                    <tr key={i} className="border-t">
+                    <tr key={i} className="border-t align-top">
                       <td className="p-2">{p.modelo}</td>
                       <td className="p-2"><CorChip cor={p.cor} /></td>
                       <td className="p-2 text-center">{p.tamanho}</td>
                       <td className="p-2 text-right tabular-nums">{p.qtd}</td>
                       <td className={`p-2 text-right tabular-nums ${ja > 0 ? "font-semibold text-purple-600" : "text-muted-foreground"}`}>{ja}</td>
                       <td className="p-2 text-xs text-muted-foreground">{motivosJa.length ? motivosJa.join(", ") : "—"}</td>
-                      <td className="p-2 text-right">
-                        <Input
-                          inputMode="numeric"
-                          className={`h-7 w-20 ml-auto text-right tabular-nums [appearance:textfield] ${noTeto ? "border-destructive text-destructive" : ""}`}
-                          value={v || ""}
-                          onChange={(e) => setQ(p, e.target.value)}
-                          disabled={disabled || max === 0}
-                        />
-                        {noTeto && <div className="text-[10px] text-destructive text-right mt-0.5">máx {max}</div>}
-                      </td>
-                      <td className="p-2">
-                        <Select
-                          value={cur?.motivo ?? SEM_MOTIVO}
-                          onValueChange={(m) => setMotivo(p, m)}
-                          disabled={disabled || v === 0}
-                        >
-                          <SelectTrigger className="h-7 w-40">
-                            <SelectValue placeholder="—" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={SEM_MOTIVO}>—</SelectItem>
-                            {motivos.map((m) => (
-                              <SelectItem key={m} value={m}>{m}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <td className="p-2" colSpan={2}>
+                        <div className="flex flex-col gap-1.5">
+                          {arr.map((e, idx) => (
+                            <div key={idx} className="flex items-center gap-2 justify-end">
+                              <Input
+                                inputMode="numeric"
+                                className={`h-7 w-20 text-right tabular-nums [appearance:textfield] ${noTeto ? "border-destructive text-destructive" : ""}`}
+                                value={e.qtd || ""}
+                                onChange={(ev) => setQ(p, idx, ev.target.value)}
+                                disabled={disabled || max === 0}
+                              />
+                              <Select
+                                value={e.motivo ?? SEM_MOTIVO}
+                                onValueChange={(m) => setMotivo(p, idx, m)}
+                                disabled={disabled || (Number(e.qtd) || 0) === 0}
+                              >
+                                <SelectTrigger className="h-7 w-40">
+                                  <SelectValue placeholder="—" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value={SEM_MOTIVO}>—</SelectItem>
+                                  {motivos.map((m) => (
+                                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {arr.length > 1 ? (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 text-destructive"
+                                  title="Remover este motivo"
+                                  onClick={() => removerMotivo(p, idx)}
+                                  disabled={disabled}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              ) : (
+                                <span className="w-7" />
+                              )}
+                            </div>
+                          ))}
+                          <div className="flex items-center justify-between gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2"
+                              onClick={() => addMotivo(p)}
+                              disabled={disabled || max === 0 || somaLinha >= max}
+                            >
+                              <Plus className="h-3.5 w-3.5 mr-1" />Outro motivo
+                            </Button>
+                            {noTeto && <span className="text-[10px] text-destructive">máx {max}</span>}
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   );
                 })}
+
               </tbody>
               <tfoot className="bg-muted/30">
                 <tr>
