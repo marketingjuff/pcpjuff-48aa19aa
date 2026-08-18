@@ -1161,7 +1161,16 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                             </div>
                           </div>
                         </div>
-                      ) : selectedHist && (
+                      ) : selectedHist && (() => {
+                        const isPerda = selectedHist.tipo === "perda";
+                        const vigentes = isPerda
+                          ? lancamentosPerda(selected).filter((l) => l.em === selectedHist.em)
+                          : [];
+                        const byIdx = new Map(vigentes.map((l) => [l.item_idx, l]));
+                        const podeAgir = isPerda && canManageCop;
+                        const algumVigente = vigentes.some((l) => !l.estornado);
+                        return (
+                        <div className="space-y-2">
                         <div className="rounded-md border overflow-hidden">
                           <table className="w-full text-xs">
                             <thead className="bg-muted/40">
@@ -1170,34 +1179,76 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                                 <th className="p-2 text-left">Cor</th>
                                 <th className="p-2 text-left">Tamanho</th>
                                 <th className="p-2 text-right">Qtd</th>
+                                {podeAgir && <th className="p-2 text-right">Ações</th>}
                               </tr>
                             </thead>
                             <tbody>
-                              {selectedHist.itens.map((item: any, idx: number) => (
+                              {selectedHist.itens.map((item: any, idx: number) => {
+                                const l = byIdx.get(idx);
+                                return (
                                 <tr key={idx} className="border-t">
-                                  <td className="p-2">{item.modelo}</td>
-                                  <td className="p-2"><CorChip cor={item.cor} /></td>
-                                  <td className="p-2">{item.tamanho}</td>
-                                  <td className={`p-2 text-right tabular-nums font-semibold ${selectedHist.tipo === "perda" ? "text-purple-700" : ""}`}>
-                                    {selectedHist.tipo === "perda" ? item.qtd : item.qtd_recebida}
+                                  <td className={`p-2 ${l?.estornado ? "line-through text-muted-foreground" : ""}`}>{l?.modelo ?? item.modelo}</td>
+                                  <td className="p-2"><CorChip cor={l?.cor ?? item.cor} /></td>
+                                  <td className="p-2">{l?.tamanho ?? item.tamanho}</td>
+                                  <td className={`p-2 text-right tabular-nums font-semibold ${isPerda ? "text-purple-700" : ""} ${l?.estornado ? "line-through opacity-60" : ""}`}>
+                                    {isPerda ? (l?.qtd ?? item.qtd) : item.qtd_recebida}
+                                    {l?.corrigido && <span className="ml-1 text-[10px] font-normal text-blue-700">corrigido</span>}
+                                    {l?.estornado && <span className="ml-1 text-[10px] font-normal text-green-700">estornado</span>}
                                   </td>
+                                  {podeAgir && (
+                                    <td className="p-2 text-right">
+                                      {l && !l.estornado ? (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="h-7 px-2"
+                                          onClick={() => { setCorrigirPerdaAlvo(l); setSelectedHist(null); }}
+                                        >
+                                          Corrigir
+                                        </Button>
+                                      ) : <span className="text-muted-foreground">—</span>}
+                                    </td>
+                                  )}
                                 </tr>
-                              ))}
+                                );
+                              })}
                               {selectedHist.itens.length === 0 && (
-                                <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">Nenhuma peça registrada.</td></tr>
+                                <tr><td colSpan={podeAgir ? 5 : 4} className="p-3 text-center text-muted-foreground">Nenhuma peça registrada.</td></tr>
                               )}
                             </tbody>
                             <tfoot>
                               <tr className="bg-muted/30">
-                                <td className="p-2 text-right" colSpan={3}><b>Total</b></td>
-                                <td className={`p-2 text-right tabular-nums ${selectedHist.tipo === "perda" ? "text-purple-700" : ""}`}><b>{selectedHist.tipo === "perda" ? "−" : ""}{selectedHist.total}</b></td>
+                                <td className="p-2 text-right" colSpan={podeAgir ? 4 : 3}><b>Total</b></td>
+                                <td className={`p-2 text-right tabular-nums ${isPerda ? "text-purple-700" : ""}`}><b>{isPerda ? "−" : ""}{selectedHist.total}</b></td>
                               </tr>
                             </tfoot>
                           </table>
                         </div>
-                      )}
+                        {podeAgir && (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-muted-foreground">
+                              Corrigir ajusta a linha/quantidade/motivo. Desfazer estorna o lançamento inteiro.
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="h-7 px-2"
+                              disabled={!algumVigente || estornarLancamentoPerda.isPending}
+                              onClick={() => {
+                                estornarLancamentoPerda.mutate({ cop: selected, evento_em: selectedHist.em });
+                                setSelectedHist(null);
+                              }}
+                            >
+                              Desfazer perda
+                            </Button>
+                          </div>
+                        )}
+                        </div>
+                        );
+                      })()}
                     </DialogContent>
                   </Dialog>
+
 
 
 
