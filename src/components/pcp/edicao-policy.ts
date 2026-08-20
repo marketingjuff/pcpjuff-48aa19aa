@@ -5,6 +5,7 @@ import {
   etapaAtualSemAsterisco,
   ladoDtfPronto,
   ladoSilkPronto,
+  acabamentoPronto,
 } from "@/lib/pedidos";
 
 export function canEditArte(p: Pedido | null | undefined): boolean {
