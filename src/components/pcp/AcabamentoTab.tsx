@@ -1,7 +1,8 @@
 import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc, calcularEtapaAtual } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento, acabamentoCompleto } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento, acabamentoCompleto, acabamentoPronto } from "@/lib/pedidos";
+import { toast } from "sonner";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
