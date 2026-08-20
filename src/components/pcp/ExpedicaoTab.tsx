@@ -564,14 +564,14 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                     <th className={`${TH_RAW_CLASS} w-8`}>
                       <Checkbox
                         checked={
-                          dashboardPedidos.length > 0 && dashboardPedidos.every((p) => selectedIds.has(p.id))
+                          elegiveisLote.length > 0 && elegiveisLote.every((p) => selectedIds.has(p.id))
                             ? true
-                            : dashboardPedidos.some((p) => selectedIds.has(p.id))
+                            : elegiveisLote.some((p) => selectedIds.has(p.id))
                             ? "indeterminate"
                             : false
                         }
                         onCheckedChange={(v) => {
-                          if (v) setSelectedIds(new Set(dashboardPedidos.map((p) => p.id)));
+                          if (v) setSelectedIds(new Set(elegiveisLote.map((p) => p.id)));
                           else setSelectedIds(new Set());
                         }}
                         aria-label="Selecionar todos visíveis"
