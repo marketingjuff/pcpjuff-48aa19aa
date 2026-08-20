@@ -424,6 +424,23 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                 }}
               />}
             </div>
+            <AlertDialog open={confirmarSemEntrega} onOpenChange={setConfirmarSemEntrega}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Finalizar sem confirmação de entrega?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Este pedido está com o Humberto e a entrega ainda não foi confirmada. Ao finalizar, ele sai da aba
+                    Frete e o canhoto deixa de ser cobrado. Deseja continuar?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => { setConfirmarSemEntrega(false); handleFinalizar(); }}>
+                    Finalizar mesmo assim
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </CardContent>
         </Card>
         </>
