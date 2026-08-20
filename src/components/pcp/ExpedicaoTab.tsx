@@ -385,16 +385,29 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   </>
                 )}
                 <RefacaoViewerButton pedido={selected} />
-                {!soLeitura && (
-                  <FinalizarButton
-                    onClick={handleFinalizar}
-                    disabled={saving || !todosCompletos(selected, form)}
-                    title={!todosCompletos(selected, form) ? "Finalize todas as pendências da expedição antes de concluir o pedido" : undefined}
-                    className="w-full sm:w-auto"
-                  >
-                    Finalizar Pedido
-                  </FinalizarButton>
-                )}
+                {!soLeitura && (() => {
+                  const bloqueadoEntrega = aguardandoEntregaHumberto(selected);
+                  const completos = todosCompletos(selected, form);
+                  return (
+                    <FinalizarButton
+                      onClick={() => {
+                        if (bloqueadoEntrega && podeForcarFinalizacao) setConfirmarSemEntrega(true);
+                        else handleFinalizar();
+                      }}
+                      disabled={saving || !completos || (bloqueadoEntrega && !podeForcarFinalizacao)}
+                      title={
+                        bloqueadoEntrega
+                          ? "Aguardando o Humberto confirmar a entrega deste pedido."
+                          : !completos
+                          ? "Finalize todas as pendências da expedição antes de concluir o pedido"
+                          : undefined
+                      }
+                      className="w-full sm:w-auto"
+                    >
+                      Finalizar Pedido
+                    </FinalizarButton>
+                  );
+                })()}
               </div>
               {!soLeitura && <VoltarDropdown
                 pedido={selected}
