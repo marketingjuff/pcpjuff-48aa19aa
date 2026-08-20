@@ -608,6 +608,19 @@ export function silkAlgumPreenchido(p: Pedido): boolean {
 export function acabamentoCompleto(p: Pedido): boolean {
   return p.embalado === "Sim" && notEmpty(p.data_saida_juff) && notEmpty(p.responsavel_acabamento) && !!p.finalizado_em;
 }
+
+/**
+ * O Acabamento só é considerado concluído — e o pedido só avança para a Expedição —
+ * quando embalado = "Sim" E Data da Embalagem E Responsável pelo Acabamento estiverem preenchidos.
+ * Mesma condição usada para carimbar `expedicao_entrou_em` no AcabamentoTab.
+ */
+export function acabamentoPronto(p: Pedido): boolean {
+  return (
+    p.embalado === "Sim" &&
+    notEmpty(String(p.data_saida_juff ?? "").trim()) &&
+    notEmpty(String(p.responsavel_acabamento ?? "").trim())
+  );
+}
 export function acabamentoAlgumPreenchido(p: Pedido): boolean {
   return notEmpty(p.embalado) || notEmpty(p.data_saida_juff) || notEmpty(p.responsavel_acabamento) || notEmpty((p as any).responsavel_conferencia);
 }
