@@ -78,7 +78,19 @@ function todosCompletos(p: Pedido, form: Partial<Pedido>): boolean {
   });
 }
 
-export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNavigate, onFinalizarMany, soLeitura = false }: Props) {
+/** Pedido do Humberto que ainda não teve a entrega confirmada — não pode ser finalizado. */
+function aguardandoEntregaHumberto(p: Pedido): boolean {
+  return (p as any).exp_destino_humberto === true && !(p as any).entrega_confirmada_em;
+}
+
+function fmtEntrega(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNavigate, onFinalizarMany, soLeitura = false, podeForcarFinalizacao = false }: Props) {
   const { feriados } = useFeriados();
   const { names: formasPagamento } = useAppList("pagamento");
   const { names: nfOpcoes } = useAppList("nf");
