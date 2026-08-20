@@ -375,7 +375,8 @@ function calcularEtapaInterno(p: Pedido, _ignorarEpisodioAberto: boolean): {
   const arteOk = dtfArteOk && silkArteOk;
   const dtfDone = p.dtf_estampado === "Sim";
   const silkDone = p.silk_feito === "Sim";
-  const acabamentoOk = p.embalado === "Sim";
+  // Pedidos que já entraram na Expedição permanecem lá, independentemente do estado dos campos.
+  const acabamentoOk = !!p.expedicao_entrou_em || acabamentoPronto(p);
   const producaoInputOk = notEmpty(p.status_pecas) && notEmpty(p.tipo_estampa);
 
   const etapas = isLisa
