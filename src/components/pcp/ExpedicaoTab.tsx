@@ -100,6 +100,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   );
 
   const [form, setForm] = useState<Partial<Pedido>>({});
+  const [confirmarSemEntrega, setConfirmarSemEntrega] = useState(false);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
   useMemo(() => { setForm(selected ?? {}); }, [selected]);
