@@ -243,11 +243,20 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </div>
 
             </div>
+            {faltamAcabamento.length > 0 && !enviadoParaExpedicao && (
+              <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
+                <span>
+                  Este pedido <strong>continua no Acabamento</strong>. Para seguir para a Expedição, ainda falta preencher:{" "}
+                  <strong>{faltamAcabamento.join(" e ")}</strong>.
+                </span>
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="flex flex-wrap gap-2 sm:justify-start items-center">
                 {form.embalado === "Sim" && !enviadoParaExpedicao && (
                   <span className="text-xs text-muted-foreground self-center">
-                    Ao salvar com EMBALADO=Sim, o pedido vai automaticamente para Expedição.
+                    Ao salvar com EMBALADO=Sim, Data da Embalagem e Responsável preenchidos, o pedido vai automaticamente para a Expedição.
                   </span>
                 )}
                 {enviadoParaExpedicao && (
