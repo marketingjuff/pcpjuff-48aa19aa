@@ -487,6 +487,8 @@ export const ETAPA_FILTRO_OPCOES: { value: string; label: string }[] = [
   { value: "dtf_silk", label: "Aguardando DTF + Silk" },
   { value: "acabamento", label: "Aguardando Acabamento" },
   { value: "expedicao", label: "Aguardando Expedição" },
+  { value: "saiu_entrega", label: "Saiu para entrega" },
+  { value: "entregue", label: "Entregue" },
   { value: "finalizados", label: "Finalizados" },
 ];
 
@@ -501,6 +503,8 @@ const _ETAPA_MAP: Record<string, string[]> = {
   dtf_silk: ["Aguardando DTF + Silk"],
   acabamento: ["Aguardando Acabamento"],
   expedicao: ["Aguardando Expedição"],
+  saiu_entrega: ["Saiu para entrega"],
+  entregue: ["Entregue"],
 };
 
 const _pickEtapaOpcoes = (values: string[]) =>
@@ -548,6 +552,8 @@ export const ETAPA_FILTRO_OPCOES_EXPEDICAO = _pickEtapaOpcoes([
   "ativas",
   "acabamento",
   "expedicao",
+  "saiu_entrega",
+  "entregue",
   "finalizados",
 ]);
 

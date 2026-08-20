@@ -7,8 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag, FilterX } from "lucide-react";
+import { Save, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Flag, FilterX, Truck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import { FaixaSomenteLeitura } from "./DadosInTab";
 import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES_EXPEDICAO, matchEtapaFiltro, UpdateButton, FinalizarButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
@@ -28,6 +39,8 @@ interface Props {
   onNavigate?: (tab: string) => void;
   onFinalizarMany?: (ids: string[]) => void;
   soLeitura?: boolean;
+  /** Admin/gestor pode finalizar mesmo sem confirmação de entrega (com aviso). */
+  podeForcarFinalizacao?: boolean;
 }
 
 type ItemKey =
@@ -65,7 +78,19 @@ function todosCompletos(p: Pedido, form: Partial<Pedido>): boolean {
   });
 }
 
-export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNavigate, onFinalizarMany, soLeitura = false }: Props) {
+/** Pedido do Humberto que ainda não teve a entrega confirmada — não pode ser finalizado. */
+function aguardandoEntregaHumberto(p: Pedido): boolean {
+  return (p as any).exp_destino_humberto === true && !(p as any).entrega_confirmada_em;
+}
+
+function fmtEntrega(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNavigate, onFinalizarMany, soLeitura = false, podeForcarFinalizacao = false }: Props) {
   const { feriados } = useFeriados();
   const { names: formasPagamento } = useAppList("pagamento");
   const { names: nfOpcoes } = useAppList("nf");
@@ -75,6 +100,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   );
 
   const [form, setForm] = useState<Partial<Pedido>>({});
+  const [confirmarSemEntrega, setConfirmarSemEntrega] = useState(false);
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
   useMemo(() => { setForm(selected ?? {}); }, [selected]);
@@ -198,6 +224,12 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
     return list;
   }, [pedidos, fEtapa, fPed, fOrc, fUF, fForma, sortKey, sortAsc]);
 
+  const elegiveisLote = useMemo(
+    () => dashboardPedidos.filter((p) => !aguardandoEntregaHumberto(p)),
+    [dashboardPedidos],
+  );
+
+
   function toggleSort(k: ExpSortKey) {
     if (sortKey !== k) { setSortKey(k); setSortAsc(true); }
     else if (sortAsc) setSortAsc(false);
@@ -218,6 +250,24 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
           </CardHeader>
           <CardContent className="space-y-3">
             {soLeitura && <FaixaSomenteLeitura />}
+            {(selected as any).exp_destino_humberto === true && (
+              (selected as any).entrega_confirmada_em ? (
+                <div className="flex items-start gap-2 p-3 rounded-md bg-success/10 text-success text-sm border border-success/30">
+                  <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>
+                    <strong>Entregue em {fmtEntrega((selected as any).entrega_confirmada_em)}</strong> — pode finalizar o pedido.
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 p-3 rounded-md bg-warning/15 text-warning-foreground text-sm border border-warning/40">
+                  <Truck className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>
+                    <strong>Pedido com o Humberto</strong> — aguardando confirmação de entrega. Este pedido não pode ser
+                    finalizado até o Humberto enviar a foto do canhoto.
+                  </span>
+                </div>
+              )
+            )}
             <fieldset disabled={soLeitura} className="contents disabled:opacity-60">
             <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
@@ -341,16 +391,29 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   </>
                 )}
                 <RefacaoViewerButton pedido={selected} />
-                {!soLeitura && (
-                  <FinalizarButton
-                    onClick={handleFinalizar}
-                    disabled={saving || !todosCompletos(selected, form)}
-                    title={!todosCompletos(selected, form) ? "Finalize todas as pendências da expedição antes de concluir o pedido" : undefined}
-                    className="w-full sm:w-auto"
-                  >
-                    Finalizar Pedido
-                  </FinalizarButton>
-                )}
+                {!soLeitura && (() => {
+                  const bloqueadoEntrega = aguardandoEntregaHumberto(selected);
+                  const completos = todosCompletos(selected, form);
+                  return (
+                    <FinalizarButton
+                      onClick={() => {
+                        if (bloqueadoEntrega && podeForcarFinalizacao) setConfirmarSemEntrega(true);
+                        else handleFinalizar();
+                      }}
+                      disabled={saving || !completos || (bloqueadoEntrega && !podeForcarFinalizacao)}
+                      title={
+                        bloqueadoEntrega
+                          ? "Aguardando o Humberto confirmar a entrega deste pedido."
+                          : !completos
+                          ? "Finalize todas as pendências da expedição antes de concluir o pedido"
+                          : undefined
+                      }
+                      className="w-full sm:w-auto"
+                    >
+                      Finalizar Pedido
+                    </FinalizarButton>
+                  );
+                })()}
               </div>
               {!soLeitura && <VoltarDropdown
                 pedido={selected}
@@ -367,6 +430,23 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                 }}
               />}
             </div>
+            <AlertDialog open={confirmarSemEntrega} onOpenChange={setConfirmarSemEntrega}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Finalizar sem confirmação de entrega?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Este pedido está com o Humberto e a entrega ainda não foi confirmada. Ao finalizar, ele sai da aba
+                    Frete e o canhoto deixa de ser cobrado. Deseja continuar?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => { setConfirmarSemEntrega(false); handleFinalizar(); }}>
+                    Finalizar mesmo assim
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </CardContent>
         </Card>
         </>
@@ -421,7 +501,18 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   size="sm"
                   disabled={selectedIds.size === 0 || saving}
                   onClick={() => {
-                    onFinalizarMany(Array.from(selectedIds));
+                    const ids = Array.from(selectedIds);
+                    const bloqueados = ids.filter((id) => {
+                      const p = pedidos.find((x) => x.id === id);
+                      return p ? aguardandoEntregaHumberto(p) : false;
+                    });
+                    const liberados = ids.filter((id) => !bloqueados.includes(id));
+                    if (bloqueados.length > 0) {
+                      toast.warning(
+                        `${bloqueados.length} pedido(s) não finalizado(s): aguardando confirmação de entrega do Humberto.`,
+                      );
+                    }
+                    if (liberados.length > 0) onFinalizarMany(liberados);
                     setSelectedIds(new Set());
                   }}
                 >
@@ -437,14 +528,20 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido na expedição.</div>
             ) : dashboardPedidos.map((p) => {
               const pend = pendenciasDoPedido(p);
+              const bloqueado = aguardandoEntregaHumberto(p);
               return (
                 <div key={p.id} className="relative">
                   {onFinalizarMany && (
                     <div
                       className="absolute top-2 left-2 z-10"
                       onClick={(e) => e.stopPropagation()}
+                      title={bloqueado ? "Aguardando confirmação de entrega do Humberto." : undefined}
                     >
-                      <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
+                      <Checkbox
+                        checked={selectedIds.has(p.id)}
+                        disabled={bloqueado}
+                        onCheckedChange={() => toggleId(p.id)}
+                      />
                     </div>
                   )}
                   <PedidoMobileCard pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)} style={p.reaberto ? { backgroundColor: "#FFEDD5" } : undefined}>
@@ -455,6 +552,11 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                     <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${pend.length === 0 ? "text-success border-success/40" : "text-warning-foreground border-warning/40 bg-warning/15"}`}>
                       {pend.length === 0 ? "Sem pendências" : `${pend.length} pendência${pend.length > 1 ? "s" : ""}`}
                     </span>
+                    {(p as any).exp_destino_humberto === true && (
+                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${bloqueado ? "text-warning-foreground border-warning/40 bg-warning/15" : "text-success border-success/40 bg-success/10"}`}>
+                        {bloqueado ? "Com o Humberto" : "Entregue"}
+                      </span>
+                    )}
                   </PedidoMobileCard>
                 </div>
               );
@@ -468,14 +570,14 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                     <th className={`${TH_RAW_CLASS} w-8`}>
                       <Checkbox
                         checked={
-                          dashboardPedidos.length > 0 && dashboardPedidos.every((p) => selectedIds.has(p.id))
+                          elegiveisLote.length > 0 && elegiveisLote.every((p) => selectedIds.has(p.id))
                             ? true
-                            : dashboardPedidos.some((p) => selectedIds.has(p.id))
+                            : elegiveisLote.some((p) => selectedIds.has(p.id))
                             ? "indeterminate"
                             : false
                         }
                         onCheckedChange={(v) => {
-                          if (v) setSelectedIds(new Set(dashboardPedidos.map((p) => p.id)));
+                          if (v) setSelectedIds(new Set(elegiveisLote.map((p) => p.id)));
                           else setSelectedIds(new Set());
                         }}
                         aria-label="Selecionar todos visíveis"
@@ -543,6 +645,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               <tbody>
                 {dashboardPedidos.map((p) => {
                   const pend = pendenciasDoPedido(p);
+                  const bloqueado = aguardandoEntregaHumberto(p);
                   const bg = linhaAtrasoClasse(p, "expedicao") || rowAlertBgClass(p, feriados);
                   return (
                 <tr key={p.id}
@@ -553,14 +656,22 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                         <td
                           className="px-1.5 py-0.5 w-8"
                           onClick={(e) => e.stopPropagation()}
+                          title={bloqueado ? "Aguardando confirmação de entrega do Humberto." : undefined}
                         >
-                          <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
+                          <Checkbox checked={selectedIds.has(p.id)} disabled={bloqueado} onCheckedChange={() => toggleId(p.id)} />
                         </td>
                       )}
                       <td className="px-1.5 py-0.5 text-xs">
-                        {pend.length === 0
-                          ? <span className="text-success">Sem pendências</span>
-                          : <span className="text-warning-foreground">{pend.join(", ")}</span>}
+                        <div className="flex flex-col items-center gap-0.5">
+                          {pend.length === 0
+                            ? <span className="text-success">Sem pendências</span>
+                            : <span className="text-warning-foreground">{pend.join(", ")}</span>}
+                          {(p as any).exp_destino_humberto === true && (
+                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] ${bloqueado ? "text-warning-foreground border-warning/40 bg-warning/15" : "text-success border-success/40 bg-success/10"}`}>
+                              {bloqueado ? "Com o Humberto" : "Entregue"}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
                       <td className="px-1.5 py-0.5 !text-left">{p.orcamento}</td>

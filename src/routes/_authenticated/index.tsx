@@ -343,6 +343,7 @@ function AppHomeInner() {
                 saving={upsert.isPending}
                 onNavigate={setTab}
                 soLeitura={soLeitura("pcp.expedicao")}
+                podeForcarFinalizacao={isAdmin || (isGestor && pode("pcp.expedicao"))}
                 onFinalizarMany={(ids) => {
                   const now = new Date().toISOString();
                   ids.forEach((id) => upsert.mutate({ id, finalizado_em: now, reaberto: false }));

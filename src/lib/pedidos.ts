@@ -391,6 +391,10 @@ function calcularEtapaInterno(p: Pedido, _ignorarEpisodioAberto: boolean): {
 
   if (p.finalizado_em) {
     etapa = "Finalizado"; cor = "green";
+  } else if (acabamentoOk && (p as any).exp_destino_humberto === true && (p as any).entrega_confirmada_em) {
+    etapa = "Entregue"; cor = "green";
+  } else if (acabamentoOk && (p as any).exp_destino_humberto === true) {
+    etapa = "Saiu para entrega"; cor = "blue";
   } else if (acabamentoOk) {
     etapa = "Aguardando Expedição"; cor = "blue";
   } else if (!dadosInOk) {
