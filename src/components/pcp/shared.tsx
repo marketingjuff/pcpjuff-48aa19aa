@@ -552,6 +552,8 @@ export const ETAPA_FILTRO_OPCOES_EXPEDICAO = _pickEtapaOpcoes([
   "ativas",
   "acabamento",
   "expedicao",
+  "saiu_entrega",
+  "entregue",
   "finalizados",
 ]);
 
