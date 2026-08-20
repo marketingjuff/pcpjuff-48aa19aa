@@ -450,6 +450,23 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
           </CardContent>
         </Card>
         </>
+      ) : selected && !selected.finalizado_em && !selected.expedicao_entrou_em ? (
+        <Card className="border-warning/30 bg-warning/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              Pedido {selected.pedido_olist} ainda não entrou na Expedição
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Este pedido ainda está no Acabamento — falta preencher a Data da Embalagem e/ou o Responsável pelo Acabamento.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => onNavigate?.("acabamento")}>
+              Ir para o Acabamento
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <EmptyState>Selecione um pedido no dashboard abaixo.</EmptyState>
       )}
