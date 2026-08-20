@@ -5,6 +5,7 @@ import {
   etapaAtualSemAsterisco,
   ladoDtfPronto,
   ladoSilkPronto,
+  acabamentoPronto,
 } from "@/lib/pedidos";
 
 export function canEditArte(p: Pedido | null | undefined): boolean {
@@ -44,7 +45,7 @@ export function canEditSilk(p: Pedido | null | undefined): boolean {
 export function canEditAcabamento(p: Pedido | null | undefined): boolean {
   if (!p) return true;
   if (p.finalizado_em) return false;
-  if (p.embalado === "Sim") return false;
+  if (acabamentoPronto(p)) return false;
   return etapaAtualSemAsterisco(p) === "Aguardando Acabamento";
 }
 

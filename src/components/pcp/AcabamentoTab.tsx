@@ -1,7 +1,8 @@
 import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc, calcularEtapaAtual } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento, acabamentoCompleto } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento, acabamentoCompleto, acabamentoPronto } from "@/lib/pedidos";
+import { toast } from "sonner";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, CheckCircle2, Download, FilterX } from "lucide-react";
+import { Save, CheckCircle2, Download, FilterX, AlertTriangle } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, cmpText, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_ACABAMENTO, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
@@ -81,6 +82,18 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   const silkOk = !temSilk || selected?.silk_feito === "Sim";
   const podeFinalizar = dtfOk && silkOk && form.embalado === "Sim" && !!form.data_saida_juff && !!form.responsavel_acabamento;
 
+  // Campos que ainda faltam para o pedido sair do Acabamento (leitura em tempo real: form → selected).
+  const faltamAcabamento = useMemo(() => {
+    const val = (k: keyof Pedido) =>
+      String(((form as any)[k] !== undefined ? (form as any)[k] : (selected as any)?.[k]) ?? "").trim();
+    const embalado = val("embalado");
+    if (embalado !== "Sim") return [] as string[];
+    const out: string[] = [];
+    if (!val("data_saida_juff")) out.push("Data da Embalagem");
+    if (!val("responsavel_acabamento")) out.push("Responsável pelo Acabamento");
+    return out;
+  }, [form, selected]);
+
   function handleSave() {
     if (!selected) return;
     if (readOnly) return;
@@ -95,9 +108,12 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
       data_saida_juff: pick("data_saida_juff"),
       acabamento_observacao: pick("acabamento_observacao" as any),
     };
-    // 3A: ao marcar EMBALADO=Sim + Data da Embalagem + Responsável, envia automaticamente para Expedição.
-    if (embalado === "Sim" && !!payload.data_saida_juff && !!payload.responsavel_acabamento && !selected.expedicao_entrou_em) {
+    // 3A: mesma condição da etapa (acabamentoPronto) para carimbar a entrada na Expedição.
+    const efetivo = { ...(selected as any), ...payload } as Pedido;
+    if (acabamentoPronto(efetivo) && !selected.expedicao_entrou_em) {
       payload.expedicao_entrou_em = new Date().toISOString();
+    } else if (embalado === "Sim" && faltamAcabamento.length > 0) {
+      toast.warning(`Pedido salvo, mas segue no Acabamento: falta ${faltamAcabamento.join(" e ")}.`);
     }
     onSave(payload);
   }
@@ -227,11 +243,20 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
               </div>
 
             </div>
+            {faltamAcabamento.length > 0 && !enviadoParaExpedicao && (
+              <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
+                <span>
+                  Este pedido <strong>continua no Acabamento</strong>. Para seguir para a Expedição, ainda falta preencher:{" "}
+                  <strong>{faltamAcabamento.join(" e ")}</strong>.
+                </span>
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="flex flex-wrap gap-2 sm:justify-start items-center">
                 {form.embalado === "Sim" && !enviadoParaExpedicao && (
                   <span className="text-xs text-muted-foreground self-center">
-                    Ao salvar com EMBALADO=Sim, o pedido vai automaticamente para Expedição.
+                    Ao salvar com EMBALADO=Sim, Data da Embalagem e Responsável preenchidos, o pedido vai automaticamente para a Expedição.
                   </span>
                 )}
                 {enviadoParaExpedicao && (
