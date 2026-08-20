@@ -495,7 +495,18 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   size="sm"
                   disabled={selectedIds.size === 0 || saving}
                   onClick={() => {
-                    onFinalizarMany(Array.from(selectedIds));
+                    const ids = Array.from(selectedIds);
+                    const bloqueados = ids.filter((id) => {
+                      const p = pedidos.find((x) => x.id === id);
+                      return p ? aguardandoEntregaHumberto(p) : false;
+                    });
+                    const liberados = ids.filter((id) => !bloqueados.includes(id));
+                    if (bloqueados.length > 0) {
+                      toast.warning(
+                        `${bloqueados.length} pedido(s) não finalizado(s): aguardando confirmação de entrega do Humberto.`,
+                      );
+                    }
+                    if (liberados.length > 0) onFinalizarMany(liberados);
                     setSelectedIds(new Set());
                   }}
                 >
