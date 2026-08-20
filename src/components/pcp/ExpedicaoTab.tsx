@@ -224,6 +224,12 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
     return list;
   }, [pedidos, fEtapa, fPed, fOrc, fUF, fForma, sortKey, sortAsc]);
 
+  const elegiveisLote = useMemo(
+    () => dashboardPedidos.filter((p) => !aguardandoEntregaHumberto(p)),
+    [dashboardPedidos],
+  );
+
+
   function toggleSort(k: ExpSortKey) {
     if (sortKey !== k) { setSortKey(k); setSortAsc(true); }
     else if (sortAsc) setSortAsc(false);
