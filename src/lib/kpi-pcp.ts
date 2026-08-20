@@ -446,7 +446,7 @@ export function tempoBloco(regs: Pedido[], feriados: Feriados): TempoBloco {
 /* ------------------------------------------------------------------ */
 
 export interface SituacaoAgora {
-  filas: { rotulo: string; pedidos: number }[];
+  filas: { rotulo: string; pedidos: number; titulo?: string; apoio?: string }[];
   atrasados: { pedido: string; data_entrega: string; dias: number }[];
   vencendo: { pedido: string; data_entrega: string; dias: number }[];
   idadeMedia: number | null;
