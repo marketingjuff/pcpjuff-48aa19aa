@@ -529,7 +529,12 @@ export function KpiPcpTab() {
       <Bloco titulo="Situação de agora" apoio="Isso aqui é a foto de hoje, não depende do período escolhido.">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {agora.filas.map((f) => (
-            <Kpi key={f.rotulo} titulo={`Pedidos parados — ${f.rotulo}`} apoio="Pedidos abertos nessa fila agora." valor={nf.format(f.pedidos)} />
+            <Kpi
+              key={f.rotulo}
+              titulo={f.titulo ?? `Pedidos parados — ${f.rotulo}`}
+              apoio={f.apoio ?? "Pedidos abertos nessa fila agora."}
+              valor={nf.format(f.pedidos)}
+            />
           ))}
           <Kpi titulo="Pedidos atrasados" apoio="A data combinada já passou e o pedido não saiu." valor={nf.format(agora.atrasados.length)} />
           <Kpi titulo="Pedidos vencendo" apoio="Faltam até 3 dias úteis para a data combinada." valor={nf.format(agora.vencendo.length)} />
