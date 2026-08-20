@@ -645,6 +645,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               <tbody>
                 {dashboardPedidos.map((p) => {
                   const pend = pendenciasDoPedido(p);
+                  const bloqueado = aguardandoEntregaHumberto(p);
                   const bg = linhaAtrasoClasse(p, "expedicao") || rowAlertBgClass(p, feriados);
                   return (
                 <tr key={p.id}
@@ -655,14 +656,22 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                         <td
                           className="px-1.5 py-0.5 w-8"
                           onClick={(e) => e.stopPropagation()}
+                          title={bloqueado ? "Aguardando confirmação de entrega do Humberto." : undefined}
                         >
-                          <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
+                          <Checkbox checked={selectedIds.has(p.id)} disabled={bloqueado} onCheckedChange={() => toggleId(p.id)} />
                         </td>
                       )}
                       <td className="px-1.5 py-0.5 text-xs">
-                        {pend.length === 0
-                          ? <span className="text-success">Sem pendências</span>
-                          : <span className="text-warning-foreground">{pend.join(", ")}</span>}
+                        <div className="flex flex-col items-center gap-0.5">
+                          {pend.length === 0
+                            ? <span className="text-success">Sem pendências</span>
+                            : <span className="text-warning-foreground">{pend.join(", ")}</span>}
+                          {(p as any).exp_destino_humberto === true && (
+                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] ${bloqueado ? "text-warning-foreground border-warning/40 bg-warning/15" : "text-success border-success/40 bg-success/10"}`}>
+                              {bloqueado ? "Com o Humberto" : "Entregue"}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-1.5 py-0.5 font-medium">{p.pedido_olist}</td>
                       <td className="px-1.5 py-0.5 !text-left">{p.orcamento}</td>
