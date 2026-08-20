@@ -446,7 +446,7 @@ export function tempoBloco(regs: Pedido[], feriados: Feriados): TempoBloco {
 /* ------------------------------------------------------------------ */
 
 export interface SituacaoAgora {
-  filas: { rotulo: string; pedidos: number }[];
+  filas: { rotulo: string; pedidos: number; titulo?: string; apoio?: string }[];
   atrasados: { pedido: string; data_entrega: string; dias: number }[];
   vencendo: { pedido: string; data_entrega: string; dias: number }[];
   idadeMedia: number | null;
@@ -474,6 +474,18 @@ export function situacaoAgora(pedidos: Pedido[], feriados: Feriados, hoje = toda
     },
     { rotulo: "Em Acabamento", pedidos: conta((p) => etapa(p) === "Aguardando Acabamento") },
     { rotulo: "Em Expedição", pedidos: conta((p) => etapa(p) === "Aguardando Expedição") },
+    {
+      rotulo: "Saiu para entrega",
+      pedidos: conta((p) => etapa(p) === "Saiu para entrega"),
+      titulo: "Pedidos na rua — Humberto",
+      apoio: "Saíram com o Humberto e ainda não tiveram a entrega confirmada.",
+    },
+    {
+      rotulo: "Entregue",
+      pedidos: conta((p) => etapa(p) === "Entregue"),
+      titulo: "Entregues aguardando finalização",
+      apoio: "O Humberto já confirmou a entrega, mas a expedição ainda não finalizou o pedido.",
+    },
   ];
 
   const atrasados: SituacaoAgora["atrasados"] = [];

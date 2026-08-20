@@ -57,6 +57,8 @@ const ETAPA_LABEL_MAP: Record<string, string> = {
   "Aguardando DTF + Silk": "DTF/Silk",
   "Aguardando Acabamento": "Acabamento",
   "Aguardando Expedição": "Expedição",
+  "Saiu para entrega": "Saiu para entrega",
+  "Entregue": "Entregue",
 };
 function fmtEtapa(v: string | null | undefined): string {
   if (!v) return "—";
