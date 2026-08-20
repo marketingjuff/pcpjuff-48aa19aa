@@ -39,6 +39,8 @@ interface Props {
   onNavigate?: (tab: string) => void;
   onFinalizarMany?: (ids: string[]) => void;
   soLeitura?: boolean;
+  /** Admin/gestor pode finalizar mesmo sem confirmação de entrega (com aviso). */
+  podeForcarFinalizacao?: boolean;
 }
 
 type ItemKey =
