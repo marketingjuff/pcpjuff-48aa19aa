@@ -244,6 +244,24 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
           </CardHeader>
           <CardContent className="space-y-3">
             {soLeitura && <FaixaSomenteLeitura />}
+            {(selected as any).exp_destino_humberto === true && (
+              (selected as any).entrega_confirmada_em ? (
+                <div className="flex items-start gap-2 p-3 rounded-md bg-success/10 text-success text-sm border border-success/30">
+                  <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>
+                    <strong>Entregue em {fmtEntrega((selected as any).entrega_confirmada_em)}</strong> — pode finalizar o pedido.
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 p-3 rounded-md bg-warning/15 text-warning-foreground text-sm border border-warning/40">
+                  <Truck className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>
+                    <strong>Pedido com o Humberto</strong> — aguardando confirmação de entrega. Este pedido não pode ser
+                    finalizado até o Humberto enviar a foto do canhoto.
+                  </span>
+                </div>
+              )
+            )}
             <fieldset disabled={soLeitura} className="contents disabled:opacity-60">
             <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
