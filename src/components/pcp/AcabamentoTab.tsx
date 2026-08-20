@@ -81,6 +81,18 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
   const silkOk = !temSilk || selected?.silk_feito === "Sim";
   const podeFinalizar = dtfOk && silkOk && form.embalado === "Sim" && !!form.data_saida_juff && !!form.responsavel_acabamento;
 
+  // Campos que ainda faltam para o pedido sair do Acabamento (leitura em tempo real: form → selected).
+  const faltamAcabamento = useMemo(() => {
+    const val = (k: keyof Pedido) =>
+      String(((form as any)[k] !== undefined ? (form as any)[k] : (selected as any)?.[k]) ?? "").trim();
+    const embalado = val("embalado");
+    if (embalado !== "Sim") return [] as string[];
+    const out: string[] = [];
+    if (!val("data_saida_juff")) out.push("Data da Embalagem");
+    if (!val("responsavel_acabamento")) out.push("Responsável pelo Acabamento");
+    return out;
+  }, [form, selected]);
+
   function handleSave() {
     if (!selected) return;
     if (readOnly) return;
@@ -95,9 +107,12 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
       data_saida_juff: pick("data_saida_juff"),
       acabamento_observacao: pick("acabamento_observacao" as any),
     };
-    // 3A: ao marcar EMBALADO=Sim + Data da Embalagem + Responsável, envia automaticamente para Expedição.
-    if (embalado === "Sim" && !!payload.data_saida_juff && !!payload.responsavel_acabamento && !selected.expedicao_entrou_em) {
+    // 3A: mesma condição da etapa (acabamentoPronto) para carimbar a entrada na Expedição.
+    const efetivo = { ...(selected as any), ...payload } as Pedido;
+    if (acabamentoPronto(efetivo) && !selected.expedicao_entrou_em) {
       payload.expedicao_entrou_em = new Date().toISOString();
+    } else if (embalado === "Sim" && faltamAcabamento.length > 0) {
+      toast.warning(`Pedido salvo, mas segue no Acabamento: falta ${faltamAcabamento.join(" e ")}.`);
     }
     onSave(payload);
   }
