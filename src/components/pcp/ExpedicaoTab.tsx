@@ -522,14 +522,20 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
               <div className="p-8 text-center text-sm text-muted-foreground">Nenhum pedido na expedição.</div>
             ) : dashboardPedidos.map((p) => {
               const pend = pendenciasDoPedido(p);
+              const bloqueado = aguardandoEntregaHumberto(p);
               return (
                 <div key={p.id} className="relative">
                   {onFinalizarMany && (
                     <div
                       className="absolute top-2 left-2 z-10"
                       onClick={(e) => e.stopPropagation()}
+                      title={bloqueado ? "Aguardando confirmação de entrega do Humberto." : undefined}
                     >
-                      <Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleId(p.id)} />
+                      <Checkbox
+                        checked={selectedIds.has(p.id)}
+                        disabled={bloqueado}
+                        onCheckedChange={() => toggleId(p.id)}
+                      />
                     </div>
                   )}
                   <PedidoMobileCard pedido={p} active={selected?.id === p.id} onClick={() => onSelect(p.id)} style={p.reaberto ? { backgroundColor: "#FFEDD5" } : undefined}>
@@ -540,6 +546,11 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                     <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${pend.length === 0 ? "text-success border-success/40" : "text-warning-foreground border-warning/40 bg-warning/15"}`}>
                       {pend.length === 0 ? "Sem pendências" : `${pend.length} pendência${pend.length > 1 ? "s" : ""}`}
                     </span>
+                    {(p as any).exp_destino_humberto === true && (
+                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${bloqueado ? "text-warning-foreground border-warning/40 bg-warning/15" : "text-success border-success/40 bg-success/10"}`}>
+                        {bloqueado ? "Com o Humberto" : "Entregue"}
+                      </span>
+                    )}
                   </PedidoMobileCard>
                 </div>
               );
