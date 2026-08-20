@@ -30,6 +30,8 @@ const ORIGEM_LABEL: Record<string, string> = {
   "Aguardando DTF + Silk": "DTF/Silk",
   "Aguardando Acabamento": "Acabamento",
   "Aguardando Expedição": "Expedição",
+  "Saiu para entrega": "Saiu para entrega",
+  "Entregue": "Entregue",
 };
 
 function origemHumano(label: string): string {
