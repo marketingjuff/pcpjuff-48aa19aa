@@ -645,7 +645,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
             <Select value={statusFiltro} onValueChange={setStatusFiltro}>
               <SelectTrigger className="h-9 w-[260px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="__ativos__">Ativos (exceto Finalizados/Pagos)</SelectItem>
+                <SelectItem value="__ativos__">Ativos, sem Aguardando Pagamento, Pagos e Finalizados</SelectItem>
                 <SelectItem value="todos">Todos</SelectItem>
                 {COP_STATUS_LIST.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
