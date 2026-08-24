@@ -116,7 +116,11 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   const listaFiltrada = useMemo(() => {
     return cops.filter((c) => {
       if (statusFiltro === "__ativos__") {
-        if (c.status === "Finalizado" || c.pagamento_status === "pago") return false;
+        if (
+          c.status === "Finalizado" ||
+          c.status === "Aguardando Pagamento" ||
+          c.pagamento_status === "pago"
+        ) return false;
       } else if (statusFiltro !== "todos" && c.status !== statusFiltro) return false;
       if (oficinaFiltro !== "todas") {
         if (oficinaFiltro === "__sem__") {
@@ -594,12 +598,15 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
     const completo = selected.status === "Romaneio Completo" || todasCompletas(selected.pecas || [], rec, perdas, refacoesDoCop(cops, selected.id));
     if (!completo) return;
     const { data: ses } = await supabase.auth.getUser();
+    const rotulo = rotuloRomaneio(selected, cops);
     await salvar.mutateAsync({
       id: selected.id,
       status: "Aguardando Pagamento" as CopStatus,
       conferido_em: new Date().toISOString(),
       conferido_por: ses.user?.id ?? null,
     } as any);
+    setSelectedId(null);
+    toast.success(`Romaneio ${rotulo} foi para Pagamentos e saiu da lista de romaneios ativos.`);
   }
 
   const familia = useMemo(() => {
