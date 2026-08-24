@@ -2,10 +2,15 @@
 import { type Cop, type Oficina, totalPecasCop, STATUS_POS_CORTE, STATUS_CORTE, rotuloRomaneio } from "@/lib/cop";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 
-/** COP é "ativo na oficina" quando tem oficina_id, está pós-corte e ainda não foi pago/finalizado. */
+/**
+ * COP é "ativo na oficina" quando tem oficina_id, está pós-corte e ainda não foi
+ * conferido, pago ou finalizado. Romaneio em "Aguardando Pagamento" já foi entregue
+ * pela oficina e conferido, então não conta mais como carga de oficina.
+ */
 export function copAtivoEmOficina(c: Cop): boolean {
   if (!c.oficina_id) return false;
   if (c.status === "Finalizado") return false;
+  if (c.status === "Aguardando Pagamento") return false;
   if (c.pagamento_status === "pago") return false;
   return STATUS_POS_CORTE.includes(c.status);
 }
