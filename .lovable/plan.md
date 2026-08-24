@@ -1,22 +1,38 @@
-# Corrigir erro de memória ao comprimir a foto do canhoto
+# COP — Romaneio em "Aguardando Pagamento" sai da aba Romaneio e de Oficinas Hoje
 
-Único arquivo tocado: `src/lib/entregas.ts`. Nenhuma migração, nenhum outro arquivo.
+Somente 2 arquivos tocados. Nenhuma migração, nenhum SQL, nenhuma coluna nova.
 
-## O que muda
+## 1. `src/lib/cop-oficinas.ts`
 
-`comprimirFoto(file: File): Promise<Blob>` mantém a mesma assinatura e o mesmo
-resultado (JPEG, lado maior até 1600px, qualidade 0.7), mas passa a ter três camadas:
+Em `copAtivoEmOficina`, adicionar uma linha: `if (c.status === "Aguardando Pagamento") return false;`
+e atualizar o comentário. Nada mais no arquivo muda — `cargaPorOficina`,
+`copsPorOficina`, `arvoreProducaoHoje`, subtotais e totais herdam o filtro
+automaticamente.
 
-1. **`createImageBitmap` com redimensionamento nativo** (`resizeWidth: 1600`,
-   `resizeQuality: "medium"`) — o navegador decodifica já reduzido, sem alocar a
-   resolução original inteira na RAM. Depois desenha no canvas no tamanho final e
-   exporta JPEG 0.7. `bitmap.close()` em `finally` para liberar memória na hora.
-2. **Fallback `Image` + canvas** — exatamente a lógica atual, movida para
-   `comprimirViaImageElement`, usada só se a camada 1 não existir ou falhar.
-3. **Último fallback** — se as duas falharem, devolve o `file` original sem
-   compressão, para nunca bloquear a confirmação da entrega.
+Efeitos desejados: Oficinas Hoje deixa de listar e de somar o romaneio já
+conferido; o card de carga por oficina na busca de peças também para de contá-lo;
+o bloco "Romaneios ativos com a peça" do popup de falta fica mais limpo (saldo
+zero por definição). `FaltaPecaPopup.tsx` não é modificado.
 
-Constantes `MAX_LADO = 1600` e `QUALIDADE_JPEG = 0.7` no topo do bloco.
+## 2. `src/components/cop/RomaneioTab.tsx`
+
+- **Filtro `__ativos__`**: passa a excluir também `status === "Aguardando Pagamento"`.
+  O `else if` do seletor fica intocado, então escolher "Aguardando Pagamento" ou
+  "Todos" continua mostrando o COP.
+- **Rótulo da opção**: `Ativos, sem Aguardando Pagamento, Pagos e Finalizados`
+  (largura do trigger mantida; só aumento para `w-[320px]` se estourar).
+- **`handleConferir`**: captura `rotuloRomaneio(selected, cops)` antes do await,
+  e após `salvar.mutateAsync` faz `setSelectedId(null)` + `toast.success` avisando
+  que o romaneio foi para Pagamentos. Sem imports novos, sem mexer no `onSuccess`
+  da mutation, sem alterar `jaCompleto`, `mostrarPainel`, `completoTotal`,
+  `completoViaPerda`, `podeParticionar`, `bloqueadoRomaneio` ou `statusPorAgregado`.
+
+## Não tocados
+
+`src/lib/cop.ts` (e `STATUS_POS_CORTE`), `PagamentoOficinasTab.tsx`,
+`cop-saldos.ts`, `admin.functions.ts`, `schema-extras.ts`. A reversão
+"Aguardando Pagamento" → "Romaneio Completo" pela aba Pagamentos volta a exibir
+o COP nas duas abas sem ajuste extra, porque a exclusão é só por status.
 
 ## Ao final
 
