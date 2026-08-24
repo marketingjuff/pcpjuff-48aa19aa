@@ -17,8 +17,56 @@ export function ultimaFoto(p: Pedido): CanhotoFoto | null {
   return arr.length ? arr[arr.length - 1]! : null;
 }
 
-/** Comprime a foto: máx. 1600px no lado maior, JPEG 0.7. */
+const MAX_LADO = 1600;
+const QUALIDADE_JPEG = 0.7;
+
+/** Comprime a foto: máx. 1600px no lado maior, JPEG 0.7.
+ *  Camada 1: createImageBitmap com redimensionamento nativo (menor uso de RAM).
+ *  Camada 2: Image + canvas (fallback).
+ *  Camada 3: arquivo original (nunca bloqueia a entrega).
+ */
 export async function comprimirFoto(file: File): Promise<Blob> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      return await comprimirViaImageBitmap(file);
+    } catch {
+      // cai para a camada 2
+    }
+  }
+  try {
+    return await comprimirViaImageElement(file);
+  } catch {
+    return file; // camada 3: nunca bloquear a confirmação de entrega
+  }
+}
+
+async function comprimirViaImageBitmap(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file, {
+    resizeWidth: MAX_LADO,
+    resizeQuality: "medium",
+  });
+  try {
+    const maior = Math.max(bitmap.width, bitmap.height) || 1;
+    const escala = Math.min(1, MAX_LADO / maior);
+    const w = Math.max(1, Math.round(bitmap.width * escala));
+    const h = Math.max(1, Math.round(bitmap.height * escala));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas indisponível neste navegador.");
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob((b) => resolve(b), "image/jpeg", QUALIDADE_JPEG),
+    );
+    if (!blob) throw new Error("Falha ao comprimir a foto.");
+    return blob;
+  } finally {
+    bitmap.close();
+  }
+}
+
+async function comprimirViaImageElement(file: File): Promise<Blob> {
   const bitmapUrl = URL.createObjectURL(file);
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -28,7 +76,7 @@ export async function comprimirFoto(file: File): Promise<Blob> {
       el.src = bitmapUrl;
     });
     const maior = Math.max(img.naturalWidth, img.naturalHeight) || 1;
-    const escala = Math.min(1, 1600 / maior);
+    const escala = Math.min(1, MAX_LADO / maior);
     const w = Math.max(1, Math.round(img.naturalWidth * escala));
     const h = Math.max(1, Math.round(img.naturalHeight * escala));
     const canvas = document.createElement("canvas");
@@ -38,7 +86,7 @@ export async function comprimirFoto(file: File): Promise<Blob> {
     if (!ctx) throw new Error("Canvas indisponível neste navegador.");
     ctx.drawImage(img, 0, 0, w, h);
     const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob((b) => resolve(b), "image/jpeg", 0.7),
+      canvas.toBlob((b) => resolve(b), "image/jpeg", QUALIDADE_JPEG),
     );
     if (!blob) throw new Error("Falha ao comprimir a foto.");
     return blob;
