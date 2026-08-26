@@ -259,6 +259,10 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
       });
       return;
     }
+    if (faltaCortador()) {
+      toast.error("Informe quem cortou antes de gravar a data de execução do corte.");
+      return;
+    }
     const datas = {
       solicitacao_risco: draft.solicitacao_risco ?? null,
       execucao_risco: draft.execucao_risco ?? null,
@@ -269,6 +273,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     await salvar.mutateAsync({
       id: selected.id,
       ...datas,
+      quem_cortou: draft.quem_cortou ?? null,
       observacoes_corte: (draft.observacoes_corte ?? "")?.toString().toUpperCase() || null,
       pecas,
       status: novoStatus,
