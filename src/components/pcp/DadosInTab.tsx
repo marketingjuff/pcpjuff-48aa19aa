@@ -27,7 +27,7 @@ import { addDiasUteis, diasUteisEntre, diasUteisAteHoje, addDiasCorridos, proxim
 import { useFeriados } from "@/hooks/use-feriados";
 import { calcInicioAcabamento, temSegundaOuQuinta } from "@/lib/pcp-monitor";
 import { formatDateBR } from "@/lib/format";
-import { PedidoMobileCard, Chip, QtdTotal, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES_DADOS_IN, matchEtapaFiltro, UpdateButton, EtapaBadgeView } from "./shared";
+import { PedidoMobileCard, Chip, QtdTotal, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES_DADOS_IN, matchEtapaFiltro, UpdateButton, EtapaBadgeView, rowBgClass } from "./shared";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { RefacaoBadge } from "./RefacaoBadge";
@@ -1063,14 +1063,7 @@ function DadosInDashboard({
               ) : rows.map((p) => {
                 const etapa = _calcEtapa(p).etapa;
                 const isSelected = selectedId === p.id;
-                let bg = "";
-                if (p.embalado !== "Sim" && p.saida_juff) {
-                  const dias = diasUteisAteHoje(p.saida_juff, feriados);
-                  if (dias !== null) {
-                    if (dias <= 0) bg = "bg-red-50 hover:bg-red-100/80";
-                    else if (dias === 1) bg = "bg-yellow-50 hover:bg-yellow-100/80";
-                  }
-                }
+                const bg = rowBgClass(p, feriados);
                 return (
                   <TableRow
                     key={p.id}

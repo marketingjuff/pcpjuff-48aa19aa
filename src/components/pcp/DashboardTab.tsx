@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { EtapaBadgeView, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, cmpText, matchEtapaFiltro, type SortDir } from "./shared";
+import { EtapaBadgeView, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, cmpText, matchEtapaFiltro, rowBgClass, type SortDir } from "./shared";
 
 interface Props {
   pedidos: Pedido[];
@@ -155,16 +155,6 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
     };
   }, [pedidos, feriados]);
 
-
-  /** Cor de fundo da linha — baseada em saida_juff e dias úteis. */
-  function rowBgClass(p: Pedido): string {
-    if (!p.saida_juff) return "";
-    const dias = diasUteisAteHoje(p.saida_juff, feriados);
-    if (dias === null) return "";
-    if (dias <= 0) return "bg-red-100 hover:bg-red-200/80";
-    if (dias === 1) return "bg-yellow-50 hover:bg-yellow-100/80";
-    return "";
-  }
 
   /** Estamparia: prioriza campos dedicados; fallback nas datas executadas DTF/Silk. */
   function estampariaDatas(p: Pedido): { inicio: string | null; termino: string | null } {
@@ -325,7 +315,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                 ) : (
                   filtrados.map((p) => {
                     const { inicio, termino } = estampariaDatas(p);
-                    const bg = rowBgClass(p);
+                    const bg = rowBgClass(p, feriados);
                     const isSelected = selectedRowId === p.id;
                     return (
                       <TableRow
