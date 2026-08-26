@@ -67,6 +67,17 @@ export const LISTAS_CATALOGO: ListaCatalogoItem[] = [
     notaUso: "Escolhida no registro manual e na correção de perdas do COP.",
   },
 
+  // ---------- COP · Corte ----------
+  {
+    kind: "cop_cortador",
+    titulo: "Quem cortou o tecido",
+    placeholder: "Novo cortador",
+    modulos: ["cop"],
+    grupo: "Corte",
+    notaUso: "Escolhida na aba Corte do COP, junto das datas de risco e corte.",
+  },
+
+
   // ---------- MAP · Cadeia de fornecimento ----------
   { kind: "map_fio_fornecedor", titulo: "Fornecedores de fio", placeholder: "Ex.: Ventuno", modulos: ["map"], grupo: "Cadeia de fornecimento" },
   { kind: "map_malharia", titulo: "Malharias", placeholder: "Ex.: Mavelo", modulos: ["map"], grupo: "Cadeia de fornecimento" },

@@ -9,6 +9,7 @@ export type AppListKind =
   | "map_fio_fornecedor" | "map_malharia" | "map_tinturaria" | "map_acabamento"
   | "map_motivo_devolucao"
   | "destino_perda"
+  | "cop_cortador"
   | "sup_unidade";
 
 export interface AppListItem {

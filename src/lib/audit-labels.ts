@@ -131,6 +131,7 @@ const LABELS: Record<string, string> = {
   execucao_risco: "Execução do risco",
   solicitacao_corte: "Solicitação de corte",
   execucao_corte: "Execução do corte",
+  quem_cortou: "Quem cortou",
   observacoes_corte: "Observação do corte",
   cop_pai_id: "COP pai",
   corte_dividido: "Corte dividido",

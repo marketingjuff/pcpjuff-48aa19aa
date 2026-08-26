@@ -74,6 +74,7 @@ export type Cop = {
   execucao_risco: string | null;
   solicitacao_corte: string | null;
   execucao_corte: string | null;
+  quem_cortou: string | null;
   observacoes_corte: string | null;
   pecas: CopPeca[];
   cop_pai_id: string | null;
