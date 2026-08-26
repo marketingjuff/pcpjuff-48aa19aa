@@ -34,7 +34,8 @@ type Etapa =
   | "aguardando_entrada" | "aguardando_input"
   | "arte" | "dtf_pronto_silk_arte" | "silk_pronto_dtf_arte"
   | "dtf" | "silk" | "dtf_silk"
-  | "acabamento" | "expedicao";
+  | "acabamento" | "expedicao"
+  | "saiu_entrega" | "entregue";
 
 
 function emExpedicao(p: Pedido) {
@@ -77,6 +78,8 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       silk: ["Aguardando Silk", "Aguardando DTF + Silk", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
       dtf_silk: ["Aguardando DTF + Silk"],
       acabamento: ["Aguardando Acabamento"],
+      saiu_entrega: ["Saiu para entrega"],
+      entregue: ["Entregue"],
     };
     return (map as any)[e]?.includes(etapaAtual) ?? false;
   }
@@ -195,8 +198,6 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                 <SelectContent>
                   <SelectItem value="ativas">Todas (menos finalizados)</SelectItem>
                   <SelectItem value="em_refacao">Em refação</SelectItem>
-                  
-                  
                   <SelectItem value="aguardando_entrada">Aguardando entrada</SelectItem>
                   <SelectItem value="aguardando_input">Aguardando input de produção</SelectItem>
                   <SelectItem value="arte">Aguardando Arte</SelectItem>
@@ -207,6 +208,8 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                   <SelectItem value="dtf_silk">Aguardando DTF + Silk</SelectItem>
                   <SelectItem value="acabamento">Aguardando Acabamento</SelectItem>
                   <SelectItem value="expedicao">Aguardando Expedição</SelectItem>
+                  <SelectItem value="saiu_entrega">Saiu para entrega</SelectItem>
+                  <SelectItem value="entregue">Entregue</SelectItem>
                   <SelectItem value="finalizados">Finalizados</SelectItem>
                 </SelectContent>
               </Select>
