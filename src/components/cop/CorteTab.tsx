@@ -299,12 +299,17 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     if (!selected) return;
     const pecas = desagrupar(grupos);
     if (pecas.length === 0) { toast.error("Adicione ao menos uma peça."); return; }
+    if (faltaCortador()) {
+      toast.error("Informe quem cortou antes de mandar para o Romaneio.");
+      return;
+    }
     await salvar.mutateAsync({
       id: selected.id,
       solicitacao_risco: draft.solicitacao_risco ?? null,
       execucao_risco: draft.execucao_risco ?? null,
       solicitacao_corte: draft.solicitacao_corte ?? null,
       execucao_corte: draft.execucao_corte ?? null,
+      quem_cortou: draft.quem_cortou ?? null,
       observacoes_corte: (draft.observacoes_corte ?? "")?.toString().toUpperCase() || null,
       pecas,
       status: "Aguardando Oficina" as CopStatus,
