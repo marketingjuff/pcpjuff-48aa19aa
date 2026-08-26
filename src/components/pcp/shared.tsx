@@ -533,6 +533,8 @@ export const ETAPA_FILTRO_OPCOES_ARTE = _pickEtapaOpcoes([
   "dtf",
   "silk",
   "dtf_silk",
+  "saiu_entrega",
+  "entregue",
 ]);
 
 export const ETAPA_FILTRO_OPCOES_DTF = _pickEtapaOpcoes([
@@ -542,6 +544,8 @@ export const ETAPA_FILTRO_OPCOES_DTF = _pickEtapaOpcoes([
   "silk_pronto_dtf_arte",
   "dtf",
   "dtf_silk",
+  "saiu_entrega",
+  "entregue",
 ]);
 
 export const ETAPA_FILTRO_OPCOES_SILK = _pickEtapaOpcoes([
@@ -551,6 +555,8 @@ export const ETAPA_FILTRO_OPCOES_SILK = _pickEtapaOpcoes([
   "silk_pronto_dtf_arte",
   "silk",
   "dtf_silk",
+  "saiu_entrega",
+  "entregue",
 ]);
 
 export const ETAPA_FILTRO_OPCOES_ACABAMENTO = ETAPA_FILTRO_OPCOES.filter(
