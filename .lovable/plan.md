@@ -1,39 +1,44 @@
-# COP — Romaneio em "Aguardando Pagamento" sai da aba Romaneio e de Oficinas Hoje
+# COP · Aba Corte · Campo "Quem cortou" (lista configurável)
 
-Somente 2 arquivos tocados. Nenhuma migração, nenhum SQL, nenhuma coluna nova.
+Arquivo por arquivo, seguindo a allowlist do prompt. Nada fora dela.
 
-## 1. `src/lib/cop-oficinas.ts`
+## 1. Nova migração em `supabase/migrations/`
+Somente aditiva:
+- `ALTER TABLE public.cops ADD COLUMN IF NOT EXISTS quem_cortou text NULL;`
+- `INSERT` idempotente em `app_lists` de `cop_cortador` com `Bruno` (10) e `Lucas` (20).
 
-Em `copAtivoEmOficina`, adicionar uma linha: `if (c.status === "Aguardando Pagamento") return false;`
-e atualizar o comentário. Nada mais no arquivo muda — `cargaPorOficina`,
-`copsPorOficina`, `arvoreProducaoHoje`, subtotais e totais herdam o filtro
-automaticamente.
+Sem `DROP`, sem `DELETE`, sem tocar em `app_lists_kind_check`.
 
-Efeitos desejados: Oficinas Hoje deixa de listar e de somar o romaneio já
-conferido; o card de carga por oficina na busca de peças também para de contá-lo;
-o bloco "Romaneios ativos com a peça" do popup de falta fica mais limpo (saldo
-zero por definição). `FaltaPecaPopup.tsx` não é modificado.
+## 2. `src/lib/app-lists.ts`
+Acrescentar `"cop_cortador"` ao union `AppListKind`. Nada mais.
 
-## 2. `src/components/cop/RomaneioTab.tsx`
+## 3. `src/lib/config-listas-catalogo.ts`
+Novo item no `LISTAS_CATALOGO`, seção COP, grupo "Corte", título
+"Quem cortou o tecido" — aparece sozinho em Configurações > COP.
 
-- **Filtro `__ativos__`**: passa a excluir também `status === "Aguardando Pagamento"`.
-  O `else if` do seletor fica intocado, então escolher "Aguardando Pagamento" ou
-  "Todos" continua mostrando o COP.
-- **Rótulo da opção**: `Ativos, sem Aguardando Pagamento, Pagos e Finalizados`
-  (largura do trigger mantida; só aumento para `w-[320px]` se estourar).
-- **`handleConferir`**: captura `rotuloRomaneio(selected, cops)` antes do await,
-  e após `salvar.mutateAsync` faz `setSelectedId(null)` + `toast.success` avisando
-  que o romaneio foi para Pagamentos. Sem imports novos, sem mexer no `onSuccess`
-  da mutation, sem alterar `jaCompleto`, `mostrarPainel`, `completoTotal`,
-  `completoViaPerda`, `podeParticionar`, `bloqueadoRomaneio` ou `statusPorAgregado`.
+## 4. `src/lib/cop.ts`
+No tipo `Cop`, abaixo de `execucao_corte`: `quem_cortou: string | null;`.
+`calcularStatusCorte` intocado.
 
-## Não tocados
+## 5. `src/lib/audit-labels.ts`
+Na seção cop: `quem_cortou: "Quem cortou"`.
 
-`src/lib/cop.ts` (e `STATUS_POS_CORTE`), `PagamentoOficinasTab.tsx`,
-`cop-saldos.ts`, `admin.functions.ts`, `schema-extras.ts`. A reversão
-"Aguardando Pagamento" → "Romaneio Completo" pela aba Pagamentos volta a exibir
-o COP nas duas abas sem ajuste extra, porque a exclusão é só por status.
+## 6. `src/components/cop/CorteTab.tsx`
+- Importar `MultiSelectPeople` / `parsePeople` do PCP e `useAppList`.
+- `const { names: cortadores } = useAppList("cop_cortador")`.
+- Incluir `quem_cortou` no `setDraft` do COP selecionado.
+- Fileira de datas passa a `md:grid-cols-5`; campo "Quem cortou" entre
+  "Solicitação do Corte" e "Execução do Corte", desabilitado por
+  `bloqueado || emCorrecao`.
+- Helper `faltaCortador()`: bloqueia `handleAtualizar` (ramo normal) e
+  `handleMandarRomaneio` com toast de erro quando há data de execução do
+  corte sem nome selecionado.
+- Persistir `quem_cortou` nos dois payloads de salvamento.
+- `handleDivisao`: COP filho nasce sem `quem_cortou`.
+
+## Não tocado
+`cop-saldos.ts`, `admin.functions.ts`, `schema-extras.ts`, arquivos do PCP,
+`configuracoes.tsx`, PDF do romaneio, Dashboard COP.
 
 ## Ao final
-
 Rodo o typecheck e mostro o resultado.
