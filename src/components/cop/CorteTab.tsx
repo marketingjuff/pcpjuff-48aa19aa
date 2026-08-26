@@ -244,6 +244,10 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     return null;
   }
 
+  function faltaCortador(): boolean {
+    return !!draft.execucao_corte && parsePeople(draft.quem_cortou).length === 0;
+  }
+
   async function handleAtualizar() {
     if (!selected) return;
     if (bloqueado) { toast.error("Este COP já saiu para o Romaneio. Use 'Corrigir corte' na aba Romaneio."); return; }
