@@ -24,6 +24,8 @@ import {
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { DivisaoCorteDialog } from "./DivisaoCorteDialog";
 import { useCanAccessCop, useIsAdmin } from "@/hooks/use-role";
+import { MultiSelectPeople, parsePeople } from "@/components/pcp/MultiSelectPeople";
+import { useAppList } from "@/lib/app-lists";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -161,6 +163,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
   // Form draft espelha o COP selecionado
   const [draft, setDraft] = useState<Partial<Cop>>({});
   const [grupos, setGrupos] = useState<LinhaGrupo[]>([]);
+  const { names: cortadores } = useAppList("cop_cortador");
 
   useEffect(() => {
     if (!selected) { setDraft({}); setGrupos([]); return; }
@@ -168,6 +171,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
       solicitacao_risco: selected.solicitacao_risco,
       execucao_risco: selected.execucao_risco,
       solicitacao_corte: selected.solicitacao_corte,
+      quem_cortou: selected.quem_cortou,
       execucao_corte: selected.execucao_corte,
       observacoes_corte: selected.observacoes_corte,
     });
@@ -240,6 +244,10 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     return null;
   }
 
+  function faltaCortador(): boolean {
+    return !!draft.execucao_corte && parsePeople(draft.quem_cortou).length === 0;
+  }
+
   async function handleAtualizar() {
     if (!selected) return;
     if (bloqueado) { toast.error("Este COP já saiu para o Romaneio. Use 'Corrigir corte' na aba Romaneio."); return; }
@@ -255,6 +263,10 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
       });
       return;
     }
+    if (faltaCortador()) {
+      toast.error("Informe quem cortou antes de gravar a data de execução do corte.");
+      return;
+    }
     const datas = {
       solicitacao_risco: draft.solicitacao_risco ?? null,
       execucao_risco: draft.execucao_risco ?? null,
@@ -265,6 +277,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     await salvar.mutateAsync({
       id: selected.id,
       ...datas,
+      quem_cortou: draft.quem_cortou ?? null,
       observacoes_corte: (draft.observacoes_corte ?? "")?.toString().toUpperCase() || null,
       pecas,
       status: novoStatus,
@@ -290,12 +303,17 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
     if (!selected) return;
     const pecas = desagrupar(grupos);
     if (pecas.length === 0) { toast.error("Adicione ao menos uma peça."); return; }
+    if (faltaCortador()) {
+      toast.error("Informe quem cortou antes de mandar para o Romaneio.");
+      return;
+    }
     await salvar.mutateAsync({
       id: selected.id,
       solicitacao_risco: draft.solicitacao_risco ?? null,
       execucao_risco: draft.execucao_risco ?? null,
       solicitacao_corte: draft.solicitacao_corte ?? null,
       execucao_corte: draft.execucao_corte ?? null,
+      quem_cortou: draft.quem_cortou ?? null,
       observacoes_corte: (draft.observacoes_corte ?? "")?.toString().toUpperCase() || null,
       pecas,
       status: "Aguardando Oficina" as CopStatus,
@@ -500,7 +518,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
             )}
             <fieldset disabled={bloqueado} className="contents">
             {/* Datas */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div>
                 <Label>Solicitação do Risco</Label>
                 <DateInputBR value={draft.solicitacao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_risco: v }))} disabled={bloqueado || emCorrecao} />
@@ -512,6 +530,16 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
               <div>
                 <Label>Solicitação do Corte</Label>
                 <DateInputBR value={draft.solicitacao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_corte: v }))} disabled={bloqueado || emCorrecao} />
+              </div>
+              <div>
+                <Label>Quem cortou</Label>
+                <MultiSelectPeople
+                  value={draft.quem_cortou ?? null}
+                  options={cortadores}
+                  onChange={(v) => setDraft((d) => ({ ...d, quem_cortou: v }))}
+                  disabled={bloqueado || emCorrecao}
+                  placeholder="Selecione..."
+                />
               </div>
               <div>
                 <Label>Execução do Corte</Label>

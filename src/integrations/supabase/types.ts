@@ -199,6 +199,7 @@ export type Database = {
           pecas: Json
           pecas_recebidas: Json
           perdas: Json
+          quem_cortou: string | null
           refacao_perda_itens: Json
           refacao_perda_origem_id: string | null
           romaneio_enviado_em: string | null
@@ -243,6 +244,7 @@ export type Database = {
           pecas?: Json
           pecas_recebidas?: Json
           perdas?: Json
+          quem_cortou?: string | null
           refacao_perda_itens?: Json
           refacao_perda_origem_id?: string | null
           romaneio_enviado_em?: string | null
@@ -287,6 +289,7 @@ export type Database = {
           pecas?: Json
           pecas_recebidas?: Json
           perdas?: Json
+          quem_cortou?: string | null
           refacao_perda_itens?: Json
           refacao_perda_origem_id?: string | null
           romaneio_enviado_em?: string | null
