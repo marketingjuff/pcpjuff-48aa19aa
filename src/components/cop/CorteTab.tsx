@@ -24,6 +24,8 @@ import {
 import { useCopColorSettings } from "@/hooks/use-cop-color-settings";
 import { DivisaoCorteDialog } from "./DivisaoCorteDialog";
 import { useCanAccessCop, useIsAdmin } from "@/hooks/use-role";
+import { MultiSelectPeople, parsePeople } from "@/components/pcp/MultiSelectPeople";
+import { useAppList } from "@/lib/app-lists";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -161,6 +163,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
   // Form draft espelha o COP selecionado
   const [draft, setDraft] = useState<Partial<Cop>>({});
   const [grupos, setGrupos] = useState<LinhaGrupo[]>([]);
+  const { names: cortadores } = useAppList("cop_cortador");
 
   useEffect(() => {
     if (!selected) { setDraft({}); setGrupos([]); return; }
@@ -168,6 +171,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
       solicitacao_risco: selected.solicitacao_risco,
       execucao_risco: selected.execucao_risco,
       solicitacao_corte: selected.solicitacao_corte,
+      quem_cortou: selected.quem_cortou,
       execucao_corte: selected.execucao_corte,
       observacoes_corte: selected.observacoes_corte,
     });
