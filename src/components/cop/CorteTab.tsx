@@ -518,7 +518,7 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
             )}
             <fieldset disabled={bloqueado} className="contents">
             {/* Datas */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div>
                 <Label>Solicitação do Risco</Label>
                 <DateInputBR value={draft.solicitacao_risco ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_risco: v }))} disabled={bloqueado || emCorrecao} />
@@ -530,6 +530,16 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
               <div>
                 <Label>Solicitação do Corte</Label>
                 <DateInputBR value={draft.solicitacao_corte ?? ""} onChange={(v) => setDraft((d) => ({ ...d, solicitacao_corte: v }))} disabled={bloqueado || emCorrecao} />
+              </div>
+              <div>
+                <Label>Quem cortou</Label>
+                <MultiSelectPeople
+                  value={draft.quem_cortou ?? null}
+                  options={cortadores}
+                  onChange={(v) => setDraft((d) => ({ ...d, quem_cortou: v }))}
+                  disabled={bloqueado || emCorrecao}
+                  placeholder="Selecione..."
+                />
               </div>
               <div>
                 <Label>Execução do Corte</Label>
