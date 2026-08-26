@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { diasUteisAteHoje } from "@/lib/dias-uteis";
 import { useFeriados } from "@/hooks/use-feriados";
 import { formatDateBR } from "@/lib/format";
-import { EtapaBadgeView, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, cmpText, matchEtapaFiltro, type SortDir } from "./shared";
+import { EtapaBadgeView, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, cmpText, matchEtapaFiltro, rowBgClass, type SortDir } from "./shared";
 
 interface Props {
   pedidos: Pedido[];

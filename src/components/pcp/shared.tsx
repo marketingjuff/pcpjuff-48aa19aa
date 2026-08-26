@@ -158,6 +158,10 @@ export const BADGE_SM_CLASS = "text-[10px] px-1.5 py-0";
 
 /** Cor de fundo de alerta para linhas — mesma regra do Dashboard Master. */
 export function rowAlertBgClass(p: Pedido, feriados: Set<string>): string {
+  const etapa = calcularEtapaAtual(p).etapa.replace(/\*$/, "");
+  if (etapa === "Saiu para entrega" || etapa === "Entregue") {
+    return "bg-emerald-100 hover:bg-emerald-200/80";
+  }
   if (p.embalado === "Sim") return "";
   if (!p.saida_juff) return "";
   const dias = diasUteisAteHoje(p.saida_juff, feriados);
@@ -165,6 +169,11 @@ export function rowAlertBgClass(p: Pedido, feriados: Set<string>): string {
   if (dias <= 0) return "bg-red-50 hover:bg-red-100/80";
   if (dias === 1) return "bg-yellow-50 hover:bg-yellow-100/80";
   return "";
+}
+
+/** Alias semântico para cor de fundo de linha (inclui etapas de entrega verdes). */
+export function rowBgClass(p: Pedido, feriados: Set<string>): string {
+  return rowAlertBgClass(p, feriados);
 }
 
 /** Classe vermelha para linhas atrasadas por setor (item 4 da spec). */
