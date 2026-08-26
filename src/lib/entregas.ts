@@ -41,10 +41,17 @@ export async function comprimirFoto(file: File): Promise<Blob> {
 }
 
 async function comprimirViaImageBitmap(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file, {
-    resizeWidth: MAX_LADO,
-    resizeQuality: "medium",
-  });
+  // Lê dimensões nativas primeiro para nunca ampliar fotos já pequenas.
+  const info = await createImageBitmap(file);
+  const naturalWidth = info.width;
+  const naturalHeight = info.height;
+  info.close();
+
+  const maiorNatural = Math.max(naturalWidth, naturalHeight) || 1;
+  const bitmap = maiorNatural > MAX_LADO
+    ? await createImageBitmap(file, { resizeWidth: MAX_LADO, resizeQuality: "medium" })
+    : await createImageBitmap(file);
+
   try {
     const maior = Math.max(bitmap.width, bitmap.height) || 1;
     const escala = Math.min(1, MAX_LADO / maior);
