@@ -96,7 +96,7 @@ export function GanttPedidos({
         const atrasadas = new Set(lista.map((a) => a.etapa));
         const tituloAtraso = lista.map((a) => a.texto).join("\n");
         const dx = drag?.id === p.id ? drag.dx : 0;
-        const zebra = i % 2 === 1 ? "bg-muted/25" : "bg-card";
+        const zebra = i % 2 === 1 ? "bg-surface-muted" : "bg-card";
 
         const arteOk = concluida(p, "arte");
         const dtfOk = concluida(p, "dtf");
