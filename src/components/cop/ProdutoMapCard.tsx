@@ -143,6 +143,9 @@ export function ProdutoMapCard() {
                   {pendentesSort.rows.map((p) => (
                     <tr key={p.produto} className="border-t">
                       <td className="p-2">{p.produto}</td>
+                      <td className="p-2">
+                        <Badge variant="outline" className="text-[10px]">{p.origem}</Badge>
+                      </td>
                       <td className="p-2 font-semibold">{p.empresas || "—"}</td>
                       <td className="p-2 text-right font-semibold tabular-nums">{p.qtd}</td>
                       {isAdmin && (
