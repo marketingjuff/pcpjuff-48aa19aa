@@ -12,12 +12,14 @@ import { REFACAO_MODELOS } from "@/lib/pedidos";
 import { useIsAdmin } from "@/hooks/use-role";
 import { useTableSort, SortTh } from "@/components/shared/sortable";
 import { useItensUltimoSnapshot, useProdutoMap } from "./AlimentacaoEstoqueTab";
+import { useProdutosVendas } from "./PendenciaMapeamentoAlert";
 
 export function ProdutoMapCard() {
   const qc = useQueryClient();
   const isAdmin = useIsAdmin();
   const { data: mapa = [] } = useProdutoMap();
   const { itens } = useItensUltimoSnapshot();
+  const { data: produtosVendas = [] } = useProdutosVendas(isAdmin);
   const [pendenteSel, setPendenteSel] = useState<Record<string, string>>({});
   const [novoProduto, setNovoProduto] = useState("");
   const [novoModelo, setNovoModelo] = useState("");
