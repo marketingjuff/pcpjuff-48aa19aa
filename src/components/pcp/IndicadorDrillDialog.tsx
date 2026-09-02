@@ -170,12 +170,16 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
                     </th>
                   );
                 })}
+                {acao ? <th className="px-2 py-1.5 font-semibold whitespace-nowrap text-right">Escopo</th> : null}
               </tr>
             </thead>
             <tbody>
               {linhas.length === 0 ? (
                 <tr>
-                  <td colSpan={payload.colunas.length} className="px-2 py-6 text-center text-muted-foreground">
+                  <td
+                    colSpan={payload.colunas.length + (acao ? 1 : 0)}
+                    className="px-2 py-6 text-center text-muted-foreground"
+                  >
                     Nenhuma linha compõe este indicador com os filtros atuais.
                   </td>
                 </tr>
@@ -192,6 +196,34 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
                         {formatCelula(l[c.chave] ?? null, c.tipo)}
                       </td>
                     ))}
+                    {acao ? (
+                      <td className="px-2 py-1 whitespace-nowrap text-right">
+                        {(() => {
+                          const numero = String(l[acao.chaveNumero] ?? "");
+                          if (!numero) return null;
+                          const destino = acao.escopoAtual === "store" ? "custom" : "store";
+                          /* No Custom só faz sentido devolver pedido cuja regra automática é Store. */
+                          if (acao.escopoAtual === "custom" && !acao.ehStoreAuto(numero)) return null;
+                          const carregando = acao.pendente === numero;
+                          return (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 px-2 text-[11px]"
+                              disabled={!!acao.pendente}
+                              onClick={() => acao.onMover(numero, destino)}
+                            >
+                              <ArrowLeftRight className="h-3 w-3 mr-1" />
+                              {carregando
+                                ? "Movendo…"
+                                : destino === "custom"
+                                  ? "Mover para Custom"
+                                  : "Voltar para Store"}
+                            </Button>
+                          );
+                        })()}
+                      </td>
+                    ) : null}
                   </tr>
                 ))
               )}
@@ -208,11 +240,13 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
                           : ""}
                     </td>
                   ))}
+                  {acao ? <td /> : null}
                 </tr>
               </tfoot>
             ) : null}
           </table>
         </div>
+
 
         <div className="text-xs text-muted-foreground space-y-1">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
