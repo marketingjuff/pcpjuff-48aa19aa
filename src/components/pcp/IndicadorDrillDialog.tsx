@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Download, Search, ArrowUp, ArrowDown } from "lucide-react";
+import { Download, Search, ArrowUp, ArrowDown, ArrowLeftRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -96,6 +96,8 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
   }, [payload, busca, ordem]);
 
   if (!payload) return null;
+
+  const acao = payload.acaoEscopo;
 
   const colSoma = payload.colunas.find((c) => c.somar);
   const somaVisivel = colSoma ? linhas.reduce((s, l) => s + (Number(l[colSoma.chave]) || 0), 0) : null;
@@ -268,7 +270,14 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
             ) : null}
           </div>
           {payload.nota ? <p>{payload.nota}</p> : null}
-          <p>Visualização somente leitura. Nada aqui altera dados.</p>
+          {acao ? (
+            <p>
+              O botão move o pedido inteiro entre Juff Store e Juff Custom. A troca é salva e pode ser desfeita
+              quando quiser.
+            </p>
+          ) : (
+            <p>Visualização somente leitura. Nada aqui altera dados.</p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
