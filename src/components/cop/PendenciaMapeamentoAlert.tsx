@@ -14,7 +14,9 @@ import { useItensUltimoSnapshot, useProdutoMap } from "./AlimentacaoEstoqueTab";
  * Sem DISTINCT/GROUP BY (o Data API não oferece): traz apenas a coluna de texto
  * e deduplica com Set.
  */
-function useProdutosVendas(enabled: boolean) {
+export type ProdutoVendas = { produto: string; empresas: string; qtd: number };
+
+export function useProdutosVendas(enabled: boolean) {
   return useQuery({
     queryKey: ["olist-vendas", "produtos-distintos"],
     enabled,
@@ -26,25 +28,36 @@ function useProdutosVendas(enabled: boolean) {
       if (e1) throw e1;
 
       const maisRecentePorEmpresa = new Map<string, string>();
+      const empresaPorLote = new Map<string, string>();
       for (const l of (lotes ?? []) as any[]) {
-        if (!maisRecentePorEmpresa.has(l.empresa)) maisRecentePorEmpresa.set(l.empresa, l.id);
+        if (!maisRecentePorEmpresa.has(l.empresa)) {
+          maisRecentePorEmpresa.set(l.empresa, l.id);
+          empresaPorLote.set(l.id, l.empresa);
+        }
       }
       const ids = Array.from(maisRecentePorEmpresa.values());
-      if (ids.length === 0) return [] as string[];
+      if (ids.length === 0) return [] as ProdutoVendas[];
 
       const { data, error } = await supabase
         .from("olist_itens" as any)
-        .select("produto_olist")
+        .select("produto_olist, qtd, lote_id")
         .in("lote_id", ids)
         .not("produto_olist", "is", null);
       if (error) throw error;
 
-      const s = new Set<string>();
+      const agrup = new Map<string, { produto: string; empresas: Set<string>; qtd: number }>();
       for (const r of (data ?? []) as any[]) {
         const p = String(r.produto_olist ?? "").trim();
-        if (p) s.add(p);
+        if (!p) continue;
+        const e = agrup.get(p) ?? { produto: p, empresas: new Set<string>(), qtd: 0 };
+        const emp = empresaPorLote.get(r.lote_id);
+        if (emp) e.empresas.add(emp);
+        e.qtd += Number(r.qtd ?? 0);
+        agrup.set(p, e);
       }
-      return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+      return Array.from(agrup.values())
+        .map((e) => ({ produto: e.produto, empresas: Array.from(e.empresas).sort().join(", "), qtd: e.qtd }))
+        .sort((a, b) => a.produto.localeCompare(b.produto, "pt-BR"));
     },
   });
 }
