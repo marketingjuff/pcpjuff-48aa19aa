@@ -12,12 +12,14 @@ import { REFACAO_MODELOS } from "@/lib/pedidos";
 import { useIsAdmin } from "@/hooks/use-role";
 import { useTableSort, SortTh } from "@/components/shared/sortable";
 import { useItensUltimoSnapshot, useProdutoMap } from "./AlimentacaoEstoqueTab";
+import { useProdutosVendas } from "./PendenciaMapeamentoAlert";
 
 export function ProdutoMapCard() {
   const qc = useQueryClient();
   const isAdmin = useIsAdmin();
   const { data: mapa = [] } = useProdutoMap();
   const { itens } = useItensUltimoSnapshot();
+  const { data: produtosVendas = [] } = useProdutosVendas(isAdmin);
   const [pendenteSel, setPendenteSel] = useState<Record<string, string>>({});
   const [novoProduto, setNovoProduto] = useState("");
   const [novoModelo, setNovoModelo] = useState("");
@@ -25,25 +27,43 @@ export function ProdutoMapCard() {
   const mapeados = useMemo(() => new Set(mapa.map((m) => m.produto_olist)), [mapa]);
 
   const pendentes = useMemo(() => {
-    const agrup = new Map<string, { produto: string; empresas: Set<string>; qtd: number }>();
+    const agrup = new Map<
+      string,
+      { produto: string; empresas: Set<string>; qtd: number; origens: Set<string> }
+    >();
+    const get = (produto: string) =>
+      agrup.get(produto) ?? { produto, empresas: new Set<string>(), qtd: 0, origens: new Set<string>() };
+
     for (const it of itens) {
       if (mapeados.has(it.produto_olist)) continue;
-      const e = agrup.get(it.produto_olist) ?? { produto: it.produto_olist, empresas: new Set<string>(), qtd: 0 };
+      const e = get(it.produto_olist);
       e.empresas.add(it.empresa);
       e.qtd += it.qtd ?? 0;
+      e.origens.add("Estoque");
       agrup.set(it.produto_olist, e);
     }
+    for (const v of produtosVendas) {
+      if (mapeados.has(v.produto)) continue;
+      const e = get(v.produto);
+      for (const emp of v.empresas.split(", ").filter(Boolean)) e.empresas.add(emp);
+      e.qtd += v.qtd;
+      e.origens.add("Vendas");
+      agrup.set(v.produto, e);
+    }
+
     return Array.from(agrup.values()).map((e) => ({
       produto: e.produto,
       empresas: Array.from(e.empresas).sort().join(", "),
       qtd: e.qtd,
+      origem: Array.from(e.origens).sort().join(" + "),
     }));
-  }, [itens, mapeados]);
+  }, [itens, mapeados, produtosVendas]);
 
   const pendentesSort = useTableSort(pendentes, {
     produto: (p) => p.produto,
     empresas: (p) => p.empresas,
     qtd: (p) => p.qtd,
+    origem: (p) => p.origem,
   });
 
   const mapaOrdenado = useMemo(
@@ -102,8 +122,9 @@ export function ProdutoMapCard() {
             <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">
               <AlertTriangle className="h-4 w-4 mt-0.5 text-destructive" />
               <span>
-                <b>{pendentes.length} produto(s)</b> das últimas importações de estoque não têm equivalência com um
-                modelo do COP. Enquanto não forem mapeados, essas peças <b>não entram no Saldo Real</b>.
+                <b>{pendentes.length} produto(s)</b> das últimas importações (estoque e vendas da Olist) não têm
+                equivalência com um modelo do COP. Enquanto não forem mapeados, essas peças <b>não entram no Saldo
+                Real nem nos indicadores</b>.
               </span>
             </div>
             <div className="overflow-auto max-h-[40vh] tbl-congelada">
@@ -111,6 +132,7 @@ export function ProdutoMapCard() {
                 <thead className="bg-muted/40 text-xs">
                   <tr>
                     <SortTh label="Produto na Olist" sortKey="produto" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-left" />
+                    <SortTh label="Origem" sortKey="origem" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-left w-[110px]" />
                     <SortTh label="Empresa(s)" sortKey="empresas" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-left w-[100px]" />
                     <SortTh label="Qtd fora" sortKey="qtd" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-right w-[90px]" />
                     {isAdmin && <th className="p-2 text-left w-[240px]">Modelo COP</th>}
@@ -121,6 +143,9 @@ export function ProdutoMapCard() {
                   {pendentesSort.rows.map((p) => (
                     <tr key={p.produto} className="border-t">
                       <td className="p-2">{p.produto}</td>
+                      <td className="p-2">
+                        <Badge variant="outline" className="text-[10px]">{p.origem}</Badge>
+                      </td>
                       <td className="p-2 font-semibold">{p.empresas || "—"}</td>
                       <td className="p-2 text-right font-semibold tabular-nums">{p.qtd}</td>
                       {isAdmin && (
