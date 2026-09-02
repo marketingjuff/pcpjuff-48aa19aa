@@ -78,7 +78,7 @@ export function PendenciaMapeamentoAlert() {
   }, [itens, mapeados]);
 
   const pendentesVendas = useMemo(
-    () => (isAdmin ? produtosVendas.filter((p) => !mapeados.has(p)) : []),
+    () => (isAdmin ? produtosVendas.filter((p) => !mapeados.has(p.produto)).map((p) => p.produto) : []),
     [isAdmin, produtosVendas, mapeados],
   );
 
