@@ -25,25 +25,43 @@ export function ProdutoMapCard() {
   const mapeados = useMemo(() => new Set(mapa.map((m) => m.produto_olist)), [mapa]);
 
   const pendentes = useMemo(() => {
-    const agrup = new Map<string, { produto: string; empresas: Set<string>; qtd: number }>();
+    const agrup = new Map<
+      string,
+      { produto: string; empresas: Set<string>; qtd: number; origens: Set<string> }
+    >();
+    const get = (produto: string) =>
+      agrup.get(produto) ?? { produto, empresas: new Set<string>(), qtd: 0, origens: new Set<string>() };
+
     for (const it of itens) {
       if (mapeados.has(it.produto_olist)) continue;
-      const e = agrup.get(it.produto_olist) ?? { produto: it.produto_olist, empresas: new Set<string>(), qtd: 0 };
+      const e = get(it.produto_olist);
       e.empresas.add(it.empresa);
       e.qtd += it.qtd ?? 0;
+      e.origens.add("Estoque");
       agrup.set(it.produto_olist, e);
     }
+    for (const v of produtosVendas) {
+      if (mapeados.has(v.produto)) continue;
+      const e = get(v.produto);
+      for (const emp of v.empresas.split(", ").filter(Boolean)) e.empresas.add(emp);
+      e.qtd += v.qtd;
+      e.origens.add("Vendas");
+      agrup.set(v.produto, e);
+    }
+
     return Array.from(agrup.values()).map((e) => ({
       produto: e.produto,
       empresas: Array.from(e.empresas).sort().join(", "),
       qtd: e.qtd,
+      origem: Array.from(e.origens).sort().join(" + "),
     }));
-  }, [itens, mapeados]);
+  }, [itens, mapeados, produtosVendas]);
 
   const pendentesSort = useTableSort(pendentes, {
     produto: (p) => p.produto,
     empresas: (p) => p.empresas,
     qtd: (p) => p.qtd,
+    origem: (p) => p.origem,
   });
 
   const mapaOrdenado = useMemo(
