@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useIsAdmin, useHasRole } from "@/hooks/use-role";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -305,7 +307,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["indicadores-olist", "base"],
     queryFn: async () => {
-      const [lotesRes, pedidos, itens, mapRes, exclRes, pcp] = await Promise.all([
+      const [lotesRes, pedidos, itens, mapRes, exclRes, pcp, escopoRes] = await Promise.all([
         supabase.from("olist_import_lotes" as any).select("id, importado_em"),
         lerTudo<PedidoDb>(async (from, to) => {
           const { data, error } = await supabase
@@ -341,8 +343,10 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
           if (error) throw error;
           return (data ?? []) as any;
         }),
+        supabase.from("kpi_pedido_escopo" as any).select("numero_pedido, escopo"),
       ]);
       if (lotesRes.error) throw lotesRes.error;
+      if (escopoRes.error) throw escopoRes.error;
       if (mapRes.error) throw mapRes.error;
       if (exclRes.error) throw exclRes.error;
 
@@ -386,6 +390,9 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
         pcpLista: pcp,
         modeloPorProduto,
         pedidosStore,
+        overrides: new Map<string, "custom" | "store">(
+          ((escopoRes.data ?? []) as any[]).map((r) => [String(r.numero_pedido), String(r.escopo) as "custom" | "store"]),
+        ),
         /* Bases do PCP sem pedido correspondente na Olist. */
         soPcp: [...noPcp].filter((n) => !numsOlist.has(n)),
       };
@@ -397,8 +404,12 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   const base = useMemo(() => {
     const todos = data?.calc ?? [];
     const store = data?.pedidosStore ?? new Set<string>();
-    const ehStorePedido = (p: (typeof todos)[number]) =>
-      store.has(p.numero_pedido) && p.empresa === "JOKE";
+    const overrides = data?.overrides ?? new Map<string, "custom" | "store">();
+    const ehStorePedido = (p: (typeof todos)[number]) => {
+      const ov = overrides.get(p.numero_pedido);
+      if (ov) return ov === "store";
+      return store.has(p.numero_pedido) && p.empresa === "JOKE";
+    };
     const doEscopo = todos.filter((p) => (escopo === "store" ? ehStorePedido(p) : !ehStorePedido(p)));
     if (escopo !== "store") return doEscopo;
 
@@ -638,7 +649,64 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   /* No escopo Store não há PCP: nada de UF nos detalhamentos. */
   const ufMapaDrill = soPcpAtivo ? (data?.ufPorPedido ?? new Map<string, string>()) : new Map<string, string>();
   const [drill, setDrill] = useState<DrillPayload | null>(null);
-  const abrirDrill = (p: DrillPayload) => setDrill(p);
+
+  /* ---- Exceção manual de escopo: mover pedido entre Juff Store e Juff Custom ---- */
+  const qc = useQueryClient();
+  const isAdmin = useIsAdmin();
+  const isGestor = useHasRole("gestor");
+  const podeMoverEscopo = isAdmin || isGestor;
+  const [movendo, setMovendo] = useState<string | null>(null);
+  const ehStoreAuto = (numero: string) => {
+    const store = data?.pedidosStore ?? new Set<string>();
+    const p = (data?.calc ?? []).find((x) => x.numero_pedido === numero);
+    return store.has(numero) && p?.empresa === "JOKE";
+  };
+  const moverEscopo = async (numero: string, destino: "custom" | "store") => {
+    setMovendo(numero);
+    try {
+      const auto = ehStoreAuto(numero) ? "store" : "custom";
+      if (destino === auto) {
+        const { error } = await supabase.from("kpi_pedido_escopo" as any).delete().eq("numero_pedido", numero);
+        if (error) throw error;
+      } else {
+        const { data: sess } = await supabase.auth.getUser();
+        const { error } = await supabase
+          .from("kpi_pedido_escopo" as any)
+          .upsert(
+            { numero_pedido: numero, escopo: destino, definido_por: sess.user?.id ?? null, definido_em: new Date().toISOString() },
+            { onConflict: "numero_pedido" },
+          );
+        if (error) throw error;
+      }
+      await qc.invalidateQueries({ queryKey: ["indicadores-olist", "base"] });
+      setDrill(null);
+      toast.success(
+        `Pedido ${numero} movido para ${destino === "store" ? "Juff Store" : "Juff Custom"}.`,
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível mover o pedido.");
+    } finally {
+      setMovendo(null);
+    }
+  };
+
+  const abrirDrill = (p: DrillPayload) => {
+    const temNumero = p.colunas.some((c) => c.chave === "numero_pedido");
+    if (podeMoverEscopo && temNumero) {
+      setDrill({
+        ...p,
+        acaoEscopo: {
+          chaveNumero: "numero_pedido",
+          escopoAtual: escopo,
+          ehStoreAuto,
+          onMover: (numero, destino) => void moverEscopo(numero, destino),
+          pendente: movendo,
+        },
+      });
+      return;
+    }
+    setDrill(p);
+  };
   const subPcp = `Entrada entre ${intervalo.de} e ${intervalo.ate}`;
   const subOlist = `Período ${intervalo.de} a ${intervalo.ate} · filtros do painel aplicados`;
 
