@@ -132,6 +132,7 @@ export function ProdutoMapCard() {
                 <thead className="bg-muted/40 text-xs">
                   <tr>
                     <SortTh label="Produto na Olist" sortKey="produto" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-left" />
+                    <SortTh label="Origem" sortKey="origem" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-left w-[110px]" />
                     <SortTh label="Empresa(s)" sortKey="empresas" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-left w-[100px]" />
                     <SortTh label="Qtd fora" sortKey="qtd" current={pendentesSort.sortKey} dir={pendentesSort.sortDir} onSort={pendentesSort.toggle} className="text-right w-[90px]" />
                     {isAdmin && <th className="p-2 text-left w-[240px]">Modelo COP</th>}
