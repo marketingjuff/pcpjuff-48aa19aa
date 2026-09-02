@@ -122,8 +122,9 @@ export function ProdutoMapCard() {
             <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">
               <AlertTriangle className="h-4 w-4 mt-0.5 text-destructive" />
               <span>
-                <b>{pendentes.length} produto(s)</b> das últimas importações de estoque não têm equivalência com um
-                modelo do COP. Enquanto não forem mapeados, essas peças <b>não entram no Saldo Real</b>.
+                <b>{pendentes.length} produto(s)</b> das últimas importações (estoque e vendas da Olist) não têm
+                equivalência com um modelo do COP. Enquanto não forem mapeados, essas peças <b>não entram no Saldo
+                Real nem nos indicadores</b>.
               </span>
             </div>
             <div className="overflow-auto max-h-[40vh] tbl-congelada">
