@@ -59,7 +59,18 @@ export interface DrillPayload {
   totalConferencia: number | null;
   /** Tipo da coluna de conferência, para formatar o rodapé. */
   conferenciaTipo?: DrillTipo;
+  /** Ação opcional de mover o pedido entre os escopos Juff Custom / Juff Store. */
+  acaoEscopo?: {
+    /** Coluna da linha que traz o número do pedido. */
+    chaveNumero: string;
+    escopoAtual: "custom" | "store";
+    /** Classificação automática (antes de exceções manuais). */
+    ehStoreAuto: (numero: string) => boolean;
+    onMover: (numero: string, destino: "custom" | "store") => void;
+    pendente?: string | null;
+  };
 }
+
 
 /** Registro do PCP com as colunas extras usadas apenas no detalhamento. */
 export type PcpDrill = PcpDb & {

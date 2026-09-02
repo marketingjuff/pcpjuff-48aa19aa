@@ -420,6 +420,27 @@ export type Database = {
         }
         Relationships: []
       }
+      kpi_pedido_escopo: {
+        Row: {
+          definido_em: string
+          definido_por: string | null
+          escopo: string
+          numero_pedido: string
+        }
+        Insert: {
+          definido_em?: string
+          definido_por?: string | null
+          escopo: string
+          numero_pedido: string
+        }
+        Update: {
+          definido_em?: string
+          definido_por?: string | null
+          escopo?: string
+          numero_pedido?: string
+        }
+        Relationships: []
+      }
       map_audit_log: {
         Row: {
           acao: string
