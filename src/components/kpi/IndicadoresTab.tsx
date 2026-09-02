@@ -691,12 +691,12 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   };
 
   const abrirDrill = (p: DrillPayload) => {
-    const temNumero = p.colunas.some((c) => c.chave === "numero_pedido");
+    const temNumero = p.colunas.some((c) => c.chave === "pedido");
     if (podeMoverEscopo && temNumero) {
       setDrill({
         ...p,
         acaoEscopo: {
-          chaveNumero: "numero_pedido",
+          chaveNumero: "pedido",
           escopoAtual: escopo,
           ehStoreAuto,
           onMover: (numero, destino) => void moverEscopo(numero, destino),
