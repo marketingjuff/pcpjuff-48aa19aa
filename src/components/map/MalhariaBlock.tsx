@@ -28,11 +28,22 @@ export function MalhariaBlock({ producao, entregas, kgPorPeca, onChanged, readOn
   const quebraPecas = kgPorPeca > 0 ? quebraKg / kgPorPeca : 0;
   const totalKg = sumKgEntregas(entregas);
 
+  function pickDefaultMalharia(): string {
+    if (malharias.length === 0) return "";
+    const doProd = producao.malharia ?? "";
+    if (doProd && malharias.some((n) => n.toLowerCase() === doProd.toLowerCase())) return doProd;
+    const found = malharias.find((n) => n.toLowerCase() === "mavelo");
+    return found ?? malharias[0];
+  }
+
   async function addEntrega() {
     setAdding(true);
+    const payload: any = { producao_id: producao.id };
+    const m = pickDefaultMalharia();
+    if (m) payload.malharia = m;
     const { error } = await (supabase as any)
       .from("map_malharia_entregas")
-      .insert({ producao_id: producao.id });
+      .insert(payload);
     setAdding(false);
     if (error) { toast.error(error.message); return; }
     onChanged();
@@ -58,40 +69,11 @@ export function MalhariaBlock({ producao, entregas, kgPorPeca, onChanged, readOn
     } catch (e: any) { toast.error(e?.message ?? "Falha ao salvar."); }
   }
 
-  const malhariaAtual = producao.malharia ?? "";
-  const malhariaLegado = !!malhariaAtual && !malharias.includes(malhariaAtual);
-
-  async function commitMalharia(v: string) {
-    if (v === malhariaAtual) return;
-    try {
-      await patchProducao(producao.id, { malharia: v || null });
-      onChanged();
-    } catch (e: any) { toast.error(e?.message ?? "Falha ao salvar."); }
-  }
-
   return (
     <div className="rounded-md border bg-white/70 p-2 space-y-1">
       <div className="flex items-center justify-between gap-2">
         <div className="text-sm flex items-center gap-2 flex-wrap">
           <span className="text-muted-foreground font-medium">Malharia</span>
-          {readOnly ? (
-            <b>{producao.malharia ?? "—"}</b>
-          ) : (
-            <Select value={malhariaAtual || "__none__"} onValueChange={(v) => commitMalharia(v === "__none__" ? "" : v)}>
-              <SelectTrigger className="h-7 w-[180px] text-xs font-semibold">
-                <SelectValue placeholder="—" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">—</SelectItem>
-                {malhariaLegado && (
-                  <SelectItem value={malhariaAtual} className="italic text-muted-foreground">
-                    {malhariaAtual} (legado)
-                  </SelectItem>
-                )}
-                {malharias.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          )}
           <span className="ml-3 text-muted-foreground">Total recebido: </span>
           <b className="tabular-nums">{totalKg.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} kg</b>
         </div>
@@ -103,17 +85,19 @@ export function MalhariaBlock({ producao, entregas, kgPorPeca, onChanged, readOn
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[700px] text-[12.5px] table-fixed">
+        <table className="w-full min-w-[820px] text-[12.5px] table-fixed">
           <colgroup>
-            <col style={{ width: "22%" }} />
-            <col style={{ width: "12%" }} />
-            <col style={{ width: "12%" }} />
-            <col style={{ width: "24%" }} />
-            <col style={{ width: "24%" }} />
+            <col style={{ width: "18%" }} />
+            <col style={{ width: "17%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "20%" }} />
+            <col style={{ width: "19%" }} />
             <col style={{ width: "6%" }} />
           </colgroup>
           <thead className="bg-muted/40">
             <tr className="text-left">
+              <th className="p-1.5 font-medium">Malharia</th>
               <th className="p-1.5 font-medium">Data recebimento</th>
               <th className="p-1.5 font-medium">Kg</th>
               <th className="p-1.5 font-medium">Peças</th>
@@ -124,9 +108,32 @@ export function MalhariaBlock({ producao, entregas, kgPorPeca, onChanged, readOn
           </thead>
           <tbody>
             {entregas.length === 0 ? (
-              <tr><td colSpan={6} className="p-2 text-center text-muted-foreground">Sem entregas.</td></tr>
+              <tr><td colSpan={7} className="p-2 text-center text-muted-foreground">Sem entregas.</td></tr>
             ) : entregas.map((e) => (
               <tr key={e.id} className="border-t">
+                <td className="p-1">
+                  {readOnly ? (
+                    <span className="text-xs font-medium">{e.malharia ?? "—"}</span>
+                  ) : (
+                    <Select
+                      value={e.malharia || "__none__"}
+                      onValueChange={(v) => commit(e.id, "malharia", v === "__none__" ? null : v)}
+                    >
+                      <SelectTrigger className="h-7 w-full text-xs">
+                        <SelectValue placeholder="—" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">—</SelectItem>
+                        {!!e.malharia && !malharias.includes(e.malharia) && (
+                          <SelectItem value={e.malharia} className="italic text-muted-foreground">
+                            {e.malharia} (legado)
+                          </SelectItem>
+                        )}
+                        {malharias.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </td>
                 <td className="p-1"><InlineInput type="date" value={e.data_recebimento} onCommit={(v) => commit(e.id, "data_recebimento", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="0.01" min="0" value={e.kg} onCommit={(v) => commit(e.id, "kg", v)} disabled={readOnly} /></td>
                 <td className="p-1"><InlineInput type="number" step="1" min="0" value={e.pecas} onCommit={(v) => commit(e.id, "pecas", v)} disabled={readOnly} /></td>
@@ -144,6 +151,7 @@ export function MalhariaBlock({ producao, entregas, kgPorPeca, onChanged, readOn
           </tbody>
         </table>
       </div>
+
 
       <div className="flex items-center justify-between px-1 pt-1 text-xs">
         <div className="text-muted-foreground">
