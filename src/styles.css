@@ -211,6 +211,16 @@
 }
 
 @layer base {
+  /* Linha de resumo do PROD expandido congelada logo abaixo do cabeçalho.
+     Aplicada apenas quando o PROD está aberto. */
+  tr.map-prod-congelada > td {
+    position: sticky;
+    top: var(--map-prod-top, 28px);
+    z-index: 15;
+    background-color: var(--color-yellow-100, #fef9c3);
+  }
+
+@layer base {
   /* Radix (Select/Dropdown) trava a rolagem aplicando overflow:hidden + padding no <body>.
      Isso cria um contexto de rolagem e faz a barra de filtros congelada "pular"/sumir
      enquanto o dropdown está aberto. Neutralizamos apenas esses efeitos de layout. */
