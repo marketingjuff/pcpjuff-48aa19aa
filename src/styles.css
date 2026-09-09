@@ -219,6 +219,9 @@
     z-index: 15;
     background-color: var(--color-yellow-100, #fef9c3);
   }
+}
+
+
 
 @layer base {
   /* Radix (Select/Dropdown) trava a rolagem aplicando overflow:hidden + padding no <body>.
