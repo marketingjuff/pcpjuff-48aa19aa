@@ -188,7 +188,7 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[12.5px]">
+        <table className="tbl-nao-congelada w-full text-[12.5px]">
           <thead className="bg-muted/40">
             <tr className="text-left">
               <th className="p-1.5 font-medium">Tinturaria</th>
