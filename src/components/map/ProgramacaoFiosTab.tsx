@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -366,7 +366,7 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
           <div className="bg-yellow-100/70 px-3 py-2 text-[25px] font-semibold leading-tight">
             Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}
           </div>
-          <div className="overflow-auto max-h-[70vh] tbl-congelada">
+          <GrupoScroll>
             <table className="w-full min-w-[1240px] text-[12.5px] table-fixed">
               <colgroup>
                 <col style={{ width: "3%" }} />
@@ -401,20 +401,20 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
                 </tr>
               </thead>
 
-              <tbody>
-                {lista.map((prod, idx) => {
-                  const isOpen = expanded.has(prod.id);
-                  const es = byProdEntregas.get(prod.id) ?? [];
-                  const ps = byProdProgs.get(prod.id) ?? [];
-                  const canFinalize = !finalizado && podeFinalizar(prod, es, ps);
-                  const zebra = idx % 2 === 1 ? "bg-muted/20" : "";
-                  const summaryClass = isOpen
-                    ? "border-t-2 border-yellow-400 bg-yellow-100/70"
-                    : `border-t hover:bg-yellow-50/50 ${zebra}`;
-                  const kgReceb = sumKgEntregas(es);
-                  return (
-                    <Fragment key={prod.id}>
+              {lista.map((prod, idx) => {
+                const isOpen = expanded.has(prod.id);
+                const es = byProdEntregas.get(prod.id) ?? [];
+                const ps = byProdProgs.get(prod.id) ?? [];
+                const canFinalize = !finalizado && podeFinalizar(prod, es, ps);
+                const zebra = idx % 2 === 1 ? "bg-muted/20" : "";
+                const summaryClass = isOpen
+                  ? "map-prod-congelada border-t-2 border-yellow-400 bg-yellow-100"
+                  : `border-t hover:bg-yellow-50/50 ${zebra}`;
+                const kgReceb = sumKgEntregas(es);
+                return (
+                  <tbody key={prod.id}>
                       <tr id={`map-prod-${prod.id}`} className={summaryClass}>
+
                         <td className={`p-1.5 align-top ${isOpen ? "border-l-4 border-yellow-400" : ""}`}>
                           <button type="button" onClick={() => toggle(prod.id)} className="p-0.5">
                             {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
@@ -565,12 +565,12 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
                           </td>
                         </tr>
                       )}
-                    </Fragment>
+                    </tbody>
                   );
                 })}
-              </tbody>
             </table>
-          </div>
+          </GrupoScroll>
+
         </div>
       ))}
 
@@ -582,6 +582,30 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
         onCreated={invalidateAll}
       />
 
+    </div>
+  );
+}
+
+function GrupoScroll({ children }: { children: React.ReactNode }) {
+  const divRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const div = divRef.current;
+    if (!div) return;
+    const thead = div.querySelector("thead");
+    if (!thead) return;
+    const apply = () => {
+      div.style.setProperty("--map-prod-top", `${(thead as HTMLElement).offsetHeight}px`);
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(thead as HTMLElement);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={divRef} className="overflow-auto max-h-[70vh] tbl-congelada">
+      {children}
     </div>
   );
 }
