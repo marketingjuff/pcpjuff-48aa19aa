@@ -362,7 +362,7 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
           {finalizado ? "Nenhum Prod finalizado." : hasFilters ? "Nenhum Prod para os filtros aplicados." : "Nenhum Prod. Clique em Novo pedido para começar."}
         </div>
       ) : grupos.map(([data, lista]) => (
-        <div key={data} className="rounded-md border overflow-hidden">
+        <div key={data} className="rounded-md border">
           <div className="bg-yellow-100/70 px-3 py-2 text-[25px] font-semibold leading-tight">
             Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}
           </div>
