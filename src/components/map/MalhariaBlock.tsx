@@ -85,7 +85,7 @@ export function MalhariaBlock({ producao, entregas, kgPorPeca, onChanged, readOn
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[820px] text-[12.5px] table-fixed">
+        <table className="tbl-nao-congelada w-full min-w-[820px] text-[12.5px] table-fixed">
           <colgroup>
             <col style={{ width: "18%" }} />
             <col style={{ width: "17%" }} />
