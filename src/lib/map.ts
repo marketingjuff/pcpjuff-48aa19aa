@@ -33,6 +33,7 @@ export interface MapProducao {
 export interface MapEntregaMalharia {
   id: string;
   producao_id: string;
+  malharia: string | null;
   data_recebimento: string | null;
   kg: number | null;
   pecas: number | null;

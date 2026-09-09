@@ -656,6 +656,7 @@ export type Database = {
           data_recebimento: string | null
           id: string
           kg: number | null
+          malharia: string | null
           nota_cobertura: string | null
           nota_fiscal_1: string | null
           nota_fiscal_2: string | null
@@ -667,6 +668,7 @@ export type Database = {
           data_recebimento?: string | null
           id?: string
           kg?: number | null
+          malharia?: string | null
           nota_cobertura?: string | null
           nota_fiscal_1?: string | null
           nota_fiscal_2?: string | null
@@ -678,6 +680,7 @@ export type Database = {
           data_recebimento?: string | null
           id?: string
           kg?: number | null
+          malharia?: string | null
           nota_cobertura?: string | null
           nota_fiscal_1?: string | null
           nota_fiscal_2?: string | null
