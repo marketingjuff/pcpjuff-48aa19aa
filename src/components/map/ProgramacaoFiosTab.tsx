@@ -362,7 +362,7 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
           {finalizado ? "Nenhum Prod finalizado." : hasFilters ? "Nenhum Prod para os filtros aplicados." : "Nenhum Prod. Clique em Novo pedido para começar."}
         </div>
       ) : grupos.map(([data, lista]) => (
-        <div key={data} className="rounded-md border overflow-hidden">
+        <div key={data} className="rounded-md border">
           <div className="bg-yellow-100/70 px-3 py-2 text-[25px] font-semibold leading-tight">
             Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}
           </div>
@@ -592,23 +592,28 @@ function GrupoScroll({ children }: { children: React.ReactNode }) {
   useLayoutEffect(() => {
     const div = divRef.current;
     if (!div) return;
-    const thead = div.querySelector("thead");
+    const thead = div.querySelector("thead") as HTMLElement | null;
     if (!thead) return;
+    const pageHeader = document.querySelector("header") as HTMLElement | null;
     const apply = () => {
-      div.style.setProperty("--map-prod-top", `${(thead as HTMLElement).offsetHeight}px`);
+      const hh = pageHeader?.offsetHeight ?? 0;
+      div.style.setProperty("--tbl-congelada-top", `${hh}px`);
+      div.style.setProperty("--map-prod-top", `${hh + thead.offsetHeight}px`);
     };
     apply();
     const ro = new ResizeObserver(apply);
-    ro.observe(thead as HTMLElement);
+    ro.observe(thead);
+    if (pageHeader) ro.observe(pageHeader);
     return () => ro.disconnect();
   }, []);
 
   return (
-    <div ref={divRef} className="overflow-auto max-h-[70vh] tbl-congelada">
+    <div ref={divRef} className="tbl-congelada">
       {children}
     </div>
   );
 }
+
 
 function ObservacoesProdBlock({
   prod,
