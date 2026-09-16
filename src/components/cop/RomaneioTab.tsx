@@ -163,15 +163,25 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
 
   // ---- Draft ----
   const [draft, setDraft] = useState<Partial<Cop>>({});
+  const draftCarregadoId = useRef<string | null>(null);
   useEffect(() => {
-    if (!selected) { setDraft({}); return; }
+    if (!selectedId) {
+      draftCarregadoId.current = null;
+      setDraft({});
+      return;
+    }
+    // Aguarda os dados do romaneio chegarem (query pode ainda estar carregando)
+    if (!selected) return;
+    if (draftCarregadoId.current === selected.id) return;
+    draftCarregadoId.current = selected.id;
     setDraft({
       oficina_id: selected.oficina_id,
       data_saida_oficina: selected.data_saida_oficina,
       data_recebimento: selected.data_recebimento,
       observacoes_romaneio: selected.observacoes_romaneio,
     });
-  }, [selectedId]); // eslint-disable-line
+  }, [selectedId, selected]);
+
 
   const salvar = useMutation({
     mutationFn: async (patch: Partial<Cop> & { id: string }) => {
