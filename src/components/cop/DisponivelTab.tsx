@@ -34,6 +34,21 @@ export function DisponivelTab() {
     },
   });
 
+  const { data: oficinas = [] } = useQuery({
+    queryKey: ["oficinas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("oficinas" as any).select("id,nome").order("nome");
+      if (error) throw error;
+      return (data ?? []) as unknown as { id: string; nome: string }[];
+    },
+  });
+
+  const oficinaNomeById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const o of oficinas) m.set(o.id, o.nome);
+    return m;
+  }, [oficinas]);
+
   const { data: pedidos = [] } = useQuery({
     queryKey: ["pedidos-cop-saldos"],
     queryFn: async () => {
@@ -42,6 +57,7 @@ export function DisponivelTab() {
       return (data ?? []) as unknown as Pedido[];
     },
   });
+
 
   useEffect(() => {
     const ch = supabase
@@ -328,7 +344,9 @@ export function DisponivelTab() {
                               <thead className="bg-muted/40 text-xs sticky top-0">
                                 <tr>
                                   <th className="p-2 text-left">COP</th>
-                                  <th className="p-2 text-left">Status</th>
+                                   <th className="p-2 text-left">Status</th>
+                                   <th className="p-2 text-left">Oficina</th>
+
                                   <th className="p-2 text-right">Qtd</th>
                                   <th className="p-2 text-right">Recebido</th>
                                   <th className="p-2 text-right">Saldo</th>
@@ -337,7 +355,8 @@ export function DisponivelTab() {
                               </thead>
                               <tbody>
                                 {copsItem.length === 0 ? (
-                                  <tr><td colSpan={6} className="p-3 text-center text-muted-foreground">Nenhum COP ativo com esta peça.</td></tr>
+                                   <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">Nenhum COP ativo com esta peça.</td></tr>
+
                                 ) : copsItem.map(({ cop, qtd, rec }) => {
                                   const saldoCop = qtd - rec;
                                   return (
@@ -348,6 +367,8 @@ export function DisponivelTab() {
                                         </a>
                                       </td>
                                       <td className="p-2 text-xs">{cop.status}</td>
+                                      <td className="p-2 text-xs">{cop.oficina_id ? (oficinaNomeById.get(cop.oficina_id) ?? "—") : "—"}</td>
+
                                       <td className="p-2 text-right tabular-nums">{qtd}</td>
                                       <td className="p-2 text-right tabular-nums">{rec}</td>
                                       <td className={`p-2 text-right tabular-nums ${saldoCop > 0 ? "text-green-700" : "text-muted-foreground"}`}>{saldoCop}</td>
