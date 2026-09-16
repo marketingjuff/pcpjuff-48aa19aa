@@ -608,7 +608,7 @@ function GrupoScroll({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div ref={divRef} className="tbl-congelada">
+    <div ref={divRef} className="tbl-congelada overflow-x-auto [overflow-y:clip]">
       {children}
     </div>
   );
