@@ -355,7 +355,8 @@ export function DisponivelTab() {
                               </thead>
                               <tbody>
                                 {copsItem.length === 0 ? (
-                                  <tr><td colSpan={6} className="p-3 text-center text-muted-foreground">Nenhum COP ativo com esta peça.</td></tr>
+                                   <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">Nenhum COP ativo com esta peça.</td></tr>
+
                                 ) : copsItem.map(({ cop, qtd, rec }) => {
                                   const saldoCop = qtd - rec;
                                   return (
