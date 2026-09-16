@@ -163,12 +163,15 @@
     border-color: var(--color-border);
   }
   html {
-    overflow-x: hidden;
+    /* Permite rolagem horizontal da página quando uma tabela larga não cabe
+       (sem quebrar position: sticky, que depende de não haver contexto de
+       rolagem intermediário). */
+    overflow-x: auto;
   }
   body {
-    /* clip (não hidden) para não criar contexto de rolagem e quebrar position: sticky */
-    overflow-x: clip;
+    overflow-x: visible;
   }
+
 
   html {
     -webkit-font-smoothing: antialiased;
