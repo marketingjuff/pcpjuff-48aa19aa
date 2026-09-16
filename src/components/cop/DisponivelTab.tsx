@@ -34,6 +34,21 @@ export function DisponivelTab() {
     },
   });
 
+  const { data: oficinas = [] } = useQuery({
+    queryKey: ["oficinas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("oficinas" as any).select("id,nome").order("nome");
+      if (error) throw error;
+      return (data ?? []) as unknown as { id: string; nome: string }[];
+    },
+  });
+
+  const oficinaNomeById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const o of oficinas) m.set(o.id, o.nome);
+    return m;
+  }, [oficinas]);
+
   const { data: pedidos = [] } = useQuery({
     queryKey: ["pedidos-cop-saldos"],
     queryFn: async () => {
@@ -42,6 +57,7 @@ export function DisponivelTab() {
       return (data ?? []) as unknown as Pedido[];
     },
   });
+
 
   useEffect(() => {
     const ch = supabase
