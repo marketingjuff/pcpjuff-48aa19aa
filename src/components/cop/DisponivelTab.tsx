@@ -367,6 +367,8 @@ export function DisponivelTab() {
                                         </a>
                                       </td>
                                       <td className="p-2 text-xs">{cop.status}</td>
+                                      <td className="p-2 text-xs">{cop.oficina_id ? (oficinaNomeById.get(cop.oficina_id) ?? "—") : "—"}</td>
+
                                       <td className="p-2 text-right tabular-nums">{qtd}</td>
                                       <td className="p-2 text-right tabular-nums">{rec}</td>
                                       <td className={`p-2 text-right tabular-nums ${saldoCop > 0 ? "text-green-700" : "text-muted-foreground"}`}>{saldoCop}</td>
