@@ -1322,9 +1322,16 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                         ✓ Conferido em {new Date(selected.conferido_em).toLocaleString("pt-BR")}.
                       </div>
                     ) : (
-                      <Button style={btnStyle("conferir")} onClick={handleConferir} disabled={salvar.isPending} className="w-full">
-                        <Check className="h-4 w-4 mr-1" /> Mandar pro pagamento
-                      </Button>
+                      <>
+                        {isOficinaInterna(oficina) && (
+                          <div className="text-xs text-muted-foreground">
+                            Oficina interna Juff. Ao mandar pro pagamento, este romaneio vai direto para Pago com valor zero.
+                          </div>
+                        )}
+                        <Button style={btnStyle("conferir")} onClick={handleConferir} disabled={salvar.isPending} className="w-full">
+                          <Check className="h-4 w-4 mr-1" /> Mandar pro pagamento
+                        </Button>
+                      </>
                     )
                   )}
                 </>
