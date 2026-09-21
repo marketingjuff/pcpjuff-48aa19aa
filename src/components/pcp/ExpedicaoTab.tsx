@@ -142,6 +142,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
       exp_frete_solicitado_em: form.exp_frete_solicitado_em ?? null,
       exp_observacoes: form.exp_observacoes ?? null,
       nf_emitida: form.nf_emitida ?? null,
+      frete: form.frete ?? null,
     });
   }
 
@@ -159,6 +160,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
       exp_frete_solicitado_em: form.exp_frete_solicitado_em ?? null,
       exp_observacoes: form.exp_observacoes ?? null,
       nf_emitida: form.nf_emitida ?? null,
+      frete: form.frete ?? null,
       finalizado_em: new Date().toISOString(),
       reaberto: false,
     });
@@ -280,7 +282,12 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
             <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <ReadOnlyField label="Pedido" value={selected.pedido_olist} />
               <ReadOnlyField label="Orçamento" value={selected.orcamento} />
-              <ReadOnlyField label="Frete" value={selected.frete ?? "—"} />
+              <FormField label="Frete">
+                <Select value={form.frete ?? ""} onValueChange={(v) => set("frete", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectContent>{freteOpcoes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                </Select>
+              </FormField>
               <ReadOnlyField label="UF" value={selected.uf_entrega ?? "—"} />
               <ReadOnlyField label="Data da entrega" value={formatDateBR(selected.data_entrega)} />
               <ReadOnlyField label="Saída Juff" value={formatDateBR(selected.saida_juff)} />
