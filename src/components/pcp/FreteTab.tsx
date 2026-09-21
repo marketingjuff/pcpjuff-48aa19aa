@@ -189,6 +189,7 @@ export function FreteTab({ pedidos, onSave, saving, soLeitura = false }: Props) 
                     <Th>Canhoto</Th>
                     <Th>Entrega</Th>
                     <Th>Foto</Th>
+                    <Th>Ações</Th>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -240,6 +241,23 @@ export function FreteTab({ pedidos, onSave, saving, soLeitura = false }: Props) 
                           )}
                         </div>
                       </TableCell>
+                      <TableCell className={TD_RAW_CLASS}>
+                        {!soLeitura && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={saving || !!p.entrega_confirmada_em}
+                            title={
+                              p.entrega_confirmada_em
+                                ? "Entrega já confirmada pelo Humberto. Não é possível devolver este pedido para a Expedição."
+                                : "Devolver este pedido para a Expedição."
+                            }
+                            onClick={() => setRetornoAlvo(p)}
+                          >
+                            <Undo2 className="h-4 w-4 mr-1" /> Retornar para Expedição
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -248,6 +266,23 @@ export function FreteTab({ pedidos, onSave, saving, soLeitura = false }: Props) 
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!retornoAlvo} onOpenChange={(o) => { if (!o) setRetornoAlvo(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Devolver o pedido para a Expedição?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este pedido sai da aba Frete e da tela do Humberto. A escolha do campo Despachado é apagada, e o pedido
+              volta a aparecer como pendência normal da Expedição. As fotos de canhoto e o registro de canhoto impresso
+              são preservados. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmarRetorno}>Devolver para a Expedição</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
