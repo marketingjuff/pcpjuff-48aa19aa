@@ -415,6 +415,22 @@ export type Oficina = {
   updated_at: string;
 };
 
+/** Nome da oficina interna da Juff. Romaneios dessa oficina não geram pagamento
+ *  (a oficina é a própria empresa), então vão direto para pago com valor zero. */
+export const OFICINA_INTERNA_NOME = "juff";
+
+/** true quando a oficina é a oficina interna da Juff (comparação por nome,
+ *  ignorando caixa, acentos e espaços nas pontas). */
+export function isOficinaInterna(oficina?: { nome?: string | null } | null): boolean {
+  const n = (oficina?.nome ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+  return n === OFICINA_INTERNA_NOME;
+}
+
+
 export function formatCopNumero(n: number | null | undefined): string {
   if (n == null) return "—";
   return String(n).padStart(4, "0");

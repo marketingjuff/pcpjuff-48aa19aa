@@ -24,7 +24,7 @@ import {
   COP_STATUS_LIST, STATUS_CORTE, formatCopNumero, totalPecasCop, totalRecebidas,
   todasCompletas, proximaLetra, rotuloCop, rotuloRomaneio, numeroBaseCop, subtrairPecas,
   getRecebida, getPerda, colunasTamanhos, mesclarPerdasEmObservacoes, linhaUrgente, refacoesDoCop,
-  somarPerdas, subtrairPerdas, lancamentosPerda, motivosDaLinha,
+  somarPerdas, subtrairPerdas, lancamentosPerda, motivosDaLinha, isOficinaInterna,
 } from "@/lib/cop";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { CorSelect } from "@/components/shared/cor-select";
@@ -609,10 +609,29 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
     if (!completo) return;
     const { data: ses } = await supabase.auth.getUser();
     const rotulo = rotuloRomaneio(selected, cops);
+    const ofi = oficinas.find((o) => o.id === selected.oficina_id) ?? null;
+    const agora = new Date().toISOString();
+    if (isOficinaInterna(ofi)) {
+      await salvar.mutateAsync({
+        id: selected.id,
+        status: "Finalizado" as CopStatus,
+        conferido_em: agora,
+        conferido_por: ses.user?.id ?? null,
+        pagamento_status: "pago",
+        pagamento_valor_calculado: 0,
+        pagamento_liberado_em: agora,
+        pagamento_liberado_por: ses.user?.id ?? null,
+        pagamento_pago_em: agora,
+        pagamento_pago_por: ses.user?.id ?? null,
+      } as any);
+      setSelectedId(null);
+      toast.success(`Romaneio ${rotulo} é da oficina Juff, foi direto para Pago com valor zero e já está Finalizado.`);
+      return;
+    }
     await salvar.mutateAsync({
       id: selected.id,
       status: "Aguardando Pagamento" as CopStatus,
-      conferido_em: new Date().toISOString(),
+      conferido_em: agora,
       conferido_por: ses.user?.id ?? null,
     } as any);
     setSelectedId(null);
