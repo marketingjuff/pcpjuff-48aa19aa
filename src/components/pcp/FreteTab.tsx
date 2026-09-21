@@ -7,7 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FilterX, Printer } from "lucide-react";
+import { FilterX, Printer, Undo2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
 import { Th, TH_RAW_CLASS, TD_RAW_CLASS } from "./shared";
@@ -37,6 +47,20 @@ export function FreteTab({ pedidos, onSave, saving, soLeitura = false }: Props) 
   const [enviando, setEnviando] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const trocaAlvo = useRef<Pedido | null>(null);
+  const [retornoAlvo, setRetornoAlvo] = useState<Pedido | null>(null);
+
+  function confirmarRetorno() {
+    const p = retornoAlvo;
+    setRetornoAlvo(null);
+    if (!p || soLeitura) return;
+    onSave({
+      id: p.id,
+      exp_destino_humberto: false,
+      exp_despachado: null,
+      exp_despachado_em: null,
+    });
+    toast.success(`Pedido ${p.pedido_olist ?? ""} devolvido para a Expedição.`);
+  }
 
   const lista = useMemo(() => {
     return pedidos
@@ -165,6 +189,7 @@ export function FreteTab({ pedidos, onSave, saving, soLeitura = false }: Props) 
                     <Th>Canhoto</Th>
                     <Th>Entrega</Th>
                     <Th>Foto</Th>
+                    <Th>Ações</Th>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -216,6 +241,23 @@ export function FreteTab({ pedidos, onSave, saving, soLeitura = false }: Props) 
                           )}
                         </div>
                       </TableCell>
+                      <TableCell className={TD_RAW_CLASS}>
+                        {!soLeitura && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={saving || !!p.entrega_confirmada_em}
+                            title={
+                              p.entrega_confirmada_em
+                                ? "Entrega já confirmada pelo Humberto. Não é possível devolver este pedido para a Expedição."
+                                : "Devolver este pedido para a Expedição."
+                            }
+                            onClick={() => setRetornoAlvo(p)}
+                          >
+                            <Undo2 className="h-4 w-4 mr-1" /> Retornar para Expedição
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -224,6 +266,23 @@ export function FreteTab({ pedidos, onSave, saving, soLeitura = false }: Props) 
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!retornoAlvo} onOpenChange={(o) => { if (!o) setRetornoAlvo(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Devolver o pedido para a Expedição?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este pedido sai da aba Frete e da tela do Humberto. A escolha do campo Despachado é apagada, e o pedido
+              volta a aparecer como pendência normal da Expedição. As fotos de canhoto e o registro de canhoto impresso
+              são preservados. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmarRetorno}>Devolver para a Expedição</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
