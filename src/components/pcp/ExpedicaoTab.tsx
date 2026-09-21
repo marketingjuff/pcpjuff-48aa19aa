@@ -94,6 +94,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   const { feriados } = useFeriados();
   const { names: formasPagamento } = useAppList("pagamento");
   const { names: nfOpcoes } = useAppList("nf");
+  const { names: fretesLista } = useAppList("frete");
   const expedicaoPedidos = useMemo(
     () => pedidos.filter((p) => p.expedicao_entrou_em && !p.finalizado_em),
     [pedidos],
@@ -104,6 +105,13 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   function set<K extends keyof Pedido>(k: K, v: any) { setForm((f) => ({ ...f, [k]: v })); }
 
   useMemo(() => { setForm(selected ?? {}); }, [selected]);
+
+  const freteOpcoes = useMemo(() => {
+    const base = [...fretesLista];
+    const atual = form.frete;
+    if (atual && !base.includes(atual)) base.unshift(atual);
+    return base;
+  }, [fretesLista, form.frete]);
 
   function toggleItem(key: ItemKey, val: boolean) {
     setForm((f) => {
