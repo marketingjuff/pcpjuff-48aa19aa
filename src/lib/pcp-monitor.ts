@@ -1,8 +1,7 @@
-// Lógica pura do Monitor PCP: cargas por etapa, teto efetivo e simulação de
-// vazamento. Sem React, sem acesso ao banco.
+// Lógica pura do Monitor PCP: contagem simples de peças que começam cada etapa
+// em cada dia útil. Sem teto, sem vazamento. Sem React, sem acesso ao banco.
 import {
   addDiasCorridos,
-  addDiasUteis,
   isDiaUtil,
   proximoDiaUtil,
   todayISO,
@@ -101,8 +100,6 @@ export function intervaloEtapa(p: Pedido, etapa: Etapa, feriados: Feriados): Int
 export function cargaDoPedido(p: Pedido, etapa: Etapa): number {
   if (etapa === "arte") {
     if (!tipoIncluiDTF(p.tipo_estampa ?? null)) return 0;
-    const n = Number(p.n_batidas_dtf ?? 1);
-    return Number.isFinite(n) && n > 0 ? n : 1;
   }
   const q = Number(p.qtd ?? 0);
   return Number.isFinite(q) && q > 0 ? q : 0;
@@ -110,120 +107,37 @@ export function cargaDoPedido(p: Pedido, etapa: Etapa): number {
 
 export type DiaCarga = {
   dia: string;
+  /** total de peças dos pedidos que começam a etapa neste dia */
   carga: number;
-  /** Só exibição: recorte de `carga` que veio escorregado de dias anteriores. */
-  cargaEscorregada?: number;
-  teto: number;
-  tetoEfetivo: number;
+  /** quantos pedidos começam a etapa neste dia */
   pedidos: number;
-  vazou: boolean;
 };
 
 export type ResultadoEtapa = {
   etapa: Etapa;
   porDia: Map<string, DiaCarga>;
-  /** pedidos cuja carga não caberia dentro do intervalo planejado */
+  /** mantido por compatibilidade com o Gantt; sempre vazio */
   pedidosVazados: Set<string>;
 };
 
 /**
- * Simula a etapa: distribui a carga de cada pedido pelos dias úteis do seu
- * intervalo, na ordem de Saída Juff, escorregando para os dias úteis seguintes
- * quando o teto efetivo do dia estoura.
+ * Conta a quantidade TOTAL de peças de cada pedido no primeiro dia do
+ * intervalo da etapa (ou no próximo dia útil, se cair em dia não útil).
  */
-export function simularEtapa(
-  pedidos: Pedido[],
-  etapa: Etapa,
-  teto: number,
-  feriados: Feriados,
-): ResultadoEtapa {
-  const elegiveis = pedidos
-    .map((p) => ({ p, iv: intervaloEtapa(p, etapa, feriados), carga: cargaDoPedido(p, etapa) }))
-    .filter((x) => x.iv && x.carga > 0) as { p: Pedido; iv: { ini: string; fim: string }; carga: number }[];
-
-  // nPedidosNoDia é contado sobre as datas gravadas, antes da simulação.
-  const pedidosPorDia = new Map<string, number>();
-  for (const { p, iv } of elegiveis) {
-    for (const d of diasUteisNoIntervalo(iv.ini, iv.fim, feriados)) {
-      pedidosPorDia.set(d, (pedidosPorDia.get(d) ?? 0) + 1);
-      void p;
-    }
-  }
-
-  const tetoEfetivoDe = (dia: string) => {
-    const n = pedidosPorDia.get(dia) ?? 1;
-    return Math.max(0, Math.floor(teto * (1 - 0.01 * (Math.max(1, n) - 1))));
-  };
-
+export function simularEtapa(pedidos: Pedido[], etapa: Etapa, feriados: Feriados): ResultadoEtapa {
   const porDia = new Map<string, DiaCarga>();
-  const garanteDia = (dia: string): DiaCarga => {
-    let d = porDia.get(dia);
-    if (!d) {
-      const tef = tetoEfetivoDe(dia);
-      d = { dia, carga: 0, teto, tetoEfetivo: tef, pedidos: pedidosPorDia.get(dia) ?? 0, vazou: false };
-      porDia.set(dia, d);
-    }
-    return d;
-  };
-
-  const pedidosVazados = new Set<string>();
-  const ordenados = [...elegiveis].sort((a, b) =>
-    (a.p.saida_juff ?? "9999-12-31").localeCompare(b.p.saida_juff ?? "9999-12-31"),
-  );
-
-  for (const { p, iv, carga } of ordenados) {
-    const dias = diasUteisNoIntervalo(iv.ini, iv.fim, feriados);
-    const diasPlanejados = new Set(dias); // só exibição
-    if (dias.length === 0) continue;
-    let restante = carga;
-    let cursor = dias[0]!;
-    let idx = 0;
-    let guard = 0;
-    while (restante > 0 && guard++ < 400) {
-      const d = garanteDia(cursor);
-      const espaco = Math.max(0, d.tetoEfetivo - d.carga);
-      const usa = Math.min(restante, espaco);
-      d.carga += usa;
-      if (!diasPlanejados.has(cursor)) d.cargaEscorregada = (d.cargaEscorregada ?? 0) + usa; // só exibição
-      restante -= usa;
-      if (restante > 0) {
-        idx++;
-        if (idx < dias.length) {
-          cursor = dias[idx]!;
-        } else {
-          // escorrega para além do término planejado
-          pedidosVazados.add(p.id);
-          cursor = addDiasUteis(cursor, 1, feriados);
-          const dd = garanteDia(cursor);
-          dd.vazou = true;
-          dias.push(cursor);
-          idx = dias.length - 1;
-        }
-      }
-    }
-    if (restante > 0) pedidosVazados.add(p.id);
+  for (const p of pedidos) {
+    const iv = intervaloEtapa(p, etapa, feriados);
+    const carga = cargaDoPedido(p, etapa);
+    if (!iv || carga <= 0) continue;
+    const dia = isDiaUtil(new Date(iv.ini + "T00:00:00"), feriados) ? iv.ini : proximoDiaUtil(iv.ini, feriados);
+    const d = porDia.get(dia) ?? { dia, carga: 0, pedidos: 0 };
+    d.carga += carga;
+    d.pedidos += 1;
+    porDia.set(dia, d);
   }
-
-  return { etapa, porDia, pedidosVazados };
+  return { etapa, porDia, pedidosVazados: new Set<string>() };
 }
-
-export type Nivel = "vazio" | "ok" | "atencao" | "estouro";
-
-export function nivelDoDia(d: DiaCarga | undefined): Nivel {
-  if (!d || d.carga <= 0) return "vazio";
-  if (d.vazou) return "estouro";
-  const pct = d.tetoEfetivo > 0 ? d.carga / d.tetoEfetivo : 1;
-  if (pct > 1) return "estouro";
-  if (pct > 0.8) return "atencao";
-  return "ok";
-}
-
-export const NIVEL_BG: Record<Nivel, string> = {
-  vazio: "bg-muted/30",
-  ok: "bg-emerald-200",
-  atencao: "bg-amber-200",
-  estouro: "bg-rose-300",
-};
 
 /** Segunda (1) ou quinta (4) dentro do intervalo, inclusive nos extremos. */
 export function temSegundaOuQuinta(ini: string | null | undefined, fim: string | null | undefined): boolean {
