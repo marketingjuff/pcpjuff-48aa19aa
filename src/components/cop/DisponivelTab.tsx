@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -140,6 +141,8 @@ export function DisponivelTab() {
 
   // Popup
   const [popup, setPopup] = useState<{ modelo: string; cor: string; tamanho: string } | null>(null);
+  const [mostrarFinalizados, setMostrarFinalizados] = useState(false);
+  useEffect(() => { setMostrarFinalizados(false); }, [popup]);
 
   return (
     <div className="space-y-4">
@@ -274,6 +277,12 @@ export function DisponivelTab() {
               </DialogHeader>
               {(() => {
                 const lista = pedidosDoItem(pedidos, popup.modelo, popup.cor, popup.tamanho);
+                const influencia = ({ pedido, pecaSolic }: (typeof lista)[number]) =>
+                  pedido.status_pecas === "incompleto" &&
+                  (Number(pecaSolic.qtd) || 0) - (Number(pecaSolic.qtd_enviada) || 0) > 0;
+                const ehOculto = (x: (typeof lista)[number]) => !!(x.pedido as any).finalizado_em && !influencia(x);
+                const ocultos = lista.filter(ehOculto).length;
+                const visiveis = mostrarFinalizados ? lista : lista.filter((x) => !ehOculto(x));
                 const prod = producao.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
                 const falt = faltantes.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
                 const baix = recebido.get(pkKey(popup.modelo, popup.cor, popup.tamanho)) ?? 0;
@@ -289,6 +298,14 @@ export function DisponivelTab() {
                       <span>Saldo: <b className={`tabular-nums ${saldo < 0 ? "text-red-700" : "text-green-700"}`}>{saldo}</b></span>
                     </div>
 
+                    {ocultos > 0 && (
+                      <div className="flex justify-end -mb-1">
+                        <button type="button" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                          onClick={() => setMostrarFinalizados((v) => !v)}>
+                          {mostrarFinalizados ? "ocultar finalizados" : `${ocultos} finalizados ocultos, mostrar`}
+                        </button>
+                      </div>
+                    )}
                     <div className="rounded-md border overflow-x-auto max-h-[55vh]">
                       <table className="w-full text-[12.5px] leading-[1.2]">
                         <thead className="bg-muted/40 text-xs sticky top-0">
@@ -302,14 +319,19 @@ export function DisponivelTab() {
                           </tr>
                         </thead>
                         <tbody>
-                          {lista.length === 0 ? (
+                          {visiveis.length === 0 ? (
                             <tr><td colSpan={6} className="p-3 text-center text-muted-foreground">Nenhum pedido pede este item.</td></tr>
-                          ) : lista.map(({ pedido, pecaSolic }, idx) => {
+                          ) : visiveis.map(({ pedido, pecaSolic }, idx) => {
                             const etapa = calcularEtapaAtual(pedido);
                             const falta = Math.max(0, (Number(pecaSolic.qtd) || 0) - (Number(pecaSolic.qtd_enviada) || 0));
                             return (
                               <tr key={idx} className="border-t">
-                                <td className="p-2 font-mono">{pedido.orcamento ?? "—"}</td>
+                                <td className="p-2 font-mono">
+                                  {pedido.orcamento ?? "—"}
+                                  {(pedido as any).finalizado_em && (
+                                    <Badge variant="outline" className="ml-2 px-1.5 py-0 text-[10px] font-normal font-sans text-muted-foreground">Finalizado</Badge>
+                                  )}
+                                </td>
                                 <td className="p-2 font-mono">{(pedido as any).pedido_olist ?? "—"}</td>
                                 <td className="p-2 text-right tabular-nums">{pecaSolic.qtd}</td>
                                 <td className="p-2 text-right tabular-nums">{pecaSolic.qtd_enviada}</td>
