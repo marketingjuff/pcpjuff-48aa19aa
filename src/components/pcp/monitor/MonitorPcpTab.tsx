@@ -245,8 +245,6 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
             <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-rose-600" />etapa atrasada</span>
           </div>
           <div className="w-full flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-emerald-200 inline-block" />até 80%</span>
-            <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-amber-200 inline-block" />até 100%</span>
             <span>{linhas.length} pedido(s) · {formatDateBR(de)} a {formatDateBR(ate)}</span>
             {soLeitura && <Badge variant="outline">Somente leitura</Badge>}
           </div>
