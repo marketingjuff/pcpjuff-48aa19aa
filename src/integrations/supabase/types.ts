@@ -881,6 +881,9 @@ export type Database = {
       }
       olist_import_lotes: {
         Row: {
+          anulado_em: string | null
+          anulado_motivo: string | null
+          anulado_por: string | null
           arquivo_nome: string | null
           arquivos_lidos: number | null
           empresa: string
@@ -892,6 +895,9 @@ export type Database = {
           total_pedidos: number | null
         }
         Insert: {
+          anulado_em?: string | null
+          anulado_motivo?: string | null
+          anulado_por?: string | null
           arquivo_nome?: string | null
           arquivos_lidos?: number | null
           empresa: string
@@ -903,6 +909,9 @@ export type Database = {
           total_pedidos?: number | null
         }
         Update: {
+          anulado_em?: string | null
+          anulado_motivo?: string | null
+          anulado_por?: string | null
           arquivo_nome?: string | null
           arquivos_lidos?: number | null
           empresa?: string
