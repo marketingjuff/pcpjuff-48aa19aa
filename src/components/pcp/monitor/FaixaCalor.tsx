@@ -1,5 +1,5 @@
 import { formatDateBR } from "@/lib/format";
-import { ETAPAS, NIVEL_BG, agruparPorSemana, nivelDoDia, type Etapa, type ResultadoEtapa } from "@/lib/pcp-monitor";
+import { ETAPAS, agruparPorSemana, type Etapa, type ResultadoEtapa } from "@/lib/pcp-monitor";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -152,108 +152,84 @@ interface Props {
   diaUtil: (d: string) => boolean;
 }
 
+const fmtNum = (n: number) => n.toLocaleString("pt-BR");
+
 export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta, colWidth, hoje, diaUtil }: Props) {
   const colunas = colunasDaGrade(dias, zoom);
-  const etapas = compacta ? [ETAPAS[0]!] : ETAPAS;
-  const cabeNumero = colWidth >= 28;
 
   return (
     <div className="sticky z-20 border-b bg-card" style={{ top: REGUA_H }}>
       <div className="sticky left-0 flex items-center justify-between bg-card px-2 py-0.5" style={{ width: COL_ID + 240 }}>
         <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Carga por etapa
+          Peças programadas por dia
         </div>
         <Button variant="ghost" size="sm" className="h-6" onClick={onToggleCompacta}>
           {compacta ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
           <span className="ml-1 text-[10px]">{compacta ? "Expandir" : "Recolher"}</span>
         </Button>
       </div>
-      <div>
-        {etapas.map((e) => {
-          const res = resultados[e.key];
-          return (
-            <div key={e.key} className="flex items-center border-t">
-              <div
-                className="sticky left-0 z-10 shrink-0 border-r bg-card px-2 py-0.5 text-[11px] font-medium"
-                style={{ width: COL_ID }}
-              >
-                <span className="flex items-center gap-1.5">
-                  {!compacta && <span className={`h-2 w-2 rounded-sm ${ETAPA_COR[e.key]}`} />}
-                  {compacta ? "Todas as etapas" : e.label}
-                </span>
-              </div>
-              <div className="flex">
-                {colunas.map((c) => {
-                  const naoUtil = zoom === "dia" && !diaUtil(c.dias[0]!);
-                  const alvo = compacta ? ETAPAS : [e];
-                  let pior = 0;
-                  let limite = 0;
-                  const titulo: string[] = [];
-                  // números do dia/etapa mais crítico da célula (só exibição)
-                  let mostra: { carga: number; teto: number; esc: number } | null = null;
-                  let piorPeso = -1;
-                  for (const et of alvo) {
-                    const r = compacta ? resultados[et.key] : res;
+      {!compacta && (
+        <div>
+          {ETAPAS.map((e) => {
+            const res = resultados[e.key];
+            return (
+              <div key={e.key} className="flex items-center border-t">
+                <div
+                  className="sticky left-0 z-10 shrink-0 border-r bg-card px-2 py-0.5 text-[11px] font-medium"
+                  style={{ width: COL_ID }}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span className={`h-2 w-2 rounded-sm ${ETAPA_COR[e.key]}`} />
+                    {e.label}
+                  </span>
+                </div>
+                <div className="flex">
+                  {colunas.map((c) => {
+                    const naoUtil = zoom === "dia" && !diaUtil(c.dias[0]!);
+                    let pecas = 0;
+                    let nPed = 0;
                     for (const d of c.dias) {
-                      const dc = r?.porDia.get(d);
-                      const nv = nivelDoDia(dc);
-                      const peso = nv === "estouro" ? 3 : nv === "atencao" ? 2 : nv === "ok" ? 1 : 0;
-                      if (peso >= 2) limite++;
-                      if (peso > pior) pior = peso;
-                      if (dc && dc.carga > 0) {
-                        const esc = dc.cargaEscorregada ?? 0;
-                        const dd = new Date(d + "T00:00:00");
-                        titulo.push(
-                          `${DOW[dd.getDay()]} ${formatDateBR(d)} · ${et.label}\nCarga: ${dc.carga} de ${dc.tetoEfetivo}` +
-                            (esc > 0 ? `\n${esc} vieram de dias anteriores por falta de capacidade` : ""),
-                        );
-                        if (peso > piorPeso || (peso === piorPeso && dc.carga > (mostra?.carga ?? 0))) {
-                          piorPeso = peso;
-                          mostra = { carga: dc.carga, teto: dc.tetoEfetivo, esc };
-                        }
+                      const dc = res?.porDia.get(d);
+                      if (dc) {
+                        pecas += dc.carga;
+                        nPed += dc.pedidos;
                       }
                     }
-                  }
-                  const nivel = pior === 3 ? "estouro" : pior === 2 ? "atencao" : pior === 1 ? "ok" : "vazio";
-                  const contemHoje = c.dias.includes(hoje);
-                  return (
-                    <div
-                      key={c.key}
-                      title={
-                        naoUtil
-                          ? `${formatDateBR(c.dias[0]!)} · dia não útil — não se produz`
-                          : titulo.slice(0, 6).join("\n\n") || formatDateBR(c.dias[0]!)
-                      }
-                      style={{ width: colWidth * c.dias.length }}
-                      className={`relative flex h-6 flex-col items-center justify-center overflow-hidden border-r border-white/60 leading-none ${
-                        naoUtil ? "bg-muted" : NIVEL_BG[nivel]
-                      } ${contemHoje ? "ring-1 ring-inset ring-rose-500" : ""}`}
-                    >
-                      {!naoUtil && zoom === "dia" && mostra && cabeNumero && (
-                        <>
-                          <span className="text-[9px] font-semibold tabular-nums text-foreground/85">
-                            {mostra.carga}
-                          </span>
-                          <span className="text-[8px] tabular-nums text-foreground/45">{mostra.teto}</span>
-                        </>
-                      )}
-                      {!naoUtil && zoom === "dia" && mostra && mostra.esc > 0 && (
-                        <span className="absolute right-0.5 top-0 text-[8px] leading-none text-foreground/60">↷</span>
-                      )}
-                      {!naoUtil && zoom === "semana" && limite > 0 && (
-                        <span className="text-[9px] font-semibold tabular-nums text-foreground/70">
-                          {limite}/{c.dias.length}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
+                    const contemHoje = c.dias.includes(hoje);
+                    const ini = c.dias[0]!;
+                    const fim = c.dias[c.dias.length - 1]!;
+                    let titulo: string;
+                    if (naoUtil) titulo = `${formatDateBR(ini)} · dia não útil — não se produz`;
+                    else if (zoom === "semana")
+                      titulo = `${formatDateBR(ini)} a ${formatDateBR(fim)} · ${e.label} — ${fmtNum(pecas)} peças`;
+                    else {
+                      const dd = new Date(ini + "T00:00:00");
+                      titulo = `${DOW[dd.getDay()]} ${formatDateBR(ini)} · ${e.label} — ${fmtNum(pecas)} peças em ${nPed} pedido(s)`;
+                    }
+                    const w = colWidth * c.dias.length;
+                    const texto = fmtNum(pecas);
+                    const fonte = w < texto.length * 6 + 4 ? "text-[7.5px]" : "text-[9.5px]";
+                    return (
+                      <div
+                        key={c.key}
+                        title={titulo}
+                        style={{ width: w }}
+                        className={`relative flex h-6 items-center justify-center overflow-hidden border-r border-border/60 leading-none ${
+                          naoUtil ? "bg-muted" : "bg-muted/30"
+                        } ${contemHoje ? "ring-1 ring-inset ring-rose-500" : ""}`}
+                      >
+                        {!naoUtil && pecas > 0 && (
+                          <span className={`${fonte} font-semibold tabular-nums text-foreground/85`}>{texto}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
-

@@ -7,13 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Settings, CalendarDays, Flag, Video, AlertTriangle, CornerDownRight } from "lucide-react";
+import { CalendarDays, Flag, Video, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateBR } from "@/lib/format";
 import { useFeriados } from "@/hooks/use-feriados";
 import { useIsAdmin } from "@/hooks/use-role";
 import { usePersistedState } from "@/hooks/use-persisted-state";
-import { useCapacidade } from "@/hooks/use-capacidade";
 import { addDiasUteis, isDiaUtil, todayISO } from "@/lib/dias-uteis";
 import {
   ETAPAS, diasCorridosDaJanela, janelaMonitor, simularEtapa, inicioAcabamentoDoPedido,
@@ -22,7 +21,6 @@ import {
 
 import { COL_ID, ETAPA_COR, ETAPA_COR_BORDA, ETAPA_COR_CLARA, FaixaCalor, ReguaDatas } from "./FaixaCalor";
 import { GanttPedidos } from "./GanttPedidos";
-import { CapacidadeDialog } from "./CapacidadeDialog";
 import { EditarDatasDialog, type ConflitoTipo } from "./EditarDatasDialog";
 
 interface Props {
@@ -35,7 +33,6 @@ interface Props {
 export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }: Props) {
   const { feriados } = useFeriados();
   const isAdmin = useIsAdmin();
-  const { tetos } = useCapacidade();
   const hoje = todayISO();
 
   const [zoom, setZoom] = usePersistedState<"semana" | "dia">("pcp:monitor:zoom", "dia");
@@ -43,7 +40,6 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
   const [busca, setBusca] = useState("");
   const [tipo, setTipo] = useState<string>("todos");
   const [soAtrasados, setSoAtrasados] = useState(false);
-  const [capOpen, setCapOpen] = useState(false);
   const [detalhe, setDetalhe] = useState<Pedido | null>(null);
   const [edicao, setEdicao] = useState<{ pedido: Pedido; proposta: Partial<Pedido> | null; conflito: ConflitoTipo } | null>(null);
 
@@ -122,9 +118,9 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
 
   const resultados = useMemo(() => {
     const out = {} as Record<Etapa, ResultadoEtapa>;
-    for (const e of ETAPAS) out[e.key] = simularEtapa(naJanela, e.key, tetos[e.key], feriados);
+    for (const e of ETAPAS) out[e.key] = simularEtapa(naJanela, e.key, feriados);
     return out;
-  }, [naJanela, tetos, feriados]);
+  }, [naJanela, feriados]);
 
   /** Etapas atrasadas pela regra oficial (`isAtrasadoSetor`): data-limite no passado e etapa não concluída. */
   function atrasos(p: Pedido): { etapa: Etapa; texto: string }[] {
@@ -233,11 +229,6 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
             <Button size="sm" variant="outline" onClick={irParaHoje}>
               <CalendarDays className="h-4 w-4 mr-1" />Hoje
             </Button>
-            {isAdmin && (
-              <Button size="sm" variant="ghost" onClick={() => setCapOpen(true)} aria-label="Capacidade">
-                <Settings className="h-4 w-4" />
-              </Button>
-            )}
           </div>
           <div className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1"><Flag className="h-3 w-3 text-emerald-600" />Entrada do pedido</span>
@@ -252,13 +243,11 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
             </span>
             <span className="flex items-center gap-1"><Video className="h-3 w-3 text-violet-600" />captação de vídeo</span>
             <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-rose-600" />etapa atrasada</span>
-            <span className="flex items-center gap-1"><CornerDownRight className="h-3 w-3 text-amber-600" />não cabe na capacidade</span>
           </div>
           <div className="w-full flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-emerald-200 inline-block" />até 80%</span>
             <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-amber-200 inline-block" />até 100%</span>
             <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-rose-300 inline-block" />acima do teto</span>
-            <span>·</span>
             <span>{linhas.length} pedido(s) · {formatDateBR(de)} a {formatDateBR(ate)}</span>
             {soLeitura && <Badge variant="outline">Somente leitura</Badge>}
           </div>
@@ -334,7 +323,6 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
         </SheetContent>
       </Sheet>
 
-      <CapacidadeDialog open={capOpen} onOpenChange={setCapOpen} tetos={tetos} />
 
       <EditarDatasDialog
         open={!!edicao}
