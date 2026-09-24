@@ -111,6 +111,8 @@ export type DiaCarga = {
   carga: number;
   /** quantos pedidos começam a etapa neste dia */
   pedidos: number;
+  /** ids dos pedidos que começam a etapa neste dia */
+  pedidoIds: string[];
 };
 
 export type ResultadoEtapa = {
@@ -131,9 +133,10 @@ export function simularEtapa(pedidos: Pedido[], etapa: Etapa, feriados: Feriados
     const carga = cargaDoPedido(p, etapa);
     if (!iv || carga <= 0) continue;
     const dia = isDiaUtil(new Date(iv.ini + "T00:00:00"), feriados) ? iv.ini : proximoDiaUtil(iv.ini, feriados);
-    const d = porDia.get(dia) ?? { dia, carga: 0, pedidos: 0 };
+    const d = porDia.get(dia) ?? { dia, carga: 0, pedidos: 0, pedidoIds: [] as string[] };
     d.carga += carga;
     d.pedidos += 1;
+    d.pedidoIds.push(p.id);
     porDia.set(dia, d);
   }
   return { etapa, porDia, pedidosVazados: new Set<string>() };

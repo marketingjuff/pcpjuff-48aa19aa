@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CalendarDays, Flag, Video, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
@@ -41,6 +42,7 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
   const [tipo, setTipo] = useState<string>("todos");
   const [soAtrasados, setSoAtrasados] = useState(false);
   const [detalhe, setDetalhe] = useState<Pedido | null>(null);
+  const [celula, setCelula] = useState<{ etapa: Etapa; ini: string; fim: string; pedidoIds: string[] } | null>(null);
   const [edicao, setEdicao] = useState<{ pedido: Pedido; proposta: Partial<Pedido> | null; conflito: ConflitoTipo } | null>(null);
 
   const { de, ate } = useMemo(() => janelaMonitor(), []);
@@ -264,6 +266,7 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
               colWidth={colWidth}
               hoje={hoje}
               diaUtil={diaUtil}
+              onAbrirCelula={setCelula}
             />
             <GanttPedidos
               pedidos={linhas}
@@ -285,6 +288,58 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
         </div>
       </Card>
 
+
+      <Dialog open={!!celula} onOpenChange={(v) => !v && setCelula(null)}>
+        <DialogContent className="max-w-3xl">
+          {celula && (() => {
+            const lista = celula.pedidoIds
+              .map((id) => pedidos.find((p) => p.id === id))
+              .filter(Boolean) as Pedido[];
+            const total = lista.reduce((s, p) => s + (Number(p.qtd) || 0), 0);
+            const etLabel = ETAPAS.find((e) => e.key === celula.etapa)?.label ?? celula.etapa;
+            const periodo = celula.ini === celula.fim ? formatDateBR(celula.ini) : `${formatDateBR(celula.ini)} a ${formatDateBR(celula.fim)}`;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>
+                    {etLabel} · {periodo} — {total.toLocaleString("pt-BR")} peças em {lista.length} pedido(s)
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="max-h-[60vh] overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-background text-left text-xs text-muted-foreground">
+                      <tr>
+                        <th className="py-1 pr-2">Pedido</th>
+                        <th className="py-1 pr-2">Orçamento</th>
+                        <th className="py-1 pr-2">Vendedor</th>
+                        <th className="py-1 pr-2">Tipo</th>
+                        <th className="py-1 pr-2 text-right">Peças</th>
+                        <th className="py-1 pr-2">Saída Juff</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...lista].sort((a, b) => (Number(b.qtd) || 0) - (Number(a.qtd) || 0)).map((p) => (
+                        <tr
+                          key={p.id}
+                          className="cursor-pointer border-t hover:bg-muted/50"
+                          onClick={() => { setCelula(null); setDetalhe(p); }}
+                        >
+                          <td className="py-1 pr-2 font-semibold">#{p.pedido_olist ?? "—"}</td>
+                          <td className="py-1 pr-2">{p.orcamento ?? "—"}</td>
+                          <td className="py-1 pr-2">{p.vendedor ?? "—"}</td>
+                          <td className="py-1 pr-2">{p.tipo_estampa ?? "—"}</td>
+                          <td className="py-1 pr-2 text-right tabular-nums">{(Number(p.qtd) || 0).toLocaleString("pt-BR")}</td>
+                          <td className="py-1 pr-2">{p.saida_juff ? formatDateBR(p.saida_juff) : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       <Sheet open={!!detalhe} onOpenChange={(v) => !v && setDetalhe(null)}>
         <SheetContent side="right" className="w-[360px]">
