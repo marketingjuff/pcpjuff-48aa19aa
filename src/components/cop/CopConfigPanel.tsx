@@ -156,8 +156,9 @@ function OficinaDialog({ oficina, onClose, onSaved }: { oficina: Oficina | null;
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-[900px]">
-        <DialogHeader><DialogTitle>{isNew ? "Nova oficina" : `Editar — ${oficina!.nome}`}</DialogTitle></DialogHeader>
+      <DialogContent className="max-w-[900px] max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0"><DialogTitle>{isNew ? "Nova oficina" : `Editar — ${oficina!.nome}`}</DialogTitle></DialogHeader>
+        <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="md:col-span-2"><Label>Nome</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} /></div>
           <div><Label>CNPJ</Label><Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} /></div>
@@ -190,7 +191,8 @@ function OficinaDialog({ oficina, onClose, onSaved }: { oficina: Oficina | null;
             ))}
           </div>
         </div>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="shrink-0 border-t bg-background px-6 py-3">
           <Button variant="outline" onClick={onClose} disabled={saving}>Cancelar</Button>
           <Button onClick={handleSave} disabled={saving}>Salvar</Button>
         </DialogFooter>
