@@ -150,11 +150,13 @@ interface Props {
   hoje: string;
   /** true = dia útil; dia não útil fica cinza e vazio */
   diaUtil: (d: string) => boolean;
+  /** clique no número: abre a lista de pedidos que compõem a soma */
+  onAbrirCelula?: (info: { etapa: Etapa; ini: string; fim: string; pedidoIds: string[] }) => void;
 }
 
 const fmtNum = (n: number) => n.toLocaleString("pt-BR");
 
-export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta, colWidth, hoje, diaUtil }: Props) {
+export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta, colWidth, hoje, diaUtil, onAbrirCelula }: Props) {
   const colunas = colunasDaGrade(dias, zoom);
 
   return (
@@ -188,11 +190,13 @@ export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta,
                     const naoUtil = zoom === "dia" && !diaUtil(c.dias[0]!);
                     let pecas = 0;
                     let nPed = 0;
+                    const ids: string[] = [];
                     for (const d of c.dias) {
                       const dc = res?.porDia.get(d);
                       if (dc) {
                         pecas += dc.carga;
                         nPed += dc.pedidos;
+                        ids.push(...dc.pedidoIds);
                       }
                     }
                     const contemHoje = c.dias.includes(hoje);
@@ -219,7 +223,13 @@ export function FaixaCalor({ dias, zoom, resultados, compacta, onToggleCompacta,
                         } ${contemHoje ? "ring-1 ring-inset ring-rose-500" : ""}`}
                       >
                         {!naoUtil && pecas > 0 && (
-                          <span className={`${fonte} font-semibold tabular-nums text-foreground/85`}>{texto}</span>
+                          <button
+                            type="button"
+                            onClick={() => onAbrirCelula?.({ etapa: e.key, ini, fim, pedidoIds: ids })}
+                            className={`${fonte} h-full w-full cursor-pointer font-semibold tabular-nums text-foreground/85 hover:bg-foreground/10 hover:underline`}
+                          >
+                            {texto}
+                          </button>
                         )}
                       </div>
                     );
