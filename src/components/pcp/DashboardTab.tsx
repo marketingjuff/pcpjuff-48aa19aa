@@ -163,11 +163,39 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
 
   const etapaUnica = (e: Etapa) => etapas.length === 1 && etapas[0] === e;
 
+  const etiquetaRef = useRef<HTMLDivElement | null>(null);
+  const moveuRef = useRef(false);
+  function mostrarEtiqueta(on: boolean) {
+    const el = etiquetaRef.current;
+    if (!el) return;
+    el.style.display = on && window.matchMedia("(min-width: 768px)").matches ? "block" : "none";
+  }
+  function posicionarEtiqueta(x: number, y: number) {
+    const el = etiquetaRef.current;
+    if (!el) return;
+    const w = el.offsetWidth || 140;
+    const h = el.offsetHeight || 40;
+    const dx = x + 16 + w > window.innerWidth ? x - 16 - w : x + 16;
+    const dy = y + 16 + h > window.innerHeight ? y - 16 - h : y + 16;
+    el.style.transform = `translate(${dx}px, ${dy}px)`;
+  }
+
   useEffect(() => { setSelectedIds(new Set()); }, [filtrados]);
+  useEffect(() => { if (selectedIds.size === 0) mostrarEtiqueta(false); }, [selectedIds]);
   useEffect(() => {
-    const up = () => { arrastandoRef.current = false; };
+    const up = () => {
+      if (arrastandoRef.current && !moveuRef.current) mostrarEtiqueta(false);
+      arrastandoRef.current = false;
+    };
+    const move = (e: MouseEvent) => {
+      if (arrastandoRef.current) posicionarEtiqueta(e.clientX, e.clientY);
+    };
     window.addEventListener("mouseup", up);
-    return () => window.removeEventListener("mouseup", up);
+    window.addEventListener("mousemove", move);
+    return () => {
+      window.removeEventListener("mouseup", up);
+      window.removeEventListener("mousemove", move);
+    };
   }, []);
 
   const somar = (lista: Pedido[]) => {
@@ -295,7 +323,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
           </div>
 
           {/* Desktop: tabela compacta */}
-          <div className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto tbl-congelada [--tbl-congelada-bg:var(--color-card)] [&>div]:max-h-[70vh] [&>div]:overflow-auto shadow-xs" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
+          <div onMouseLeave={() => { if (selectedIds.size === 0) mostrarEtiqueta(false); }} className="hidden md:block rounded-lg border border-border/60 bg-card overflow-x-auto tbl-congelada [--tbl-congelada-bg:var(--color-card)] [&>div]:max-h-[70vh] [&>div]:overflow-auto shadow-xs" style={{ fontFamily: '"Google Sans Flex", Arial, sans-serif', fontStretch: 'condensed' }}>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -339,10 +367,16 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                           e.preventDefault();
                           arrastandoRef.current = true;
                           ancoraRef.current = idx;
+                          moveuRef.current = false;
+                          posicionarEtiqueta(e.clientX, e.clientY);
                           setSelectedIds(new Set([p.id]));
                         }}
                         onMouseEnter={() => {
                           if (!arrastandoRef.current || ancoraRef.current === null) return;
+                          if (idx !== ancoraRef.current || moveuRef.current) {
+                            moveuRef.current = true;
+                            mostrarEtiqueta(true);
+                          }
                           const a = Math.min(ancoraRef.current, idx);
                           const b = Math.max(ancoraRef.current, idx);
                           setSelectedIds(new Set(filtrados.slice(a, b + 1).map((x) => x.id)));
@@ -400,6 +434,19 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
           </div>
         </CardContent>
       </Card>
+      <div
+        ref={etiquetaRef}
+        style={{ left: 0, top: 0, display: "none" }}
+        className="fixed z-50 pointer-events-none hidden md:block rounded-md bg-foreground text-background shadow-md px-2 py-1 text-xs tabular-nums leading-tight"
+      >
+        <div className="font-semibold text-sm">{totaisSel.total.toLocaleString("pt-BR")} peças</div>
+        <div className="opacity-70">
+          {totaisSel.pedidos.toLocaleString("pt-BR")} {totaisSel.pedidos === 1 ? "pedido" : "pedidos"}
+          {totaisSel.extras > 0 && (
+            <span className="ml-1 text-[10px]">({totaisSel.original.toLocaleString("pt-BR")} + {totaisSel.extras.toLocaleString("pt-BR")} de refação)</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
