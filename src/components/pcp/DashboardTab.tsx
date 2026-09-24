@@ -1,5 +1,5 @@
-import { pedidoAtivoNasAreas, visivelEmDTF, visivelEmSilk } from "@/lib/pedidos";
-import { useMemo, useState } from "react";
+import { pedidoAtivoNasAreas, visivelEmDTF, visivelEmSilk, totalProducao } from "@/lib/pedidos";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
 import {
   STATUS_PECAS_OPCOES, TIPOS_ESTAMPA,
@@ -9,7 +9,25 @@ import {
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FiltroMultiSelect } from "./FiltroMultiSelect";
+
+const ETAPA_OPCOES: { value: string; label: string }[] = [
+  { value: "ativas", label: "Todas (menos finalizados)" },
+  { value: "em_refacao", label: "Em refação" },
+  { value: "aguardando_entrada", label: "Aguardando entrada" },
+  { value: "aguardando_input", label: "Aguardando input de produção" },
+  { value: "arte", label: "Aguardando Arte" },
+  { value: "dtf_pronto_silk_arte", label: "DTF Liberado / Silk na Arte" },
+  { value: "silk_pronto_dtf_arte", label: "Silk Liberado / DTF na Arte" },
+  { value: "dtf", label: "Aguardando DTF" },
+  { value: "silk", label: "Aguardando Silk" },
+  { value: "dtf_silk", label: "Aguardando DTF + Silk" },
+  { value: "acabamento", label: "Aguardando Acabamento" },
+  { value: "expedicao", label: "Aguardando Expedição" },
+  { value: "saiu_entrega", label: "Saiu para entrega" },
+  { value: "entregue", label: "Entregue" },
+  { value: "finalizados", label: "Finalizados" },
+];
 import { Input } from "@/components/ui/input";
 import { DateInputBR } from "@/components/ui/date-input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -45,16 +63,18 @@ function emExpedicao(p: Pedido) {
 export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   const { feriados } = useFeriados();
   const { names: vendedores } = useAppList("vendedor");
-  const [vendedor, setVendedor] = useState<string>("todos");
-  const [status, setStatus] = useState<string>("todos");
-  const [tipo, setTipo] = useState<string>("todos");
-  const [etapa, setEtapa] = useState<Etapa>("ativas");
+  const [vendedoresSel, setVendedoresSel] = useState<string[]>([]);
+  const [statusSel, setStatusSel] = useState<string[]>([]);
+  const [tipos, setTipos] = useState<string[]>([]);
+  const [etapas, setEtapas] = useState<Etapa[]>(["ativas"]);
   const [dataEntrega, setDataEntrega] = useState("");
 
   
   const [search, setSearch] = useState("");
   const sort = useSort<"qtd"|"entrada"|"arte"|"inicio"|"termino"|"inicioAcab"|"acabamento"|"exped"|"saida"|"entrega"|"dias"|"etapa"|"pedido"|"orcamento"|"vendedor"|"estampa"|"statusPecas"|"frete"|"uf">("saida", "asc");
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const arrastandoRef = useRef(false);
+  const ancoraRef = useRef<number | null>(null);
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
     if (e === "finalizados") return !!p.finalizado_em;
@@ -86,11 +106,12 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
 
 
   const filtrados = useMemo(() => {
+    const etapasEf: Etapa[] = etapas.length === 0 ? ["ativas"] : etapas;
     const arr = pedidos.filter((p) => {
-      if (!pedidoEmEtapa(p, etapa)) return false;
-      if (vendedor !== "todos" && p.vendedor !== vendedor) return false;
-      if (status !== "todos" && p.status_pecas !== status) return false;
-      if (tipo !== "todos" && p.tipo_estampa !== tipo) return false;
+      if (!etapasEf.some((e) => pedidoEmEtapa(p, e))) return false;
+      if (vendedoresSel.length > 0 && (!p.vendedor || !vendedoresSel.includes(p.vendedor))) return false;
+      if (statusSel.length > 0 && (!p.status_pecas || !statusSel.includes(p.status_pecas))) return false;
+      if (tipos.length > 0 && (!p.tipo_estampa || !tipos.includes(p.tipo_estampa))) return false;
       if (dataEntrega && p.data_entrega !== dataEntrega) return false;
       if (search && !`${p.pedido_olist} ${p.orcamento}`.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
@@ -138,7 +159,29 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
       });
     }
     return arr;
-  }, [pedidos, vendedor, status, tipo, etapa, dataEntrega, search, sort.key, sort.dir, feriados]);
+  }, [pedidos, vendedoresSel, statusSel, tipos, etapas, dataEntrega, search, sort.key, sort.dir, feriados]);
+
+  const etapaUnica = (e: Etapa) => etapas.length === 1 && etapas[0] === e;
+
+  useEffect(() => { setSelectedIds(new Set()); }, [filtrados]);
+  useEffect(() => {
+    const up = () => { arrastandoRef.current = false; };
+    window.addEventListener("mouseup", up);
+    return () => window.removeEventListener("mouseup", up);
+  }, []);
+
+  const somar = (lista: Pedido[]) => {
+    let total = 0, original = 0, extras = 0;
+    for (const p of lista) {
+      const t = totalProducao(p);
+      total += Number(t.total) || 0;
+      original += Number(t.original) || 0;
+      extras += Number(t.extras) || 0;
+    }
+    return { pedidos: lista.length, total, original, extras };
+  };
+  const totaisFiltro = useMemo(() => somar(filtrados), [filtrados]);
+  const totaisSel = useMemo(() => somar(filtrados.filter((p) => selectedIds.has(p.id))), [filtrados, selectedIds]);
 
   const stats = useMemo(() => {
     const ativos = pedidos.filter((p) => pedidoAtivoNasAreas(p));
@@ -171,13 +214,13 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
   return (
     <div className="space-y-3">
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-7">
-        <StatCard label="Total ativos" value={stats.total} icon={<ListChecks className="h-4 w-4" />} onClick={() => setEtapa("ativas")} active={etapa === "ativas"} />
-        <StatCard label="Atrasados" value={stats.atrasados} icon={<AlertCircle className="h-4 w-4" />} accent="destructive" onClick={() => setEtapa("ativas")} />
-        <StatCard label="Arte" value={stats.arte} icon={<Palette className="h-4 w-4" />} accent="info" onClick={() => setEtapa("arte")} active={etapa === "arte"} />
-        <StatCard label="DTF" value={stats.dtf} icon={<Printer className="h-4 w-4" />} accent="info" onClick={() => setEtapa("dtf")} active={etapa === "dtf"} />
-        <StatCard label="Silk" value={stats.silk} icon={<Brush className="h-4 w-4" />} accent="info" onClick={() => setEtapa("silk")} active={etapa === "silk"} />
-        <StatCard label="Acabamento" value={stats.acabamento} icon={<Package className="h-4 w-4" />} accent="info" onClick={() => setEtapa("acabamento")} active={etapa === "acabamento"} />
-        <StatCard label="Expedição" value={stats.expedicao} icon={<Truck className="h-4 w-4" />} accent="info" onClick={() => setEtapa("expedicao")} active={etapa === "expedicao"} />
+        <StatCard label="Total ativos" value={stats.total} icon={<ListChecks className="h-4 w-4" />} onClick={() => setEtapas(["ativas"])} active={etapaUnica("ativas")} />
+        <StatCard label="Atrasados" value={stats.atrasados} icon={<AlertCircle className="h-4 w-4" />} accent="destructive" onClick={() => setEtapas(["ativas"])} />
+        <StatCard label="Arte" value={stats.arte} icon={<Palette className="h-4 w-4" />} accent="info" onClick={() => setEtapas(["arte"])} active={etapaUnica("arte")} />
+        <StatCard label="DTF" value={stats.dtf} icon={<Printer className="h-4 w-4" />} accent="info" onClick={() => setEtapas(["dtf"])} active={etapaUnica("dtf")} />
+        <StatCard label="Silk" value={stats.silk} icon={<Brush className="h-4 w-4" />} accent="info" onClick={() => setEtapas(["silk"])} active={etapaUnica("silk")} />
+        <StatCard label="Acabamento" value={stats.acabamento} icon={<Package className="h-4 w-4" />} accent="info" onClick={() => setEtapas(["acabamento"])} active={etapaUnica("acabamento")} />
+        <StatCard label="Expedição" value={stats.expedicao} icon={<Truck className="h-4 w-4" />} accent="info" onClick={() => setEtapas(["expedicao"])} active={etapaUnica("expedicao")} />
       </div>
 
       <Card>
@@ -193,26 +236,12 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
           <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
             <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Etapa</label>
-              <Select value={etapa} onValueChange={(v) => setEtapa(v as Etapa)}>
-                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ativas">Todas (menos finalizados)</SelectItem>
-                  <SelectItem value="em_refacao">Em refação</SelectItem>
-                  <SelectItem value="aguardando_entrada">Aguardando entrada</SelectItem>
-                  <SelectItem value="aguardando_input">Aguardando input de produção</SelectItem>
-                  <SelectItem value="arte">Aguardando Arte</SelectItem>
-                  <SelectItem value="dtf_pronto_silk_arte">DTF Liberado / Silk na Arte</SelectItem>
-                  <SelectItem value="silk_pronto_dtf_arte">Silk Liberado / DTF na Arte</SelectItem>
-                  <SelectItem value="dtf">Aguardando DTF</SelectItem>
-                  <SelectItem value="silk">Aguardando Silk</SelectItem>
-                  <SelectItem value="dtf_silk">Aguardando DTF + Silk</SelectItem>
-                  <SelectItem value="acabamento">Aguardando Acabamento</SelectItem>
-                  <SelectItem value="expedicao">Aguardando Expedição</SelectItem>
-                  <SelectItem value="saiu_entrega">Saiu para entrega</SelectItem>
-                  <SelectItem value="entregue">Entregue</SelectItem>
-                  <SelectItem value="finalizados">Finalizados</SelectItem>
-                </SelectContent>
-              </Select>
+              <FiltroMultiSelect
+                values={etapas}
+                options={ETAPA_OPCOES}
+                onChange={(v) => setEtapas(v as Etapa[])}
+                placeholder="Todas (menos finalizados)"
+              />
             </div>
             <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Buscar (Pedido / Orçamento)</label>
@@ -220,33 +249,15 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
             </div>
             <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Vendedor</label>
-              <Select value={vendedor} onValueChange={setVendedor}>
-                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos vendedores</SelectItem>
-                  {vendedores.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <FiltroMultiSelect values={vendedoresSel} options={vendedores.map((v) => ({ value: v, label: v }))} onChange={setVendedoresSel} placeholder="Todos vendedores" />
             </div>
             <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Tipo Estampa</label>
-              <Select value={tipo} onValueChange={setTipo}>
-                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos tipos</SelectItem>
-                  {TIPOS_ESTAMPA.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <FiltroMultiSelect values={tipos} options={TIPOS_ESTAMPA.map((v) => ({ value: v, label: v }))} onChange={setTipos} placeholder="Todos tipos" />
             </div>
             <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Status Peças</label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos status</SelectItem>
-                  {STATUS_PECAS_OPCOES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <FiltroMultiSelect values={statusSel} options={STATUS_PECAS_OPCOES.map((v) => ({ value: v, label: v }))} onChange={setStatusSel} placeholder="Todos status" />
             </div>
             <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Data Entrega</label>
@@ -254,7 +265,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
             </div>
           </div>
           <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => { setVendedor("todos"); setStatus("todos"); setTipo("todos"); setEtapa("ativas"); setDataEntrega(""); setSearch(""); }}>
+            <Button variant="outline" size="sm" onClick={() => { setEtapas(["ativas"]); setVendedoresSel([]); setTipos([]); setStatusSel([]); setDataEntrega(""); setSearch(""); setSelectedIds(new Set()); }}>
               <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
             </Button>
           </div>
@@ -316,14 +327,26 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                 ) : filtrados.length === 0 ? (
                   <TableRow><TableCell colSpan={19} className="text-center py-8 text-muted-foreground">Nenhum pedido.</TableCell></TableRow>
                 ) : (
-                  filtrados.map((p) => {
+                  filtrados.map((p, idx) => {
                     const { inicio, termino } = estampariaDatas(p);
                     const bg = rowBgClass(p, feriados);
-                    const isSelected = selectedRowId === p.id;
+                    const isSelected = selectedIds.has(p.id);
                     return (
                       <TableRow
                         key={p.id}
-                        onClick={() => setSelectedRowId(p.id)}
+                        onMouseDown={(e) => {
+                          if (e.button !== 0) return;
+                          e.preventDefault();
+                          arrastandoRef.current = true;
+                          ancoraRef.current = idx;
+                          setSelectedIds(new Set([p.id]));
+                        }}
+                        onMouseEnter={() => {
+                          if (!arrastandoRef.current || ancoraRef.current === null) return;
+                          const a = Math.min(ancoraRef.current, idx);
+                          const b = Math.max(ancoraRef.current, idx);
+                          setSelectedIds(new Set(filtrados.slice(a, b + 1).map((x) => x.id)));
+                        }}
                         onDoubleClick={() => onEdit(p.id)}
                         className={`cursor-pointer select-none transition-colors ${bg} ${isSelected ? "outline outline-2 -outline-offset-2 outline-primary/60" : ""}`}
                       >
@@ -355,6 +378,25 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
                 )}
               </TableBody>
             </Table>
+          </div>
+          <div className="hidden md:flex justify-end items-center gap-2 text-xs text-muted-foreground tabular-nums">
+            {(() => {
+              const t = selectedIds.size > 0 ? totaisSel : totaisFiltro;
+              return (
+                <>
+                  <span>
+                    <span className="font-medium text-foreground">{selectedIds.size > 0 ? "Selecionado" : "Filtrado"}</span>{" "}
+                    {t.pedidos.toLocaleString("pt-BR")} {t.pedidos === 1 ? "pedido" : "pedidos"}, {t.total.toLocaleString("pt-BR")} peças
+                    {t.extras > 0 && (
+                      <span className="ml-1 text-[10px] opacity-70">({t.original.toLocaleString("pt-BR")} + {t.extras.toLocaleString("pt-BR")} de refação)</span>
+                    )}
+                  </span>
+                  {selectedIds.size > 0 && (
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedIds(new Set())}>Limpar seleção</Button>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </CardContent>
       </Card>
