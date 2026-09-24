@@ -1,47 +1,36 @@
-# COP — Romaneio da oficina interna Juff vai direto para Pago
+# Monitor PCP — faixa vira contagem simples de peças por dia
 
-Sem migração e sem alteração de schema. Apenas 2 arquivos: `src/lib/cop.ts` e `src/components/cop/RomaneioTab.tsx`. O SQL de regularização só roda depois da sua aprovação por escrito.
+Sem migração, sem SQL, sem alteração de banco. `pcp_capacidade_etapa` fica intacta, só deixa de ser lida pelo monitor. Apenas 3 arquivos da allowlist são tocados.
 
-## 1. `src/lib/cop.ts` — helper de oficina interna
+Observação: o arquivo enviado termina cortado no item 2 do FaixaCalor ("Visão Dia, célula com fundo neutro (bg-muted/30), mostra"). Os itens abaixo marcados como (suposição) completam essa parte — corrija se quiser diferente.
 
-Acrescentar, junto aos helpers já exportados (sem mexer em nenhuma função existente):
+## Verificação por grep (feita)
+- `nivelDoDia`, `NIVEL_BG` e `Nivel` só são importados em `FaixaCalor.tsx` (dentro da allowlist). Serão removidos de `pcp-monitor.ts`.
+- `pedidosVazados` é lido por `GanttPedidos.tsx` (protegido) — continua existindo, sempre vazio. Com isso o ícone "não cabe na capacidade" nunca aparece no Gantt.
+- `TETO_PADRAO` é usado por `use-capacidade.ts` — mantido sem alteração.
 
-- `export const OFICINA_INTERNA_NOME = "juff";`
-- `export function isOficinaInterna(oficina?: { nome?: string | null } | null): boolean` — normaliza NFD, remove acentos, `trim()`, `toLowerCase()` e compara com `OFICINA_INTERNA_NOME`. `true` para `Juff`, `juff`, `JUFF`, ` Juff `; `false` para `Juff 2`, `Oficina Juff`, `null`, `undefined`, vazio.
+## src/lib/pcp-monitor.ts
+1. `cargaDoPedido`: Arte continua 0 quando o tipo não inclui DTF; senão passa a usar `p.qtd` (Number, isFinite, > 0, senão 0). `n_batidas_dtf` deixa de ser usado.
+2. `simularEtapa(pedidos, etapa, feriados)` (sem `teto`): para cada pedido com intervalo e carga > 0, pega `iv.ini`; se não for dia útil, usa `proximoDiaUtil(ini, feriados)`; soma a qtd inteira nesse dia e incrementa `pedidos`. Nada nos outros dias, sem teto, sem escorregar.
+3. `DiaCarga = { dia; carga; pedidos }`.
+4. `ResultadoEtapa` mantém `pedidosVazados: Set<string>`, sempre vazio.
+5. Remover `nivelDoDia`, `NIVEL_BG`, `Nivel`.
+6. Não mexer em `TETO_PADRAO`, `calcInicioAcabamento`, `temSegundaOuQuinta`, `inicioAcabamentoDoPedido`, `intervaloEtapa`, `diasUteisNoIntervalo` e demais.
+7. Comentário do topo atualizado (contagem de peças por dia de início de etapa).
 
-## 2. `src/components/cop/RomaneioTab.tsx` — `handleConferir`
+## src/components/pcp/monitor/FaixaCalor.tsx
+1. Título: "Peças programadas por dia".
+2. Visão Dia: fundo neutro `bg-muted/30`, mostra só o número de peças do dia (vazio quando 0). Dia não útil continua cinza (`bg-muted`) e vazio. Tooltip: "dia · etapa — N peças em M pedido(s)".
+3. (suposição) Visão Semana: mesmo fundo neutro, mostra a soma de peças da semana.
+4. (suposição) Modo recolhido "Todas as etapas": soma das peças das 4 etapas no dia/semana.
+5. Remover cálculo de nível, `limite`, `teto`, indicador "↷" e imports de `nivelDoDia`/`NIVEL_BG`. Números com separador de milhar pt-BR; fonte encolhe se a coluna for estreita.
+6. `ETAPA_COR*`, `COL_ID`, `REGUA_H`, `ReguaDatas` inalterados (usados pelo Gantt).
 
-- Adicionar `isOficinaInterna` ao import já existente de `@/lib/cop`.
-- Em `handleConferir` (linha ~604), após a checagem de `completo` e o `supabase.auth.getUser()`, usar o `oficina` já resolvido no componente (`oficinas.find((o) => o.id === selected?.oficina_id)`, linha ~111) e bifurcar:
-  - **Oficina externa (inalterado):** `salvar.mutateAsync` com `status: "Aguardando Pagamento"`, `conferido_em`, `conferido_por`. Nenhum campo de pagamento tocado.
-  - **Oficina interna Juff (novo):** uma única `salvar.mutateAsync` com `status: "Finalizado"`, `conferido_em`, `conferido_por`, `pagamento_status: "pago"`, `pagamento_valor_calculado: 0`, `pagamento_liberado_em`/`pagamento_liberado_por`, `pagamento_pago_em`/`pagamento_pago_por` (todos com o mesmo timestamp e usuário).
-- Nenhuma RPC (`liberar_pagamento_cop`, `marcar_pagamento_cop`) é chamada. Update direto pela mutation `salvar` já existente.
-- `setSelectedId(null)` mantido nos dois caminhos.
+## src/components/pcp/monitor/MonitorPcpTab.tsx
+1. Remover `useCapacidade`, `tetos`, estado `capOpen`, botão de engrenagem "Capacidade" e a renderização de `<CapacidadeDialog>` (arquivo fica no repositório).
+2. `simularEtapa(naJanela, e.key, feriados)`; dependências do useMemo sem `tetos`.
+3. Legenda: remover "não cabe na capacidade" e as 3 faixas de cor (até 80% / até 100% / acima do teto); manter contagem de pedidos e período.
+4. Imports não usados (`Settings`, `CornerDownRight`, se ficarem órfãos) removidos.
 
-### Toast
-
-- Externa: texto atual mantido — `Romaneio ${rotulo} foi para Pagamentos e saiu da lista de romaneios ativos.`
-- Juff: `Romaneio ${rotulo} é da oficina Juff, foi direto para Pago com valor zero e já está Finalizado.`
-
-### Aviso antes do clique
-
-Imediatamente acima do botão "Mandar pro pagamento" (linha ~1306), quando a oficina for a interna, um `div className="text-xs text-muted-foreground"` com:
-`Oficina interna Juff. Ao mandar pro pagamento, este romaneio vai direto para Pago com valor zero.`
-Sem componente, ícone ou card novo. Rótulo do botão e condições de exibição (`completoTotal || status === "Romaneio Completo"` e a troca por "Conferido em" via `conferido_em`) idênticas.
-
-## 3. Regularização dos romaneios Juff pendentes
-
-Dois passos, na ordem:
-
-- **Passo A (somente leitura):** rodo o SELECT de conferência exatamente como está na especificação (filtro por `lower(btrim(o.nome)) = 'juff'`, `pagamento_status <> 'pago'`, status em `Aguardando Pagamento`/`Finalizado`) e te mostro a lista e a contagem. **Paro aqui.**
-- **Passo B (só após sua aprovação por escrito):** o UPDATE autorizado, letra por letra como na especificação, alterando somente as 5 colunas listadas. Depois rodo o SELECT do Passo A de novo, que precisa vir vazio.
-
-Se o Passo A trouxer zero linhas, o Passo B não roda e eu te aviso. `Romaneio Completo` fica de fora de propósito. Nenhum `delete`, `drop`, `truncate` ou segundo update.
-
-## O que não muda
-
-`PagamentoOficinasTab.tsx`, `PagamentoConsolidadoCard.tsx`, `HistoricoPagamentosConsolidados.tsx`, `cop-saldos.ts`, `cop-oficinas.ts`, `admin.functions.ts`, `schema-extras.ts`, `types.ts`, `supabase/migrations/`. Particionamento, perdas, "Voltar para o Corte", refação, Oficinas Hoje, Dashboard e Histórico COP intactos.
-
-## Ao final
-
-Typecheck (`bunx tsgo --noEmit`) e diff resumido por arquivo para conferir que só os 2 arquivos da allowlist foram tocados.
+## Validação
+Typecheck + build; conferir na visão Dia que um pedido de 300 peças aparece com 300 só no primeiro dia da etapa, e que um início em sábado aparece na segunda.
