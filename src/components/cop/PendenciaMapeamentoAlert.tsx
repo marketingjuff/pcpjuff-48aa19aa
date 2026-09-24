@@ -23,13 +23,14 @@ export function useProdutosVendas(enabled: boolean) {
     queryFn: async () => {
       const { data: lotes, error: e1 } = await supabase
         .from("olist_import_lotes" as any)
-        .select("id, empresa, importado_em")
+        .select("id, empresa, importado_em, anulado_em")
         .order("importado_em", { ascending: false });
       if (e1) throw e1;
 
       const maisRecentePorEmpresa = new Map<string, string>();
       const empresaPorLote = new Map<string, string>();
       for (const l of (lotes ?? []) as any[]) {
+        if (l.anulado_em) continue;
         if (!maisRecentePorEmpresa.has(l.empresa)) {
           maisRecentePorEmpresa.set(l.empresa, l.id);
           empresaPorLote.set(l.id, l.empresa);

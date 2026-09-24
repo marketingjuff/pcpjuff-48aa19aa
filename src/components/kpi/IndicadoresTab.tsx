@@ -308,7 +308,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
     queryKey: ["indicadores-olist", "base"],
     queryFn: async () => {
       const [lotesRes, pedidos, itens, mapRes, exclRes, pcp, escopoRes] = await Promise.all([
-        supabase.from("olist_import_lotes" as any).select("id, importado_em"),
+        supabase.from("olist_import_lotes" as any).select("id, importado_em, anulado_em"),
         lerTudo<PedidoDb>(async (from, to) => {
           const { data, error } = await supabase
             .from("olist_pedidos" as any)
@@ -351,7 +351,11 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       if (exclRes.error) throw exclRes.error;
 
       const lotes: LotesPorData = {};
-      for (const l of (lotesRes.data ?? []) as any[]) lotes[String(l.id)] = String(l.importado_em);
+      const lotesAnulados = new Set<string>();
+      for (const l of (lotesRes.data ?? []) as any[]) {
+        if (l.anulado_em) { lotesAnulados.add(String(l.id)); continue; }
+        lotes[String(l.id)] = String(l.importado_em);
+      }
 
       const modeloPorProduto = new Map<string, string>();
       for (const r of (mapRes.data ?? []) as any[]) modeloPorProduto.set(String(r.produto_olist), String(r.modelo_cop));
@@ -371,9 +375,11 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       }
 
 
-      const pedidosVig = apenasVigentes(pedidos as any, lotes) as PedidoDb[];
+      const pedidosAtivos = (pedidos as PedidoDb[]).filter((p) => !lotesAnulados.has(p.lote_id));
+      const itensAtivos = (itens as ItemDb[]).filter((i) => !lotesAnulados.has(i.lote_id));
+      const pedidosVig = apenasVigentes(pedidosAtivos as any, lotes) as PedidoDb[];
       const vigentePorPedido = new Map(pedidosVig.map((p) => [p.numero_pedido, p.lote_id]));
-      const itensVig = (itens as ItemDb[]).filter((i) => vigentePorPedido.get(i.numero_pedido) === i.lote_id);
+      const itensVig = itensAtivos.filter((i) => vigentePorPedido.get(i.numero_pedido) === i.lote_id);
 
       const calc = calcularPedidos(pedidosVig, itensVig, modeloPorProduto);
       const pedidosStore = pedidosJuffStore(itensVig);

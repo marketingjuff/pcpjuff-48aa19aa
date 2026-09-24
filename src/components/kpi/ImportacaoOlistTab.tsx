@@ -8,7 +8,19 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, AlertTriangle, CheckCircle2, Loader2, Save } from "lucide-react";
+import { Upload, AlertTriangle, CheckCircle2, Loader2, Save, Ban, RotateCcw } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useIsAdmin } from "@/hooks/use-role";
 import { toast } from "sonner";
 import { parseVendasOlist, type EmpresaOlist, type ResultadoImportacaoVendas } from "@/lib/olist-vendas";
 import { PendenciaMapeamentoAlert } from "@/components/cop/PendenciaMapeamentoAlert";
@@ -29,6 +41,9 @@ interface Lote {
   total_itens: number | null;
   importado_em: string;
   importado_por: string | null;
+  anulado_em: string | null;
+  anulado_por: string | null;
+  anulado_motivo: string | null;
 }
 
 function fmtDataHora(iso: string | null | undefined) {
@@ -61,6 +76,10 @@ export function ImportacaoOlistTab() {
   const [lendo, setLendo] = useState(false);
   const [previa, setPrevia] = useState<ResultadoImportacaoVendas | null>(null);
   const [confirmouTroca, setConfirmouTroca] = useState(false);
+  const isAdmin = useIsAdmin();
+  const [anularAlvo, setAnularAlvo] = useState<Lote | null>(null);
+  const [reativarAlvo, setReativarAlvo] = useState<Lote | null>(null);
+  const [motivo, setMotivo] = useState("");
 
   const { data: lotes = [] } = useQuery({
     queryKey: ["olist-vendas", "lotes"],
@@ -109,6 +128,11 @@ export function ImportacaoOlistTab() {
   const { data: empresaPorPedido = {} } = useQuery({
     queryKey: ["olist-vendas", "empresa-por-pedido"],
     queryFn: async () => {
+      const { data: anulados } = await supabase
+        .from("olist_import_lotes" as any)
+        .select("id")
+        .not("anulado_em", "is", null);
+      const setAnulados = new Set((anulados ?? []).map((l: any) => String(l.id)));
       const rows = await lerTudo<{ numero_pedido: string; empresa: string; lote_id: string }>(async (from, to) => {
         const { data, error } = await supabase
           .from("olist_pedidos" as any)
@@ -118,7 +142,10 @@ export function ImportacaoOlistTab() {
         return (data ?? []) as any;
       });
       const map: Record<string, string> = {};
-      for (const r of rows) map[r.numero_pedido] = r.empresa;
+      for (const r of rows) {
+        if (setAnulados.has(r.lote_id)) continue;
+        map[r.numero_pedido] = r.empresa;
+      }
       return map;
     },
   });
@@ -204,6 +231,47 @@ export function ImportacaoOlistTab() {
       qc.invalidateQueries({ queryKey: ["olist-vendas"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao gravar a importação."),
+  });
+
+  const anularLote = useMutation({
+    mutationFn: async (loteId: string) => {
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("olist_import_lotes" as any)
+        .update({
+          anulado_em: new Date().toISOString(),
+          anulado_por: userData.user?.id ?? null,
+          anulado_motivo: motivo.trim() || null,
+        } as any)
+        .eq("id", loteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Importação anulada. Os indicadores já desconsideram este lote.");
+      setAnularAlvo(null);
+      setMotivo("");
+      qc.invalidateQueries({ queryKey: ["olist-vendas"] });
+      qc.invalidateQueries({ queryKey: ["indicadores-olist"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao anular a importação."),
+  });
+
+  const reativarLote = useMutation({
+    mutationFn: async (loteId: string) => {
+      const { error } = await supabase
+        .from("olist_import_lotes" as any)
+        .update({ anulado_em: null, anulado_por: null, anulado_motivo: null } as any)
+        .eq("id", loteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Importação reativada.");
+      setReativarAlvo(null);
+      setMotivo("");
+      qc.invalidateQueries({ queryKey: ["olist-vendas"] });
+      qc.invalidateQueries({ queryKey: ["indicadores-olist"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao reativar a importação."),
   });
 
   const precisaConfirmar = (resumo?.trocaEmpresa.length ?? 0) > 0;
@@ -443,28 +511,108 @@ export function ImportacaoOlistTab() {
                   <th className="text-right px-2 py-1.5">Linhas</th>
                   <th className="text-right px-2 py-1.5">Pedidos</th>
                   <th className="text-right px-2 py-1.5">Itens</th>
+                  <th className="text-right px-2 py-1.5">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {lotes.length === 0 && (
-                  <tr><td colSpan={7} className="px-2 py-4 text-center text-muted-foreground">Nenhuma importação ainda.</td></tr>
+                  <tr><td colSpan={8} className="px-2 py-4 text-center text-muted-foreground">Nenhuma importação ainda.</td></tr>
                 )}
-                {lotes.map((l) => (
-                  <tr key={l.id} className="border-t">
-                    <td className="px-2 py-1.5 whitespace-nowrap">{fmtDataHora(l.importado_em)}</td>
+                {lotes.map((l) => {
+                  const anulado = !!l.anulado_em;
+                  return (
+                  <tr key={l.id} className={`border-t ${anulado ? "opacity-55" : ""}`}>
+                    <td className="px-2 py-1.5 whitespace-nowrap">
+                      {fmtDataHora(l.importado_em)}
+                      {anulado && (
+                        <Badge variant="destructive" className="ml-2" title={l.anulado_motivo ?? undefined}>Anulado</Badge>
+                      )}
+                    </td>
                     <td className="px-2 py-1.5"><Badge variant="secondary">{l.empresa}</Badge></td>
-                    <td className="px-2 py-1.5 max-w-[280px] truncate">{l.arquivo_nome ?? "—"}</td>
+                    <td className={`px-2 py-1.5 max-w-[280px] truncate ${anulado ? "line-through" : ""}`}>{l.arquivo_nome ?? "—"}</td>
                     <td className="px-2 py-1.5 text-right tabular-nums">{l.arquivos_lidos ?? "—"}</td>
                     <td className="px-2 py-1.5 text-right tabular-nums">{l.total_linhas ?? "—"}</td>
                     <td className="px-2 py-1.5 text-right tabular-nums">{l.total_pedidos ?? "—"}</td>
                     <td className="px-2 py-1.5 text-right tabular-nums">{l.total_itens ?? "—"}</td>
+                    <td className="px-2 py-1.5 text-right">
+                      {isAdmin && (anulado ? (
+                        <Button variant="outline" size="sm" onClick={() => setReativarAlvo(l)}>
+                          <RotateCcw className="h-4 w-4 mr-1" /> Reativar
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" onClick={() => { setMotivo(""); setAnularAlvo(l); }}>
+                          <Ban className="h-4 w-4 mr-1" /> Anular
+                        </Button>
+                      ))}
+                    </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!anularAlvo} onOpenChange={(o) => { if (!o && !anularLote.isPending) { setAnularAlvo(null); setMotivo(""); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Anular esta importação?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                {anularAlvo && (
+                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-foreground space-y-0.5">
+                    <div><span className="text-muted-foreground">Empresa:</span> {anularAlvo.empresa}</div>
+                    <div><span className="text-muted-foreground">Data e hora:</span> {fmtDataHora(anularAlvo.importado_em)}</div>
+                    <div className="break-all"><span className="text-muted-foreground">Arquivo:</span> {anularAlvo.arquivo_nome ?? "—"}</div>
+                    <div><span className="text-muted-foreground">Pedidos:</span> {anularAlvo.total_pedidos ?? "—"}</div>
+                    <div><span className="text-muted-foreground">Itens:</span> {anularAlvo.total_itens ?? "—"}</div>
+                  </div>
+                )}
+                <p>
+                  Nada será apagado do banco. Esta importação deixa de valer nos indicadores e os pedidos voltam a contar pela importação anterior, se existir alguma. Pedidos que só existiam nesta importação somem dos indicadores até serem importados de novo. Você pode reativar a qualquer momento.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="motivo-anulacao">Motivo (opcional)</Label>
+            <Textarea id="motivo-anulacao" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={anularLote.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={anularLote.isPending}
+              onClick={(e) => { e.preventDefault(); if (anularAlvo) anularLote.mutate(anularAlvo.id); }}
+            >
+              {anularLote.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Anular importação
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!reativarAlvo} onOpenChange={(o) => { if (!o && !reativarLote.isPending) setReativarAlvo(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reativar esta importação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta importação volta a valer. Para cada pedido, continua valendo sempre a importação mais recente que não esteja anulada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={reativarLote.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={reativarLote.isPending}
+              onClick={(e) => { e.preventDefault(); if (reativarAlvo) reativarLote.mutate(reativarAlvo.id); }}
+            >
+              {reativarLote.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Reativar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
