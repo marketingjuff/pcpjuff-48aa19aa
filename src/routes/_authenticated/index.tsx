@@ -342,6 +342,7 @@ function AppHomeInner() {
                 onSave={(p) => upsert.mutate(p)}
                 saving={upsert.isPending}
                 onNavigate={setTab}
+                canManage={isManager}
                 soLeitura={soLeitura("pcp.expedicao")}
                 podeForcarFinalizacao={isAdmin || (isGestor && pode("pcp.expedicao"))}
                 onFinalizarMany={(ids) => {
