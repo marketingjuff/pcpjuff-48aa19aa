@@ -1,7 +1,7 @@
 import { pedidoAtivoNasAreas, sortByDataSaidaJuffAsc, calcularEtapaAtual } from "@/lib/pedidos";
 import { useEffect, useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
-import { SIM_NAO_PROCESSO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento, acabamentoCompleto, acabamentoPronto } from "@/lib/pedidos";
+import { SIM_NAO_PROCESSO, modeloIncluiDTF, modeloIncluiSilk, visivelEmAcabamento, acabamentoPronto } from "@/lib/pedidos";
 import { toast } from "sonner";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -274,7 +274,7 @@ export function AcabamentoTab({ pedidos, selected, onSelect, onSave, saving, act
             </div>
             </fieldset>
             <div className="flex justify-end gap-2 flex-wrap">
-              {canManage && !soLeitura && !selected.finalizado_em && acabamentoCompleto(selected) && (() => {
+              {canManage && !soLeitura && !selected.finalizado_em && acabamentoPronto(selected) && (() => {
                 const tipo = selected.tipo_estampa;
                 if (tipo === "DTF+Silk") {
                   return (

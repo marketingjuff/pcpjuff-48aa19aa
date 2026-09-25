@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Pedido } from "@/lib/pedidos";
+import { tipoIncluiDTF, tipoIncluiSilk } from "@/lib/pedidos";
+import { CorrigirEtapaButton, type CorrigirDestino } from "./CorrigirEtapaButton";
 import { useAppList } from "@/lib/app-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +41,7 @@ interface Props {
   onNavigate?: (tab: string) => void;
   onFinalizarMany?: (ids: string[]) => void;
   soLeitura?: boolean;
+  canManage?: boolean;
   /** Admin/gestor pode finalizar mesmo sem confirmação de entrega (com aviso). */
   podeForcarFinalizacao?: boolean;
 }
@@ -90,7 +93,18 @@ function fmtEntrega(iso: string | null | undefined): string {
   return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
-export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNavigate, onFinalizarMany, soLeitura = false, podeForcarFinalizacao = false }: Props) {
+export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNavigate, onFinalizarMany, soLeitura = false, podeForcarFinalizacao = false, canManage = false }: Props) {
+  const [corrigirDestino, setCorrigirDestino] = useState<CorrigirDestino>("acabamento");
+  const corrigirDestinos: CorrigirDestino[] = selected
+    ? [
+        "acabamento",
+        ...(tipoIncluiDTF(selected.tipo_estampa) ? (["dtf"] as CorrigirDestino[]) : []),
+        ...(tipoIncluiSilk(selected.tipo_estampa) ? (["silk"] as CorrigirDestino[]) : []),
+        "arte",
+        "dados",
+      ]
+    : [];
+  const corrigirDestinoEfetivo: CorrigirDestino = corrigirDestinos.includes(corrigirDestino) ? corrigirDestino : "acabamento";
   const { feriados } = useFeriados();
   const { names: formasPagamento } = useAppList("pagamento");
   const { names: nfOpcoes } = useAppList("nf");
@@ -444,6 +458,29 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
                   if (onNavigate) onNavigate(destino);
                 }}
               />}
+              {canManage && !soLeitura && selected && selected.expedicao_entrou_em && !selected.finalizado_em && (
+                <div className="inline-flex items-center gap-1">
+                  <Select value={corrigirDestinoEfetivo} onValueChange={(v) => setCorrigirDestino(v as CorrigirDestino)}>
+                    <SelectTrigger className="h-9 w-[210px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {corrigirDestinos.map((d) => (
+                        <SelectItem key={d} value={d}>
+                          Corrigir para {{ acabamento: "Acabamento", dtf: "DTF", silk: "Silk", arte: "Arte", dados: "Input de Produção" }[d]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <CorrigirEtapaButton
+                    pedido={selected}
+                    destino={corrigirDestinoEfetivo}
+                    abaOrigem="expedicao"
+                    onSave={onSave}
+                    onCorrigido={(d) => { if (onNavigate) onNavigate(d === "acabamento" ? "acab" : d); }}
+                  />
+                </div>
+              )}
             </div>
             <AlertDialog open={confirmarSemEntrega} onOpenChange={setConfirmarSemEntrega}>
               <AlertDialogContent>

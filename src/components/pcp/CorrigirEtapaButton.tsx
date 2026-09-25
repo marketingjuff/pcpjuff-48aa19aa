@@ -22,6 +22,8 @@ import {
 } from "@/lib/pedidos";
 import { camposAlimpar } from "./refacao-helpers";
 
+export type CorrigirAbaOrigem = CorrecaoEtapa["aba_origem"] | "expedicao";
+
 export type CorrigirDestino = "dados" | "arte" | "dtf" | "silk" | "acabamento";
 
 const DESTINO_LABEL: Record<CorrigirDestino, string> = {
@@ -43,7 +45,7 @@ const DESTINO_ETAPA_NOVA: Record<CorrigirDestino, string> = {
 interface Props {
   pedido: Pedido;
   destino: CorrigirDestino;
-  abaOrigem: CorrecaoEtapa["aba_origem"];
+  abaOrigem: CorrigirAbaOrigem;
   /** Texto opcional do botão (usado no caso DTF+Silk em Acabamento). */
   label?: string;
   onSave: (patch: Partial<Pedido> & { id: string }) => void;
@@ -82,7 +84,7 @@ export function CorrigirEtapaButton({
       const entrada: CorrecaoEtapa = {
         data: new Date().toISOString(),
         usuario_id: uid,
-        aba_origem: abaOrigem,
+        aba_origem: abaOrigem as CorrecaoEtapa["aba_origem"],
         etapa_anterior: etapaAnterior,
         etapa_nova_apos_correcao: DESTINO_ETAPA_NOVA[destino],
         observacao: motivo,
