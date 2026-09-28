@@ -41,6 +41,7 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [dlgOpen, setDlgOpen] = useState(false);
   const [editingProd, setEditingProd] = useState<MapProducao | null>(null);
+  const [novoProdData, setNovoProdData] = useState<string | null>(null);
   const focusedRef = useRef<string | null>(null);
 
 
@@ -267,8 +268,9 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
     toast.success(`${prodCode(prod.numero)} excluído.`);
   }
 
-  function openNovo() { setEditingProd(null); setDlgOpen(true); }
-  function openEditar(p: MapProducao) { setEditingProd(p); setDlgOpen(true); }
+  function openNovo() { setEditingProd(null); setNovoProdData(null); setDlgOpen(true); }
+  function openNovoEmData(data: string) { setEditingProd(null); setNovoProdData(data); setDlgOpen(true); }
+  function openEditar(p: MapProducao) { setEditingProd(p); setNovoProdData(null); setDlgOpen(true); }
 
   const hasFilters =
     !!fData || fEmpresa !== "__all__" || fFornecedor !== "__all__" || !!fNota.trim() || !!fProd.trim() || fStatus !== "__all__";
@@ -363,8 +365,19 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
         </div>
       ) : grupos.map(([data, lista]) => (
         <div key={data} className="rounded-md border">
-          <div className="bg-yellow-100/70 px-3 py-2 text-[25px] font-semibold leading-tight">
-            Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}
+          <div className="bg-yellow-100/70 px-3 py-2 text-[25px] font-semibold leading-tight flex items-center justify-between gap-3">
+            <span>Pedido em {fmtDateBR(data)} · {lista.length} Prod{lista.length > 1 ? "s" : ""}</span>
+            {!finalizado && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 shrink-0 bg-white/70 hover:bg-white"
+                title={`Adicionar Prod em ${fmtDateBR(data)}`}
+                onClick={() => openNovoEmData(data)}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           <GrupoScroll>
             <table className="w-full min-w-[1240px] text-[12.5px] table-fixed">
@@ -579,6 +592,7 @@ export function MapFiosTable({ finalizado, focusProdId, initialFioFilter }: Prop
         onOpenChange={(v) => { setDlgOpen(v); if (!v) setEditingProd(null); }}
         producoes={prodsAll}
         producao={editingProd}
+        dataPedidoInicial={novoProdData}
         onCreated={invalidateAll}
       />
 

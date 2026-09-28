@@ -16,6 +16,7 @@ interface Props {
   onCreated: () => void;
   producoes: MapProducao[];
   producao?: MapProducao | null;
+  dataPedidoInicial?: string | null;
 }
 
 function pickDefaultMalharia(malharias: string[]): string | null {
@@ -24,7 +25,7 @@ function pickDefaultMalharia(malharias: string[]): string | null {
   return found ?? malharias[0];
 }
 
-export function NovoProdDialog({ open, onOpenChange, onCreated, producoes, producao }: Props) {
+export function NovoProdDialog({ open, onOpenChange, onCreated, producoes, producao, dataPedidoInicial }: Props) {
   const isEdit = !!producao;
   const maxNumero = useMemo(
     () => producoes.reduce((m, p) => Math.max(m, Number(p.numero) || 0), 0),
@@ -51,13 +52,13 @@ export function NovoProdDialog({ open, onOpenChange, onCreated, producoes, produ
       setKg(String(producao.kg_solicitados ?? ""));
     } else {
       setNumero(String(maxNumero + 1));
-      setDataPedido(hoje);
+      setDataPedido(dataPedidoInicial || hoje);
       setFaturarPara("Juff");
       setFornecedor("");
       setKg("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, producao?.id]);
+  }, [open, producao?.id, dataPedidoInicial]);
 
   const numerosOutros = useMemo(
     () => new Set(producoes.filter((p) => p.id !== producao?.id).map((p) => Number(p.numero))),
