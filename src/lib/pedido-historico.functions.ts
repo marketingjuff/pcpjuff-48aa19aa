@@ -23,7 +23,11 @@ export const getPedidoHistorico = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       pedidoId: z.string().uuid().optional(),
-      pedidoOlist: z.string().optional(),
+      pedidoOlist: z
+        .string()
+        .max(40)
+        .regex(/^[A-Za-z0-9._-]+$/)
+        .optional(),
     }),
   )
   .handler(async ({ data, context }) => {
