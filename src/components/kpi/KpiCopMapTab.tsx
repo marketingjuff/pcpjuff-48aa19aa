@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { useIsAdmin } from "@/hooks/use-role";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +21,8 @@ import {
   type ItemRanking,
   type KpiCopMapFiltro,
   type Metrica,
+  type MetricaRend,
+  PISO_COBERTURA_PADRAO,
   type Tempo,
 } from "@/lib/kpi-cop-map";
 import { ChipCor, KpiCopMapDrill, type ColunasCop, type DrillCopSpec } from "@/components/kpi/KpiCopMapDrill";
@@ -87,6 +92,124 @@ function Kpi({
         </div>
         {extra && <p className="mt-1 text-xs font-medium">{extra}</p>}
         <p className="mt-1 text-xs text-muted-foreground">{apoio}</p>
+        <Rodape data={data} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function SeloAtencao() {
+  return <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-destructive">atenção</span>;
+}
+
+const CHAVE_PISO = "kpi_cobertura_minima";
+const pisoValido = (v: unknown) => {
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 0 && n <= 100 ? n : PISO_COBERTURA_PADRAO;
+};
+function usePisoCobertura() {
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ["map", "config", CHAVE_PISO],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("map_config").select("value").eq("key", CHAVE_PISO).maybeSingle();
+      if (error) throw error;
+      return pisoValido(data?.value);
+    },
+  });
+  const save = useMutation({
+    mutationFn: async (n: number) => {
+      const { error } = await (supabase as any).from("map_config").upsert({ key: CHAVE_PISO, value: n, updated_at: new Date().toISOString() });
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["map", "config", CHAVE_PISO] }); toast.success("Piso de cobertura salvo."); },
+    onError: (e: any) => toast.error(e?.message ?? "Não foi possível salvar o piso."),
+  });
+  return { piso: q.data ?? PISO_COBERTURA_PADRAO, save };
+}
+
+function PisoControle({ piso, save }: { piso: number; save: ReturnType<typeof usePisoCobertura>["save"] }) {
+  const isAdmin = useIsAdmin();
+  const [v, setV] = useState(String(piso));
+  useEffect(() => { setV(String(piso)); }, [piso]);
+  if (!isAdmin) return <p className="mt-1 text-[11px] text-muted-foreground">Piso de cobertura: {piso}%</p>;
+  return (
+    <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+      Piso de cobertura
+      <Input type="text" inputMode="numeric" value={v} onChange={(e) => setV(e.target.value.replace(/\D/g, "").slice(0, 3))} className="h-6 w-12 px-1 text-xs" />%
+      <Button size="sm" variant="outline" className="h-6 px-2 text-[11px]" disabled={save.isPending}
+        onClick={() => {
+          const n = Number(v);
+          if (!v || !Number.isInteger(n) || n < 0 || n > 100) { toast.error("Informe um número de 0 a 100."); return; }
+          save.mutate(n);
+        }}>Salvar</Button>
+    </div>
+  );
+}
+
+function KpiRend({ m, data, abrir, variacao: v, piso, save }: {
+  m: MetricaRend; data: string; abrir: Abrir; variacao?: number | null; piso: number; save: ReturnType<typeof usePisoCobertura>["save"];
+}) {
+  const clicavel = m.linhas.length > 0;
+  return (
+    <Card className={`h-full ${clicavel ? "cursor-pointer transition hover:ring-2 hover:ring-primary/40" : ""}`}
+      onClick={clicavel ? () => abrir({ titulo: "Rendimento", apoio: "Metros gastos para cada peça cortada.", linhas: m.linhas, colunas: COL_METROS, total: m.total }) : undefined}
+      role={clicavel ? "button" : undefined}>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          Rendimento {m.estado === "atencao" && <SeloAtencao />}
+        </div>
+        <div className="mt-1 flex flex-wrap items-baseline gap-2">
+          <span className={`font-display text-2xl font-semibold tabular-nums ${clicavel ? "underline decoration-dotted underline-offset-4" : ""}`}>{m.texto}</span>
+          {m.estado !== "incompleto" && v != null && (
+            <span className={`text-xs font-semibold tabular-nums ${v >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+              {v >= 0 ? "+" : ""}{v.toFixed(1).replace(".", ",")}% vs. período anterior
+            </span>
+          )}
+        </div>
+        {m.fraseSem && <p className="mt-1 text-xs font-medium">{m.fraseSem}</p>}
+        <p className="mt-1 text-xs text-muted-foreground">Metros gastos para cada peça cortada. Cortes sem metragem ficam fora da conta.</p>
+        <PisoControle piso={piso} save={save} />
+        <Rodape data={data} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function RankingRend({ itens, data, abrir }: { itens: (MetricaRend & { chave: string })[]; data: string; abrir: Abrir }) {
+  const titulo = "Rendimento por modelo";
+  const apoio = "Metros por peça de cada modelo. Cortes sem metragem ficam fora da conta.";
+  return (
+    <Card className="h-full">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          {titulo}
+          <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold uppercase text-accent-foreground">estimativa</span>
+        </div>
+        <p className="mb-2 text-xs text-muted-foreground">{apoio}</p>
+        {itens.length === 0 ? <p className="text-sm text-muted-foreground">—</p> : (
+          <div className="tbl-congelada max-h-[70vh] overflow-auto">
+            <Table>
+              <TableHeader><TableRow><TableHead></TableHead><TableHead className="text-right">m/peça</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {itens.map((it) => (
+                  <TableRow key={it.chave}>
+                    <TableCell>
+                      <div className="flex flex-wrap items-center gap-1">{it.chave}{it.estado === "atencao" && <SeloAtencao />}</div>
+                      <div className="text-[10px] text-muted-foreground">{it.fraseSem}</div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <button type="button" className="tabular-nums underline decoration-dotted underline-offset-4 hover:text-primary"
+                        onClick={() => abrir({ titulo: `${titulo} — ${it.chave}`, apoio, linhas: it.linhas, colunas: COL_METROS, total: it.total })}>
+                        {it.texto}
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
         <Rodape data={data} />
       </CardContent>
     </Card>
@@ -186,6 +309,7 @@ export function KpiCopMapTab() {
   });
   const tecidoQ = useEstoquePecas();
   const { feriados } = useFeriados();
+  const { piso, save: savePiso } = usePisoCobertura();
 
   const cops = copsQ.data ?? [];
   const oficinas = useMemo(() => [...(ofQ.data ?? [])].sort((a, b) => a.nome.localeCompare(b.nome)), [ofQ.data]);
@@ -193,15 +317,15 @@ export function KpiCopMapTab() {
   const opcoes = useMemo(() => opcoesFiltro(cops), [cops]);
 
   const filtro: KpiCopMapFiltro = { de: s.de, ate: s.ate, oficinaId: s.oficinaId, modelo: s.modelo, cor: s.cor };
-  const r = useMemo(() => calcularTudo(cops, oficinas, tecido, feriados, filtro),
+  const r = useMemo(() => calcularTudo(cops, oficinas, tecido, feriados, filtro, piso),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cops, oficinas, tecido, feriados, s.de, s.ate, s.oficinaId, s.modelo, s.cor]);
+    [piso, cops, oficinas, tecido, feriados, s.de, s.ate, s.oficinaId, s.modelo, s.cor]);
   const ant = useMemo(() => {
     if (!s.comparar) return null;
     const p = periodoAnterior(s.de, s.ate);
-    return calcularTudo(cops, oficinas, tecido, feriados, { ...filtro, ...p });
+    return calcularTudo(cops, oficinas, tecido, feriados, { ...filtro, ...p }, piso);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s.comparar, cops, oficinas, tecido, feriados, s.de, s.ate, s.oficinaId, s.modelo, s.cor]);
+  }, [piso, s.comparar, cops, oficinas, tecido, feriados, s.de, s.ate, s.oficinaId, s.modelo, s.cor]);
   const vr = (a: Metrica, b?: Metrica) => (ant && b ? variacao(a.valor, b.valor) : null);
 
   const abrir: Abrir = setDrill;
@@ -214,6 +338,7 @@ export function KpiCopMapTab() {
   const { corte, tecido: tc, costura, dinheiro, ponta } = r;
   const DT_CORTE = "dia em que o corte foi feito";
   const DT_TEC = "dia de cada corte lançado na peça de tecido";
+  const DT_REND = "dia da execução do corte do COP; metragem: toda a lançada naquele COP, em qualquer data";
   const DT_ENV = "dia em que o romaneio saiu para a oficina";
   const DT_REC = "dia de cada chegada da oficina";
   const DT_PER = "dia em que a perda foi lançada";
@@ -307,7 +432,7 @@ export function KpiCopMapTab() {
       <Bloco faixa="tecido" titulo="Tecido" apoio="Quanto tecido o corte consumiu.">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi titulo="Metros consumidos" apoio="Metros lançados nos cortes." m={tc.metros} data={DT_TEC} abrir={abrir} colunas={COL_METROS} variacao={vr(tc.metros, ant?.tecido.metros)} />
-          <Kpi titulo="Rendimento" apoio="Metros gastos para cada peça cortada." m={tc.rendimento} data={DT_TEC} abrir={abrir} colunas={COL_METROS} variacao={vr(tc.rendimento, ant?.tecido.rendimento)} />
+          <KpiRend m={tc.rendimento} data={DT_REND} abrir={abrir} variacao={vr(tc.rendimento, ant?.tecido.rendimento)} piso={piso} save={savePiso} />
           <Kpi titulo="Peças de tecido abertas" apoio="Rolos que começaram a ser usados." m={tc.abertas} data="dia em que a peça de tecido foi aberta" abrir={abrir} colunas={{ cor: true, metros: true, inicio: true, nota: true }} />
           <Kpi titulo="Peças de tecido que acabaram" apoio="Rolos usados até o fim." m={tc.zeradas} data="dia do último corte na peça de tecido" abrir={abrir} colunas={{ cor: true, metros: true, inicio: true, nota: true }} />
         </div>
@@ -315,7 +440,7 @@ export function KpiCopMapTab() {
           <Ranking titulo="Metros por cor" apoio="Cor da peça de tecido." itens={tc.porCor} data={DT_TEC} abrir={abrir} colunas={COL_METROS} coluna="Metros" cor />
           <Ranking titulo="Metros por modelo" selo="estimativa" apoio="O tecido é lançado por COP, não por modelo; dividimos pela quantidade de peças de cada modelo." itens={tc.porModeloRateado} data={DT_TEC} abrir={abrir} colunas={COL_METROS} coluna="Metros" />
           <Ranking titulo="Metros por modelo" selo="número exato" apoio="Só COPs com um único modelo." itens={tc.porModeloExato} data={DT_TEC} abrir={abrir} colunas={COL_METROS} coluna="Metros" />
-          <Ranking titulo="Rendimento por modelo" selo="estimativa" apoio="Metros por peça de cada modelo." itens={tc.rendPorModelo} data={DT_TEC} abrir={abrir} colunas={COL_METROS} coluna="m/peça" />
+          <RankingRend itens={tc.rendPorModelo} data={DT_REND} abrir={abrir} />
         </div>
       </Bloco>
 
