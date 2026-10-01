@@ -12,6 +12,7 @@ import { MacroSwitch } from "@/routes/_authenticated/cop";
 import { ImportacaoOlistTab } from "@/components/kpi/ImportacaoOlistTab";
 import { IndicadoresTab } from "@/components/kpi/IndicadoresTab";
 import { KpiPcpTab } from "@/components/kpi/KpiPcpTab";
+import { KpiCopMapTab } from "@/components/kpi/KpiCopMapTab";
 
 export const Route = createFileRoute("/_authenticated/kpi")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -134,6 +135,11 @@ function KpiHome() {
           {montada("pcp") && pode("kpi.pcp") && (
             <TabsContent value="pcp" forceMount hidden={tab !== "pcp"}>
               <KpiPcpTab />
+            </TabsContent>
+          )}
+          {montada("copmap") && pode("kpi.cop_map") && (
+            <TabsContent value="copmap" forceMount hidden={tab !== "copmap"}>
+              <KpiCopMapTab />
             </TabsContent>
           )}
         </Tabs>

@@ -74,6 +74,7 @@ export const CATALOGO_PERMISSOES: AbaPermissao[] = [
   { key: "kpi.custom", modulo: "kpi", tabValue: "custom", label: "KPI Juff Custom", nivelConfiguravel: false },
   { key: "kpi.store", modulo: "kpi", tabValue: "store", label: "KPI Juff Store", nivelConfiguravel: false },
   { key: "kpi.pcp", modulo: "kpi", tabValue: "pcp", label: "KPI PCP", nivelConfiguravel: false },
+  { key: "kpi.cop_map", modulo: "kpi", tabValue: "copmap", label: "KPI COP e MAP", nivelConfiguravel: false },
   // Entregas (motorista)
   { key: "entregas.motorista", modulo: "entregas", tabValue: "entregas", label: "Entregas (motorista)", nivelConfiguravel: false },
 ];
