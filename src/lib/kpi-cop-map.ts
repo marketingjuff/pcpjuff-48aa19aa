@@ -595,10 +595,10 @@ export function blocoPontaAPonta(
   };
 }
 
-export function calcularTudo(cops: Cop[], oficinas: Oficina[], pecasTecido: MapEstoquePeca[], feriados: Feriados, f: KpiCopMapFiltro) {
+export function calcularTudo(cops: Cop[], oficinas: Oficina[], pecasTecido: MapEstoquePeca[], feriados: Feriados, f: KpiCopMapFiltro, piso = PISO_COBERTURA_PADRAO) {
   const ctx = criarCtx(cops, oficinas, feriados, f);
   const corte = blocoCorte(ctx);
-  const tecido = blocoTecido(ctx, pecasTecido);
+  const tecido = blocoTecido(ctx, pecasTecido, piso);
   const costura = blocoCostura(ctx);
   const dinheiro = blocoDinheiro(ctx);
   const ponta = blocoPontaAPonta(ctx, { corte, tecido, costura });
