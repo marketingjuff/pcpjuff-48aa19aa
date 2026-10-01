@@ -263,7 +263,16 @@ export function blocoCorte(ctx: Ctx) {
 }
 
 // ============ BLOCO 2 — TECIDO ============
-export function blocoTecido(ctx: Ctx, pecasTecido: MapEstoquePeca[]) {
+export type MetricaRend = Metrica & {
+  cobertura: number | null;
+  semMetragem: number;
+  totalCops: number;
+  estado: "ok" | "atencao" | "incompleto" | "vazio";
+  fraseSem: string;
+};
+export const PISO_COBERTURA_PADRAO = 70;
+
+export function blocoTecido(ctx: Ctx, pecasTecido: MapEstoquePeca[], piso = PISO_COBERTURA_PADRAO) {
   const { f } = ctx;
   const linhas: DrillLinhaCop[] = []; // metros por corte (total e cor)
   const rateado: DrillLinhaCop[] = []; // metros por modelo, rateados
@@ -310,28 +319,69 @@ export function blocoTecido(ctx: Ctx, pecasTecido: MapEstoquePeca[]) {
     }
   }
 
-  // Rendimento: metros ÷ peças cortadas dos COPs que consumiram tecido.
-  const pecasDosCops = (filtroModelo?: string) =>
-    [...copsUsados].reduce((s, id) => {
-      const c = ctx.copPorId.get(id)!;
-      return s + (c.pecas ?? []).filter((p) => (filtroModelo ? p.modelo === filtroModelo : f.modelo === "todos" || p.modelo === f.modelo)).reduce((a, p) => a + (Number(p.qtd) || 0), 0);
-    }, 0);
-  const metrosCop = linhas.filter((l) => copsUsados.has(l.id));
-  const totM = somaM(metrosCop);
-  const totP = pecasDosCops();
-  const rend = totP ? totM / totP : null;
-  const rendimento: Metrica = {
-    valor: rend,
-    texto: rend == null ? "—" : `${nf2.format(rend)} m por peça`,
-    total: rend == null ? "—" : `${fmtM(totM)} ÷ ${fmtInt(totP)} peças = ${nf2.format(rend)} m por peça`,
-    linhas: metrosCop,
-  };
-  const rendPorModelo = ranking(rateado, (x) => x.modelo, (ls) => {
-    const m = somaM(ls);
-    const p = pecasDosCops(ls[0]?.modelo);
+  // ---------- Rendimento: ancorado no COP (execucao_corte), metragem total do COP em qualquer data ----------
+  const metrosPorCop = new Map<string, number>();
+  for (const pt of pecasTecido) {
+    if (f.cor !== "todos" && (pt.cor ?? "—") !== f.cor) continue;
+    for (const k of pt.cortes ?? []) {
+      if (!k.cop_id) continue;
+      metrosPorCop.set(k.cop_id, (metrosPorCop.get(k.cop_id) ?? 0) + (Number(k.metros) || 0));
+    }
+  }
+  type RC = { cop: Cop; metros: number; porModelo: Map<string, number>; totalPc: number; pecasFiltro: number };
+  const recorte: RC[] = [];
+  for (const cop of ctx.cops) {
+    if (!dentro(cop.execucao_corte, f) || !passaOficina(ctx, cop)) continue;
+    const pecasOk = (cop.pecas ?? []).filter((p) => passaPeca(p.modelo, p.cor, f));
+    const pecasFiltro = pecasOk.reduce((s, p) => s + (Number(p.qtd) || 0), 0);
+    if (!pecasFiltro) continue;
+    const porModelo = new Map<string, number>();
+    for (const p of cop.pecas ?? []) porModelo.set(p.modelo, (porModelo.get(p.modelo) ?? 0) + (Number(p.qtd) || 0));
+    const totalPc = [...porModelo.values()].reduce((s, n) => s + n, 0);
+    const bruto = metrosPorCop.get(cop.id) ?? 0;
+    const metros = f.modelo !== "todos" && totalPc ? (bruto * (porModelo.get(f.modelo) ?? 0)) / totalPc : bruto;
+    recorte.push({ cop, metros, porModelo, totalPc, pecasFiltro });
+  }
+  const SEM = "sem metragem lançada";
+  const mkRend = (itens: { cop: Cop; metros: number; pecas: number; modelo: string }[], sufixo: string): MetricaRend => {
+    const com = itens.filter((x) => x.metros > 0);
+    const totalCops = new Set(itens.map((x) => x.cop.id)).size;
+    const comCops = new Set(com.map((x) => x.cop.id)).size;
+    const semMetragem = totalCops - comCops;
+    const m = com.reduce((s, x) => s + x.metros, 0);
+    const p = com.reduce((s, x) => s + x.pecas, 0);
     const v = p ? m / p : null;
-    return { valor: v, texto: v == null ? "—" : `${nf2.format(v)} m/peça`, total: v == null ? "—" : `${fmtM(m)} ÷ ${fmtInt(p)} peças = ${nf2.format(v)} m por peça`, linhas: ls };
-  }, ordem(idxModelo));
+    const cobertura = totalCops ? (comCops / totalCops) * 100 : null;
+    const estado: MetricaRend["estado"] =
+      cobertura == null ? "vazio" : cobertura >= 90 ? "ok" : cobertura >= piso ? "atencao" : "incompleto";
+    const linhasR = itens.map((x) =>
+      linhaBase(ctx, x.cop, { modelo: x.modelo, qtd: x.pecas, metros: x.metros > 0 ? x.metros : null, inicio: d10(x.cop.execucao_corte), nota: x.metros > 0 ? "" : SEM }));
+    const fraseSem = totalCops ? `${fmtInt(semMetragem)} de ${fmtInt(totalCops)} cortes ainda sem metragem lançada` : "";
+    return {
+      valor: estado === "incompleto" ? null : v,
+      texto: estado === "vazio" || v == null ? (estado === "incompleto" ? "incompleto" : "—") : estado === "incompleto" ? "incompleto" : `${nf2.format(v)} ${sufixo}`,
+      total: v == null ? fraseSem || "—" : `${fmtM(m)} ÷ ${fmtInt(p)} peças = ${nf2.format(v)} m por peça · ${fraseSem}`,
+      linhas: linhasR,
+      cobertura, semMetragem, totalCops, estado, fraseSem,
+    };
+  };
+  const rendimento = mkRend(recorte.map((r) => ({ cop: r.cop, metros: r.metros, pecas: r.pecasFiltro, modelo: "" })), "m por peça");
+  const modelosRend = new Map<string, { cop: Cop; metros: number; pecas: number; modelo: string }[]>();
+  for (const r of recorte) {
+    for (const [mo, q] of r.porModelo) {
+      if (!q || !r.totalPc) continue;
+      if (f.modelo !== "todos" && mo !== f.modelo) continue;
+      const pecasMo = (r.cop.pecas ?? []).filter((p) => p.modelo === mo && passaPeca(p.modelo, p.cor, f)).reduce((s, p) => s + (Number(p.qtd) || 0), 0);
+      if (!pecasMo) continue;
+      const bruto = metrosPorCop.get(r.cop.id) ?? 0;
+      const arr = modelosRend.get(mo) ?? [];
+      arr.push({ cop: r.cop, metros: (bruto * q) / r.totalPc, pecas: pecasMo, modelo: mo });
+      modelosRend.set(mo, arr);
+    }
+  }
+  const rendPorModelo: (MetricaRend & { chave: string })[] = [...modelosRend.entries()]
+    .map(([chave, its]) => ({ chave, ...mkRend(its, "m/peça") }))
+    .sort((a, b) => ordem(idxModelo)(a.chave, b.chave));
 
   const linhaTecido = (pt: MapEstoquePeca, data: string | null): DrillLinhaCop => ({
     id: pt.id, rotulo: "—", oficina: "—", modelo: "", cor: pt.cor ?? "—", tamanho: "", qtd: null,
@@ -545,10 +595,10 @@ export function blocoPontaAPonta(
   };
 }
 
-export function calcularTudo(cops: Cop[], oficinas: Oficina[], pecasTecido: MapEstoquePeca[], feriados: Feriados, f: KpiCopMapFiltro) {
+export function calcularTudo(cops: Cop[], oficinas: Oficina[], pecasTecido: MapEstoquePeca[], feriados: Feriados, f: KpiCopMapFiltro, piso = PISO_COBERTURA_PADRAO) {
   const ctx = criarCtx(cops, oficinas, feriados, f);
   const corte = blocoCorte(ctx);
-  const tecido = blocoTecido(ctx, pecasTecido);
+  const tecido = blocoTecido(ctx, pecasTecido, piso);
   const costura = blocoCostura(ctx);
   const dinheiro = blocoDinheiro(ctx);
   const ponta = blocoPontaAPonta(ctx, { corte, tecido, costura });
