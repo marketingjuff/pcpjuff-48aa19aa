@@ -567,7 +567,7 @@ export function KpiPcpTab() {
   return (
     <div className="space-y-8">
       {/* Filtros */}
-      <div className="sticky top-[68px] z-40 -mx-3 sm:-mx-4 border-b bg-card px-3 sm:px-4 py-3 shadow-sm">
+      <div className="sticky top-[116px] z-30 -mx-3 sm:-mx-4 border-b bg-card px-3 sm:px-4 py-3 shadow-sm">
         <div className="flex flex-wrap items-end gap-3">
           <div className="w-44">
             <Label className="text-xs">Período</Label>
