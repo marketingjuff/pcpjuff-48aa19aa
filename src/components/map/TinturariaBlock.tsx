@@ -112,7 +112,11 @@ export function TinturariaBlock({ producaoId, programacoes, pecasRecebidasMalhar
 
       // Split automático: se a linha ficou completa no recebimento e chegou MENOS peças que as enviadas,
       // fecha esta com o que chegou e abre uma nova com o que faltou.
-      const merged: any = { ...row, ...patch };
+      // Lê a linha atualizada do banco: a tela pode estar desatualizada quando
+      // vários campos são salvos em sequência rápida (aí o split não acontecia).
+      const { data: fresh } = await (supabase as any)
+        .from("map_tinturaria_programacoes").select("*").eq("id", row.id).maybeSingle();
+      const merged: any = { ...row, ...(fresh ?? {}), ...patch };
       const recebComplete =
         merged.kg_recebidos != null &&
         merged.pecas_recebidas != null &&
