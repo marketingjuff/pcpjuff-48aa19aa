@@ -286,7 +286,7 @@ function AppHomeInner() {
 
       <main className="max-w-[1600px] mx-auto px-3 sm:px-4 py-4 sm:py-6 bg-blue-50/60 rounded-b-xl">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="hidden md:flex flex-wrap mb-6">
+          <TabsList className="sticky top-[68px] z-[35] bg-muted hidden md:flex flex-wrap h-auto mb-6 shadow-sm">
             {tabs.map((t) => (
               <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>
             ))}
