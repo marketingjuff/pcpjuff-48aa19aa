@@ -131,7 +131,7 @@ function SupHome() {
 
       <main className="max-w-[1600px] mx-auto px-3 sm:px-4 py-4 sm:py-6 bg-teal-50/60 rounded-b-xl">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="sticky top-[68px] z-[35] flex flex-wrap h-auto mb-6 shadow-sm">
+          <TabsList className="sticky top-[68px] z-[35] bg-muted flex flex-wrap h-auto mb-6 shadow-sm">
             {TABS.map((t) => (
               <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>
             ))}
