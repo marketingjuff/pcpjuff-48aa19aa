@@ -520,7 +520,16 @@ export async function patchEstoquePeca(id: string, patch: Partial<MapEstoquePeca
  * garante que existam `pecas_recebidas` linhas em map_estoque_pecas com aquele
  * programacao_id. Se faltarem, insere a diferença. Nunca deleta.
  */
-export async function syncEstoquePecas(): Promise<void> {
+// Fila: chamadas simultâneas rodavam em paralelo, cada uma via "0 peças"
+// e inseria tudo de novo (ex.: 4 recebidas viravam 12). Agora roda uma por vez.
+let syncFila: Promise<void> = Promise.resolve();
+export function syncEstoquePecas(): Promise<void> {
+  const prox = syncFila.catch(() => {}).then(() => syncEstoquePecasInterno());
+  syncFila = prox.catch(() => {});
+  return prox;
+}
+
+async function syncEstoquePecasInterno(): Promise<void> {
   const { data: progs, error: e1 } = await (supabase as any)
     .from("map_tinturaria_programacoes")
     .select("id, producao_id, pecas_recebidas, data_recebimento, nota_fiscal_recebimento, cor");
