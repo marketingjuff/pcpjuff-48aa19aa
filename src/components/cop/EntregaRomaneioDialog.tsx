@@ -67,6 +67,20 @@ export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, pe
     setParcialEdit(null);
   }
 
+  function marcarTudo() {
+    setRec((r) => {
+      let next = r;
+      for (const g of grupos) {
+        for (const t of g.tamanhos) {
+          const qtd = Math.max(0, t.qtd - t.perda - t.refacao);
+          if (qtd > 0) next = setRecebida(next, g.modelo, g.cor, t.tamanho, qtd);
+        }
+      }
+      return next;
+    });
+    setParcialEdit(null);
+  }
+
   async function handleConfirm() {
     setSaving(true);
     try {
@@ -81,9 +95,14 @@ export function EntregaRomaneioDialog({ open, onOpenChange, pecas, recebidas, pe
         <DialogHeader>
           <DialogTitle>Entrega de Romaneio — registrar recebimento</DialogTitle>
         </DialogHeader>
-        <div className="text-xs text-muted-foreground mb-1">
-          Clique no <b>número</b> para marcar como recebido <b>completo</b> (bolinha verde).
-          Clique no <b>lápis</b> para informar uma quantidade <b>parcial</b> (bolinha cinza).
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <div className="text-xs text-muted-foreground">
+            Clique no <b>número</b> para marcar como recebido <b>completo</b> (bolinha verde).
+            Clique no <b>lápis</b> para informar uma quantidade <b>parcial</b> (bolinha cinza).
+          </div>
+          <Button size="sm" variant="outline" onClick={marcarTudo} disabled={saving}>
+            <Check className="h-4 w-4 mr-1" /> Marcar tudo recebido
+          </Button>
         </div>
         <div className="rounded-md border overflow-x-auto max-h-[60vh]">
           {(() => {
