@@ -796,7 +796,8 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                   <Label>Peças do Romaneio (do Corte)</Label>
                   <div className="text-xs text-muted-foreground">
                     Total: <span className="font-semibold tabular-nums">{totalPecasCop(selected.pecas)}</span> ·
-                    Recebido: <span className="font-semibold tabular-nums text-green-700"> {totalRecebidas(recebidas)}</span>
+                    Recebido: <span className="font-semibold tabular-nums text-green-700"> {totalRecebidas(recebidas)}</span> ·
+                    Faltam: <span className="font-semibold tabular-nums text-amber-700"> {Math.max(0, totalPecasCop(selected.pecas) - totalRecebidas(recebidas) - (selected.perdas ?? []).reduce((s, p) => s + (Number(p.qtd) || 0), 0))}</span>
                   </div>
                 </div>
                 <div className="rounded-md border overflow-x-auto">
