@@ -176,7 +176,9 @@ export function CorteTab({ selectedId = null, onSelect, onChangeTab }: { selecte
       observacoes_corte: selected.observacoes_corte,
     });
     setGrupos(agrupar(selected.pecas || []));
-  }, [selectedId]); // eslint-disable-line
+    // Recarrega também quando o COP muda no banco (ex.: divisão em A/B no Romaneio),
+    // senão a tela guarda as peças antigas e, ao salvar, devolve peças que foram para outra letra.
+  }, [selectedId, selected?.updated_at, selected?.corte_em_correcao]); // eslint-disable-line
 
   // ===== Mutations =====
   const criar = useMutation({
