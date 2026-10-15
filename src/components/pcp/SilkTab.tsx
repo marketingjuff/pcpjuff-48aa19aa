@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Download, FilterX, FastForward } from "lucide-react";
 import { ReadOnlyField, FormField, EmptyState, EtapaTopoBanner, EtapaBadgeFromPedido, StatusPecasBadge, StatusPecasChip, QtdTotal, PedidoMobileCard, Chip, useSort, cmpDate, cmpNum, cmpText, SortableTh, Th, rowAlertBgClass, linhaAtrasoClasse, ETAPA_FILTRO_OPCOES_SILK, matchEtapaFiltro, UpdateButton, OrcamentoTitle } from "./shared";
+import { FiltroMultiSelect } from "./FiltroMultiSelect";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { MultiSelectPeople } from "./MultiSelectPeople";
@@ -164,7 +165,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
   const [fStatus, setFStatus] = useState("todos");
   const [fTela, setFTela] = useState("todos");
   const [fSilk, setFSilk] = useState("todos");
-  const [fEtapa, setFEtapa] = useState("silk");
+  const [fEtapa, setFEtapa] = useState<string[]>(["silk"]);
 
   const dashboardPedidos = useMemo(() => sortByDataSaidaJuffAsc(pedidos.filter((p) => {
     if (!matchEtapaFiltro(p, fEtapa)) return false;
@@ -323,12 +324,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
         <CardHeader className="pb-2"><div className="flex items-baseline justify-between gap-2"><CardTitle className="text-base">Dashboard — Silk</CardTitle><span className="text-xs text-muted-foreground tabular-nums">{dashboardPedidos.length} {dashboardPedidos.length === 1 ? "registro" : "registros"}</span></div></CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-6">
-            <Select value={fEtapa} onValueChange={setFEtapa}>
-              <SelectTrigger><SelectValue placeholder="Etapa" /></SelectTrigger>
-              <SelectContent>
-                {ETAPA_FILTRO_OPCOES_SILK.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <FiltroMultiSelect values={fEtapa} options={ETAPA_FILTRO_OPCOES_SILK} onChange={setFEtapa} placeholder="Etapa" />
             <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />
             <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
             <Select value={fStatus} onValueChange={setFStatus}>
@@ -355,7 +351,7 @@ export function SilkTab({ pedidos, selected, onSelect, onSave, saving, active = 
             </Select>
           </div>
           <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => { setFOrc(""); setFPed(""); setFStatus("todos"); setFTela("todos"); setFSilk("todos"); setFEtapa("silk"); }}>
+            <Button variant="outline" size="sm" onClick={() => { setFOrc(""); setFPed(""); setFStatus("todos"); setFTela("todos"); setFSilk("todos"); setFEtapa(["silk"]); }}>
               <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
             </Button>
           </div>

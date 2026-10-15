@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import { FaixaSomenteLeitura } from "./DadosInTab";
 import { ReadOnlyField, EmptyState, FormField, PedidoMobileCard, Chip, Th, rowAlertBgClass, linhaAtrasoClasse, TH_RAW_CLASS, ETAPA_FILTRO_OPCOES_EXPEDICAO, matchEtapaFiltro, UpdateButton, FinalizarButton, OrcamentoTitle } from "./shared";
+import { FiltroMultiSelect } from "./FiltroMultiSelect";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { VoltarDropdown } from "./VoltarDropdown";
@@ -199,7 +200,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
   const [fOrc, setFOrc] = useState("");
   const [fUF, setFUF] = useState("");
   const [fForma, setFForma] = useState("todos");
-  const [fEtapa, setFEtapa] = useState("expedicao");
+  const [fEtapa, setFEtapa] = useState<string[]>(["expedicao"]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   function toggleId(id: string) {
@@ -527,12 +528,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
         <CardHeader className="pb-2"><div className="flex items-baseline justify-between gap-2"><CardTitle className="text-base">Dashboard — Expedição</CardTitle><span className="text-xs text-muted-foreground tabular-nums">{dashboardPedidos.length} {dashboardPedidos.length === 1 ? "registro" : "registros"}</span></div></CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-5">
-            <Select value={fEtapa} onValueChange={setFEtapa}>
-              <SelectTrigger><SelectValue placeholder="Etapa" /></SelectTrigger>
-              <SelectContent>
-                {ETAPA_FILTRO_OPCOES_EXPEDICAO.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <FiltroMultiSelect values={fEtapa} options={ETAPA_FILTRO_OPCOES_EXPEDICAO} onChange={setFEtapa} placeholder="Etapa" />
             <Input placeholder="Pedido" value={fPed} onChange={(e) => setFPed(e.target.value)} />
             <Input placeholder="Orçamento" value={fOrc} onChange={(e) => setFOrc(e.target.value)} />
             <Input placeholder="UF" value={fUF} onChange={(e) => setFUF(e.target.value)} />
@@ -545,7 +541,7 @@ export function ExpedicaoTab({ pedidos, selected, onSelect, onSave, saving, onNa
             </Select>
           </div>
           <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => { setFPed(""); setFOrc(""); setFUF(""); setFForma("todos"); setFEtapa("expedicao"); }}>
+            <Button variant="outline" size="sm" onClick={() => { setFPed(""); setFOrc(""); setFUF(""); setFForma("todos"); setFEtapa(["expedicao"]); }}>
               <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
             </Button>
           </div>

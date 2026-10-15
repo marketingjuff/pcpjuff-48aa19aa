@@ -572,7 +572,15 @@ export const ETAPA_FILTRO_OPCOES_EXPEDICAO = _pickEtapaOpcoes([
   "finalizados",
 ]);
 
-export function matchEtapaFiltro(p: Pedido, value: string): boolean {
+export function matchEtapaFiltro(p: Pedido, value: string | string[]): boolean {
+  if (Array.isArray(value)) {
+    const vs = value.length ? value : ["ativas"];
+    return vs.some((v) => _matchEtapaUnica(p, v));
+  }
+  return _matchEtapaUnica(p, value);
+}
+
+function _matchEtapaUnica(p: Pedido, value: string): boolean {
   if (value === "finalizados") return !!p.finalizado_em;
   if (!!p.finalizado_em) return false;
   if (value === "pendencias_data") return !!p.data_entrega_proposta;

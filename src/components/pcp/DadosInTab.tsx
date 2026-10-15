@@ -28,6 +28,7 @@ import { useFeriados } from "@/hooks/use-feriados";
 import { calcInicioAcabamento, temSegundaOuQuinta } from "@/lib/pcp-monitor";
 import { formatDateBR } from "@/lib/format";
 import { PedidoMobileCard, Chip, QtdTotal, StatusPecasBadge, StatusPecasChip, etapaPaletteClass, TABLE_WRAPPER_CLASS, TABLE_FONT_STYLE, TH_CLASS, TD_CLASS, BADGE_SM_CLASS, useSort, cmpDate, cmpNum, ETAPA_FILTRO_OPCOES_DADOS_IN, matchEtapaFiltro, UpdateButton, EtapaBadgeView, rowBgClass } from "./shared";
+import { FiltroMultiSelect } from "./FiltroMultiSelect";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { RefacaoBadge } from "./RefacaoBadge";
@@ -471,11 +472,11 @@ export function DadosInTab({ pedidos, selected, onSelect, onSave, onDelete, savi
     () => pedidos.filter((p) => !!p.data_entrega_proposta && !p.finalizado_em).length,
     [pedidos],
   );
-  const [etapaFiltro, setEtapaFiltro] = useState("ativas");
+  const [etapaFiltro, setEtapaFiltro] = useState<string[]>(["ativas"]);
   const dashboardRef = useRef<HTMLDivElement | null>(null);
 
   function abrirPendenciasData() {
-    setEtapaFiltro("pendencias_data");
+    setEtapaFiltro(["pendencias_data"]);
     setTimeout(() => {
       dashboardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50);
@@ -903,8 +904,8 @@ function DadosInDashboard({
   onSelect: (id: string) => void;
   feriados: Set<string>;
   vendedores: string[];
-  etapaFiltro: string;
-  setEtapaFiltro: (v: string) => void;
+  etapaFiltro: string[];
+  setEtapaFiltro: (v: string[]) => void;
 }) {
   const [search, setSearch] = useState("");
   const [vendedor, setVendedor] = useState("todos");
@@ -954,12 +955,7 @@ function DadosInDashboard({
         <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <div className="space-y-0.5">
             <Label className="text-xs text-muted-foreground font-medium">Etapa</Label>
-            <Select value={etapaFiltro} onValueChange={setEtapaFiltro}>
-              <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {ETAPA_FILTRO_OPCOES_DADOS_IN.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <FiltroMultiSelect values={etapaFiltro} options={ETAPA_FILTRO_OPCOES_DADOS_IN} onChange={setEtapaFiltro} placeholder="Etapa" />
           </div>
           <div className="space-y-0.5">
             <Label className="text-xs text-muted-foreground font-medium">Buscar</Label>
@@ -1001,7 +997,7 @@ function DadosInDashboard({
           </div>
         </div>
         <div className="flex justify-end">
-          <Button variant="outline" size="sm" onClick={() => { setEtapaFiltro("ativas"); setSearch(""); setVendedor("todos"); setStatus("todos"); setTipo("todos"); setDataEntrega(""); }}>
+          <Button variant="outline" size="sm" onClick={() => { setEtapaFiltro(["ativas"]); setSearch(""); setVendedor("todos"); setStatus("todos"); setTipo("todos"); setDataEntrega(""); }}>
             <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
           </Button>
         </div>
