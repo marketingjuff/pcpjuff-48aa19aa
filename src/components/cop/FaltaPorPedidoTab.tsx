@@ -441,6 +441,34 @@ export function FaltaPorPedidoTab() {
         />
       )}
 
+      <AlertDialog open={!!baixaTudo} onOpenChange={(o) => !o && setBaixaTudo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Baixar todas as peças?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que quer baixar todas as peças desse pedido
+              {baixaTudo?.pedido.orcamento ? ` (${baixaTudo.pedido.orcamento})` : ""}? Serão baixadas{" "}
+              <b>{totalBaixaTudo}</b> peças.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!baixaTudo) return;
+                const baixas = baixaTudo.grupos.flatMap((g) =>
+                  Array.from(g.porTamanho.entries()).map(([tam, info]) => ({ idx: info.idx, tamanho: tam, qtd: info.falta })),
+                );
+                await baixar.mutateAsync({ pedido: baixaTudo.pedido, observacao: "Baixa de todas as peças do pedido", baixas });
+                setBaixaTudo(null);
+              }}
+            >
+              Sim, baixar tudo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={!!historico} onOpenChange={(o) => !o && setHistorico(null)}>
         <DialogContent className="max-w-[720px]">
           <DialogHeader>
