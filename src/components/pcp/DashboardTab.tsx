@@ -13,6 +13,7 @@ import { FiltroMultiSelect } from "./FiltroMultiSelect";
 
 const ETAPA_OPCOES: { value: string; label: string }[] = [
   { value: "ativas", label: "Todas (menos finalizados)" },
+  { value: "atrasados", label: "Atrasados" },
   { value: "em_refacao", label: "Em refação" },
   { value: "aguardando_entrada", label: "Aguardando entrada" },
   { value: "aguardando_input", label: "Aguardando input de produção" },
@@ -48,7 +49,7 @@ interface Props {
 }
 
 type Etapa =
-  | "todas" | "ativas" | "finalizados" | "em_refacao"
+  | "todas" | "ativas" | "atrasados" | "finalizados" | "em_refacao"
   | "aguardando_entrada" | "aguardando_input"
   | "arte" | "dtf_pronto_silk_arte" | "silk_pronto_dtf_arte"
   | "dtf" | "silk" | "dtf_silk"
@@ -78,6 +79,11 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
 
   function pedidoEmEtapa(p: Pedido, e: Etapa): boolean {
     if (e === "finalizados") return !!p.finalizado_em;
+    if (e === "atrasados") {
+      if (p.finalizado_em || !p.saida_juff) return false;
+      const dias = diasUteisAteHoje(p.saida_juff, feriados);
+      return dias !== null && dias <= 0;
+    }
     if (e === "em_refacao") {
       return Array.isArray(p.refacoes) && p.refacoes.some((ep) => ep.aberto === true);
     }
@@ -88,7 +94,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
     if (e === "expedicao") return ativoExpedicao;
     if (!ativoNormal) return false;
     const etapaAtual = calcularEtapaAtual(p).etapa.replace(/\*$/, "");
-    const map: Record<Exclude<Etapa, "todas"|"ativas"|"finalizados"|"expedicao"|"em_refacao">, string[]> = {
+    const map: Record<Exclude<Etapa, "todas"|"ativas"|"atrasados"|"finalizados"|"expedicao"|"em_refacao">, string[]> = {
       aguardando_entrada: ["Aguardando entrada"],
       aguardando_input: ["Aguardando input de produção"],
       arte: ["Aguardando Arte", "DTF Liberado / Silk na Arte", "Silk Liberado / DTF na Arte"],
@@ -243,7 +249,7 @@ export function DashboardTab({ pedidos, loading, onEdit }: Props) {
     <div className="space-y-3">
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-7">
         <StatCard label="Total ativos" value={stats.total} icon={<ListChecks className="h-4 w-4" />} onClick={() => setEtapas(["ativas"])} active={etapaUnica("ativas")} />
-        <StatCard label="Atrasados" value={stats.atrasados} icon={<AlertCircle className="h-4 w-4" />} accent="destructive" onClick={() => setEtapas(["ativas"])} />
+        <StatCard label="Atrasados" value={stats.atrasados} icon={<AlertCircle className="h-4 w-4" />} accent="destructive" onClick={() => setEtapas(["atrasados"])} active={etapaUnica("atrasados")} />
         <StatCard label="Arte" value={stats.arte} icon={<Palette className="h-4 w-4" />} accent="info" onClick={() => setEtapas(["arte"])} active={etapaUnica("arte")} />
         <StatCard label="DTF" value={stats.dtf} icon={<Printer className="h-4 w-4" />} accent="info" onClick={() => setEtapas(["dtf"])} active={etapaUnica("dtf")} />
         <StatCard label="Silk" value={stats.silk} icon={<Brush className="h-4 w-4" />} accent="info" onClick={() => setEtapas(["silk"])} active={etapaUnica("silk")} />
