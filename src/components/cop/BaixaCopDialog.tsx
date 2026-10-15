@@ -88,9 +88,24 @@ export function BaixaCopDialog({ open, onOpenChange, modelo, cor, orcamento, ite
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3 text-sm">
-          <div className="text-xs text-muted-foreground">
-            Clique no <b>número</b> para dar baixa <b>completa</b> da falta (bolinha verde).
-            Clique no <b>lápis</b> para informar uma quantidade <b>parcial</b> (bolinha cinza).
+          <div className="flex items-start justify-between gap-2">
+            <div className="text-xs text-muted-foreground">
+              Clique no <b>número</b> para dar baixa <b>completa</b> da falta (bolinha verde).
+              Clique no <b>lápis</b> para informar uma quantidade <b>parcial</b> (bolinha cinza).
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0"
+              onClick={() => {
+                const next: Record<string, number> = {};
+                for (const it of itens) next[it.tamanho] = it.falta;
+                setQtds(next);
+                setParcialEdit(null);
+              }}
+            >
+              <Check className="h-3.5 w-3.5 mr-1" /> Baixar tudo deste modelo/cor
+            </Button>
           </div>
 
           <div className="rounded-md border overflow-x-auto">

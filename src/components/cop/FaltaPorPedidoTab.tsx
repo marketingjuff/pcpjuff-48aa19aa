@@ -7,6 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RefreshCw, ChevronRight, ChevronDown, X } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -208,6 +212,10 @@ export function FaltaPorPedidoTab() {
 
 
   const [baixa, setBaixa] = useState<{ pedido: Pedido; grupo: GrupoFalta } | null>(null);
+  const [baixaTudo, setBaixaTudo] = useState<LinhaFalta | null>(null);
+  const totalBaixaTudo = baixaTudo
+    ? baixaTudo.grupos.reduce((s, g) => s + Array.from(g.porTamanho.values()).reduce((a, i) => a + i.falta, 0), 0)
+    : 0;
 
   const baixar = useMutation({
     mutationFn: async ({
@@ -368,6 +376,14 @@ export function FaltaPorPedidoTab() {
                               {(r.pedido as any).pedido_olist && (
                                 <div className="text-[10px] text-muted-foreground">Olist {(r.pedido as any).pedido_olist}</div>
                               )}
+                              <Button
+                                size="sm"
+                                className="h-6 px-2 text-[11px] mt-1"
+                                style={btnStyle("dar_baixa")}
+                                onClick={(e) => { e.stopPropagation(); setBaixaTudo(r); }}
+                              >
+                                Baixar tudo
+                              </Button>
                             </td>
                           ) : null}
                           <td className="px-1 py-1 whitespace-nowrap">{r.grupo.modelo}</td>
@@ -424,6 +440,34 @@ export function FaltaPorPedidoTab() {
           }}
         />
       )}
+
+      <AlertDialog open={!!baixaTudo} onOpenChange={(o) => !o && setBaixaTudo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Baixar todas as peças?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que quer baixar todas as peças desse pedido
+              {baixaTudo?.pedido.orcamento ? ` (${baixaTudo.pedido.orcamento})` : ""}? Serão baixadas{" "}
+              <b>{totalBaixaTudo}</b> peças.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!baixaTudo) return;
+                const baixas = baixaTudo.grupos.flatMap((g) =>
+                  Array.from(g.porTamanho.entries()).map(([tam, info]) => ({ idx: info.idx, tamanho: tam, qtd: info.falta })),
+                );
+                await baixar.mutateAsync({ pedido: baixaTudo.pedido, observacao: "Baixa de todas as peças do pedido", baixas });
+                setBaixaTudo(null);
+              }}
+            >
+              Sim, baixar tudo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={!!historico} onOpenChange={(o) => !o && setHistorico(null)}>
         <DialogContent className="max-w-[720px]">
