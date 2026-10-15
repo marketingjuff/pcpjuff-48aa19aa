@@ -27,6 +27,7 @@ import {
   useSort, cmpDate, cmpNum, cmpText, SortableTh, Th, TH_RAW_CLASS, rowAlertBgClass, linhaAtrasoClasse,
   ETAPA_FILTRO_OPCOES_ARTE, matchEtapaFiltro, UpdateButton, OrcamentoTitle,
 } from "./shared";
+import { FiltroMultiSelect } from "./FiltroMultiSelect";
 import { ObservacoesOutrosSetores } from "./ObservacoesOutrosSetores";
 import { RefacaoViewerButton } from "./RefacaoViewerButton";
 import { RefacaoBadge } from "./RefacaoBadge";
@@ -183,7 +184,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
 
 
   // Filtros do dashboard
-  const [fEtapa, setFEtapa] = useState<string>("arte");
+  const [fEtapa, setFEtapa] = useState<string[]>(["arte"]);
   const [fSearch, setFSearch] = useState("");
   const [fTipo, setFTipo] = useState<string>("todos");
   const [fDtf, setFDtf] = useState<string>("todos");
@@ -409,12 +410,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
           <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
             <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Etapa</label>
-              <Select value={fEtapa} onValueChange={setFEtapa}>
-                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ETAPA_FILTRO_OPCOES_ARTE.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <FiltroMultiSelect values={fEtapa} options={ETAPA_FILTRO_OPCOES_ARTE} onChange={setFEtapa} placeholder="Etapa" />
             </div>
             <div className="space-y-0.5">
               <label className="text-xs text-muted-foreground font-medium">Pedido / Orçamento</label>
@@ -468,7 +464,7 @@ export function ArteTab({ pedidos, selected, onSelect, onSave, saving, active = 
             </div>
           </div>
           <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => { setFEtapa("arte"); setFSearch(""); setFTipo("todos"); setFDtf("todos"); setFFoto("todos"); setFStatusArte("todos"); setFWarning(false); }}>
+            <Button variant="outline" size="sm" onClick={() => { setFEtapa(["arte"]); setFSearch(""); setFTipo("todos"); setFDtf("todos"); setFFoto("todos"); setFStatusArte("todos"); setFWarning(false); }}>
               <FilterX className="h-4 w-4 mr-1" /> Limpar Filtros
             </Button>
           </div>
