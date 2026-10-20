@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,9 +14,10 @@ import { MOTIVOS_PERDA_PADRAO, type Oficina } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
 export function RegistrarPerdaManualDialog({
-  open, onOpenChange,
+  open, onOpenChange, editId,
 }: {
   open: boolean;
+  editId?: string | null;
   onOpenChange: (v: boolean) => void;
 }) {
   const qc = useQueryClient();
@@ -46,6 +47,17 @@ export function RegistrarPerdaManualDialog({
     },
   });
 
+  useEffect(() => {
+    if (!open || !editId) return;
+    (async () => {
+      const { data: r, error } = await (supabase as any).from("perdas_manuais").select("*").eq("id", editId).maybeSingle();
+      if (error || !r) { toast.error("Não foi possível carregar a perda."); return; }
+      setData(r.data); setModelo(r.modelo); setCor(r.cor); setTamanho(r.tamanho); setQtd(String(r.qtd));
+      setMotivo(r.motivo ?? ""); setOficinaId(r.oficina_id ?? ""); setBerco(r.berco ?? ""); setDestino(r.destino ?? "");
+      setResponsavel(r.responsavel ?? ""); setObservacoes(r.observacoes ?? "");
+    })();
+  }, [open, editId]);
+
   function reset() {
     setData(new Date().toISOString().slice(0, 10));
     setModelo(REFACAO_MODELOS[0]); setCor(REFACAO_CORES[0].nome); setTamanho(REFACAO_TAMANHOS[2]);
@@ -68,11 +80,17 @@ export function RegistrarPerdaManualDialog({
         observacoes: observacoes.trim() || null,
         registrado_por: userData.user?.id ?? null,
       };
+      if (editId) {
+        const { registrado_por: _r, ...upd } = payload;
+        const { error } = await (supabase as any).from("perdas_manuais").update(upd).eq("id", editId);
+        if (error) throw error;
+        return;
+      }
       const { error } = await (supabase as any).from("perdas_manuais").insert(payload);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Perda manual registrada.");
+      toast.success(editId ? "Perda corrigida." : "Perda manual registrada.");
       qc.invalidateQueries({ queryKey: ["perdas-cons-manuais"] });
       reset();
       onOpenChange(false);
@@ -85,7 +103,7 @@ export function RegistrarPerdaManualDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className="max-w-[720px]">
-        <DialogHeader><DialogTitle>Registrar perda manual</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{editId ? "Corrigir perda manual" : "Registrar perda manual"}</DialogTitle></DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div><Label>Data</Label><Input type="date" value={data} onChange={(e) => setData(e.target.value)} /></div>
           <div><Label>Quantidade</Label><Input type="number" min="1" value={qtd} onChange={(e) => setQtd(e.target.value)} /></div>
