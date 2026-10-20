@@ -63,6 +63,7 @@ export function ControlePerdasTab() {
   const [busca, setBusca] = useState<string>("");
 
   const [detalhe, setDetalhe] = useState<PerdaConsolidada | null>(null);
+  const [editManual, setEditManual] = useState<string | null>(null);
   const [corrigir, setCorrigir] = useState<PerdaConsolidada | null>(null);
   const [novoManual, setNovoManual] = useState(false);
 
@@ -270,7 +271,12 @@ export function ControlePerdasTab() {
                           </Button>
                         )}
                         {isAdmin && p.fonte.kind === "manual" && (
-                          <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir esta perda manual?")) excluirManual.mutate(p.fonte.kind === "manual" ? p.fonte.id : ""); }} title="Excluir">
+                          <Button size="sm" variant="outline" onClick={() => setEditManual(p.fonte.kind === "manual" ? p.fonte.id : null)} title="Corrigir perda">
+                            <Pencil className="h-3.5 w-3.5 mr-1" />Corrigir
+                          </Button>
+                        )}
+                        {isAdmin && p.fonte.kind === "manual" && (
+                          <Button size="icon" variant="ghost" onClick={() => { if (confirm("Reverter esta perda? Ela será removida do controle de perdas.")) excluirManual.mutate(p.fonte.kind === "manual" ? p.fonte.id : ""); }} title="Reverter (excluir) perda">
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         )}
@@ -287,6 +293,7 @@ export function ControlePerdasTab() {
       <PerdaDetalheDialog perda={detalhe} open={!!detalhe} onOpenChange={(v) => !v && setDetalhe(null)} />
       <CorrigirPerdaDialog perda={corrigir} open={!!corrigir} onOpenChange={(v) => !v && setCorrigir(null)} />
       <RegistrarPerdaManualDialog open={novoManual} onOpenChange={setNovoManual} />
+      <RegistrarPerdaManualDialog open={!!editManual} editId={editManual} onOpenChange={(v) => !v && setEditManual(null)} />
     </div>
   );
 }
