@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { usePerdasConsolidadas, type PerdaConsolidada } from "@/lib/perdas-consolidado";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import { useIsAdmin } from "@/hooks/use-role";
+import { useIsAdmin, useHasRole } from "@/hooks/use-role";
 import { PerdaDetalheDialog } from "./PerdaDetalheDialog";
 import { CorrigirPerdaDialog } from "./CorrigirPerdaDialog";
 import { RegistrarPerdaManualDialog } from "./RegistrarPerdaManualDialog";
@@ -43,6 +43,8 @@ function OrigemBadge({ p }: { p: PerdaConsolidada }) {
 
 export function ControlePerdasTab() {
   const isAdmin = useIsAdmin();
+  const isGestor = useHasRole("gestor");
+  const podeCorrigir = isAdmin || isGestor;
   const qc = useQueryClient();
   const { perdas, isLoading, oficinas } = usePerdasConsolidadas();
 
@@ -270,12 +272,12 @@ export function ControlePerdasTab() {
                             <Pencil className="h-3.5 w-3.5 mr-1" />Corrigir
                           </Button>
                         )}
-                        {isAdmin && p.fonte.kind === "manual" && (
+                        {podeCorrigir && p.fonte.kind === "manual" && (
                           <Button size="sm" variant="outline" onClick={() => setEditManual(p.fonte.kind === "manual" ? p.fonte.id : null)} title="Corrigir perda">
                             <Pencil className="h-3.5 w-3.5 mr-1" />Corrigir
                           </Button>
                         )}
-                        {isAdmin && p.fonte.kind === "manual" && (
+                        {podeCorrigir && p.fonte.kind === "manual" && (
                           <Button size="icon" variant="ghost" onClick={() => { if (confirm("Reverter esta perda? Ela será removida do controle de perdas.")) excluirManual.mutate(p.fonte.kind === "manual" ? p.fonte.id : ""); }} title="Reverter (excluir) perda">
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
