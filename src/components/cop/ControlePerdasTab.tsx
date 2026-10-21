@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { usePerdasConsolidadas, type PerdaConsolidada } from "@/lib/perdas-consolidado";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import { useIsAdmin, useHasRole } from "@/hooks/use-role";
+import { useIsAdmin, useHasRole, usePode } from "@/hooks/use-role";
 import { PerdaDetalheDialog } from "./PerdaDetalheDialog";
 import { CorrigirPerdaDialog } from "./CorrigirPerdaDialog";
 import { RegistrarPerdaManualDialog } from "./RegistrarPerdaManualDialog";
