@@ -46,6 +46,14 @@ export const LISTAS_CATALOGO: ListaCatalogoItem[] = [
   { kind: "refacao_problema_dtf", titulo: "Problemas do DTF", placeholder: "Novo problema", modulos: ["pcp"], grupo: "Refação" },
   { kind: "refacao_problema_silk", titulo: "Problemas do Silk", placeholder: "Novo problema", modulos: ["pcp"], grupo: "Refação" },
   { kind: "refacao_problema_acabamento", titulo: "Problemas do Acabamento", placeholder: "Novo problema", modulos: ["pcp"], grupo: "Refação" },
+  {
+    kind: "refacao_problema_input_vendedor",
+    titulo: "Problemas do Input de Vendedor",
+    placeholder: "Novo problema",
+    modulos: ["pcp"],
+    grupo: "Refação",
+    notaUso: "Escolhida na Refação do PCP quando a área que errou é Input de Vendedor.",
+  },
 
   // ---------- PCP + COP · Perdas (compartilhada) ----------
   {
