@@ -42,7 +42,7 @@ function OrigemBadge({ p }: { p: PerdaConsolidada }) {
 }
 
 const motivoDe = (p: PerdaConsolidada): string | null =>
-  p.origem === "pcp" ? ((p.problema ?? null) || (p.motivo ?? null)) : (p.motivo ?? null);
+  p.origem === "pcp" || p.origem === "manual" ? ((p.problema ?? null) || (p.motivo ?? null)) : (p.motivo ?? null);
 
 export function ControlePerdasTab() {
   const isAdmin = useIsAdmin();
@@ -113,7 +113,7 @@ export function ControlePerdasTab() {
 
   const filtradasSort = useTableSort(filtradas, {
     origem: (p) => p.origem,
-    area: (p) => (p.origem === "pcp" ? (p.area_erro ?? (p.erro_producao ? "Produção" : "")) : ""),
+    area: (p) => (p.area_erro ?? (p.erro_producao ? "Produção" : "")),
     identificacao: (p) => p.identificacao ?? "",
     data: (p) => p.data,
     motivo: (p) => motivoDe(p) ?? "",
@@ -255,7 +255,7 @@ export function ControlePerdasTab() {
                   <TableRow><TableCell colSpan={14} className="text-muted-foreground">Nenhuma perda para os filtros atuais.</TableCell></TableRow>
                 ) : filtradasSort.rows.map((p) => {
                   const hex = corHex(p.cor); const fg = corTextoSobre(hex);
-                  const areaErro = p.origem === "pcp" ? (p.area_erro ?? (p.erro_producao ? "Produção" : "—")) : "—";
+                  const areaErro = p.area_erro ?? (p.erro_producao ? "Produção" : "—");
                   return (
                     <TableRow key={p.id} className="cursor-pointer hover:bg-accent/40" onClick={() => setDetalhe(p)}>
                       <TableCell><OrigemBadge p={p} /></TableCell>
