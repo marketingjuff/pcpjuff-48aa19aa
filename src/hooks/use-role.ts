@@ -97,7 +97,7 @@ export function usePode(key: PermissaoKey): boolean {
 /** Abas do módulo que este usuário pode ver, na ordem do catálogo. */
 export function useAbasPermitidas(modulo: ModuloKey): AbaPermissao[] {
   const perms = useMinhasPermissoes();
-  return abasDoModulo(modulo).filter((a) => perms.has(a.key));
+  return abasDoModulo(modulo).filter((a) => !a.acao && perms.has(a.key));
 }
 
 /** Módulos com pelo menos 1 aba permitida. */

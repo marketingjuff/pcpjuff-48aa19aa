@@ -20,6 +20,8 @@ export type AbaPermissao = {
   label: string;
   /** true = admin pode escolher entre edição e somente leitura nesta aba. */
   nivelConfiguravel: boolean;
+  /** true = não é aba, é uma ação dentro de uma aba (não vira aba na tela). */
+  acao?: boolean;
 };
 
 export const MODULOS: { key: ModuloKey; label: string; rota: string }[] = [
@@ -57,6 +59,7 @@ export const CATALOGO_PERMISSOES: AbaPermissao[] = [
   { key: "cop.controle_perdas", modulo: "cop", tabValue: "controle-perdas", label: "Controle de Perdas", nivelConfiguravel: false },
   { key: "cop.alimentacao_estoque", modulo: "cop", tabValue: "alimentacao-estoque", label: "Alimentação Estoque Real", nivelConfiguravel: false },
   { key: "cop.saldo_real", modulo: "cop", tabValue: "saldo-real", label: "Saldo Real Juff", nivelConfiguravel: false },
+  { key: "cop.perda_manual", modulo: "cop", tabValue: "", label: "Pode registrar perda manual (Controle de Perdas)", nivelConfiguravel: false, acao: true },
   // MAP
   { key: "map.programacao", modulo: "map", tabValue: "programacao", label: "Prod. de Tecido", nivelConfiguravel: false },
   { key: "map.finalizados", modulo: "map", tabValue: "finalizados", label: "Prod. Finalizados", nivelConfiguravel: false },
