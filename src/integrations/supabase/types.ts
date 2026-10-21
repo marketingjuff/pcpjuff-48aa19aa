@@ -1475,16 +1475,20 @@ export type Database = {
       }
       perdas_manuais: {
         Row: {
+          area_erro: string | null
+          area_identificou: string | null
           berco: string | null
           cor: string
           created_at: string
           data: string
           destino: string | null
+          erro_producao: boolean | null
           id: string
           modelo: string
           motivo: string | null
           observacoes: string | null
           oficina_id: string | null
+          problema: string | null
           qtd: number
           registrado_por: string | null
           responsavel: string | null
@@ -1492,16 +1496,20 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          area_erro?: string | null
+          area_identificou?: string | null
           berco?: string | null
           cor: string
           created_at?: string
           data?: string
           destino?: string | null
+          erro_producao?: boolean | null
           id?: string
           modelo: string
           motivo?: string | null
           observacoes?: string | null
           oficina_id?: string | null
+          problema?: string | null
           qtd: number
           registrado_por?: string | null
           responsavel?: string | null
@@ -1509,16 +1517,20 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          area_erro?: string | null
+          area_identificou?: string | null
           berco?: string | null
           cor?: string
           created_at?: string
           data?: string
           destino?: string | null
+          erro_producao?: boolean | null
           id?: string
           modelo?: string
           motivo?: string | null
           observacoes?: string | null
           oficina_id?: string | null
+          problema?: string | null
           qtd?: number
           registrado_por?: string | null
           responsavel?: string | null
