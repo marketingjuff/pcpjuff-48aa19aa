@@ -9,9 +9,22 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
-import { useAppList } from "@/lib/app-lists";
+import { useAppList, type AppListKind } from "@/lib/app-lists";
 import { MOTIVOS_PERDA_PADRAO, type Oficina } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
+
+function kindForArea(area: string): AppListKind {
+  switch (area) {
+    case "Arte": return "refacao_problema_arte";
+    case "DTF": return "refacao_problema_dtf";
+    case "Silk": return "refacao_problema_silk";
+    case "Acabamento": return "refacao_problema_acabamento";
+    case "Comercial":
+    case "Input de Vendedor": return "refacao_problema_input_vendedor";
+    default: return "motivo_perda";
+  }
+}
+
 
 export function RegistrarPerdaManualDialog({
   open, onOpenChange, editId,
@@ -129,6 +142,52 @@ export function RegistrarPerdaManualDialog({
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className="max-w-[720px]">
         <DialogHeader><DialogTitle>{editId ? "Corrigir perda manual" : "Registrar perda manual"}</DialogTitle></DialogHeader>
+        <div className="rounded-md border bg-muted/20 p-3 space-y-3">
+          <div className="text-[11px] text-muted-foreground font-medium uppercase">Identificação do problema</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label>Qual área identificou o problema? *</Label>
+              <Select value={areaIdentificou} onValueChange={setAreaIdentificou}>
+                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                <SelectContent>{areasIdentifica.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Houve erro da produção? *</Label>
+              <Select value={erroProd} onValueChange={(v) => {
+                setErroProd(v as "sim" | "nao");
+                if (v === "nao") setAreaErro("");
+                setProblema("");
+              }}>
+                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sim">Sim</SelectItem>
+                  <SelectItem value="nao">Não</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {erroProd === "sim" && (
+              <div>
+                <Label>Qual área errou? *</Label>
+                <Select value={areaErro} onValueChange={(v) => { setAreaErro(v); setProblema(""); }}>
+                  <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                  <SelectContent>{areasErro.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            )}
+            <div>
+              <Label>Qual foi o problema? *</Label>
+              <Select value={problema} onValueChange={setProblema}>
+                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                <SelectContent>
+                  {problemaOptions.length === 0
+                    ? <div className="px-2 py-1.5 text-xs text-muted-foreground">Sem opções cadastradas.</div>
+                    : problemaOptions.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div><Label>Data</Label><Input type="date" value={data} onChange={(e) => setData(e.target.value)} /></div>
           <div><Label>Quantidade</Label><Input type="number" min="1" value={qtd} onChange={(e) => setQtd(e.target.value)} /></div>
@@ -165,13 +224,6 @@ export function RegistrarPerdaManualDialog({
             </Select>
           </div>
           <div>
-            <Label>Motivo</Label>
-            <Select value={motivo} onValueChange={setMotivo}>
-              <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
-              <SelectContent>{motivosList.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
             <Label>Oficina (opcional)</Label>
             <Select value={oficinaId || "__none__"} onValueChange={(v) => setOficinaId(v === "__none__" ? "" : v)}>
               <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
@@ -198,9 +250,10 @@ export function RegistrarPerdaManualDialog({
             <Textarea rows={3} value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
           </div>
         </div>
+        {err && <div className="text-sm text-destructive">{err}</div>}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={salvar.isPending}>Cancelar</Button>
-          <Button onClick={() => salvar.mutate()} disabled={salvar.isPending}>Registrar</Button>
+          <Button onClick={() => { if (validar()) salvar.mutate(); }} disabled={salvar.isPending}>Registrar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
