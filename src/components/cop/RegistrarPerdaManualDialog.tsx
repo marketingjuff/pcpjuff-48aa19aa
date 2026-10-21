@@ -26,7 +26,11 @@ export function RegistrarPerdaManualDialog({
   const [cor, setCor] = useState<string>(REFACAO_CORES[0].nome);
   const [tamanho, setTamanho] = useState<string>(REFACAO_TAMANHOS[2]); // M
   const [qtd, setQtd] = useState<string>("1");
-  const [motivo, setMotivo] = useState<string>("");
+  const [areaIdentificou, setAreaIdentificou] = useState<string>("");
+  const [erroProd, setErroProd] = useState<"sim" | "nao" | "">("");
+  const [areaErro, setAreaErro] = useState<string>("");
+  const [problema, setProblema] = useState<string>("");
+  const [err, setErr] = useState<string>("");
   const [oficinaId, setOficinaId] = useState<string>("");
   const [berco, setBerco] = useState<string>("");
   const [destino, setDestino] = useState<string>("");
@@ -37,6 +41,11 @@ export function RegistrarPerdaManualDialog({
   const motivosList = motivosItems.length > 0 ? motivosItems.map((i) => i.nome) : MOTIVOS_PERDA_PADRAO;
   const { items: destinosItems } = useAppList("destino_perda" as any);
   const destinosList = destinosItems.map((i) => i.nome);
+  const { names: areasIdentifica } = useAppList("refacao_area_identifica");
+  const { names: areasErro } = useAppList("refacao_area_erro");
+  const kindProblema: AppListKind = erroProd === "sim" ? kindForArea(areaErro) : "motivo_perda";
+  const { names: problemasArea } = useAppList(kindProblema);
+  const problemaOptions = kindProblema === "motivo_perda" ? motivosList : problemasArea;
 
   const { data: oficinas = [] } = useQuery({
     queryKey: ["oficinas"],
@@ -53,7 +62,10 @@ export function RegistrarPerdaManualDialog({
       const { data: r, error } = await (supabase as any).from("perdas_manuais").select("*").eq("id", editId).maybeSingle();
       if (error || !r) { toast.error("Não foi possível carregar a perda."); return; }
       setData(r.data); setModelo(r.modelo); setCor(r.cor); setTamanho(r.tamanho); setQtd(String(r.qtd));
-      setMotivo(r.motivo ?? ""); setOficinaId(r.oficina_id ?? ""); setBerco(r.berco ?? ""); setDestino(r.destino ?? "");
+      setAreaIdentificou(r.area_identificou ?? "");
+      setErroProd(r.erro_producao === true ? "sim" : r.erro_producao === false ? "nao" : "");
+      setAreaErro(r.area_erro ?? ""); setProblema(r.problema ?? "");
+      setOficinaId(r.oficina_id ?? ""); setBerco(r.berco ?? ""); setDestino(r.destino ?? "");
       setResponsavel(r.responsavel ?? ""); setObservacoes(r.observacoes ?? "");
     })();
   }, [open, editId]);
@@ -61,7 +73,17 @@ export function RegistrarPerdaManualDialog({
   function reset() {
     setData(new Date().toISOString().slice(0, 10));
     setModelo(REFACAO_MODELOS[0]); setCor(REFACAO_CORES[0].nome); setTamanho(REFACAO_TAMANHOS[2]);
-    setQtd("1"); setMotivo(""); setOficinaId(""); setBerco(""); setDestino(""); setResponsavel(""); setObservacoes("");
+    setQtd("1"); setAreaIdentificou(""); setErroProd(""); setAreaErro(""); setProblema(""); setErr("");
+    setOficinaId(""); setBerco(""); setDestino(""); setResponsavel(""); setObservacoes("");
+  }
+
+  function validar(): boolean {
+    if (!areaIdentificou) { setErr("Informe qual área identificou o problema."); return false; }
+    if (erroProd === "") { setErr("Informe se houve erro da produção."); return false; }
+    if (erroProd === "sim" && !areaErro) { setErr("Informe qual área errou."); return false; }
+    if (!problema) { setErr("Informe qual foi o problema."); return false; }
+    setErr("");
+    return true;
   }
 
   const salvar = useMutation({
@@ -72,7 +94,10 @@ export function RegistrarPerdaManualDialog({
       const payload = {
         data,
         modelo, cor, tamanho, qtd: q,
-        motivo: motivo.trim() || null,
+        area_identificou: areaIdentificou,
+        erro_producao: erroProd === "sim",
+        area_erro: erroProd === "sim" ? areaErro : null,
+        problema: problema,
         oficina_id: oficinaId || null,
         berco: berco.trim() || null,
         destino: destino || null,
