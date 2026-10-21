@@ -48,11 +48,11 @@ export const LISTAS_CATALOGO: ListaCatalogoItem[] = [
   { kind: "refacao_problema_acabamento", titulo: "Problemas do Acabamento", placeholder: "Novo problema", modulos: ["pcp"], grupo: "Refação" },
   {
     kind: "refacao_problema_input_vendedor",
-    titulo: "Problemas do Input de Vendedor",
+    titulo: "Problemas do Comercial",
     placeholder: "Novo problema",
     modulos: ["pcp"],
     grupo: "Refação",
-    notaUso: "Escolhida na Refação do PCP quando a área que errou é Input de Vendedor.",
+    notaUso: "Escolhida na Refação do PCP quando a área que errou é Comercial.",
   },
 
   // ---------- PCP + COP · Perdas (compartilhada) ----------
