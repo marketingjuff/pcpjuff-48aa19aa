@@ -58,6 +58,10 @@ export type PerdaManualRow = {
   tamanho: string;
   qtd: number;
   motivo: string | null;
+  area_identificou?: string | null;
+  erro_producao?: boolean | null;
+  area_erro?: string | null;
+  problema?: string | null;
   oficina_id: string | null;
   berco: string | null;
   destino: string | null;
@@ -372,6 +376,10 @@ export function usePerdasConsolidadas() {
         tamanho: m.tamanho,
         qtd: Number(m.qtd) || 0,
         motivo: m.motivo ?? null,
+        area_identificou: m.area_identificou ?? null,
+        erro_producao: m.erro_producao ?? null,
+        area_erro: m.area_erro ?? null,
+        problema: m.problema ?? null,
         oficina_id: m.oficina_id ?? null,
         oficina_nome: oficinaNome(m.oficina_id),
         berco: m.berco ?? null,
