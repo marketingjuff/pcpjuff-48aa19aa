@@ -41,6 +41,9 @@ function OrigemBadge({ p }: { p: PerdaConsolidada }) {
   );
 }
 
+const motivoDe = (p: PerdaConsolidada): string | null =>
+  p.origem === "pcp" ? ((p.problema ?? null) || (p.motivo ?? null)) : (p.motivo ?? null);
+
 export function ControlePerdasTab() {
   const isAdmin = useIsAdmin();
   const isGestor = useHasRole("gestor");
@@ -71,7 +74,7 @@ export function ControlePerdasTab() {
 
   const motivos = useMemo(() => {
     const s = new Set<string>();
-    for (const p of perdas) if (p.motivo) s.add(p.motivo);
+    for (const p of perdas) { const m = motivoDe(p); if (m) s.add(m); }
     return Array.from(s).sort();
   }, [perdas]);
 
@@ -80,7 +83,7 @@ export function ControlePerdasTab() {
       if (ano(p.data) !== filtroAno) return false;
       if (filtroMes !== "todos" && String(mes(p.data)) !== filtroMes) return false;
       if (filtroOrigem !== "todas" && p.origem !== filtroOrigem) return false;
-      if (filtroMotivo !== "todos" && (p.motivo ?? "") !== filtroMotivo) return false;
+      if (filtroMotivo !== "todos" && (motivoDe(p) ?? "") !== filtroMotivo) return false;
       if (filtroOficina !== "todas" && (p.oficina_id ?? "") !== filtroOficina) return false;
       if (busca.trim()) {
         const q = busca.trim().toLowerCase();
@@ -96,7 +99,8 @@ export function ControlePerdasTab() {
   const totalPorMotivo = new Map<string, number>();
   for (const p of filtradas) {
     totalPorOrigem[p.origem] += p.qtd;
-    if (p.motivo) totalPorMotivo.set(p.motivo, (totalPorMotivo.get(p.motivo) ?? 0) + p.qtd);
+    const m = motivoDe(p);
+    if (m) totalPorMotivo.set(m, (totalPorMotivo.get(m) ?? 0) + p.qtd);
   }
   const motivoTop = Array.from(totalPorMotivo.entries()).sort((a, b) => b[1] - a[1])[0];
 
@@ -108,10 +112,10 @@ export function ControlePerdasTab() {
 
   const filtradasSort = useTableSort(filtradas, {
     origem: (p) => p.origem,
-    area: (p) => (p.origem === "pcp" ? (p.erro_producao ? "Produção" : (p.area_erro ?? "")) : ""),
+    area: (p) => (p.origem === "pcp" ? (p.area_erro ?? (p.erro_producao ? "Produção" : "")) : ""),
     identificacao: (p) => p.identificacao ?? "",
     data: (p) => p.data,
-    motivo: (p) => p.motivo ?? "",
+    motivo: (p) => motivoDe(p) ?? "",
     destino: (p) => p.destino ?? "",
     berco: (p) => p.berco ?? "",
     oficina: (p) => p.oficina_nome ?? "",
@@ -250,14 +254,14 @@ export function ControlePerdasTab() {
                   <TableRow><TableCell colSpan={14} className="text-muted-foreground">Nenhuma perda para os filtros atuais.</TableCell></TableRow>
                 ) : filtradasSort.rows.map((p) => {
                   const hex = corHex(p.cor); const fg = corTextoSobre(hex);
-                  const areaErro = p.origem === "pcp" ? (p.erro_producao ? "Produção" : (p.area_erro ?? "—")) : "—";
+                  const areaErro = p.origem === "pcp" ? (p.area_erro ?? (p.erro_producao ? "Produção" : "—")) : "—";
                   return (
                     <TableRow key={p.id} className="cursor-pointer hover:bg-accent/40" onClick={() => setDetalhe(p)}>
                       <TableCell><OrigemBadge p={p} /></TableCell>
                       <TableCell className="text-sm">{areaErro}</TableCell>
                       <TableCell className="text-sm">{p.identificacao ?? "—"}</TableCell>
                       <TableCell className="text-sm tabular-nums">{fmtDataBR(p.data)}</TableCell>
-                      <TableCell className="text-sm">{p.motivo ?? "—"}</TableCell>
+                      <TableCell className="text-sm">{motivoDe(p) ?? "—"}</TableCell>
                       <TableCell className="text-sm">{p.destino ?? "—"}</TableCell>
                       <TableCell className="text-sm">{p.berco ?? "—"}</TableCell>
                       <TableCell className="text-sm">{p.oficina_nome ?? "—"}</TableCell>

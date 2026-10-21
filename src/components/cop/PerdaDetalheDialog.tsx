@@ -56,9 +56,9 @@ export function PerdaDetalheDialog({
             } />
             <Row label="Tamanho" value={perda.tamanho} />
             <Row label="Quantidade" value={<span className="tabular-nums">{perda.qtd}</span>} />
-            <Row label="Motivo" value={perda.motivo} />
+            <Row label={perda.origem === "pcp" ? "Observações" : "Motivo"} value={perda.motivo} />
             {perda.area_erro != null || perda.erro_producao != null ? (
-              <Row label="Área do erro" value={perda.erro_producao ? "Produção" : (perda.area_erro ?? "—")} />
+              <Row label="Área do erro" value={perda.area_erro ?? (perda.erro_producao ? "Produção" : "—")} />
             ) : null}
             {perda.area_identificou ? <Row label="Área que identificou" value={perda.area_identificou} /> : null}
             {perda.problema ? <Row label="Problema" value={perda.problema} /> : null}

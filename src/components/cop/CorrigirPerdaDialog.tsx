@@ -62,7 +62,7 @@ export function CorrigirPerdaDialog({
         modelo: perda.modelo, cor: perda.cor, tamanho: perda.tamanho,
         qtd: q,
         motivo_original: perda.motivo ?? null,
-        area_erro_original: perda.erro_producao ? "Produção" : (perda.area_erro ?? null),
+        area_erro_original: perda.area_erro ?? (perda.erro_producao ? "Produção" : null),
         motivo_novo: motivoNovo,
         oficina_id: oficinaId || null,
         berco: berco.trim() || null,
@@ -92,7 +92,7 @@ export function CorrigirPerdaDialog({
           <div><span className="text-muted-foreground">Pedido:</span> <span className="font-medium">{perda.identificacao ?? "—"}</span></div>
           <div><span className="text-muted-foreground">Item:</span> <span className="font-medium">{perda.modelo} · <CorChip cor={perda.cor} /> · {perda.tamanho}</span></div>
           <div><span className="text-muted-foreground">Motivo original:</span> {perda.motivo ?? "—"}</div>
-          <div><span className="text-muted-foreground">Área original:</span> {perda.erro_producao ? "Produção" : (perda.area_erro ?? "—")}</div>
+          <div><span className="text-muted-foreground">Área original:</span> {perda.area_erro ?? (perda.erro_producao ? "Produção" : "—")}</div>
           <div><span className="text-muted-foreground">Restante:</span> <span className="font-semibold tabular-nums">{perda.qtd}</span> peça(s)</div>
         </div>
 
