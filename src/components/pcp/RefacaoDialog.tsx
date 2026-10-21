@@ -42,6 +42,7 @@ function kindForArea(area: string): AppListKind | null {
     case "DTF": return "refacao_problema_dtf";
     case "Silk": return "refacao_problema_silk";
     case "Acabamento": return "refacao_problema_acabamento";
+    case "Input de Vendedor": return "refacao_problema_input_vendedor";
     default: return "motivo_perda";
   }
 }
@@ -197,7 +198,7 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
             </div>
 
             <div className="space-y-1">
-              <Label>Houve erro de produção da Estamparia (Arte, DTF, Silk ou Acabamento)? *</Label>
+              <Label>Houve erro interno (Arte, DTF, Silk, Acabamento ou Input de Vendedor)? *</Label>
               <div className="flex gap-2">
                 <Button type="button" size="sm" variant={erroProd === "sim" ? "default" : "outline"} onClick={() => setErroProd("sim")}>Sim</Button>
                 <Button type="button" size="sm" variant={erroProd === "nao" ? "default" : "outline"} onClick={() => { setErroProd("nao"); setAreaErro(""); setProblema(""); }}>Não</Button>
