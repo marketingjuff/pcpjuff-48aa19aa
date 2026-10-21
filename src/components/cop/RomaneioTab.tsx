@@ -788,6 +788,14 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
                   <Label>Data de recebimento</Label>
                   <DateInputBR value={draft.data_recebimento ?? ""} onChange={(v) => setDraft((d) => ({ ...d, data_recebimento: v }))} />
                 </div>
+                <div>
+                  <Label>Quem cortou (do Corte)</Label>
+                  <div className="h-9 px-3 flex items-center rounded-md border bg-muted/30 text-sm">
+                    {selected.quem_cortou
+                      || cops.find((c) => c.id === (selected.cop_romaneio_pai_id ?? selected.cop_pai_id))?.quem_cortou
+                      || "—"}
+                  </div>
+                </div>
               </div>
 
               {/* Peças (auto, read-only) */}
