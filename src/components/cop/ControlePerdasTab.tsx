@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { usePerdasConsolidadas, type PerdaConsolidada } from "@/lib/perdas-consolidado";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import { useIsAdmin, useHasRole } from "@/hooks/use-role";
+import { useIsAdmin, useHasRole, usePode } from "@/hooks/use-role";
 import { PerdaDetalheDialog } from "./PerdaDetalheDialog";
 import { CorrigirPerdaDialog } from "./CorrigirPerdaDialog";
 import { RegistrarPerdaManualDialog } from "./RegistrarPerdaManualDialog";
@@ -48,6 +48,7 @@ export function ControlePerdasTab() {
   const isAdmin = useIsAdmin();
   const isGestor = useHasRole("gestor");
   const podeCorrigir = isAdmin || isGestor;
+  const podeRegistrarManual = usePode("cop.perda_manual");
   const qc = useQueryClient();
   const { perdas, isLoading, oficinas } = usePerdasConsolidadas();
 
@@ -202,7 +203,7 @@ export function ControlePerdasTab() {
         <Card><CardContent className="pt-4"><div className="text-xs text-muted-foreground">Total de peças perdidas</div><div className="text-2xl font-semibold tabular-nums">{totalPecas}</div></CardContent></Card>
         <Card><CardContent className="pt-4"><div className="text-xs text-muted-foreground">Por origem</div><div className="text-sm flex gap-2 mt-1"><Badge className="bg-blue-600 hover:bg-blue-600">PCP {totalPorOrigem.pcp}</Badge><Badge className="bg-green-600 hover:bg-green-600">COP {totalPorOrigem.cop}</Badge><Badge variant="secondary">Manual {totalPorOrigem.manual}</Badge></div></CardContent></Card>
         <Card><CardContent className="pt-4"><div className="text-xs text-muted-foreground">Motivo com mais perdas</div><div className="text-sm font-semibold mt-1">{motivoTop ? `${motivoTop[0]} — ${motivoTop[1]}` : "—"}</div></CardContent></Card>
-        <Card className="flex items-center justify-center"><Button onClick={() => setNovoManual(true)}><Plus className="h-4 w-4 mr-1" /> Registrar perda manual</Button></Card>
+        <Card className="flex items-center justify-center">{podeRegistrarManual ? <Button onClick={() => setNovoManual(true)}><Plus className="h-4 w-4 mr-1" /> Registrar perda manual</Button> : <span className="text-xs text-muted-foreground px-2 text-center">Sem permissão para registrar perda manual</span>}</Card>
       </div>
 
       {/* Gráfico */}
