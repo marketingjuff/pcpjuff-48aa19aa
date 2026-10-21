@@ -1179,6 +1179,29 @@ function ListasTab({ canAccessCop, canAccessMap, canAccessSup }: { canAccessCop:
   const termo = normalizarBusca(busca);
 
   const modulos: ListaModulo[] = ["pcp", ...(canAccessCop ? (["cop"] as ListaModulo[]) : []), ...(canAccessMap ? (["map"] as ListaModulo[]) : []), ...(canAccessSup ? (["sup"] as ListaModulo[]) : [])];
+  const [moduloAtivo, setModuloAtivo] = useState<string>("pcp");
+  const [grupoPorModulo, setGrupoPorModulo] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const salvo: Record<string, string> = {};
+    for (const m of ["pcp", "cop", "map", "sup"]) {
+      try {
+        const v = localStorage.getItem(`cfg.listas.grupo.${m}`);
+        if (v) salvo[m] = v;
+      } catch { /* ignore */ }
+    }
+    setGrupoPorModulo(salvo);
+  }, []);
+
+  function grupoAtivo(m: string, grupos: string[]): string {
+    const v = grupoPorModulo[m];
+    return v && grupos.includes(v) ? v : grupos[0];
+  }
+
+  function escolherGrupo(m: string, g: string) {
+    setGrupoPorModulo((prev) => ({ ...prev, [m]: g }));
+    try { localStorage.setItem(`cfg.listas.grupo.${m}`, g); } catch { /* ignore */ }
+  }
 
   function cardDe(item: ListaCatalogoItem) {
     const compartilhada = item.modulos.length > 1;
@@ -1215,7 +1238,7 @@ function ListasTab({ canAccessCop, canAccessMap, canAccessSup }: { canAccessCop:
           <div className="grid gap-6 md:grid-cols-2">{resultados.map(cardDe)}</div>
         )
       ) : (
-        <Tabs defaultValue="pcp">
+        <Tabs value={moduloAtivo} onValueChange={setModuloAtivo}>
           <TabsList className="mb-4 flex flex-wrap h-auto">
             {modulos.map((m) => (
               <TabsTrigger key={m} value={m} className={moduloTabClasses(m)}>{moduloLabel(m)}</TabsTrigger>
@@ -1226,14 +1249,27 @@ function ListasTab({ canAccessCop, canAccessMap, canAccessSup }: { canAccessCop:
             const grupos = Array.from(new Set(itens.map((i) => i.grupo)));
             return (
               <TabsContent key={m} value={m} className="space-y-6">
-                {grupos.map((g) => (
-                  <div key={g} className="space-y-3">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{g}</div>
-                    <div className="grid gap-6 md:grid-cols-2">
-                      {itens.filter((i) => i.grupo === g).map(cardDe)}
-                    </div>
-                  </div>
-                ))}
+                {grupos.length <= 1 ? (
+                  <div className="grid gap-6 md:grid-cols-2">{itens.map(cardDe)}</div>
+                ) : (
+                  <Tabs value={grupoAtivo(m, grupos)} onValueChange={(g) => escolherGrupo(m, g)}>
+                    <TabsList className="mb-4 flex flex-wrap h-auto">
+                      {grupos.map((g) => (
+                        <TabsTrigger key={g} value={g}>
+                          {g}
+                          <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">{itens.filter((i) => i.grupo === g).length}</span>
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                    {grupos.map((g) => (
+                      <TabsContent key={g} value={g}>
+                        <div className="grid gap-6 md:grid-cols-2">
+                          {itens.filter((i) => i.grupo === g).map(cardDe)}
+                        </div>
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                )}
               </TabsContent>
             );
           })}
