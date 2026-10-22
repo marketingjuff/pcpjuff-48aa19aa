@@ -59,7 +59,6 @@ function viaHtml(cop: Cop, oficina: Oficina | null, rotuloStr: string): string {
             <span><b>Oficina:</b> ${esc(oficina?.nome ?? "—")}</span>
             <span><b>Saída:</b> ${esc(fmtBR(cop.data_saida_oficina))}</span>
             <span><b>Recebimento:</b> ${esc(fmtBR(cop.data_recebimento))}</span>
-            <span><b>Cortou:</b> ${esc((cop as any).quem_cortou || "—")}</span>
           </div>
         </div>
       </header>
