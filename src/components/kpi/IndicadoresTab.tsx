@@ -769,6 +769,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
 
   const exportarPdf = () => {
     void abrirIndicadoresParaImpressao({
+      mostrarFaturamento: mostrarFat,
       escopoLabel: soPcpAtivo ? "Juff Custom" : "Juff Store",
       periodo: intervalo,
       comparar,
@@ -816,6 +817,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
     });
     const topGeral = ranking(atuaisSemFaixa, "modelo")[0] ?? null;
     void abrirFaixasQtdParaImpressao({
+      mostrarFaturamento: mostrarFat,
       periodo: intervalo,
       filtros: {
         empresa: escopo === "store" ? "JOKE" : empresa,
@@ -902,11 +904,9 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
             </Select>
           )}
 
-{mostrarFat && (<>
           <Button variant="outline" size="sm" className="h-9 gap-2" onClick={exportarPdf} disabled={isLoading}>
             <FileDown className="h-4 w-4" /> Exportar PDF
           </Button>
-</>)}
 
 
           <Button variant="outline" size="icon" className="h-9 w-9" title="Recarregar" onClick={() => refetch()}>
@@ -1806,11 +1806,9 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
               <CardTitle className="text-base">Faixas de tamanho de pedido</CardTitle>
               <CardDescription>Peças por pedido · período e demais filtros aplicados</CardDescription>
             </div>
-{mostrarFat && (<>
             <Button variant="outline" size="sm" className="h-8 gap-2" onClick={exportarPdfFaixas} disabled={isLoading}>
               <FileDown className="h-4 w-4" /> PDF por faixa
             </Button>
-</>)}
           </CardHeader>
           <CardContent className="overflow-auto">
             <table className="tbl-congelada w-full text-xs">
