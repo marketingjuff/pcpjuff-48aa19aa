@@ -68,6 +68,10 @@ export interface DrillPayload {
     ehStoreAuto: (numero: string) => boolean;
     onMover: (numero: string, destino: "custom" | "store") => void;
     pendente?: string | null;
+    /** Move vários pedidos de uma vez para o Juff Custom. Só definido no escopo Store. */
+    onMoverLote?: (numeros: string[]) => void;
+    /** Verdadeiro enquanto o lote está sendo gravado. */
+    loteEmAndamento?: boolean;
   };
 }
 

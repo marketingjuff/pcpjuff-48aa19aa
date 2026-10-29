@@ -669,6 +669,42 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
     const p = (data?.calc ?? []).find((x) => x.numero_pedido === numero);
     return store.has(numero) && p?.empresa === "JOKE";
   };
+  const [loteEmAndamento, setLoteEmAndamento] = useState(false);
+  useEffect(() => {
+    setDrill((d) => (d?.acaoEscopo?.onMoverLote ? { ...d, acaoEscopo: { ...d.acaoEscopo, loteEmAndamento } } : d));
+  }, [loteEmAndamento]);
+
+  const moverEscopoLote = async (numeros: string[]) => {
+    const alvos = Array.from(new Set(numeros)).filter(Boolean);
+    if (!alvos.length) return;
+    setLoteEmAndamento(true);
+    try {
+      const { data: sess } = await supabase.auth.getUser();
+      const agora = new Date().toISOString();
+      const linhas = alvos.map((numero) => ({
+        numero_pedido: numero,
+        escopo: "custom",
+        definido_por: sess.user?.id ?? null,
+        definido_em: agora,
+      }));
+      const { error } = await supabase
+        .from("kpi_pedido_escopo" as any)
+        .upsert(linhas, { onConflict: "numero_pedido" });
+      if (error) throw error;
+      await qc.invalidateQueries({ queryKey: ["indicadores-olist", "base"] });
+      setDrill(null);
+      toast.success(
+        alvos.length === 1
+          ? `1 pedido movido para Juff Custom.`
+          : `${alvos.length} pedidos movidos para Juff Custom.`,
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível mover os pedidos.");
+    } finally {
+      setLoteEmAndamento(false);
+    }
+  };
+
   const moverEscopo = async (numero: string, destino: "custom" | "store") => {
     setMovendo(numero);
     try {
@@ -719,6 +755,8 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
           ehStoreAuto,
           onMover: (numero, destino) => void moverEscopo(numero, destino),
           pendente: movendo,
+          onMoverLote: escopo === "store" ? (numeros) => void moverEscopoLote(numeros) : undefined,
+          loteEmAndamento,
         },
       });
       return;
