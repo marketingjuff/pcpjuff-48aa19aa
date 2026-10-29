@@ -62,6 +62,8 @@ export interface IndicadoresPdfDados {
   /** Seções exclusivas do escopo Store: ausentes, não são renderizadas. */
   composicaoStore?: ComposicaoStore;
   rankingEstampas?: LinhaRanking[];
+  /** false = relatório de apresentação, sem nenhum valor em reais. Omitido equivale a true. */
+  mostrarFaturamento?: boolean;
 }
 
 
@@ -98,20 +100,26 @@ function bloco(titulo: string, sub: string | null, corpo: string): string {
 }
 
 function kpis(d: IndicadoresPdfDados): string {
-  const itens: { t: string; v: string; a: number }[] = [
-    { t: "Faturamento", v: fmtMoeda(d.resumo.faturamento), a: d.resumoAnterior.faturamento },
-    { t: "Pedidos", v: fmtNum(d.resumo.pedidos), a: d.resumoAnterior.pedidos },
-    { t: "Peças vendidas", v: fmtNum(d.resumo.pecas), a: d.resumoAnterior.pecas },
-    { t: "Ticket médio", v: fmtMoeda(d.resumo.ticket), a: d.resumoAnterior.ticket },
-    { t: "Preço médio/peça", v: fmtMoeda(d.resumo.precoMedio), a: d.resumoAnterior.precoMedio },
+  const mFat = d.mostrarFaturamento !== false;
+  const itens: { t: string; v: string; atual: number; a: number }[] = [
+    ...(mFat
+      ? [{ t: "Faturamento", v: fmtMoeda(d.resumo.faturamento), atual: d.resumo.faturamento, a: d.resumoAnterior.faturamento }]
+      : []),
+    { t: "Pedidos", v: fmtNum(d.resumo.pedidos), atual: d.resumo.pedidos, a: d.resumoAnterior.pedidos },
+    { t: "Peças vendidas", v: fmtNum(d.resumo.pecas), atual: d.resumo.pecas, a: d.resumoAnterior.pecas },
+    ...(mFat
+      ? [
+          { t: "Ticket médio", v: fmtMoeda(d.resumo.ticket), atual: d.resumo.ticket, a: d.resumoAnterior.ticket },
+          { t: "Preço médio/peça", v: fmtMoeda(d.resumo.precoMedio), atual: d.resumo.precoMedio, a: d.resumoAnterior.precoMedio },
+        ]
+      : []),
   ];
-  const atual = [d.resumo.faturamento, d.resumo.pedidos, d.resumo.pecas, d.resumo.ticket, d.resumo.precoMedio];
   return `<div class="kpis">${itens
     .map(
-      (k, idx) => `<div class="kpi">
+      (k) => `<div class="kpi">
         <div class="kpi-t">${esc(k.t)}</div>
         <div class="kpi-v">${esc(k.v)}</div>
-        ${d.comparar ? `<div class="kpi-d">${esc(fmtPerc(variacao(atual[idx]!, k.a)))} vs. anterior</div>` : ""}
+        ${d.comparar ? `<div class="kpi-d">${esc(fmtPerc(variacao(k.atual, k.a)))} vs. anterior</div>` : ""}
       </div>`,
     )
     .join("")}</div>`;
@@ -140,6 +148,9 @@ function listaHtml(titulo: string, itens: string[]): string {
 
 function corpoHtml(d: IndicadoresPdfDados, gerador: string): string {
   const f = d.filtros;
+  const mFat = d.mostrarFaturamento !== false;
+  const hFat = (...labels: string[]) => (mFat ? labels : []);
+  const moedaC = (v: number) => (mFat ? moeda(v) : "");
   const lista = (label: string, arr: string[]) => (arr.length ? `${label}: ${arr.join(", ")}` : null);
   const filtrosTexto = [
     `Empresa: ${f.empresa === "CONSOLIDADO" ? "Consolidado" : f.empresa}`,
@@ -176,19 +187,19 @@ ${d.composicaoStore ? ((c) => bloco(
   "Composição Juff Store",
   "Kit Outlet é peça lisa de ponta de estoque: entra nas Lisas e aparece também como recorte próprio.",
   tabela(
-    ["Tipo", "Faturamento", "% receita", "Peças", "Pedidos", "Ticket médio", "Preço médio/peça"],
+    ["Tipo", ...hFat("Faturamento"), "% receita", "Peças", "Pedidos", ...hFat("Ticket médio", "Preço médio/peça")],
     [
-      `<tr><td class="l">Lisas</td>${moeda(c.lisas.faturamento)}${perc(c.lisas.percFaturamento)}${num(
+      `<tr><td class="l">Lisas</td>${moedaC(c.lisas.faturamento)}${perc(c.lisas.percFaturamento)}${num(
         c.lisas.pecas,
-      )}${num(c.lisas.pedidos)}${moeda(c.lisas.ticket)}${moeda(c.lisas.precoMedio)}</tr>`,
-      `<tr><td class="l">Estampadas</td>${moeda(c.estampadas.faturamento)}${perc(
+      )}${num(c.lisas.pedidos)}${moedaC(c.lisas.ticket)}${moedaC(c.lisas.precoMedio)}</tr>`,
+      `<tr><td class="l">Estampadas</td>${moedaC(c.estampadas.faturamento)}${perc(
         c.estampadas.percFaturamento,
-      )}${num(c.estampadas.pecas)}${num(c.estampadas.pedidos)}${moeda(c.estampadas.ticket)}${moeda(
+      )}${num(c.estampadas.pecas)}${num(c.estampadas.pedidos)}${moedaC(c.estampadas.ticket)}${moedaC(
         c.estampadas.precoMedio,
       )}</tr>`,
-      `<tr><td class="l">Outlet (dentro das Lisas)</td>${moeda(c.outlet.faturamento)}${perc(
+      `<tr><td class="l">Outlet (dentro das Lisas)</td>${moedaC(c.outlet.faturamento)}${perc(
         c.outlet.percFaturamento,
-      )}${num(c.outlet.pecas)}${num(c.outlet.pedidos)}<td class="n">—</td>${moeda(c.outlet.precoMedio)}</tr>`,
+      )}${num(c.outlet.pecas)}${num(c.outlet.pedidos)}${mFat ? `<td class="n">—</td>` : ""}${moedaC(c.outlet.precoMedio)}</tr>`,
     ],
   ),
 ))(d.composicaoStore) : ""}
@@ -197,14 +208,14 @@ ${d.rankingEstampas ? ((linhas) => bloco(
   "Estampas mais vendidas",
   "Somente peças estampadas.",
   tabela(
-    ["#", "Estampa", "Peças", "% peças", "Faturamento", "Pedidos"],
+    ["#", "Estampa", "Peças", "% peças", ...hFat("Faturamento"), "Pedidos"],
     linhas
       .slice(0, 20)
       .map(
         (l, i) =>
           `<tr><td class="n">${i + 1}</td><td class="l">${esc(l.chave)}</td>${num(l.pecas)}${perc(
             l.percPecas,
-          )}${moeda(l.faturamento)}${num(l.pedidos)}</tr>`,
+          )}${moedaC(l.faturamento)}${num(l.pedidos)}</tr>`,
       ),
   ),
 ))(d.rankingEstampas) : ""}
@@ -213,19 +224,19 @@ ${d.rankingEstampas ? ((linhas) => bloco(
 
 ${bloco(
   "Rankings",
-  "Ordenados por peças; participação e faturamento no período.",
+  mFat ? "Ordenados por peças; participação e faturamento no período." : "Ordenados por peças; participação no período.",
   d.rankings
     .map((r) =>
       `<h3>${esc(r.titulo)}</h3>` +
       tabela(
-        ["#", "Item", "Peças", "% peças", "Faturamento", "Pedidos"],
+        ["#", "Item", "Peças", "% peças", ...hFat("Faturamento"), "Pedidos"],
         r.linhas
           .slice(0, 20)
           .map(
             (l, i) =>
               `<tr><td class="n">${i + 1}</td><td class="l">${esc(l.chave)}</td>${num(l.pecas)}${perc(
                 l.percPecas,
-              )}${moeda(l.faturamento)}${num(l.pedidos)}</tr>`,
+              )}${moedaC(l.faturamento)}${num(l.pedidos)}</tr>`,
           ),
       ),
     )
@@ -235,7 +246,7 @@ ${bloco(
 ${bloco("Tamanhos por modelo", "Peças e participação dentro de cada modelo.", gradeHtml(d.gradeTamanho))}
 ${bloco("Cores por modelo", "Peças e participação dentro de cada modelo.", gradeHtml(d.gradeCor))}
 
-${bloco(
+${mFat ? bloco(
   "Faturamento",
   "Frete e despesas não entram no faturamento.",
   tabela(
@@ -257,16 +268,16 @@ ${bloco(
           )}</tr>`,
       ),
     ),
-)}
+) : ""}
 
 ${bloco(
   "Curva ABC de modelo",
   "Produto sem mapeamento entra no faturamento, mas fica fora do ranking de modelo.",
   tabela(
-    ["Modelo", "Peças", "Faturamento", "%", "Acumulado", "Classe"],
+    ["Modelo", "Peças", ...hFat("Faturamento"), "%", "Acumulado", "Classe"],
     d.abcModelo.map(
       (l) =>
-        `<tr><td class="l">${esc(l.chave)}</td>${num(l.pecas)}${moeda(l.faturamento)}${perc(
+        `<tr><td class="l">${esc(l.chave)}</td>${num(l.pecas)}${moedaC(l.faturamento)}${perc(
           l.percFaturamento,
         )}${perc(l.acumulado)}<td class="n">${esc(l.classe)}</td></tr>`,
     ),
@@ -279,12 +290,12 @@ ${bloco(
     d.clientes.filter((c) => c.novo).length,
   )} — a primeira compra é apurada sobre o histórico completo.`,
   tabela(
-    ["Cliente", "Pedidos", "Peças", "Faturamento", "%", "Acumulado", "Classe", "Tipo"],
+    ["Cliente", "Pedidos", "Peças", ...hFat("Faturamento"), "%", "Acumulado", "Classe", "Tipo"],
     d.clientes
       .slice(0, 30)
       .map(
         (c) =>
-          `<tr><td class="l">${esc(c.nome || c.cliente_id)}</td>${num(c.pedidos)}${num(c.pecas)}${moeda(
+          `<tr><td class="l">${esc(c.nome || c.cliente_id)}</td>${num(c.pedidos)}${num(c.pecas)}${moedaC(
             c.faturamento,
           )}${perc(c.perc)}${perc(c.acumulado)}<td class="n">${esc(c.classe)}</td><td class="n">${
             c.novo ? "Novo" : "Recorrente"
@@ -295,43 +306,57 @@ ${bloco(
 
 ${bloco(
   "Vendedores",
-  "Desconto convertido para base única (reais e % equivalente sobre o subtotal).",
+  mFat ? "Desconto convertido para base única (reais e % equivalente sobre o subtotal)." : "Desconto apresentado em % equivalente sobre o subtotal.",
   tabela(
-    ["Vendedor", "Pedidos", "Peças", "Faturamento", "Ticket médio", "Desconto R$", "Desconto %"],
+    ["Vendedor", "Pedidos", "Peças", ...hFat("Faturamento", "Ticket médio", "Desconto R$"), "Desconto %"],
     d.vendedores.map(
       (v) =>
-        `<tr><td class="l">${esc(v.vendedor)}</td>${num(v.pedidos)}${num(v.pecas)}${moeda(v.faturamento)}${moeda(
+        `<tr><td class="l">${esc(v.vendedor)}</td>${num(v.pedidos)}${num(v.pecas)}${moedaC(v.faturamento)}${moedaC(
           v.ticket,
-        )}${moeda(v.descontoValor)}${perc(v.descontoPerc)}</tr>`,
+        )}${moedaC(v.descontoValor)}${perc(v.descontoPerc)}</tr>`,
     ),
   ),
 )}
 
-${d.ufs
-  ? bloco(
-      "Frete e distribuição por UF",
-      `Total ${fmtMoeda(d.frete.total)} · médio por pedido ${fmtMoeda(d.frete.medio)} · ${d.frete.percComFrete.toLocaleString(
-        "pt-BR",
-        { maximumFractionDigits: 1 },
-      )}% dos pedidos com frete cobrado. O frete nunca é somado ao faturamento. A UF vem sempre do PCP.`,
-      tabela(
-        ["UF", "Pedidos", "Peças", "Faturamento", "% receita", "Frete"],
-        d.ufs.map(
-          (u) =>
-            `<tr><td class="l">${esc(u.uf)}</td>${num(u.pedidos)}${num(u.pecas)}${moeda(u.faturamento)}${perc(
-              u.perc,
-            )}${moeda(u.frete)}</tr>`,
+${mFat
+  ? d.ufs
+    ? bloco(
+        "Frete e distribuição por UF",
+        `Total ${fmtMoeda(d.frete.total)} · médio por pedido ${fmtMoeda(d.frete.medio)} · ${d.frete.percComFrete.toLocaleString(
+          "pt-BR",
+          { maximumFractionDigits: 1 },
+        )}% dos pedidos com frete cobrado. O frete nunca é somado ao faturamento. A UF vem sempre do PCP.`,
+        tabela(
+          ["UF", "Pedidos", "Peças", "Faturamento", "% receita", "Frete"],
+          d.ufs.map(
+            (u) =>
+              `<tr><td class="l">${esc(u.uf)}</td>${num(u.pedidos)}${num(u.pecas)}${moeda(u.faturamento)}${perc(
+                u.perc,
+              )}${moeda(u.frete)}</tr>`,
+          ),
         ),
-      ),
-    )
-  : bloco(
-      "Frete",
-      `Total ${fmtMoeda(d.frete.total)} · médio por pedido ${fmtMoeda(d.frete.medio)} · ${d.frete.percComFrete.toLocaleString(
-        "pt-BR",
-        { maximumFractionDigits: 1 },
-      )}% dos pedidos com frete cobrado. O frete nunca é somado ao faturamento.`,
-      "",
-    )}
+      )
+    : bloco(
+        "Frete",
+        `Total ${fmtMoeda(d.frete.total)} · médio por pedido ${fmtMoeda(d.frete.medio)} · ${d.frete.percComFrete.toLocaleString(
+          "pt-BR",
+          { maximumFractionDigits: 1 },
+        )}% dos pedidos com frete cobrado. O frete nunca é somado ao faturamento.`,
+        "",
+      )
+  : d.ufs
+    ? bloco(
+        "Distribuição por UF",
+        "A UF vem sempre do PCP.",
+        tabela(
+          ["UF", "Pedidos", "Peças", "% receita"],
+          d.ufs.map(
+            (u) =>
+              `<tr><td class="l">${esc(u.uf)}</td>${num(u.pedidos)}${num(u.pecas)}${perc(u.perc)}</tr>`,
+          ),
+        ),
+      )
+    : ""}
 ${d.vendidoProduzido ? ((vxp) => bloco(
   "Vendido × Produzido",
   "Apenas pedidos casados (Olist + PCP). A diferença é esperada: perdas e refações fazem a produção superar a venda.",
@@ -416,9 +441,9 @@ ${d.saude ? ((sd) => bloco(
     listaHtml("Somente no PCP", sd.soPcp.slice(0, 120)) +
     `<h3>Produtos sem mapeamento (${sd.semMapeamento.length})</h3>` +
     tabela(
-      ["Produto Olist", "Peças", "Faturamento"],
+      ["Produto Olist", "Peças", ...hFat("Faturamento")],
       sd.semMapeamento.map(
-        (s) => `<tr><td class="l">${esc(s.produto)}</td>${num(s.pecas)}${moeda(s.faturamento)}</tr>`,
+        (s) => `<tr><td class="l">${esc(s.produto)}</td>${num(s.pecas)}${moedaC(s.faturamento)}</tr>`,
       ),
       "Todos os produtos estão mapeados.",
     ) +
@@ -440,7 +465,9 @@ ${d.saude ? ((sd) => bloco(
 
 export async function abrirIndicadoresParaImpressao(d: IndicadoresPdfDados) {
   const slug = d.escopoLabel.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const titulo = `indicadores${slug ? `-${slug}` : ""}-${d.periodo.de}-a-${d.periodo.ate}`;
+  const titulo = `indicadores${slug ? `-${slug}` : ""}-${d.periodo.de}-a-${d.periodo.ate}${
+    d.mostrarFaturamento === false ? "-sem-faturamento" : ""
+  }`;
 
   const { data: { user } } = await supabase.auth.getUser();
   const gerador = user?.email ?? user?.user_metadata?.name ?? "usuário desconhecido";

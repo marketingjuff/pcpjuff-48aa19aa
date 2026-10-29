@@ -27,6 +27,8 @@ export interface FaixasQtdPdfDados {
   };
   linhas: LinhaFaixaPdf[];
   totalTopModelo: TopModeloFaixa | null;
+  /** false = sem nenhum valor em reais. Omitido equivale a true. */
+  mostrarFaturamento?: boolean;
 }
 
 function esc(s: string | number | null | undefined): string {
@@ -64,6 +66,9 @@ function filtrosTexto(f: FaixasQtdPdfDados["filtros"]): string {
 }
 
 function corpoHtml(d: FaixasQtdPdfDados, gerador: string): string {
+  const mFat = d.mostrarFaturamento !== false;
+  const moedaC = (v: number) => (mFat ? moeda(v) : "");
+  const percF = (v: number) => (mFat ? perc(v) : "");
   const tPed = d.linhas.reduce((s, l) => s + l.pedidos, 0);
   const tPec = d.linhas.reduce((s, l) => s + l.pecas, 0);
   const tFat = d.linhas.reduce((s, l) => s + l.faturamento, 0);
@@ -75,10 +80,7 @@ function corpoHtml(d: FaixasQtdPdfDados, gerador: string): string {
     "Pedidos",
     "% pedidos",
     "Peças",
-    "Faturamento",
-    "% faturamento",
-    "Ticket médio",
-    "Preço médio/peça",
+    ...(mFat ? ["Faturamento", "% faturamento", "Ticket médio", "Preço médio/peça"] : []),
     "Modelo mais vendido",
   ];
 
@@ -87,7 +89,7 @@ function corpoHtml(d: FaixasQtdPdfDados, gerador: string): string {
       (l) =>
         `<tr><td class="l">${esc(l.label)}</td>${num(l.pedidos)}${perc(l.pctPedidos)}${num(
           l.pecas,
-        )}${moeda(l.faturamento)}${perc(l.pctFaturamento)}${moeda(l.ticket)}${moeda(
+        )}${moedaC(l.faturamento)}${percF(l.pctFaturamento)}${moedaC(l.ticket)}${moedaC(
           l.precoMedio,
         )}${modeloCel(l.topModelo)}</tr>`,
     )
@@ -95,7 +97,7 @@ function corpoHtml(d: FaixasQtdPdfDados, gerador: string): string {
 
   const total = `<tr class="tot"><td class="l">Total</td>${num(tPed)}${perc(tPed ? 100 : 0)}${num(
     tPec,
-  )}${moeda(tFat)}${perc(tFat ? 100 : 0)}${moeda(tTicket)}${moeda(tPreco)}${modeloCel(
+  )}${moedaC(tFat)}${percF(tFat ? 100 : 0)}${moedaC(tTicket)}${moedaC(tPreco)}${modeloCel(
     d.totalTopModelo,
   )}</tr>`;
 
@@ -120,7 +122,9 @@ function corpoHtml(d: FaixasQtdPdfDados, gerador: string): string {
 }
 
 export async function abrirFaixasQtdParaImpressao(d: FaixasQtdPdfDados) {
-  const titulo = `faixas-quantidade-${d.periodo.de}-a-${d.periodo.ate}`;
+  const titulo = `faixas-quantidade-${d.periodo.de}-a-${d.periodo.ate}${
+    d.mostrarFaturamento === false ? "-sem-faturamento" : ""
+  }`;
 
   const {
     data: { user },
