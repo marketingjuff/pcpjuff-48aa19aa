@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/hooks/use-role";
+import { useMostrarFaturamento } from "@/lib/kpi-faturamento";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -271,6 +272,7 @@ function Ranking({
 type Salvo = { preset: PresetPeriodo; de: string; ate: string; oficinaId: string; modelo: string; cor: string; comparar: boolean };
 
 export function KpiCopMapTab() {
+  const mostrarFat = useMostrarFaturamento();
   const ini = periodoDoPreset("mes");
   const [s, setS] = useState<Salvo>({ preset: "mes", ...ini, oficinaId: "todos", modelo: "todos", cor: "todos", comparar: false });
   const [carregado, setCarregado] = useState(false);
@@ -465,6 +467,7 @@ export function KpiCopMapTab() {
         </div>
       </Bloco>
 
+      {mostrarFat && (
       <Bloco faixa="dinheiro" titulo="Dinheiro" apoio="Pagamentos às oficinas de fora. A oficina da Juff não entra aqui.">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi titulo="Valor pago" apoio="Soma paga às oficinas." m={dinheiro.valor} data={DT_PAG} abrir={abrir} colunas={COL_VALOR} variacao={vr(dinheiro.valor, ant?.dinheiro.valor)} />
@@ -479,6 +482,7 @@ export function KpiCopMapTab() {
             rodapeExtra={dinheiro.semValorPecas > 0 ? `Ficaram fora da conta ${dinheiro.semValorPecas.toLocaleString("pt-BR")} peças sem valor cadastrado na oficina: ${dinheiro.semValorTexto}.` : undefined} />
         </div>
       </Bloco>
+      )}
 
       <Bloco faixa="ponta" titulo="Ponta a ponta" apoio="Do pedido de risco até a peça pronta de volta.">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

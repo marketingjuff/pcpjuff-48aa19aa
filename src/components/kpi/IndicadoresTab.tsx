@@ -96,6 +96,7 @@ import {
   type OpcaoVendedor,
 } from "@/lib/indicadores-vendedor";
 import { FileDown } from "lucide-react";
+import { useMostrarFaturamento } from "@/lib/kpi-faturamento";
 import {
   drillPedidos,
   drillItens,
@@ -287,6 +288,7 @@ const RANKINGS_STORE: { dimStore: DimRankingStore; dim: DimRanking; titulo: stri
 
 export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicadores } = {}) {
   const soPcpAtivo = escopo === "custom";
+  const mostrarFat = useMostrarFaturamento();
   const [preset, setPreset] = usePersistedState<Preset>(`kpi:${escopo}:preset`, "mes");
   const [intervalo, setIntervalo] = usePersistedState(`kpi:${escopo}:intervalo`, intervaloPreset("mes"));
   const [comparar, setComparar] = useState(false);
@@ -697,6 +699,16 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   };
 
   const abrirDrill = (p: DrillPayload) => {
+    if (!mostrarFat) {
+      const perdeuSoma = p.colunas.some((c) => c.somar && c.tipo === "moeda");
+      p = {
+        ...p,
+        colunas: p.colunas.filter((c) => c.tipo !== "moeda"),
+        ...(perdeuSoma
+          ? { totalConferencia: null, conferenciaTipo: undefined, indicadorValor: null, indicadorLabel: "" }
+          : {}),
+      };
+    }
     const temNumero = p.colunas.some((c) => c.chave === "pedido");
     if (podeMoverEscopo && temNumero) {
       setDrill({
@@ -852,9 +864,11 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
             </Select>
           )}
 
+{mostrarFat && (<>
           <Button variant="outline" size="sm" className="h-9 gap-2" onClick={exportarPdf} disabled={isLoading}>
             <FileDown className="h-4 w-4" /> Exportar PDF
           </Button>
+</>)}
 
 
           <Button variant="outline" size="icon" className="h-9 w-9" title="Recarregar" onClick={() => refetch()}>
@@ -934,7 +948,8 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       )}
 
       {/* ---------------- Bloco 1 — Resumo ---------------- */}
-      <div className="grid gap-2 md:grid-cols-5">
+      <div className={`grid gap-2 ${mostrarFat ? "md:grid-cols-5" : "md:grid-cols-2"}`}>
+{mostrarFat && (<>
         <Kpi
           titulo="Faturamento"
           valor={fmtMoeda(r.faturamento)}
@@ -952,6 +967,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
             )
           }
         />
+</>)}
         <Kpi
           titulo="Pedidos"
           valor={fmtNum(r.pedidos)}
@@ -987,6 +1003,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
             )
           }
         />
+{mostrarFat && (<>
         <Kpi
           titulo="Ticket médio"
           valor={fmtMoeda(r.ticket)}
@@ -1024,6 +1041,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
             )
           }
         />
+</>)}
       </div>
 
       {/* ---------------- Composição Juff Store ---------------- */}
@@ -1043,24 +1061,31 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
               ] as const).map((b) => (
                 <div key={b.t} className="rounded-md border p-3">
                   <div className="text-xs font-semibold">{b.t}</div>
+{mostrarFat && (<>
                   <div className="mt-1 text-lg font-semibold tabular-nums">{fmtMoeda(b.d.faturamento)}</div>
+</>)}
                   <div className="text-xs text-muted-foreground tabular-nums">
                     {b.d.percFaturamento.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% da receita ·{" "}
                     {fmtNum(b.d.pecas)} peças · {fmtNum(b.d.pedidos)} pedidos
                   </div>
+{mostrarFat && (<>
                   <div className="text-xs text-muted-foreground tabular-nums">
                     Ticket médio {fmtMoeda(b.d.ticket)} · preço médio/peça {fmtMoeda(b.d.precoMedio)}
                   </div>
+</>)}
                 </div>
               ))}
             </div>
             <div className="rounded-md border border-dashed p-3">
               <div className="text-xs font-semibold">Outlet — recorte das Lisas</div>
+{mostrarFat && (<>
               <div className="mt-1 text-lg font-semibold tabular-nums">{fmtMoeda(composicao.outlet.faturamento)}</div>
+</>)}
               <div className="text-xs text-muted-foreground tabular-nums">
                 {composicao.outlet.percFaturamento.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% da receita do
-                período · {fmtNum(composicao.outlet.pecas)} peças · preço médio/peça{" "}
-                {fmtMoeda(composicao.outlet.precoMedio)}
+                período · {fmtNum(composicao.outlet.pecas)} peças
+                {mostrarFat && (<>{" "}· preço médio/peça{" "}
+                {fmtMoeda(composicao.outlet.precoMedio)}</>)}
               </div>
             </div>
           </CardContent>
@@ -1123,6 +1148,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       </div>
 
       {/* ---------------- Bloco 2 — Faturamento ---------------- */}
+{mostrarFat && (<>
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Faturamento</CardTitle>
@@ -1262,6 +1288,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
           </div>
         </CardContent>
       </Card>
+</>)}
 
       {/* ---------------- Bloco 3 — Produto ---------------- */}
       <Card>
@@ -1269,6 +1296,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
           <CardTitle className="text-base">Produto — composição e curva ABC</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-2">
+{mostrarFat && (<>
           <div className="overflow-auto">
             <div className="mb-1 text-xs font-semibold">Composição por receita</div>
             <table className="tbl-congelada w-full text-xs">
@@ -1308,6 +1336,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
               </tbody>
             </table>
           </div>
+</>)}
 
           <div className="overflow-auto">
             <div className="mb-1 text-xs font-semibold">Composição por volume</div>
@@ -1355,7 +1384,9 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
               <thead>
                 <tr>
                   <th className="px-2 py-1 text-left">Modelo</th>
+{mostrarFat && (<>
                   <th className="px-2 py-1 text-right">Faturamento</th>
+</>)}
                   <th className="px-2 py-1 text-right">Peças</th>
                   <th className="px-2 py-1 text-right">% acumulado</th>
                   <th className="px-2 py-1 text-center">Classe</th>
@@ -1365,6 +1396,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                 {abcModelo.map((l) => (
                   <tr key={l.chave} className="border-t">
                     <td className="px-2 py-1">{l.chave}</td>
+{mostrarFat && (<>
                     <td className="px-2 py-1 text-right tabular-nums">
                       <ValorDrill
                         onDrill={abrirDrill}
@@ -1382,6 +1414,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                         {fmtMoeda(l.faturamento)}
                       </ValorDrill>
                     </td>
+</>)}
                     <td className="px-2 py-1 text-right tabular-nums">
                       <ValorDrill
                         onDrill={abrirDrill}
@@ -1472,7 +1505,9 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                   <th className="px-2 py-1 text-left">CPF/CNPJ</th>
                   <th className="px-2 py-1 text-right">Pedidos</th>
                   <th className="px-2 py-1 text-right">Peças</th>
+{mostrarFat && (<>
                   <th className="px-2 py-1 text-right">Faturamento</th>
+</>)}
                   <th className="px-2 py-1 text-right">%</th>
                   <th className="px-2 py-1 text-right">% acum.</th>
                   <th className="px-2 py-1 text-center">Classe</th>
@@ -1540,6 +1575,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                         {fmtNum(c.pecas)}
                       </ValorDrill>
                     </td>
+{mostrarFat && (<>
                     <td className="px-2 py-1 text-right tabular-nums">
                       <ValorDrill
                         onDrill={abrirDrill}
@@ -1559,6 +1595,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                         {fmtMoeda(c.faturamento)}
                       </ValorDrill>
                     </td>
+</>)}
                     <td className="px-2 py-1 text-right tabular-nums">{c.perc.toFixed(1)}%</td>
                     <td className="px-2 py-1 text-right tabular-nums">{c.acumulado.toFixed(1)}%</td>
                     <td className="px-2 py-1 text-center">
@@ -1569,7 +1606,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                 ))}
                 {clientes.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-2 py-4 text-center text-muted-foreground">
+                    <td colSpan={mostrarFat ? 9 : 8} className="px-2 py-4 text-center text-muted-foreground">
                       Sem dados no período.
                     </td>
                   </tr>
@@ -1590,12 +1627,16 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
             <thead>
               <tr>
                 <th className="px-2 py-1 text-left">Vendedor</th>
+{mostrarFat && (<>
                 <th className="px-2 py-1 text-right">Faturamento</th>
+</>)}
                 <th className="px-2 py-1 text-right">Pedidos</th>
                 <th className="px-2 py-1 text-right">Peças</th>
+{mostrarFat && (<>
                 <th className="px-2 py-1 text-right">Ticket médio</th>
                 <th className="px-2 py-1 text-right">Preço médio/peça</th>
                 <th className="px-2 py-1 text-right">Desconto (R$)</th>
+</>)}
                 <th className="px-2 py-1 text-right">Desconto médio (%)</th>
               </tr>
             </thead>
@@ -1603,6 +1644,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
               {vendedoresLinhas.map((v) => (
                 <tr key={v.vendedor} className="border-t">
                   <td className="px-2 py-1">{v.vendedor}</td>
+{mostrarFat && (<>
                   <td className="px-2 py-1 text-right font-semibold tabular-nums">
                     <ValorDrill
                       onDrill={abrirDrill}
@@ -1622,6 +1664,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                       {fmtMoeda(v.faturamento)}
                     </ValorDrill>
                   </td>
+</>)}
                   <td className="px-2 py-1 text-right tabular-nums">
                     <ValorDrill
                       onDrill={abrirDrill}
@@ -1660,6 +1703,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                       {fmtNum(v.pecas)}
                     </ValorDrill>
                   </td>
+{mostrarFat && (<>
                   <td className="px-2 py-1 text-right tabular-nums">
                     <ValorDrill
                       onDrill={abrirDrill}
@@ -1704,7 +1748,10 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                       fmtMoeda(0)
                     )}
                   </td>
+</>)}
+{mostrarFat && (<>
                   <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(v.descontoValor)}</td>
+</>)}
                   <td className="px-2 py-1 text-right tabular-nums">{v.descontoPerc.toFixed(1)}%</td>
                 </tr>
               ))}
@@ -1721,9 +1768,11 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
               <CardTitle className="text-base">Faixas de tamanho de pedido</CardTitle>
               <CardDescription>Peças por pedido · período e demais filtros aplicados</CardDescription>
             </div>
+{mostrarFat && (<>
             <Button variant="outline" size="sm" className="h-8 gap-2" onClick={exportarPdfFaixas} disabled={isLoading}>
               <FileDown className="h-4 w-4" /> PDF por faixa
             </Button>
+</>)}
           </CardHeader>
           <CardContent className="overflow-auto">
             <table className="tbl-congelada w-full text-xs">
@@ -1733,9 +1782,11 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                   <th className="px-2 py-1 text-right">Pedidos</th>
                   <th className="px-2 py-1 text-right">% pedidos</th>
                   <th className="px-2 py-1 text-right">Peças</th>
+{mostrarFat && (<>
                   <th className="px-2 py-1 text-right">Faturamento</th>
                   <th className="px-2 py-1 text-right">% faturamento</th>
                   <th className="px-2 py-1 text-right">Ticket médio</th>
+</>)}
                 </tr>
               </thead>
               <tbody>
@@ -1794,6 +1845,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                           fmtNum(l.pecas)
                         )}
                       </td>
+{mostrarFat && (<>
                       <td className="px-2 py-1 text-right font-semibold tabular-nums">
                         {l.pedidos > 0 ? (
                           <ValorDrill
@@ -1816,6 +1868,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                       </td>
                       <td className="px-2 py-1 text-right tabular-nums">{l.pctFaturamento.toFixed(1)}%</td>
                       <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(l.ticket)}</td>
+</>)}
                     </tr>
                   );
                 })}
@@ -1829,9 +1882,11 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                       <td className="px-2 py-1 text-right tabular-nums">{fmtNum(tPed)}</td>
                       <td className="px-2 py-1 text-right tabular-nums">{tPed ? "100,0%" : "0,0%"}</td>
                       <td className="px-2 py-1 text-right tabular-nums">{fmtNum(tPec)}</td>
+{mostrarFat && (<>
                       <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(tFat)}</td>
                       <td className="px-2 py-1 text-right tabular-nums">{tFat ? "100,0%" : "0,0%"}</td>
                       <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(tPed ? tFat / tPed : 0)}</td>
+</>)}
                     </tr>
                   );
                 })()}
@@ -1844,6 +1899,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
 
 
       {/* ---------------- Bloco 10 — Frete ---------------- */}
+{mostrarFat && (<>
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Frete</CardTitle>
@@ -1963,6 +2019,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
           )}
         </CardContent>
       </Card>
+</>)}
 
       {escopo === "custom" && (
         <>
@@ -1975,6 +2032,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
           <div className="text-xs text-muted-foreground">
             A UF de entrega vem sempre do PCP (<code>uf_entrega</code>). Pedido sem par no PCP aparece como “—”.
           </div>
+{mostrarFat && (<>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={ufLinhas.slice(0, 10)}>
@@ -1986,16 +2044,21 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
               </BarChart>
             </ResponsiveContainer>
           </div>
+</>)}
           <div className="max-h-72 overflow-auto">
             <table className="tbl-congelada w-full text-xs">
               <thead>
                 <tr>
                   <th className="px-2 py-1 text-left">UF (PCP)</th>
+{mostrarFat && (<>
                   <th className="px-2 py-1 text-right">Faturamento</th>
+</>)}
                   <th className="px-2 py-1 text-right">%</th>
                   <th className="px-2 py-1 text-right">Pedidos</th>
                   <th className="px-2 py-1 text-right">Peças</th>
+{mostrarFat && (<>
                   <th className="px-2 py-1 text-right">Frete</th>
+</>)}
                 </tr>
               </thead>
               <tbody>
@@ -2030,17 +2093,21 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                   return (
                     <tr key={u.uf} className="border-t">
                       <td className="px-2 py-1">{u.uf}</td>
+{mostrarFat && (<>
                       {cel(u.faturamento, fmtMoeda(u.faturamento), "faturamento", `Faturamento — ${u.uf}`, "font-semibold")}
+</>)}
                       <td className="px-2 py-1 text-right tabular-nums">{u.perc.toFixed(1)}%</td>
                       {cel(u.pedidos, fmtNum(u.pedidos), "linhas", `Pedidos — ${u.uf}`)}
                       {cel(u.pecas, fmtNum(u.pecas), "pecas", `Peças — ${u.uf}`)}
+{mostrarFat && (<>
                       {cel(u.frete, fmtMoeda(u.frete), "frete", `Frete — ${u.uf}`)}
+</>)}
                     </tr>
                   );
                 })}
                 {ufLinhas.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-2 py-4 text-center text-muted-foreground">
+                    <td colSpan={mostrarFat ? 6 : 4} className="px-2 py-4 text-center text-muted-foreground">
                       Sem dados no período.
                     </td>
                   </tr>
@@ -2559,7 +2626,9 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                     <tr>
                       <th className="px-2 py-1 text-left">Produto Olist</th>
                       <th className="px-2 py-1 text-right">Peças</th>
+{mostrarFat && (<>
                       <th className="px-2 py-1 text-right">Receita</th>
+</>)}
                     </tr>
                   </thead>
                   <tbody>
@@ -2567,12 +2636,14 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                       <tr key={s.produto} className="border-t">
                         <td className="px-2 py-1">{s.produto}</td>
                         <td className="px-2 py-1 text-right tabular-nums">{fmtNum(s.pecas)}</td>
+{mostrarFat && (<>
                         <td className="px-2 py-1 text-right tabular-nums">{fmtMoeda(s.faturamento)}</td>
+</>)}
                       </tr>
                     ))}
                     {saude.semMapeamento.length === 0 && (
                       <tr>
-                        <td colSpan={3} className="px-2 py-4 text-center text-muted-foreground">
+                        <td colSpan={mostrarFat ? 3 : 2} className="px-2 py-4 text-center text-muted-foreground">
                           Todos os produtos do período estão mapeados.
                         </td>
                       </tr>
@@ -2805,6 +2876,7 @@ function RankingCard({
   subtitulo: string;
   onDrill: (p: DrillPayload) => void;
 }) {
+  const mostrarFat = useMostrarFaturamento();
   const filtroDim = (chave: string) => (i: ItemCalc) => {
     if (dimStore) {
       const s = (i as ItemStoreCalc).store ?? parseProdutoStore(i.descricao_original ?? i.produto_olist);
@@ -2873,7 +2945,9 @@ function RankingCard({
               <th className="px-2 py-1 text-left">Item</th>
               <th className="px-2 py-1 text-right">Peças</th>
               <th className="px-2 py-1 text-right">%</th>
+{mostrarFat && (<>
               <th className="px-2 py-1 text-right">Faturamento</th>
+</>)}
               <th className="px-2 py-1 text-right">Pedidos</th>
               {posAnterior && <th className="px-2 py-1 text-right">Antes</th>}
             </tr>
@@ -2904,6 +2978,7 @@ function RankingCard({
                     </ValorDrill>
                   </td>
                   <td className="px-2 py-1 text-right tabular-nums">{l.percPecas.toFixed(1)}%</td>
+{mostrarFat && (<>
                   <td className="px-2 py-1 text-right tabular-nums">
                     <ValorDrill
                       onDrill={onDrill}
@@ -2921,6 +2996,7 @@ function RankingCard({
                       {fmtMoeda(l.faturamento)}
                     </ValorDrill>
                   </td>
+</>)}
                   <td className="px-2 py-1 text-right tabular-nums">
                     <ValorDrill
                       onDrill={onDrill}
