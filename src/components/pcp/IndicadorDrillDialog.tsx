@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Download, Search, ArrowUp, ArrowDown, ArrowLeftRight } from "lucide-react";
 import {
   Dialog,
@@ -9,6 +9,17 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { fmtMoeda, fmtNum } from "@/lib/indicadores-olist";
 import type { DrillColuna, DrillLinha, DrillPayload, DrillTipo } from "@/lib/indicadores-drill";
 
@@ -70,6 +81,19 @@ interface Props {
 export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
   const [busca, setBusca] = useState("");
   const [ordem, setOrdem] = useState<{ chave: string; dir: "asc" | "desc" } | null>(null);
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const [confirmarLote, setConfirmarLote] = useState(false);
+
+  useEffect(() => {
+    setSelecionados(new Set());
+  }, [busca]);
+  // Fecha ou termina o lote (setDrill(null)) → payload some e a seleção é limpa.
+  useEffect(() => {
+    if (!payload) {
+      setSelecionados(new Set());
+      setConfirmarLote(false);
+    }
+  }, [payload]);
 
   const linhas = useMemo(() => {
     if (!payload) return [];
@@ -98,9 +122,54 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
   if (!payload) return null;
 
   const acao = payload.acaoEscopo;
+  const loteAtivo = !!acao?.onMoverLote;
+  /** Mesmo teste que decide mostrar o botão da linha. */
+  const podeMover = (numero: string) => {
+    if (!acao || !numero) return false;
+    if (acao.escopoAtual === "custom" && !acao.ehStoreAuto(numero)) return false;
+    return true;
+  };
+  const numeroDe = (l: DrillLinha) => (acao ? String(l[acao.chaveNumero] ?? "") : "");
+  const elegiveisVisiveis = loteAtivo
+    ? Array.from(new Set(linhas.map(numeroDe).filter((n) => podeMover(n))))
+    : [];
+  const marcadosVisiveis = elegiveisVisiveis.filter((n) => selecionados.has(n)).length;
+  const estadoCabecalho: boolean | "indeterminate" =
+    marcadosVisiveis === 0 ? false : marcadosVisiveis === elegiveisVisiveis.length ? true : "indeterminate";
+  const alternarTodos = () => {
+    setSelecionados((prev) => {
+      const n = new Set(prev);
+      if (estadoCabecalho === true) elegiveisVisiveis.forEach((x) => n.delete(x));
+      else elegiveisVisiveis.forEach((x) => n.add(x));
+      return n;
+    });
+  };
+  const alternar = (numero: string, marcar: boolean) => {
+    setSelecionados((prev) => {
+      const n = new Set(prev);
+      if (marcar) n.add(numero);
+      else n.delete(numero);
+      return n;
+    });
+  };
+  const colExtra = (acao ? 1 : 0) + (loteAtivo ? 1 : 0);
 
   const colSoma = payload.colunas.find((c) => c.somar);
   const somaVisivel = colSoma ? linhas.reduce((s, l) => s + (Number(l[colSoma.chave]) || 0), 0) : null;
+  const somaSelecionada = (() => {
+    if (!colSoma || !acao || selecionados.size === 0) return null;
+    const vistos = new Set<string>();
+    let t = 0;
+    for (const l of payload.linhas) {
+      const n = numeroDe(l);
+      if (!selecionados.has(n)) continue;
+      const chave = `${n}|${JSON.stringify(l)}`;
+      if (vistos.has(chave)) continue;
+      vistos.add(chave);
+      t += Number(l[colSoma.chave]) || 0;
+    }
+    return t;
+  })();
   const confere =
     payload.indicadorValor != null && payload.totalConferencia != null
       ? Math.abs(payload.indicadorValor - payload.totalConferencia) < 0.01
@@ -145,6 +214,16 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
           <table className="w-full text-xs tbl-congelada">
             <thead>
               <tr>
+                {loteAtivo ? (
+                  <th className="w-8 px-2 py-1.5">
+                    <Checkbox
+                      checked={estadoCabecalho}
+                      onCheckedChange={alternarTodos}
+                      disabled={!elegiveisVisiveis.length}
+                      aria-label="Marcar todos"
+                    />
+                  </th>
+                ) : null}
                 {payload.colunas.map((c) => {
                   const ativo = ordem?.chave === c.chave;
                   return (
@@ -179,7 +258,7 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
               {linhas.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={payload.colunas.length + (acao ? 1 : 0)}
+                    colSpan={payload.colunas.length + colExtra}
                     className="px-2 py-6 text-center text-muted-foreground"
                   >
                     Nenhuma linha compõe este indicador com os filtros atuais.
@@ -188,6 +267,21 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
               ) : (
                 linhas.map((l, idx) => (
                   <tr key={idx} className="border-t hover:bg-muted/40">
+                    {loteAtivo ? (
+                      <td className="w-8 px-2 py-1">
+                        {(() => {
+                          const n = numeroDe(l);
+                          if (!podeMover(n)) return null;
+                          return (
+                            <Checkbox
+                              checked={selecionados.has(n)}
+                              onCheckedChange={(v) => alternar(n, v === true)}
+                              aria-label={`Selecionar pedido ${n}`}
+                            />
+                          );
+                        })()}
+                      </td>
+                    ) : null}
                     {payload.colunas.map((c) => (
                       <td
                         key={c.chave}
@@ -202,10 +296,9 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
                       <td className="px-2 py-1 whitespace-nowrap text-right">
                         {(() => {
                           const numero = String(l[acao.chaveNumero] ?? "");
-                          if (!numero) return null;
                           const destino = acao.escopoAtual === "store" ? "custom" : "store";
                           /* No Custom só faz sentido devolver pedido cuja regra automática é Store. */
-                          if (acao.escopoAtual === "custom" && !acao.ehStoreAuto(numero)) return null;
+                          if (!podeMover(numero)) return null;
                           const carregando = acao.pendente === numero;
                           return (
                             <Button
@@ -233,6 +326,7 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
             {colSoma && linhas.length > 0 ? (
               <tfoot>
                 <tr className="border-t bg-muted/60 font-semibold">
+                  {loteAtivo ? <td /> : null}
                   {payload.colunas.map((c, i) => (
                     <td key={c.chave} className={`px-2 py-1.5 ${alinhamento(c)} tabular-nums`}>
                       {c.chave === colSoma.chave
@@ -249,6 +343,46 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
           </table>
         </div>
 
+
+        {loteAtivo && selecionados.size > 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/50 px-3 py-2 text-xs">
+            <span className="tabular-nums">
+              {selecionados.size === 1 ? "1 pedido selecionado" : `${fmtNum(selecionados.size)} pedidos selecionados`}
+              {somaSelecionada != null && colSoma ? ` · ${formatCelula(somaSelecionada, colSoma.tipo)}` : ""}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setSelecionados(new Set())}>
+                Limpar seleção
+              </Button>
+              <Button size="sm" className="h-7 text-xs" disabled={!!acao?.loteEmAndamento} onClick={() => setConfirmarLote(true)}>
+                <ArrowLeftRight className="h-3 w-3 mr-1" />
+                {acao?.loteEmAndamento ? "Movendo…" : "Mover para Custom"}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        <AlertDialog open={confirmarLote} onOpenChange={setConfirmarLote}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Mover para Juff Custom</AlertDialogTitle>
+              <AlertDialogDescription>
+                Você vai mover {selecionados.size === 1 ? "1 pedido" : `${selecionados.size} pedidos`} de Juff Store para Juff Custom. Os indicadores dos dois escopos vão mudar. Dá para desfazer depois, pedido por pedido, pelo botão Voltar para Store.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setConfirmarLote(false);
+                  acao?.onMoverLote?.(Array.from(selecionados));
+                }}
+              >
+                Mover
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <div className="text-xs text-muted-foreground space-y-1">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -272,7 +406,12 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
             ) : null}
           </div>
           {payload.nota ? <p>{payload.nota}</p> : null}
-          {acao ? (
+          {loteAtivo ? (
+            <p>
+              Marque as linhas para mover vários pedidos de uma vez entre Juff Store e Juff Custom. A troca é salva e
+              pode ser desfeita quando quiser.
+            </p>
+          ) : acao ? (
             <p>
               O botão move o pedido inteiro entre Juff Store e Juff Custom. A troca é salva e pode ser desfeita
               quando quiser.
