@@ -189,11 +189,7 @@ const WIPE_ACABAMENTO = {
   data_saida_juff: null,
   responsavel_acabamento: null,
   responsavel_conferencia: null,
-  inicio_acabamento: null,
-  termino_acabamento: null,
-  dias_secagem: null,
   finalizado_em: null,
-  tempo_producao: null,
   expedicao_entrou_em: null,
   exp_cobranca_pagamento: null,
   exp_pagamento: null,
@@ -204,18 +200,12 @@ const WIPE_ACABAMENTO = {
   exp_despachado_em: null,
   exp_observacoes: null,
 } as const;
+// Datas planejadas (arte, estamparia, acabamento, secagem, tempo de produção) NÃO são apagadas na refação.
 const WIPE_INPUT_PRODUCAO = {
   status_pecas: null,
   tipo_estampa: null,
-  dias_secagem: null,
   n_batidas_dtf: null,
   n_batidas_silk: null,
-  arte_data: null,
-  inicio_estamparia: null,
-  termino_estamparia: null,
-  inicio_acabamento: null,
-  termino_acabamento: null,
-  tempo_producao: null,
 } as const;
 
 /**
