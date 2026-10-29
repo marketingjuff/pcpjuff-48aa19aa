@@ -6,13 +6,35 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Lock } from "lucide-react";
+import { AlertTriangle, Lock, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { REFACAO_MODELOS } from "@/lib/pedidos";
 import { useIsAdmin } from "@/hooks/use-role";
 import { useTableSort, SortTh } from "@/components/shared/sortable";
 import { useItensUltimoSnapshot, useProdutoMap } from "./AlimentacaoEstoqueTab";
 import { useProdutosVendas } from "./PendenciaMapeamentoAlert";
+
+function semAcento(s: string) {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+/** Todas as palavras do termo precisam aparecer no texto (qualquer ordem). */
+function casaBusca(texto: string, termo: string) {
+  const tokens = semAcento(termo).split(/\s+/).filter(Boolean);
+  if (!tokens.length) return true;
+  const t = semAcento(texto);
+  return tokens.every((k) => t.includes(k));
+}
 
 export function ProdutoMapCard() {
   const qc = useQueryClient();
@@ -23,6 +45,9 @@ export function ProdutoMapCard() {
   const [pendenteSel, setPendenteSel] = useState<Record<string, string>>({});
   const [novoProduto, setNovoProduto] = useState("");
   const [novoModelo, setNovoModelo] = useState("");
+  const [buscaMapa, setBuscaMapa] = useState("");
+  const [buscaPend, setBuscaPend] = useState("");
+  const [excluirAlvo, setExcluirAlvo] = useState<{ id: string; produto_olist: string; modelo_cop: string } | null>(null);
 
   const mapeados = useMemo(() => new Set(mapa.map((m) => m.produto_olist)), [mapa]);
 
@@ -59,7 +84,11 @@ export function ProdutoMapCard() {
     }));
   }, [itens, mapeados, produtosVendas]);
 
-  const pendentesSort = useTableSort(pendentes, {
+  const pendentesFiltrados = useMemo(
+    () => (buscaPend.trim() ? pendentes.filter((p) => casaBusca(p.produto, buscaPend)) : pendentes),
+    [pendentes, buscaPend],
+  );
+  const pendentesSort = useTableSort(pendentesFiltrados, {
     produto: (p) => p.produto,
     empresas: (p) => p.empresas,
     qtd: (p) => p.qtd,
@@ -70,7 +99,14 @@ export function ProdutoMapCard() {
     () => mapa.slice().sort((a, b) => a.produto_olist.localeCompare(b.produto_olist, "pt-BR")),
     [mapa],
   );
-  const mapaSort = useTableSort(mapaOrdenado, {
+  const mapaFiltrado = useMemo(
+    () =>
+      buscaMapa.trim()
+        ? mapaOrdenado.filter((m) => casaBusca(`${m.produto_olist} ${m.modelo_cop}`, buscaMapa))
+        : mapaOrdenado,
+    [mapaOrdenado, buscaMapa],
+  );
+  const mapaSort = useTableSort(mapaFiltrado, {
     produto: (m) => m.produto_olist,
     modelo: (m) => m.modelo_cop,
   });
@@ -97,6 +133,22 @@ export function ProdutoMapCard() {
       toast.success("Mapeamento salvo.");
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar mapeamento."),
+  });
+
+  const excluirMap = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("olist_produto_map" as any)
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["estoque-olist", "produto-map"] });
+      qc.invalidateQueries({ queryKey: ["olist-produto-map"] });
+      toast.success("Mapeamento excluído.");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir mapeamento."),
   });
 
   return (
@@ -127,6 +179,15 @@ export function ProdutoMapCard() {
                 Real nem nos indicadores</b>.
               </span>
             </div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs font-semibold">Pendentes</div>
+              <Input
+                className="h-8 w-[260px] text-xs"
+                placeholder="Buscar produto"
+                value={buscaPend}
+                onChange={(e) => setBuscaPend(e.target.value)}
+              />
+            </div>
             <div className="overflow-auto max-h-[40vh] tbl-congelada">
               <table className="w-full text-[12.5px]">
                 <thead className="bg-muted/40 text-xs">
@@ -140,6 +201,13 @@ export function ProdutoMapCard() {
                   </tr>
                 </thead>
                 <tbody>
+                  {pendentesSort.rows.length === 0 && (
+                    <tr>
+                      <td colSpan={isAdmin ? 6 : 4} className="p-3 text-center text-muted-foreground">
+                        Nenhum produto encontrado para essa busca.
+                      </td>
+                    </tr>
+                  )}
                   {pendentesSort.rows.map((p) => (
                     <tr key={p.produto} className="border-t">
                       <td className="p-2">{p.produto}</td>
@@ -217,16 +285,34 @@ export function ProdutoMapCard() {
 
         {mapa.length > 0 && (
           <div>
-            <div className="text-xs font-semibold mb-1">Já mapeados ({mapa.length})</div>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <div className="text-xs font-semibold">
+                Já mapeados ({buscaMapa.trim() ? `${mapaFiltrado.length} de ${mapa.length}` : mapa.length})
+              </div>
+              <Input
+                className="h-8 w-[260px] text-xs"
+                placeholder="Buscar produto ou modelo"
+                value={buscaMapa}
+                onChange={(e) => setBuscaMapa(e.target.value)}
+              />
+            </div>
             <div className="overflow-auto max-h-[35vh] tbl-congelada">
               <table className="w-full text-[12.5px]">
                 <thead className="bg-muted/40 text-xs">
                   <tr>
                     <SortTh label="Produto na Olist" sortKey="produto" current={mapaSort.sortKey} dir={mapaSort.sortDir} onSort={mapaSort.toggle} className="text-left" />
                     <SortTh label="Modelo COP" sortKey="modelo" current={mapaSort.sortKey} dir={mapaSort.sortDir} onSort={mapaSort.toggle} className="text-left w-[240px]" />
+                    {isAdmin && <th className="p-2 w-[60px]" />}
                   </tr>
                 </thead>
                 <tbody>
+                  {mapaSort.rows.length === 0 && (
+                    <tr>
+                      <td colSpan={isAdmin ? 3 : 2} className="p-3 text-center text-muted-foreground">
+                        Nenhum produto encontrado para essa busca.
+                      </td>
+                    </tr>
+                  )}
                   {mapaSort.rows.map((m) => (
                     <tr key={m.id} className="border-t">
                       <td className="p-2">{m.produto_olist}</td>
@@ -245,6 +331,20 @@ export function ProdutoMapCard() {
                           <span className="font-semibold">{m.modelo_cop}</span>
                         )}
                       </td>
+                      {isAdmin && (
+                        <td className="p-2 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            title="Excluir mapeamento"
+                            disabled={excluirMap.isPending}
+                            onClick={() => setExcluirAlvo({ id: m.id, produto_olist: m.produto_olist, modelo_cop: m.modelo_cop })}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -253,6 +353,28 @@ export function ProdutoMapCard() {
           </div>
         )}
       </CardContent>
+      <AlertDialog open={!!excluirAlvo} onOpenChange={(o) => !o && setExcluirAlvo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir mapeamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O produto <b>{excluirAlvo?.produto_olist}</b> deixa de estar ligado ao modelo <b>{excluirAlvo?.modelo_cop}</b>. Se ele ainda aparecer nas importações de estoque ou de vendas da Olist, volta para a lista de pendentes no topo deste card, para ser mapeado de novo. Enquanto estiver pendente, ele não entra no Saldo Real nem nos indicadores.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (excluirAlvo) excluirMap.mutate(excluirAlvo.id);
+                setExcluirAlvo(null);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
