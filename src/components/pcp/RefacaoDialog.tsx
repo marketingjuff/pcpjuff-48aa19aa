@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { tipoIncluiDTF, type PecaPerdida } from "@/lib/pedidos";
 import { PecasPerdidasEditor, pecaLinhaCompleta, somaPecas } from "./PecasPerdidasEditor";
-import { useAppList, type AppListKind } from "@/lib/app-lists";
+import { useAppList, useKindProblemaPorArea, type AppListKind } from "@/lib/app-lists";
 
 export type RefacaoFormPayload = {
   pecas_refazer: number;
@@ -36,17 +36,6 @@ interface Props {
   onConfirm: (payload: RefacaoFormPayload) => void;
 }
 
-function kindForArea(area: string): AppListKind | null {
-  switch (area) {
-    case "Arte": return "refacao_problema_arte";
-    case "DTF": return "refacao_problema_dtf";
-    case "Silk": return "refacao_problema_silk";
-    case "Acabamento": return "refacao_problema_acabamento";
-    case "Comercial":
-    case "Input de Vendedor": return "refacao_problema_input_vendedor";
-    default: return "motivo_perda";
-  }
-}
 
 export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoEstampa, onConfirm }: Props) {
   const mostraAdesivos = tipoIncluiDTF(tipoEstampa);
@@ -82,7 +71,7 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
     }
   }, [open]);
 
-  const kindProblema = kindForArea(areaErro);
+  const kindProblema: AppListKind | null = useKindProblemaPorArea(areaErro);
   const { names: problemas } = useAppList((kindProblema ?? "motivo_perda") as AppListKind);
   const problemaOptions = useMemo(() => (kindProblema ? problemas : []), [kindProblema, problemas]);
   const { names: areasIdentifica } = useAppList("refacao_area_identifica");

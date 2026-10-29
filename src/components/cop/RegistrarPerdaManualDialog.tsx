@@ -9,21 +9,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
-import { useAppList, type AppListKind } from "@/lib/app-lists";
+import { useAppList, useKindProblemaPorArea, type AppListKind } from "@/lib/app-lists";
 import { MOTIVOS_PERDA_PADRAO, type Oficina } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
-function kindForArea(area: string): AppListKind {
-  switch (area) {
-    case "Arte": return "refacao_problema_arte";
-    case "DTF": return "refacao_problema_dtf";
-    case "Silk": return "refacao_problema_silk";
-    case "Acabamento": return "refacao_problema_acabamento";
-    case "Comercial":
-    case "Input de Vendedor": return "refacao_problema_input_vendedor";
-    default: return "motivo_perda";
-  }
-}
 
 
 export function RegistrarPerdaManualDialog({
@@ -56,7 +45,8 @@ export function RegistrarPerdaManualDialog({
   const destinosList = destinosItems.map((i) => i.nome);
   const { names: areasIdentifica } = useAppList("refacao_area_identifica");
   const { names: areasErro } = useAppList("refacao_area_erro");
-  const kindProblema: AppListKind = erroProd === "sim" ? kindForArea(areaErro) : "motivo_perda";
+  const kindArea = useKindProblemaPorArea(areaErro);
+  const kindProblema: AppListKind = erroProd === "sim" ? kindArea : "motivo_perda";
   const { names: problemasArea } = useAppList(kindProblema);
   const problemaOptions = kindProblema === "motivo_perda" ? motivosList : problemasArea;
 

@@ -40,7 +40,7 @@ export const LISTAS_CATALOGO: ListaCatalogoItem[] = [
     placeholder: "Nova área",
     modulos: ["pcp"],
     grupo: "Refação",
-    notaUso: "Escolhida na Refação do PCP. O valor gravado também é exibido no COP, na correção de perdas.",
+    notaUso: "Escolhida na Refação do PCP e na perda manual do COP. Cada área tem a sua lista de problemas logo abaixo; renomear a área renomeia a lista.",
   },
   { kind: "refacao_problema_arte", titulo: "Problemas da Arte", placeholder: "Novo problema", modulos: ["pcp"], grupo: "Refação" },
   { kind: "refacao_problema_dtf", titulo: "Problemas do DTF", placeholder: "Novo problema", modulos: ["pcp"], grupo: "Refação" },
