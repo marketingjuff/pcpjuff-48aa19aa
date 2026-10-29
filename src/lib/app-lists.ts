@@ -11,7 +11,8 @@ export type AppListKind =
   | "map_motivo_devolucao"
   | "destino_perda"
   | "cop_cortador"
-  | "sup_unidade";
+  | "sup_unidade"
+  | `refacao_problema_area:${string}`;
 
 export interface AppListItem {
   id: string;
@@ -91,4 +92,29 @@ export function useAppListMutations(kind: AppListKind) {
   });
 
   return { add, rename, remove, reorder };
+}
+
+
+/** Listas de problemas antigas, ligadas pelo id da área (não pelo nome — renomear não quebra). */
+const PROBLEMA_LEGADO_POR_AREA_ID: Record<string, AppListKind> = {
+  "12bb14ee-a3e2-490b-9012-4474810b1357": "refacao_problema_arte",
+  "986ceb34-bfff-4409-9f02-d568bd8a22a7": "refacao_problema_dtf",
+  "55940e0f-0480-41fc-bae9-95cc8801d8ae": "refacao_problema_silk",
+  "9eeb454b-3d48-4e4f-b843-a2663d659210": "refacao_problema_acabamento",
+  "c6d9798d-bc82-4dd1-8bc0-4d05ff2747a1": "refacao_problema_input_vendedor",
+};
+
+/** Lista de problemas de uma "Área que errou a produção". Cada área nova ganha a sua. */
+export function kindProblemaDaArea(areaId: string): AppListKind {
+  return PROBLEMA_LEGADO_POR_AREA_ID[areaId] ?? `refacao_problema_area:${areaId}`;
+}
+
+/** Resolve pelo nome escolhido; se a área não existe ou a lista dela está vazia, usa os motivos de perda. */
+export function useKindProblemaPorArea(areaNome: string): AppListKind {
+  const { items: areas } = useAppList("refacao_area_erro");
+  const area = areas.find((a) => a.nome === areaNome);
+  const kind: AppListKind = area ? kindProblemaDaArea(area.id) : "motivo_perda";
+  const { items, isLoading } = useAppList(kind);
+  if (kind !== "motivo_perda" && !isLoading && items.length === 0) return "motivo_perda";
+  return kind;
 }

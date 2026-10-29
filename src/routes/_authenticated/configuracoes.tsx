@@ -1203,6 +1203,21 @@ function ListasTab({ canAccessCop, canAccessMap, canAccessSup }: { canAccessCop:
     try { localStorage.setItem(`cfg.listas.grupo.${m}`, g); } catch { /* ignore */ }
   }
 
+  const { items: areasErro } = useAppList("refacao_area_erro");
+  const catalogo: ListaCatalogoItem[] = useMemo(() => {
+    const fixos = catalogo.filter((i) => !i.kind.startsWith("refacao_problema_"));
+    const idx = fixos.findIndex((i) => i.kind === "refacao_area_erro");
+    const dinamicos: ListaCatalogoItem[] = areasErro.map((a) => ({
+      kind: kindProblemaDaArea(a.id),
+      titulo: `Problemas — ${a.nome}`,
+      placeholder: "Novo problema",
+      modulos: ["pcp"],
+      grupo: "Refação",
+      notaUso: `Escolhida na Refação do PCP e na perda manual do COP quando a área que errou é ${a.nome}. Se ficar vazia, aparecem os motivos de perda.`,
+    }));
+    return [...fixos.slice(0, idx + 1), ...dinamicos, ...fixos.slice(idx + 1)];
+  }, [areasErro]);
+
   function cardDe(item: ListaCatalogoItem) {
     const compartilhada = item.modulos.length > 1;
     return (
@@ -1219,7 +1234,7 @@ function ListasTab({ canAccessCop, canAccessMap, canAccessSup }: { canAccessCop:
   }
 
   const resultados = termo
-    ? LISTAS_CATALOGO.filter((i) => normalizarBusca(i.titulo).includes(termo) && i.modulos.some((m) => modulos.includes(m)))
+    ? catalogo.filter((i) => normalizarBusca(i.titulo).includes(termo) && i.modulos.some((m) => modulos.includes(m)))
     : [];
 
   return (
@@ -1245,7 +1260,7 @@ function ListasTab({ canAccessCop, canAccessMap, canAccessSup }: { canAccessCop:
             ))}
           </TabsList>
           {modulos.map((m) => {
-            const itens = LISTAS_CATALOGO.filter((i) => i.modulos.includes(m));
+            const itens = catalogo.filter((i) => i.modulos.includes(m));
             const grupos = Array.from(new Set(itens.map((i) => i.grupo)));
             return (
               <TabsContent key={m} value={m} className="space-y-6">
