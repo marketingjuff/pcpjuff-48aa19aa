@@ -966,8 +966,8 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
               }),
             )
           }
-</>)}
         />
+</>)}
         <Kpi
           titulo="Pedidos"
           valor={fmtNum(r.pedidos)}
@@ -1040,8 +1040,8 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
               }),
             )
           }
-</>)}
         />
+</>)}
       </div>
 
       {/* ---------------- Composição Juff Store ---------------- */}
@@ -1287,8 +1287,8 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
             </div>
           </div>
         </CardContent>
-</>)}
       </Card>
+</>)}
 
       {/* ---------------- Bloco 3 — Produto ---------------- */}
       <Card>
@@ -2043,8 +2043,8 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                 <Bar dataKey="faturamento" name="Faturamento" fill="hsl(var(--primary))" />
               </BarChart>
             </ResponsiveContainer>
-</>)}
           </div>
+</>)}
           <div className="max-h-72 overflow-auto">
             <table className="tbl-congelada w-full text-xs">
               <thead>
