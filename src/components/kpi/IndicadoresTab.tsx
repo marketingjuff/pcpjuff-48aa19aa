@@ -96,6 +96,7 @@ import {
   type OpcaoVendedor,
 } from "@/lib/indicadores-vendedor";
 import { FileDown } from "lucide-react";
+import { useMostrarFaturamento } from "@/lib/kpi-faturamento";
 import {
   drillPedidos,
   drillItens,
@@ -287,6 +288,7 @@ const RANKINGS_STORE: { dimStore: DimRankingStore; dim: DimRanking; titulo: stri
 
 export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicadores } = {}) {
   const soPcpAtivo = escopo === "custom";
+  const mostrarFat = useMostrarFaturamento();
   const [preset, setPreset] = usePersistedState<Preset>(`kpi:${escopo}:preset`, "mes");
   const [intervalo, setIntervalo] = usePersistedState(`kpi:${escopo}:intervalo`, intervaloPreset("mes"));
   const [comparar, setComparar] = useState(false);
@@ -697,6 +699,16 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   };
 
   const abrirDrill = (p: DrillPayload) => {
+    if (!mostrarFat) {
+      const perdeuSoma = p.colunas.some((c) => c.somar && c.tipo === "moeda");
+      p = {
+        ...p,
+        colunas: p.colunas.filter((c) => c.tipo !== "moeda"),
+        ...(perdeuSoma
+          ? { totalConferencia: null, conferenciaTipo: undefined, indicadorValor: null, indicadorLabel: "" }
+          : {}),
+      };
+    }
     const temNumero = p.colunas.some((c) => c.chave === "pedido");
     if (podeMoverEscopo && temNumero) {
       setDrill({
@@ -936,7 +948,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       )}
 
       {/* ---------------- Bloco 1 — Resumo ---------------- */}
-      <div className="grid gap-2 md:grid-cols-5">
+      <div className={`grid gap-2 ${mostrarFat ? "md:grid-cols-5" : "md:grid-cols-2"}`}>
 {mostrarFat && (<>
         <Kpi
           titulo="Faturamento"
@@ -1071,8 +1083,9 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
 </>)}
               <div className="text-xs text-muted-foreground tabular-nums">
                 {composicao.outlet.percFaturamento.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% da receita do
-                período · {fmtNum(composicao.outlet.pecas)} peças · preço médio/peça{" "}
-                {fmtMoeda(composicao.outlet.precoMedio)}
+                período · {fmtNum(composicao.outlet.pecas)} peças
+                {mostrarFat && (<>{" "}· preço médio/peça{" "}
+                {fmtMoeda(composicao.outlet.precoMedio)}</>)}
               </div>
             </div>
           </CardContent>
@@ -1593,7 +1606,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                 ))}
                 {clientes.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-2 py-4 text-center text-muted-foreground">
+                    <td colSpan={mostrarFat ? 9 : 8} className="px-2 py-4 text-center text-muted-foreground">
                       Sem dados no período.
                     </td>
                   </tr>
@@ -2094,7 +2107,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                 })}
                 {ufLinhas.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-2 py-4 text-center text-muted-foreground">
+                    <td colSpan={mostrarFat ? 6 : 4} className="px-2 py-4 text-center text-muted-foreground">
                       Sem dados no período.
                     </td>
                   </tr>
@@ -2630,7 +2643,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
                     ))}
                     {saude.semMapeamento.length === 0 && (
                       <tr>
-                        <td colSpan={3} className="px-2 py-4 text-center text-muted-foreground">
+                        <td colSpan={mostrarFat ? 3 : 2} className="px-2 py-4 text-center text-muted-foreground">
                           Todos os produtos do período estão mapeados.
                         </td>
                       </tr>
@@ -2863,6 +2876,7 @@ function RankingCard({
   subtitulo: string;
   onDrill: (p: DrillPayload) => void;
 }) {
+  const mostrarFat = useMostrarFaturamento();
   const filtroDim = (chave: string) => (i: ItemCalc) => {
     if (dimStore) {
       const s = (i as ItemStoreCalc).store ?? parseProdutoStore(i.descricao_original ?? i.produto_olist);
