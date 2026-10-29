@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,7 +27,7 @@ import {
 } from "@/lib/admin.functions";
 
 import { exportBackup, importBackup } from "@/lib/backup.functions";
-import { useAppList, useAppListMutations, type AppListKind } from "@/lib/app-lists";
+import { useAppList, useAppListMutations, kindProblemaDaArea, type AppListKind } from "@/lib/app-lists";
 import {
   anosSugeridos,
   fetchFeriadosNacionais,
