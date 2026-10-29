@@ -2,11 +2,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings, Eye, EyeOff } from "lucide-react";
+import { FaturamentoProvider } from "@/lib/kpi-faturamento";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMyRoles, useIsAdmin, useCanAccessKpi, useAbasPermitidas, useMinhasPermissoes } from "@/hooks/use-role";
+import { useMyRoles, useIsAdmin, useCanAccessKpi, useAbasPermitidas, useMinhasPermissoes, usePode } from "@/hooks/use-role";
 import { rotaInicial } from "@/lib/permissoes";
 import { MacroSwitch } from "@/routes/_authenticated/cop";
 import { ImportacaoOlistTab } from "@/components/kpi/ImportacaoOlistTab";
@@ -32,6 +33,8 @@ function KpiHome() {
   const pode = (k: string) => permissoes.has(k);
   const TABS = abas.map((a) => ({ value: a.tabValue, label: a.label }));
   const { isLoading } = useMyRoles();
+  const podeFaturamento = usePode("kpi.faturamento");
+  const [olhoAberto, setOlhoAberto] = useState(true);
   const search = Route.useSearch();
   const [tab, setTabState] = useState(() => {
     if (search.tab) return search.tab;
@@ -55,6 +58,8 @@ function KpiHome() {
   const visitadas = useRef<Set<string>>(new Set([tab]));
   visitadas.current.add(tab);
   const montada = (v: string) => visitadas.current.has(v);
+  const mostrarFaturamento = podeFaturamento && olhoAberto;
+  const abaComValores = tab === "custom" || tab === "store" || tab === "copmap";
 
   const primeiraAba = TABS[0]?.value;
   useEffect(() => {
@@ -95,6 +100,17 @@ function KpiHome() {
             <MacroSwitch active="kpi" />
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
+            {isAdmin && abaComValores && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setOlhoAberto((v) => !v)}
+                aria-label={olhoAberto ? "Ocultar faturamento" : "Mostrar faturamento"}
+                title={olhoAberto ? "Ocultar faturamento" : "Mostrar faturamento"}
+              >
+                {olhoAberto ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </Button>
+            )}
             {(isAdmin || isGestor) && (
               <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/configuracoes", search: { origem: "/kpi" } as any })} aria-label="Configurações">
                 <Settings className="h-4 w-4 sm:mr-1" />
@@ -110,6 +126,7 @@ function KpiHome() {
       </header>
 
       <main className="max-w-[1600px] mx-auto px-3 sm:px-4 py-4 sm:py-6 bg-purple-50/60 rounded-b-xl">
+        <FaturamentoProvider mostrar={mostrarFaturamento}>
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="sticky top-[68px] z-[35] bg-muted flex flex-wrap h-auto mb-6 shadow-sm">
             {TABS.map((t) => (
@@ -143,6 +160,7 @@ function KpiHome() {
             </TabsContent>
           )}
         </Tabs>
+        </FaturamentoProvider>
       </main>
     </div>
   );
