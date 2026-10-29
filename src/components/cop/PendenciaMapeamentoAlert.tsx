@@ -39,15 +39,24 @@ export function useProdutosVendas(enabled: boolean) {
       const ids = Array.from(maisRecentePorEmpresa.values());
       if (ids.length === 0) return [] as ProdutoVendas[];
 
-      const { data, error } = await supabase
-        .from("olist_itens" as any)
-        .select("produto_olist, qtd, lote_id")
-        .in("lote_id", ids)
-        .not("produto_olist", "is", null);
-      if (error) throw error;
+      const PAGE = 1000;
+      const linhas: any[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("olist_itens" as any)
+          .select("produto_olist, qtd, lote_id")
+          .in("lote_id", ids)
+          .not("produto_olist", "is", null)
+          .order("id", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const page = (data ?? []) as any[];
+        linhas.push(...page);
+        if (page.length < PAGE) break;
+      }
 
       const agrup = new Map<string, { produto: string; empresas: Set<string>; qtd: number }>();
-      for (const r of (data ?? []) as any[]) {
+      for (const r of linhas) {
         const p = String(r.produto_olist ?? "").trim();
         if (!p) continue;
         const e = agrup.get(p) ?? { produto: p, empresas: new Set<string>(), qtd: 0 };
