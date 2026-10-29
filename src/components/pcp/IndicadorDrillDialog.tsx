@@ -252,9 +252,11 @@ export function IndicadorDrillDialog({ payload, onOpenChange }: Props) {
 
         <div className="text-xs text-muted-foreground space-y-1">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            {payload.indicadorLabel ? (
             <span>
               Indicador no painel: <strong className="text-foreground tabular-nums">{payload.indicadorLabel}</strong>
             </span>
+            ) : null}
             {payload.totalConferencia != null ? (
               <span>
                 Conferência das linhas:{" "}
