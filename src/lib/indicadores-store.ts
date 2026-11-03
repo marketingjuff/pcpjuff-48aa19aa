@@ -332,15 +332,19 @@ export function resumoSemVoucher(pedidos: PedidoFiltrado[], limite: number): Res
   };
   let receitaProdutosReais = 0;
   for (const p of pedidos) {
+    const liquido = (bruto: number) => bruto - (p.subtotal ? p.desconto_pedido * (bruto / p.subtotal) : 0);
     let brutoReal = 0;
     let brutoVoucher = 0;
     let brutoServico = 0;
     let pecasReais = 0;
     let temReal = false;
+    let temVoucher = false;
     for (const i of p.itensSel) {
+      if (i.qtd <= 0) continue;
       if (i.is_servico) {
         brutoServico += i.subtotal;
-      } else if (i.qtd > 0 && i.subtotal / i.qtd < limite) {
+      } else if (Math.max(0, liquido(i.subtotal) / i.qtd) < limite) {
+        temVoucher = true;
         brutoVoucher += i.subtotal;
         resultado.voucherPecas += i.qtd;
       } else {
@@ -349,10 +353,9 @@ export function resumoSemVoucher(pedidos: PedidoFiltrado[], limite: number): Res
         pecasReais += i.qtd;
       }
     }
-    const liquido = (bruto: number) => bruto - (p.subtotal ? p.desconto_pedido * (bruto / p.subtotal) : 0);
     resultado.voucherFaturamento += liquido(brutoVoucher);
     if (!temReal) {
-      resultado.voucherPedidos += 1;
+      if (temVoucher) resultado.voucherPedidos += 1;
       continue;
     }
     resultado.pedidos += 1;

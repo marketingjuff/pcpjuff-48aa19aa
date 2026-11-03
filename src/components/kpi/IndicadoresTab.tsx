@@ -1119,8 +1119,8 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
             <h2 id="venda-real-store" className="text-sm font-semibold">Venda real, sem peças de voucher</h2>
             <p className="text-xs text-muted-foreground">
               {mostrarFat
-                ? `Fora da conta as peças com preço unitário abaixo de ${fmtMoeda(limiteVoucher)}, usando o valor configurado em Configurações > KPI. A faixa de cima continua sendo o total.`
-                : "Fora da conta as peças abaixo do limite de voucher configurado. A faixa de cima continua sendo o total."}
+                ? `Fora da conta as peças com preço líquido por peça, após o desconto proporcional do pedido, abaixo de ${fmtMoeda(limiteVoucher)}, usando o valor configurado em Configurações > KPI. A faixa de cima continua sendo o total.`
+                : "Fora da conta as peças com preço líquido, após o desconto proporcional do pedido, abaixo do limite de voucher configurado. A faixa de cima continua sendo o total."}
             </p>
             {limiteQuery.isError && <p role="alert" className="text-xs text-destructive">Não foi possível carregar o limite de voucher; esta faixa usa o limite padrão.</p>}
           </div>
