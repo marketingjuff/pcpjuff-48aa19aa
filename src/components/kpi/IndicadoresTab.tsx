@@ -567,6 +567,10 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
   );
   const vendedoresLinhas = useMemo(() => porVendedor(atuais), [atuais]);
   const frete = useMemo(() => resumoFrete(atuais, data?.ufPorPedido ?? new Map()), [atuais, data]);
+  const freteAnt = useMemo(
+    () => resumoFrete(anteriores, data?.ufPorPedido ?? new Map()),
+    [anteriores, data],
+  );
   const gradeTam = useMemo(() => gradePorModelo(atuais, "tamanho"), [atuais]);
   const gradeCor = useMemo(() => gradePorModelo(atuais, "cor"), [atuais]);
 
@@ -986,7 +990,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       )}
 
       {/* ---------------- Bloco 1 — Resumo ---------------- */}
-      <div className={`grid gap-2 ${mostrarFat ? "md:grid-cols-5" : "md:grid-cols-2"}`}>
+      <div className={`grid gap-2 ${mostrarFat ? "md:grid-cols-3 lg:grid-cols-6" : "md:grid-cols-2"}`}>
 {mostrarFat && (<>
         <Kpi
           titulo="Faturamento"
