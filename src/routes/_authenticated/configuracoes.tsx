@@ -77,7 +77,6 @@ import { MapConfigPanel } from "@/components/map/MapConfigPanel";
 import { SupConfigPanel } from "@/components/sup/SupConfigPanel";
 import {
   LISTAS_CATALOGO,
-  LISTAS_CATALOGO,
   moduloBadgeClasses,
   moduloDotClasses,
   moduloLabel,
