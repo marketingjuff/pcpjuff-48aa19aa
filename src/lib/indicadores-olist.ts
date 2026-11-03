@@ -293,10 +293,17 @@ export function resumo(pedidos: PedidoFiltrado[]): Resumo {
   const faturamento = pedidos.reduce((s, p) => s + p.liquidoSel, 0);
   const pecas = pedidos.reduce((s, p) => s + p.pecasSel, 0);
   // Preço médio por peça: serviços fora do numerador e do denominador.
-  const receitaProdutos = pedidos.reduce(
-    (s, p) => s + p.itensSel.filter((i) => !i.is_servico).reduce((t, i) => t + i.subtotal, 0),
-    0,
-  );
+  // O desconto do pedido é rateado proporcionalmente e a parte que cabe
+  // aos produtos é abatida, para ficar na mesma base do ticket médio.
+  const receitaProdutos = pedidos.reduce((s, p) => {
+    const brutoProdutos = p.itensSel
+      .filter((i) => !i.is_servico)
+      .reduce((t, i) => t + i.subtotal, 0);
+    const descProdutos = p.subtotal
+      ? p.desconto_pedido * (brutoProdutos / p.subtotal)
+      : 0;
+    return s + (brutoProdutos - descProdutos);
+  }, 0);
   return {
     faturamento,
     pedidos: pedidos.length,

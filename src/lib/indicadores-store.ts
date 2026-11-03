@@ -252,13 +252,15 @@ export function composicaoStore(pedidos: PedidoFiltrado[]): ComposicaoStore {
   for (const p of pedidos) {
     for (const i of p.itensSel) {
       if (i.is_servico) continue;
+      const descItem = p.subtotal ? p.desconto_pedido * (i.subtotal / p.subtotal) : 0;
+      const liquidoItem = i.subtotal - descItem;
       const s = store(i);
       const alvo = s.tipo_peca === "LISA" ? acc.lisas : acc.estampadas;
-      alvo.faturamento += i.subtotal;
+      alvo.faturamento += liquidoItem;
       alvo.pecas += i.qtd;
       alvo.ped.add(p.numero_pedido);
       if (s.is_outlet) {
-        acc.outlet.faturamento += i.subtotal;
+        acc.outlet.faturamento += liquidoItem;
         acc.outlet.pecas += i.qtd;
         acc.outlet.ped.add(p.numero_pedido);
       }
