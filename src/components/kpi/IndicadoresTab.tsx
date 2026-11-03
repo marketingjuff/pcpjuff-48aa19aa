@@ -1082,6 +1082,129 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
 </>)}
       </div>
 
+      {/* ---------------- Bloco 10 — Frete ---------------- */}
+{mostrarFat && (<>
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Frete</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="text-xs text-muted-foreground">
+            O frete é apresentado separadamente e nunca é somado ao faturamento. A UF vem do PCP.
+          </div>
+          <div className="grid gap-2 md:grid-cols-3">
+            <Kpi
+              titulo="Frete total"
+              valor={fmtMoeda(frete.total)}
+              varPerc={null}
+              comparar={false}
+              onDrill={() =>
+                abrirDrill(
+                  drillPedidos(atuais, {
+                    titulo: "Frete total",
+                    subtitulo: subOlist,
+                    nota: "O frete nunca é somado ao faturamento. UF vem do PCP.",
+                    indicadorLabel: fmtMoeda(frete.total),
+                    indicadorValor: frete.total,
+                    campo: "frete",
+                    ufPorPedido: ufMapaDrill,
+                  }),
+                )
+              }
+            />
+            <Kpi
+              titulo="Frete médio/pedido"
+              valor={fmtMoeda(frete.medio)}
+              varPerc={null}
+              comparar={false}
+              onDrill={() =>
+                abrirDrill(
+                  drillPedidos(atuais, {
+                    titulo: "Frete médio por pedido",
+                    subtitulo: subOlist,
+                    indicadorLabel: fmtMoeda(frete.medio),
+                    indicadorValor: frete.medio,
+                    campo: "frete",
+                    media: true,
+                    ufPorPedido: ufMapaDrill,
+                  }),
+                )
+              }
+            />
+            <Kpi
+              titulo="Pedidos com frete"
+              valor={`${frete.percComFrete.toFixed(1)}%`}
+              varPerc={null}
+              comparar={false}
+              onDrill={() =>
+                abrirDrill(
+                  drillPedidos(
+                    atuais.filter((p) => Number(p.frete ?? 0) > 0),
+                    {
+                      titulo: "Pedidos com frete",
+                      subtitulo: subOlist,
+                      nota: `${frete.percComFrete.toFixed(1)}% dos pedidos do período têm frete maior que zero.`,
+                      indicadorLabel: `${frete.percComFrete.toFixed(1)}%`,
+                      indicadorValor: null,
+                      campo: "linhas",
+                      ufPorPedido: ufMapaDrill,
+                    },
+                  ),
+                )
+              }
+            />
+          </div>
+          {escopo === "custom" && (
+          <div className="max-h-72 overflow-auto">
+            <table className="tbl-congelada w-full text-xs">
+              <thead>
+                <tr>
+                  <th className="px-2 py-1 text-left">UF (PCP)</th>
+                  <th className="px-2 py-1 text-right">Pedidos</th>
+                  <th className="px-2 py-1 text-right">Peças</th>
+                  <th className="px-2 py-1 text-right">Frete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {frete.porUf.map((u) => {
+                  const mapaUf = data?.ufPorPedido ?? new Map();
+                  const linhasUf = atuais.filter((p) => (mapaUf.get(p.numero_pedido) ?? "—") === u.uf);
+                  const cel = (valor: number, label: string, campo: "linhas" | "pecas" | "frete", titulo: string) => (
+                    <td className="px-2 py-1 text-right tabular-nums">
+                      <ValorDrill
+                        onDrill={abrirDrill}
+                        build={() =>
+                          drillPedidos(linhasUf, {
+                            titulo,
+                            subtitulo: `UF ${u.uf} · ${subOlist}`,
+                            indicadorLabel: label,
+                            indicadorValor: valor,
+                            campo,
+                            ufPorPedido: mapaUf,
+                          })
+                        }
+                      >
+                        {label}
+                      </ValorDrill>
+                    </td>
+                  );
+                  return (
+                    <tr key={u.uf} className="border-t">
+                      <td className="px-2 py-1">{u.uf}</td>
+                      {cel(u.pedidos, fmtNum(u.pedidos), "linhas", `Pedidos — ${u.uf}`)}
+                      {cel(u.pecas, fmtNum(u.pecas), "pecas", `Peças — ${u.uf}`)}
+                      {cel(u.frete, fmtMoeda(u.frete), "frete", `Frete — ${u.uf}`)}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          )}
+        </CardContent>
+      </Card>
+</>)}
+
       {/* ---------------- Composição Juff Store ---------------- */}
       {composicao && (
         <Card>
@@ -1931,131 +2054,6 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
           </CardContent>
         </Card>
       )}
-
-
-
-      {/* ---------------- Bloco 10 — Frete ---------------- */}
-{mostrarFat && (<>
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Frete</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="text-xs text-muted-foreground">
-            O frete é apresentado separadamente e nunca é somado ao faturamento. A UF vem do PCP.
-          </div>
-          <div className="grid gap-2 md:grid-cols-3">
-            <Kpi
-              titulo="Frete total"
-              valor={fmtMoeda(frete.total)}
-              varPerc={null}
-              comparar={false}
-              onDrill={() =>
-                abrirDrill(
-                  drillPedidos(atuais, {
-                    titulo: "Frete total",
-                    subtitulo: subOlist,
-                    nota: "O frete nunca é somado ao faturamento. UF vem do PCP.",
-                    indicadorLabel: fmtMoeda(frete.total),
-                    indicadorValor: frete.total,
-                    campo: "frete",
-                    ufPorPedido: ufMapaDrill,
-                  }),
-                )
-              }
-            />
-            <Kpi
-              titulo="Frete médio/pedido"
-              valor={fmtMoeda(frete.medio)}
-              varPerc={null}
-              comparar={false}
-              onDrill={() =>
-                abrirDrill(
-                  drillPedidos(atuais, {
-                    titulo: "Frete médio por pedido",
-                    subtitulo: subOlist,
-                    indicadorLabel: fmtMoeda(frete.medio),
-                    indicadorValor: frete.medio,
-                    campo: "frete",
-                    media: true,
-                    ufPorPedido: ufMapaDrill,
-                  }),
-                )
-              }
-            />
-            <Kpi
-              titulo="Pedidos com frete"
-              valor={`${frete.percComFrete.toFixed(1)}%`}
-              varPerc={null}
-              comparar={false}
-              onDrill={() =>
-                abrirDrill(
-                  drillPedidos(
-                    atuais.filter((p) => Number(p.frete ?? 0) > 0),
-                    {
-                      titulo: "Pedidos com frete",
-                      subtitulo: subOlist,
-                      nota: `${frete.percComFrete.toFixed(1)}% dos pedidos do período têm frete maior que zero.`,
-                      indicadorLabel: `${frete.percComFrete.toFixed(1)}%`,
-                      indicadorValor: null,
-                      campo: "linhas",
-                      ufPorPedido: ufMapaDrill,
-                    },
-                  ),
-                )
-              }
-            />
-          </div>
-          {escopo === "custom" && (
-          <div className="max-h-72 overflow-auto">
-            <table className="tbl-congelada w-full text-xs">
-              <thead>
-                <tr>
-                  <th className="px-2 py-1 text-left">UF (PCP)</th>
-                  <th className="px-2 py-1 text-right">Pedidos</th>
-                  <th className="px-2 py-1 text-right">Peças</th>
-                  <th className="px-2 py-1 text-right">Frete</th>
-                </tr>
-              </thead>
-              <tbody>
-                {frete.porUf.map((u) => {
-                  const mapaUf = data?.ufPorPedido ?? new Map();
-                  const linhasUf = atuais.filter((p) => (mapaUf.get(p.numero_pedido) ?? "—") === u.uf);
-                  const cel = (valor: number, label: string, campo: "linhas" | "pecas" | "frete", titulo: string) => (
-                    <td className="px-2 py-1 text-right tabular-nums">
-                      <ValorDrill
-                        onDrill={abrirDrill}
-                        build={() =>
-                          drillPedidos(linhasUf, {
-                            titulo,
-                            subtitulo: `UF ${u.uf} · ${subOlist}`,
-                            indicadorLabel: label,
-                            indicadorValor: valor,
-                            campo,
-                            ufPorPedido: mapaUf,
-                          })
-                        }
-                      >
-                        {label}
-                      </ValorDrill>
-                    </td>
-                  );
-                  return (
-                    <tr key={u.uf} className="border-t">
-                      <td className="px-2 py-1">{u.uf}</td>
-                      {cel(u.pedidos, fmtNum(u.pedidos), "linhas", `Pedidos — ${u.uf}`)}
-                      {cel(u.pecas, fmtNum(u.pecas), "pecas", `Peças — ${u.uf}`)}
-                      {cel(u.frete, fmtMoeda(u.frete), "frete", `Frete — ${u.uf}`)}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          )}
-        </CardContent>
-      </Card>
-</>)}
 
       {escopo === "custom" && (
         <>
