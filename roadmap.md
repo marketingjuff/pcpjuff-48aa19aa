@@ -1,5 +1,7 @@
 # KPI Juff Store — Venda real
-- [ ] Corrigir exclusão de peças zeradas pelo desconto de pedido — aguarda aprovação do plano de correção da base do filtro.
+- [ ] Corrigir exclusão de peças zeradas pelo desconto de pedido (plano aprovado).
+- [ ] Ignorar quantidades não positivas sem classificá-las como voucher ou venda real; usar piso zero no preço líquido do filtro.
+- [ ] Verificar cálculos, outubro/2026 na tela e resultado da verificação automática de tipos, sem temporários no repositório.
 - [x] Acrescentar cálculo e segunda faixa sem voucher, preservando demais indicadores.
 - [x] Disponibilizar limite em Configurações > KPI somente para admin.
 - [x] Conferir cálculos (16 casos), tela autenticada, tipos e ausência de temporários no repositório.
