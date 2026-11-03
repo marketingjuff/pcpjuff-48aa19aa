@@ -309,3 +309,59 @@ export function descricoesForaPadrao(pedidos: PedidoFiltrado[]): DescricaoForaPa
   }
   return [...map.values()].sort((a, b) => b.pecas - a.pecas);
 }
+
+export const LIMITE_VOUCHER_PADRAO = 20;
+
+export interface ResumoSemVoucher {
+  faturamento: number;
+  frete: number;
+  pedidos: number;
+  pecas: number;
+  ticket: number;
+  precoMedio: number;
+  voucherPecas: number;
+  voucherFaturamento: number;
+  voucherPedidos: number;
+}
+
+/** Recorte exclusivo da segunda faixa Store; preço do item já contém voucher. */
+export function resumoSemVoucher(pedidos: PedidoFiltrado[], limite: number): ResumoSemVoucher {
+  const resultado: ResumoSemVoucher = {
+    faturamento: 0, frete: 0, pedidos: 0, pecas: 0, ticket: 0, precoMedio: 0,
+    voucherPecas: 0, voucherFaturamento: 0, voucherPedidos: 0,
+  };
+  let receitaProdutosReais = 0;
+  for (const p of pedidos) {
+    let brutoReal = 0;
+    let brutoVoucher = 0;
+    let brutoServico = 0;
+    let pecasReais = 0;
+    let temReal = false;
+    for (const i of p.itensSel) {
+      if (i.is_servico) {
+        brutoServico += i.subtotal;
+      } else if (i.qtd > 0 && i.subtotal / i.qtd < limite) {
+        brutoVoucher += i.subtotal;
+        resultado.voucherPecas += i.qtd;
+      } else {
+        temReal = true;
+        brutoReal += i.subtotal;
+        pecasReais += i.qtd;
+      }
+    }
+    const liquido = (bruto: number) => bruto - (p.subtotal ? p.desconto_pedido * (bruto / p.subtotal) : 0);
+    resultado.voucherFaturamento += liquido(brutoVoucher);
+    if (!temReal) {
+      resultado.voucherPedidos += 1;
+      continue;
+    }
+    resultado.pedidos += 1;
+    resultado.pecas += pecasReais;
+    resultado.faturamento += liquido(brutoReal + brutoServico);
+    resultado.frete += p.frete;
+    receitaProdutosReais += liquido(brutoReal);
+  }
+  resultado.ticket = resultado.pedidos ? resultado.faturamento / resultado.pedidos : 0;
+  resultado.precoMedio = resultado.pecas ? receitaProdutosReais / resultado.pecas : 0;
+  return resultado;
+}

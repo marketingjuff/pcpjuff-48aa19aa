@@ -73,6 +73,8 @@ import {
   rankingStore,
   composicaoStore,
   descricoesForaPadrao,
+  LIMITE_VOUCHER_PADRAO,
+  resumoSemVoucher,
   type DimRankingStore,
   type ItemStoreCalc,
 } from "@/lib/indicadores-store";
@@ -97,6 +99,7 @@ import {
 } from "@/lib/indicadores-vendedor";
 import { FileDown } from "lucide-react";
 import { useMostrarFaturamento } from "@/lib/kpi-faturamento";
+import { lerLimiteVoucher, QUERY_LIMITE_VOUCHER } from "@/components/kpi/KpiConfigPanel";
 import {
   drillPedidos,
   drillItens,
@@ -289,6 +292,8 @@ const RANKINGS_STORE: { dimStore: DimRankingStore; dim: DimRanking; titulo: stri
 export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicadores } = {}) {
   const soPcpAtivo = escopo === "custom";
   const mostrarFat = useMostrarFaturamento();
+  const limiteQuery = useQuery({ queryKey: QUERY_LIMITE_VOUCHER, queryFn: lerLimiteVoucher, enabled: escopo === "store" });
+  const limiteVoucher = limiteQuery.data ?? LIMITE_VOUCHER_PADRAO;
   const [preset, setPreset] = usePersistedState<Preset>(`kpi:${escopo}:preset`, "mes");
   const [intervalo, setIntervalo] = usePersistedState(`kpi:${escopo}:intervalo`, intervaloPreset("mes"));
   const [comparar, setComparar] = useState(false);
@@ -557,6 +562,8 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
 
   const r = useMemo(() => resumo(atuais), [atuais]);
   const rAnt = useMemo(() => resumo(anteriores), [anteriores]);
+  const realAtual = useMemo(() => resumoSemVoucher(escopo === "store" ? atuais : [], limiteVoucher), [escopo, atuais, limiteVoucher]);
+  const realAnterior = useMemo(() => resumoSemVoucher(escopo === "store" ? anteriores : [], limiteVoucher), [escopo, anteriores, limiteVoucher]);
   const mensal = useMemo(() => evolucaoMensal(atuais), [atuais]);
   const situacoesLinhas = useMemo(() => porSituacao(atuais), [atuais]);
   const rankModelo = useMemo(() => ranking(atuais, "modelo"), [atuais]);
@@ -1106,6 +1113,34 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
       </div>
 
       {/* ---------------- Bloco 10 — Frete ---------------- */}
+      {escopo === "store" && (
+        <section className="border-y border-border bg-muted/40 px-3 py-4 space-y-3" aria-labelledby="venda-real-store">
+          <div className="space-y-1">
+            <h2 id="venda-real-store" className="text-sm font-semibold">Venda real, sem peças de voucher</h2>
+            <p className="text-xs text-muted-foreground">
+              {mostrarFat
+                ? `Fora da conta as peças com preço unitário abaixo de ${fmtMoeda(limiteVoucher)}, usando o valor configurado em Configurações > KPI. A faixa de cima continua sendo o total.`
+                : "Fora da conta as peças abaixo do limite de voucher configurado. A faixa de cima continua sendo o total."}
+            </p>
+            {limiteQuery.isError && <p role="alert" className="text-xs text-destructive">Não foi possível carregar o limite de voucher; esta faixa usa o limite padrão.</p>}
+          </div>
+          <div className={`grid gap-2 ${mostrarFat ? "md:grid-cols-3 lg:grid-cols-6" : "md:grid-cols-2"}`}>
+            {mostrarFat && (<>
+              <Kpi titulo="Faturamento" valor={fmtMoeda(realAtual.faturamento)} varPerc={variacao(realAtual.faturamento, realAnterior.faturamento)} comparar={comparar} />
+              <Kpi titulo="Faturamento + frete" valor={fmtMoeda(realAtual.faturamento + realAtual.frete)} varPerc={variacao(realAtual.faturamento + realAtual.frete, realAnterior.faturamento + realAnterior.frete)} comparar={comparar} />
+            </>)}
+            <Kpi titulo="Pedidos" valor={fmtNum(realAtual.pedidos)} varPerc={variacao(realAtual.pedidos, realAnterior.pedidos)} comparar={comparar} />
+            <Kpi titulo="Peças vendidas" valor={fmtNum(realAtual.pecas)} varPerc={variacao(realAtual.pecas, realAnterior.pecas)} comparar={comparar} />
+            {mostrarFat && (<>
+              <Kpi titulo="Ticket médio" valor={fmtMoeda(realAtual.ticket)} varPerc={variacao(realAtual.ticket, realAnterior.ticket)} comparar={comparar} />
+              <Kpi titulo="Preço médio/peça" valor={fmtMoeda(realAtual.precoMedio)} varPerc={variacao(realAtual.precoMedio, realAnterior.precoMedio)} comparar={comparar} />
+            </>)}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Fora da conta: {fmtNum(realAtual.voucherPecas)} peças de voucher{mostrarFat ? ` · ${fmtMoeda(realAtual.voucherFaturamento)} de faturamento dessas peças` : ""} · {fmtNum(realAtual.voucherPedidos)} pedidos que saíram inteiros.
+          </p>
+        </section>
+      )}
 {mostrarFat && (<>
       <Card>
         <CardHeader className="pb-2">
