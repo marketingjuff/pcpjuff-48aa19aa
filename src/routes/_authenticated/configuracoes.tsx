@@ -75,6 +75,7 @@ import {
 import { CopConfigPanel, CoresCopCard } from "@/components/cop/CopConfigPanel";
 import { MapConfigPanel } from "@/components/map/MapConfigPanel";
 import { SupConfigPanel } from "@/components/sup/SupConfigPanel";
+import { KpiConfigPanel } from "@/components/kpi/KpiConfigPanel";
 import {
   LISTAS_CATALOGO,
   moduloBadgeClasses,
@@ -87,8 +88,8 @@ import {
   type ModuloVisual,
 } from "@/lib/config-listas-catalogo";
 
-type SecaoSlug = "usuarios" | "feriados" | "backup" | "aparencia" | "listas" | "cop" | "map" | "sup";
-const SLUGS: SecaoSlug[] = ["usuarios", "feriados", "backup", "aparencia", "listas", "cop", "map", "sup"];
+type SecaoSlug = "usuarios" | "feriados" | "backup" | "aparencia" | "listas" | "cop" | "map" | "sup" | "kpi";
+const SLUGS: SecaoSlug[] = ["usuarios", "feriados", "backup", "aparencia", "listas", "cop", "map", "sup", "kpi"];
 const LS_ULTIMA_SECAO = "pcpjuff:config:ultima-secao";
 
 function areaLegadoParaSlug(area: unknown): SecaoSlug | undefined {
@@ -140,6 +141,7 @@ function ConfiguracoesPage() {
     ...(canAccessCop ? [{ slug: "cop" as SecaoSlug, label: "COP", grupo: "Cadastros" as const, modulo: "cop" as ModuloVisual }] : []),
     ...(canAccessMap ? [{ slug: "map" as SecaoSlug, label: "MAP", grupo: "Cadastros" as const, modulo: "map" as ModuloVisual }] : []),
     ...(canAccessSup ? [{ slug: "sup" as SecaoSlug, label: "SUP", grupo: "Cadastros" as const, modulo: "sup" as ModuloVisual }] : []),
+    ...(isAdmin ? [{ slug: "kpi" as SecaoSlug, label: "KPI", grupo: "Cadastros" as const }] : []),
   ];
 
   const permitido = (slug?: SecaoSlug) => !!slug && secoes.some((x) => x.slug === slug);
@@ -283,6 +285,8 @@ function ConfiguracoesPage() {
             <MapConfigPanel />
           ) : atual?.slug === "sup" ? (
             <SupConfigPanel />
+          ) : atual?.slug === "kpi" ? (
+            <KpiConfigPanel />
           ) : null}
         </main>
       </div>
