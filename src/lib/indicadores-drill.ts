@@ -145,7 +145,7 @@ function linhaPedido(p: PedidoFiltrado): DrillLinha {
 /* Blocos Olist — pedidos                                              */
 /* ------------------------------------------------------------------ */
 
-export type CampoPedido = "faturamento" | "pecas" | "linhas" | "frete";
+export type CampoPedido = "faturamento" | "pecas" | "linhas" | "frete" | "faturamento_mais_frete";
 
 export interface OpcoesPedidos {
   titulo: string;
@@ -163,12 +163,24 @@ export interface OpcoesPedidos {
 
 export function drillPedidos(pedidos: PedidoFiltrado[], o: OpcoesPedidos): DrillPayload {
   const comUf = !!o.ufPorPedido;
+  const comSoma = o.campo === "faturamento_mais_frete";
   const colunas: DrillColuna[] = [
     ...COL_PEDIDO_OLIST.map((c) => ({ ...c, somar: c.chave === o.campo })),
     ...(comUf
       ? ([
           { chave: "uf", label: "UF (PCP)", tipo: "texto" },
           { chave: "frete", label: "Frete", tipo: "moeda", align: "right", somar: o.campo === "frete" },
+        ] as DrillColuna[])
+      : []),
+    ...(comSoma
+      ? ([
+          {
+            chave: "faturamento_mais_frete",
+            label: "Faturamento + frete",
+            tipo: "moeda",
+            align: "right",
+            somar: true,
+          },
         ] as DrillColuna[])
       : []),
   ];
@@ -181,6 +193,7 @@ export function drillPedidos(pedidos: PedidoFiltrado[], o: OpcoesPedidos): Drill
         l.uf = (o.ufPorPedido!.get(p.numero_pedido) ?? "").toUpperCase() || "—";
         l.frete = p.frete;
       }
+      if (comSoma) l.faturamento_mais_frete = p.liquidoSel + p.frete;
       return l;
     })
     .sort((a, b) => num(b[chaveOrdem]) - num(a[chaveOrdem]));
