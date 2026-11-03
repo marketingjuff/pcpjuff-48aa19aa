@@ -1093,7 +1093,7 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
               drillItens(atuais, {
                 titulo: "Preço médio por peça — itens que compõem a média",
                 subtitulo: subOlist,
-                nota: "Preço médio = faturamento líquido ÷ peças. Confira dividindo o total de subtotal pelo total de peças.",
+                nota: "Preço médio = receita de produtos já descontado o cupom do pedido, dividida pelas peças. A coluna abaixo mostra o subtotal bruto de cada item, antes do cupom, então o total da lista pode ficar acima do indicador.",
                 indicadorLabel: fmtMoeda(r.precoMedio),
                 indicadorValor: null,
                 campo: "subtotal",
