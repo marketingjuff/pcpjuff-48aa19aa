@@ -77,6 +77,7 @@ import { MapConfigPanel } from "@/components/map/MapConfigPanel";
 import { SupConfigPanel } from "@/components/sup/SupConfigPanel";
 import {
   LISTAS_CATALOGO,
+  LISTAS_CATALOGO,
   moduloBadgeClasses,
   moduloDotClasses,
   moduloLabel,
@@ -1205,7 +1206,7 @@ function ListasTab({ canAccessCop, canAccessMap, canAccessSup }: { canAccessCop:
 
   const { items: areasErro } = useAppList("refacao_area_erro");
   const catalogo: ListaCatalogoItem[] = useMemo(() => {
-    const fixos = catalogo.filter((i) => !i.kind.startsWith("refacao_problema_"));
+    const fixos = LISTAS_CATALOGO.filter((i) => !i.kind.startsWith("refacao_problema_"));
     const idx = fixos.findIndex((i) => i.kind === "refacao_area_erro");
     const dinamicos: ListaCatalogoItem[] = areasErro.map((a) => ({
       kind: kindProblemaDaArea(a.id),
