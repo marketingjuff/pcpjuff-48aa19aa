@@ -1009,6 +1009,25 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
             )
           }
         />
+        <Kpi
+          titulo="Faturamento + frete"
+          valor={fmtMoeda(r.faturamento + frete.total)}
+          varPerc={variacao(r.faturamento + frete.total, rAnt.faturamento + freteAnt.total)}
+          comparar={comparar}
+          onDrill={() =>
+            abrirDrill(
+              drillPedidos(atuais, {
+                titulo: "Faturamento + frete do período",
+                subtitulo: subOlist,
+                nota: "Cada pedido soma o faturamento líquido com o frete cobrado. O card Faturamento continua só com o faturamento.",
+                indicadorLabel: fmtMoeda(r.faturamento + frete.total),
+                indicadorValor: r.faturamento + frete.total,
+                campo: "faturamento_mais_frete",
+                ufPorPedido: soPcpAtivo ? ufMapaDrill : undefined,
+              }),
+            )
+          }
+        />
 </>)}
         <Kpi
           titulo="Pedidos"
@@ -1094,7 +1113,8 @@ export function IndicadoresTab({ escopo = "custom" }: { escopo?: EscopoIndicador
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="text-xs text-muted-foreground">
-            O frete é apresentado separadamente e nunca é somado ao faturamento. A UF vem do PCP.
+            O frete é apresentado separadamente do faturamento. O card "Faturamento + frete", logo acima, soma os
+            dois. A UF vem do PCP.
           </div>
           <div className="grid gap-2 md:grid-cols-3">
             <Kpi
