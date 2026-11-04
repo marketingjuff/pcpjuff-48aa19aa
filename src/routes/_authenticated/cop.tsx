@@ -6,7 +6,7 @@ import { LogOut, Settings } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMyRoles, useCanAccessCop, useCanAccessMap, useCanAccessSup, useCanAccessKpi, useIsAdmin, useAbasPermitidas, useMinhasPermissoes } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessCop, useCanAccessMap, useCanAccessSup, useCanAccessKpi, useCanAccessPlan, useIsAdmin, useAbasPermitidas, useMinhasPermissoes } from "@/hooks/use-role";
 import { rotaInicial } from "@/lib/permissoes";
 import { CorteTab } from "@/components/cop/CorteTab";
 import { RomaneioTab } from "@/components/cop/RomaneioTab";
@@ -202,16 +202,17 @@ function CopHome() {
   );
 }
 
-export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" | "sup" | "kpi" }) {
+export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" | "sup" | "kpi" | "plan" }) {
   const navigate = useNavigate();
   const canAccessCop = useCanAccessCop();
   const canAccessMap = useCanAccessMap();
   const canAccessSup = useCanAccessSup();
   const canAccessKpi = useCanAccessKpi();
+  const canAccessPlan = useCanAccessPlan();
   const isAdminMacro = useIsAdmin();
   const abasPcpMacro = useAbasPermitidas("pcp");
   const canAccessPcp = isAdminMacro || abasPcpMacro.length > 0;
-  const totalModulos = [canAccessPcp, canAccessCop, canAccessMap, canAccessSup, canAccessKpi].filter(Boolean).length;
+  const totalModulos = [canAccessPcp, canAccessCop, canAccessMap, canAccessSup, canAccessKpi, canAccessPlan].filter(Boolean).length;
   if (totalModulos <= 1) return null;
   const baseBtn = "px-6 py-2 rounded font-bold text-base transition-colors";
   const pcpActive = active === "pcp"
@@ -228,6 +229,9 @@ export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" | "sup" 
     : "hover:bg-accent text-foreground";
   const kpiActive = active === "kpi"
     ? "bg-purple-600 text-white"
+    : "hover:bg-accent text-foreground";
+  const planActive = active === "plan"
+    ? "bg-orange-600 text-white"
     : "hover:bg-accent text-foreground";
   return (
     <div className="inline-flex rounded-md border bg-card p-1">
@@ -274,6 +278,15 @@ export function MacroSwitch({ active }: { active: "pcp" | "cop" | "map" | "sup" 
           className={`${baseBtn} ${kpiActive}`}
         >
           KPI
+        </button>
+      )}
+      {canAccessPlan && (
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/plan" })}
+          className={`${baseBtn} ${planActive}`}
+        >
+          PLAN
         </button>
       )}
     </div>

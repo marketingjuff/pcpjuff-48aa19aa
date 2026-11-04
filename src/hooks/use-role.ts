@@ -129,6 +129,10 @@ export function useCanAccessKpi() {
   return useTemModulo("kpi");
 }
 
+export function useCanAccessPlan() {
+  return useTemModulo("plan");
+}
+
 
 /** Nível de acesso (edição/leitura) de cada permissão do usuário. */
 export function useNiveisPermissoes(): Map<PermissaoKey, NivelAcesso> {

@@ -17,6 +17,7 @@ import { Route as AuthenticatedCopRouteImport } from './routes/_authenticated/co
 import { Route as AuthenticatedEntregasRouteImport } from './routes/_authenticated/entregas'
 import { Route as AuthenticatedKpiRouteImport } from './routes/_authenticated/kpi'
 import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/map'
+import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
 import { Route as AuthenticatedSupRouteImport } from './routes/_authenticated/sup'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -59,6 +60,11 @@ const AuthenticatedMapRoute = AuthenticatedMapRouteImport.update({
   path: '/map',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPlanRoute = AuthenticatedPlanRouteImport.update({
+  id: '/plan',
+  path: '/plan',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSupRoute = AuthenticatedSupRouteImport.update({
   id: '/sup',
   path: '/sup',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/entregas': typeof AuthenticatedEntregasRoute
   '/kpi': typeof AuthenticatedKpiRoute
   '/map': typeof AuthenticatedMapRoute
+  '/plan': typeof AuthenticatedPlanRoute
   '/sup': typeof AuthenticatedSupRoute
 }
 export interface FileRoutesByTo {
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/entregas': typeof AuthenticatedEntregasRoute
   '/kpi': typeof AuthenticatedKpiRoute
   '/map': typeof AuthenticatedMapRoute
+  '/plan': typeof AuthenticatedPlanRoute
   '/sup': typeof AuthenticatedSupRoute
   '/': typeof AuthenticatedIndexRoute
 }
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/_authenticated/entregas': typeof AuthenticatedEntregasRoute
   '/_authenticated/kpi': typeof AuthenticatedKpiRoute
   '/_authenticated/map': typeof AuthenticatedMapRoute
+  '/_authenticated/plan': typeof AuthenticatedPlanRoute
   '/_authenticated/sup': typeof AuthenticatedSupRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/entregas'
     | '/kpi'
     | '/map'
+    | '/plan'
     | '/sup'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/entregas'
     | '/kpi'
     | '/map'
+    | '/plan'
     | '/sup'
     | '/'
   id:
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/_authenticated/entregas'
     | '/_authenticated/kpi'
     | '/_authenticated/map'
+    | '/_authenticated/plan'
     | '/_authenticated/sup'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
@@ -194,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMapRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/plan': {
+      id: '/_authenticated/plan'
+      path: '/plan'
+      fullPath: '/plan'
+      preLoaderRoute: typeof AuthenticatedPlanRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/sup': {
       id: '/_authenticated/sup'
       path: '/sup'
@@ -210,6 +229,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEntregasRoute: typeof AuthenticatedEntregasRoute
   AuthenticatedKpiRoute: typeof AuthenticatedKpiRoute
   AuthenticatedMapRoute: typeof AuthenticatedMapRoute
+  AuthenticatedPlanRoute: typeof AuthenticatedPlanRoute
   AuthenticatedSupRoute: typeof AuthenticatedSupRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -220,6 +240,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEntregasRoute: AuthenticatedEntregasRoute,
   AuthenticatedKpiRoute: AuthenticatedKpiRoute,
   AuthenticatedMapRoute: AuthenticatedMapRoute,
+  AuthenticatedPlanRoute: AuthenticatedPlanRoute,
   AuthenticatedSupRoute: AuthenticatedSupRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
