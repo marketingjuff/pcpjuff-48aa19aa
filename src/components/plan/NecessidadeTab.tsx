@@ -99,15 +99,14 @@ export function NecessidadeTab() {
   const lead = cfg(config, "lead_time_completo_dias");
 
   const totais = useMemo(() => {
-    let demanda = 0, estoque = 0, producao = 0, falta = 0;
+    let estoque = 0, producao = 0, falta = 0;
     for (const l of linhas) {
-      demanda += l.jaVendido + REFACAO_TAMANHOS.reduce((s, t) => s, 0);
       estoque += l.emEstoque;
       producao += l.emProducao;
       falta += l.aProduzir;
     }
-    demanda = linhas.reduce((s, l) => s + l.aProduzir + l.emEstoque + l.emProducao, 0);
-    return { demanda, estoque, producao, falta };
+    // Demanda = o que falta + o que já está coberto por estoque e produção.
+    return { demanda: falta + estoque + producao, estoque, producao, falta };
   }, [linhas]);
 
   const naoMap = Array.from(naoMapeados.entries()).sort((a, b) => b[1] - a[1]);
