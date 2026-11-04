@@ -1615,6 +1615,66 @@ export type Database = {
           },
         ]
       }
+      plan_config: {
+        Row: {
+          chave: string
+          descricao: string | null
+          updated_at: string | null
+          valor: number
+        }
+        Insert: {
+          chave: string
+          descricao?: string | null
+          updated_at?: string | null
+          valor: number
+        }
+        Update: {
+          chave?: string
+          descricao?: string | null
+          updated_at?: string | null
+          valor?: number
+        }
+        Relationships: []
+      }
+      plan_fichas_modelo: {
+        Row: {
+          altura_folha_m: number
+          ativo: boolean
+          created_at: string
+          id: string
+          largura_tecido_m: number
+          modelo: string
+          observacao: string | null
+          pecas_por_folha: number
+          tamanho_referencia: string
+          updated_at: string | null
+        }
+        Insert: {
+          altura_folha_m: number
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          largura_tecido_m?: number
+          modelo: string
+          observacao?: string | null
+          pecas_por_folha: number
+          tamanho_referencia: string
+          updated_at?: string | null
+        }
+        Update: {
+          altura_folha_m?: number
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          largura_tecido_m?: number
+          modelo?: string
+          observacao?: string | null
+          pecas_por_folha?: number
+          tamanho_referencia?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
