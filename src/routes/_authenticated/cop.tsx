@@ -6,7 +6,7 @@ import { LogOut, Settings } from "lucide-react";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMyRoles, useCanAccessCop, useCanAccessMap, useCanAccessSup, useCanAccessKpi, useIsAdmin, useAbasPermitidas, useMinhasPermissoes } from "@/hooks/use-role";
+import { useMyRoles, useCanAccessCop, useCanAccessMap, useCanAccessSup, useCanAccessKpi, useCanAccessPlan, useIsAdmin, useAbasPermitidas, useMinhasPermissoes } from "@/hooks/use-role";
 import { rotaInicial } from "@/lib/permissoes";
 import { CorteTab } from "@/components/cop/CorteTab";
 import { RomaneioTab } from "@/components/cop/RomaneioTab";
