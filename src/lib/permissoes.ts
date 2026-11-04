@@ -7,7 +7,7 @@
 
 import type { AppRole } from "@/integrations/supabase/schema-extras";
 
-export type ModuloKey = "pcp" | "cop" | "map" | "sup" | "kpi" | "entregas";
+export type ModuloKey = "pcp" | "cop" | "map" | "sup" | "kpi" | "plan" | "entregas";
 
 export type PermissaoKey = string; // "modulo.aba"
 
@@ -30,6 +30,7 @@ export const MODULOS: { key: ModuloKey; label: string; rota: string }[] = [
   { key: "map", label: "MAP — Matéria Prima", rota: "/map" },
   { key: "sup", label: "SUP — Suprimentos", rota: "/sup" },
   { key: "kpi", label: "KPI — Indicadores", rota: "/kpi" },
+  { key: "plan", label: "PLAN — Planejamento", rota: "/plan" },
   { key: "entregas", label: "Entregas — Motorista", rota: "/entregas" },
 ];
 
@@ -79,6 +80,10 @@ export const CATALOGO_PERMISSOES: AbaPermissao[] = [
   { key: "kpi.pcp", modulo: "kpi", tabValue: "pcp", label: "KPI PCP", nivelConfiguravel: false },
   { key: "kpi.cop_map", modulo: "kpi", tabValue: "copmap", label: "KPI COP e MAP", nivelConfiguravel: false },
   { key: "kpi.faturamento", modulo: "kpi", tabValue: "", label: "Pode ver valores de faturamento (R$)", nivelConfiguravel: false, acao: true },
+  // PLAN
+  { key: "plan.necessidade", modulo: "plan", tabValue: "necessidade", label: "O que produzir", nivelConfiguravel: false },
+  { key: "plan.tinturaria", modulo: "plan", tabValue: "tinturaria", label: "O que mandar tingir", nivelConfiguravel: false },
+  { key: "plan.parametros", modulo: "plan", tabValue: "parametros", label: "Parâmetros", nivelConfiguravel: false },
   // Entregas (motorista)
   { key: "entregas.motorista", modulo: "entregas", tabValue: "entregas", label: "Entregas (motorista)", nivelConfiguravel: false },
 ];
@@ -250,5 +255,6 @@ export const PRESETS: Preset[] = [
   { id: "map_completo", label: "MAP completo", permissoes: permissoesDoModulo("map") },
   { id: "sup_completo", label: "SUP completo", permissoes: permissoesDoModulo("sup") },
   { id: "kpi_completo", label: "KPI completo", permissoes: permissoesDoModulo("kpi") },
+  { id: "plan_completo", label: "PLAN completo", permissoes: permissoesDoModulo("plan") },
   { id: "motorista", label: "Motorista — só Entregas", permissoes: ["entregas.motorista"] },
 ];
