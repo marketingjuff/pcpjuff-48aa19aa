@@ -69,6 +69,17 @@ function DetalheConta({ l, semanas }: { l: LinhaEstoqueMinimo; semanas: number }
   );
 }
 
+function moverComTab(atual: HTMLInputElement, paraTras: boolean) {
+  const todos = Array.from(document.querySelectorAll<HTMLInputElement>('input[data-adotado]:not([disabled])'));
+  const i = todos.indexOf(atual);
+  if (i === -1) return false;
+  const prox = paraTras ? todos[i - 1] : todos[i + 1];
+  if (!prox) return false;
+  prox.focus();
+  prox.select();
+  return true;
+}
+
 function CampoAdotado({ l, podeEditar, onSalvar }: { l: LinhaEstoqueMinimo; podeEditar: boolean; onSalvar: (n: number) => Promise<void> }) {
   const inicial = l.adotado === null ? "" : String(l.adotado);
   const [txt, setTxt] = useState(inicial);
@@ -82,10 +93,17 @@ function CampoAdotado({ l, podeEditar, onSalvar }: { l: LinhaEstoqueMinimo; pode
       <Input
       type="text" inputMode="numeric" maxLength={5} value={txt} disabled={!podeEditar}
       placeholder={String(l.sugerido)}
+      data-adotado=""
       onClick={(e) => e.stopPropagation()}
       onChange={(e) => setTxt(e.target.value.replace(/\D/g, "").slice(0, 5))}
       onBlur={salvar}
-      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") { (e.target as HTMLInputElement).blur(); return; }
+        if (e.key === "Tab") {
+          const ok = moverComTab(e.currentTarget, e.shiftKey);
+          if (ok) e.preventDefault();
+        }
+      }}
         className="h-6 w-16 text-right text-[11px] tabular-nums px-1.5"
       />
       {podeEditar && txt !== inicial && txt !== "" && (
