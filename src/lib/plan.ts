@@ -519,6 +519,9 @@ export interface LinhaNecessidade {
   aProduzirPorTam: Record<string, number>;
   /** parte firme (pedido vendido sem estoque) por tamanho */
   firmePorTam: Record<string, number>;
+  /** parte da sugestão que só existe por causa do piso do mínimo adotado */
+  porMinimoPorTam: Record<string, number>;
+  porMinimo: number;
   vendaPrevistaMensal: number;
   jaVendido: number;
   emEstoque: number;
@@ -537,6 +540,7 @@ export function montarNecessidade(params: {
   horizonteMeses: number;
   semanasSeguranca: number;
   coresForaDeLinha?: Set<string>;
+  minimosAdotados?: Map<string, MinimoSalvo>;
 }): LinhaNecessidade[] {
   const { tamanhos, saldoReal, emProducao, mediaMensal, horizonteMeses, semanasSeguranca } = params;
   const combos = new Map<string, { modelo: string; cor: string }>();
@@ -552,7 +556,8 @@ export function montarNecessidade(params: {
     const firmePorTam: Record<string, number> = {};
     const prontoPorTam: Record<string, number> = {};
     const producaoPorTam: Record<string, number> = {};
-    let consumo = 0, livreTot = 0, firmeTot = 0, prodTot = 0, aProd = 0;
+    const porMinimoPorTam: Record<string, number> = {};
+    let consumo = 0, livreTot = 0, firmeTot = 0, prodTot = 0, aProd = 0, porMinTot = 0;
     for (const t of tamanhos) {
       const k = pkKey(modelo, cor, t);
       prontoPorTam[t] = params.prontoFisico?.get(k) ?? 0;
@@ -566,7 +571,12 @@ export function montarNecessidade(params: {
       firmePorTam[t] = firme;
       // Fora de linha pode ter peça já vendida e não entregue: preservar firme,
       // mas sugerir zero produção mesmo com saldo negativo, por regra de negócio.
-      aProduzirPorTam[t] = foraDeLinha ? 0 : firme + prevLiquido;
+      const minimo = params.minimosAdotados?.get(k)?.minimo_adotado ?? 0;
+      const faltaParaMinimo = Math.max(0, minimo - estoqueLivre);
+      const previsao = Math.max(prevLiquido, faltaParaMinimo);
+      aProduzirPorTam[t] = foraDeLinha ? 0 : firme + previsao;
+      porMinimoPorTam[t] = foraDeLinha ? 0 : Math.max(0, faltaParaMinimo - prevLiquido);
+      porMinTot += porMinimoPorTam[t];
       consumo += media;
       livreTot += estoqueLivre;
       firmeTot += firme;
@@ -576,6 +586,7 @@ export function montarNecessidade(params: {
     if (consumo === 0 && firmeTot === 0) continue;
     out.push({
       modelo, cor, foraDeLinha, aProduzirPorTam, firmePorTam, prontoPorTam, producaoPorTam,
+      porMinimoPorTam, porMinimo: porMinTot,
       vendaPrevistaMensal: consumo,
       jaVendido: firmeTot,
       emEstoque: livreTot,
@@ -708,15 +719,17 @@ export function aplicarPausas(params: {
       continue;
     }
     const aProduzirPorTam: Record<string, number> = {};
+    const porMinimoPorTam: Record<string, number> = {};
     let soma = 0;
     for (const t of params.tamanhos) {
+      porMinimoPorTam[t] = 0;
       // fora de linha mantém a regra existente: sugestão zero
       const v = l.foraDeLinha ? 0 : (l.firmePorTam[t] ?? 0);
       aProduzirPorTam[t] = v;
       soma += v;
     }
     const nova: LinhaComPausa = {
-      ...l, aProduzirPorTam, aProduzir: soma,
+      ...l, aProduzirPorTam, aProduzir: soma, porMinimoPorTam, porMinimo: 0,
       pausa, previsaoSuspensa: true, aProduzirSemPausa: l.aProduzir,
     };
     (l.jaVendido > 0 ? ativas : pausadas).push(nova);
