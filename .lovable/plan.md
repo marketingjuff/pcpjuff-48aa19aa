@@ -1,42 +1,68 @@
-# Módulo PLAN — planejamento de peças e de tinturaria
+# PLAN — correção de cálculo e simplificação da grade
 
-Sexto módulo, em `/plan`, com botão laranja. Ele só faz sugestões: lê os dados do COP, MAP e Olist e grava somente nas duas tabelas novas.
+Allowlist estrita: `src/lib/plan.ts`, `src/components/plan/NecessidadeTab.tsx`, `src/components/plan/TinturariaTab.tsx`. Nenhuma migração, nenhuma alteração de banco, nenhum outro arquivo. `cop-saldos.ts` e `SaldoRealTab.tsx` servem só de referência de leitura.
 
-## Banco (uma migração nova, apenas acrescenta)
-Arquivo: `supabase/migrations/20261104190000_plan_modulo.sql`
-- `CREATE TABLE IF NOT EXISTS plan_fichas_modelo` e `plan_config`, com as colunas especificadas.
-- GRANT de SELECT/INSERT/UPDATE para `authenticated` e ALL para `service_role`. Sem acesso anônimo e sem DELETE.
-- RLS: SELECT para `is_team_member()`, INSERT/UPDATE para `has_role(auth.uid(),'admin')`, seguindo o padrão de `olist_produto_map`. Policies criadas em bloco `DO $$ IF NOT EXISTS` para a migração poder rodar duas vezes.
-- Seed com as 15 fichas e os 8 parâmetros, usando `ON CONFLICT DO NOTHING`.
-- Os nomes das fichas conferem com `REFACAO_MODELOS`. "Regata Breeze" e "Não Identificado" ficam sem ficha, como no documento.
+## 1. `src/lib/plan.ts`
 
-## Arquivos
-1. `src/lib/permissoes.ts`: inclui `"plan"` em ModuloKey, MODULOS, as 3 permissões e o preset `plan_completo`. Nada existente muda.
-2. `src/hooks/use-role.ts`: `useCanAccessPlan()` no mesmo padrão de `useCanAccessKpi()`.
-3. `src/routes/_authenticated/cop.tsx`: altero somente o `MacroSwitch` (tipo `"plan"`, `canAccessPlan`, totalModulos e o botão laranja depois de KPI).
-4. `src/lib/plan.ts`:
-   - Funções puras: `kgPorPeca`, `demandaTotal`, `necessidadeLiquida`, `diasAteRuptura`, `arredondarLote`, `dataLimiteDecisao`.
-   - Hooks somente leitura: fichas, config, venda histórica, disponível, estoque tingido, na tinturaria e cru parado.
-   - A venda histórica reaproveita `apenasVigentes` e a regra atual de olist-vendas/indicadores-olist, além de `olist_produto_map`. Itens sem mapeamento vão para a lista de aviso.
-   - O disponível usa `cop-saldos.ts` montado como em `DisponivelTab.tsx`, sem alterar esse arquivo.
-   - Mutations atualizam linha por linha e invalidam as queries do PLAN. Assim, uma mudança de gramatura aparece nas outras abas sem recarregar.
-5. `src/routes/_authenticated/plan.tsx`: segue a estrutura do KPI (abas via `?tab`, header, sair, configurações, MacroSwitch "plan", `useAbasPermitidas("plan")`, forceMount com montagem tardia). Quem não tem permissão é redirecionado por `rotaInicial`.
-6. `src/components/plan/NecessidadeTab.tsx`:
-   - Seletor de horizonte (3/5/6 meses) salvo no localStorage e 4 cards.
-   - Grade com colunas PP a EXXG, Total e Situação, em sublinhas Vendido/Previsto que nunca se somam. Previsto tem fundo mais claro.
-   - Cor em chip e zeros apagados. Ordem do mais crítico para o menos crítico, mantendo o par de sublinhas junto.
-   - Cabeçalho congelado (`.tbl-congelada`, `max-h-[70vh]`), rolagem horizontal própria, tabela de conferência recolhida e texto explicativo.
-7. `src/components/plan/TinturariaTab.tsx`: cards (incluindo cru parado por PROD), cartões de decisão por cor com prazo de 40 ou 65 dias conforme o cru e estado "atrasado", estado vazio, tabela completa recolhida com total e lote arredondado, e faixa da cadeia.
-8. `src/components/plan/ParametrosTab.tsx`: só para admin e gestor. Inputs de texto com até 3 casas decimais e erro ao lado do campo. Ficha editável mostra o kg por peça calculado.
+**a) `normalizarCor(bruto: string): string | null` (função pura nova)**
+- Normaliza: minúsculas, sem acento (NFD + remoção de diacríticos), espaços colapsados, bordas aparadas.
+- Passo 1: casamento exato com alguma cor de `REFACAO_CORES` normalizada da mesma forma → devolve o nome canônico.
+- Passo 2: casamento por conteúdo — a cor canônica normalizada aparece como palavra inteira no texto, ou o texto como palavra inteira nela. Exatamente uma candidata → devolve ela; zero ou mais de uma → `null`.
+- Sem lista de sinônimos fixa, sem adivinhação.
+- Garante os casos de aceite: `"verde menta"`, `"VERDE MENTA"`, `"Menta"` → `menta`.
 
-## Pontos a confirmar (vou seguir esta interpretação se não houver objeção)
-- **Gestor na aba Parâmetros:** ele vê a aba, mas o banco só permite que admin salve, como o documento pede para as policies. Para gestor, os campos ficam somente leitura.
-- **Distribuição do Previsto por tamanho:** usa a proporção de venda dos 12 meses daquele modelo/cor. Sem histórico de tamanho, usa a proporção do modelo inteiro.
-- **Previsto líquido:** estoque e produção em andamento abatem primeiro o Vendido e depois o Previsto, por tamanho, com piso zero.
-- **Kg da sugestão de tinturaria:** peças a produzir de cada cor multiplicadas pelo kg por peça do modelo. A sugestão desconta o tingido em estoque e o que está na tinturaria, e depois arredonda pelo lote mínimo.
-- **"Tem cru":** significa que o cru parado total cobre a quantidade a tingir daquela cor. O cru é distribuído na ordem de urgência, sem ser contado duas vezes.
+**b) `usePlanSaldoReal()` (hook novo, substitui `usePlanDisponivel` como fonte de estoque)**
+- Reproduz a montagem de `SaldoRealTab.tsx`:
+  - `cops` e `pedidos` com as mesmas query keys (`["cops"]`, `["pedidos-cop-saldos"]`), agora **paginados com o helper `paginar`** (corrige o corte de 1000 linhas — ajuste menor do prompt).
+  - `disponivel = calcDisponivel(calcEmProducao(cops), calcFaltantes(pedidos), calcRecebido(cops), calcPerdas(cops))` — sem tocar em `cop-saldos.ts`.
+  - Estoque Olist: lê `estoque_olist_snapshots` (último snapshot por empresa) e `estoque_olist_itens` paginado, com as mesmas query keys `["estoque-olist", ...]` para dividir cache com o COP. Traduz `produto_olist` → `modelo_cop` via `olist_produto_map`.
+  - `multiEmpresa = max(0, JOKE + JUFF)` por chave; `saldoReal = multiEmpresa + disponivel`.
+- **Normalização de cor aplicada na entrada**: a cor de cada item Olist passa por `normalizarCor`; se `null`, o item vai para a lista de não reconhecidas (texto original + quantidade) e não entra nos totais. A chave de agregação usa o nome canônico.
+- Devolve: `{ saldoReal: Map<pkKey, number>, emProducao: Map<pkKey, number>, naoMapeados: Map<string, number>, coresNaoReconhecidas: Map<string, number> }`.
+- `usePlanDisponivel` é absorvido por este hook (removido como export).
+
+**c) `usePlanVendaHistorica()` — normalização de cor**
+- A cor de cada item vendido passa por `normalizarCor` antes de montar a chave; `null` vai para `coresNaoReconhecidas` (texto original + peças), fora dos totais. Resto inalterado.
+
+**d) `usePlanEstoqueTingido()` e `usePlanNaTinturaria()` — normalização de cor**
+- A cor (da programação ou da peça) passa por `normalizarCor`; `null` acumula em lista de não reconhecidas devolvida pelo hook. Agregação por nome canônico — é o que faz o estoque tingido descontar por cor de verdade (defeito 4).
+
+**e) `montarNecessidade` — nova fórmula (defeitos 1 e 2)**
+- Assinatura passa a receber `saldoReal` no lugar de `disponivel` (mantém `emProducao` só para a coluna informativa).
+- Por tamanho:
+  - `estoqueLivre = max(0, saldoReal)`
+  - `firme = max(0, -saldoReal)`
+  - `previstoBruto = mediaMensal × horizonteMeses + mediaMensal × semanasSeguranca / 4.33`
+  - `previstoLiquido = max(0, previstoBruto − estoqueLivre)`
+  - `aProduzir = firme + previstoLiquido`
+- `emProducao` **não entra em nenhuma subtração** — só preenche a coluna informativa da tabela de conferência.
+- `LinhaNecessidade` simplificada: sai o par `vendido`/`previsto` por tamanho; entra `aProduzirPorTam: Record<string, number>` e `firmePorTam: Record<string, number>`. Mantém `jaVendido` (soma do firme), `emEstoque` (soma do estoqueLivre), `emProducao`, `aProduzir`, `vendaPrevistaMensal`, `diasRuptura` (0 se há firme; senão `diasAteRuptura(estoqueLivre total, consumo)`).
+- Combos críticos: saldo real ≤ 0 ou ruptura dentro do lead time — deixa de marcar tudo como crítico.
+
+**f) `montarTinturaria` — ajuste de coerência**
+- Passa a somar `aProduzirPorTam` (firme + previsto líquido) em vez de `vendido + previsto`.
+- O desconto por cor (`kgEstoque` + `kgTinturaria` antes de arredondar pelo lote) já existe; com as cores normalizadas ele passa a casar. Card "Tecido necessário" e soma de "A tingir" ficam coerentes.
+
+## 2. `src/components/plan/NecessidadeTab.tsx`
+
+- `usePlanLinhas` passa a usar `usePlanSaldoReal` e expõe `coresNaoReconhecidas` (venda + saldo real) e `naoMapeados`.
+- **Aviso visível de cores não reconhecidas** acima da grade: texto original + quantidade, no mesmo estilo do aviso de produtos sem de-para. Fora dos totais.
+- **Grade em uma linha só** (simplificação):
+  - Remove as sublinhas Vendido/Previsto. Cada modelo+cor = uma `<tr>`.
+  - Célula de tamanho mostra o total a produzir; quando há firme, fundo levemente destacado (`bg-amber-50` ou similar) com o valor firme em tipo menor abaixo do total. Célula zerada continua apagada.
+  - Duas colunas ao final: **Total** e **Já vendido** (soma do firme da linha).
+  - Mantém cabeçalho congelado, rolagem horizontal, chip de cor e tabela de conferência recolhida.
+- Tabela de conferência: coluna **Em produção** ganha nota curta ("informativo — já está dentro do saldo, não desconta de novo").
+- Textos de ajuda no rodapé atualizados para a nova fórmula (saldo real, não mais "Disponível").
+- Card "Peça pronta em estoque" passa a somar `estoqueLivre` do saldo real — coerente com a aba Saldo Real do COP.
+
+## 3. `src/components/plan/TinturariaTab.tsx`
+
+- Sem mudança de estrutura: consome as linhas já corrigidas e os mapas de estoque/tinturaria já normalizados por cor. Ajuste apenas se a assinatura de `montarTinturaria` mudar.
+- Cor cujo tingido em estoque cobre a necessidade não gera sugestão (consequência direta do casamento por cor).
 
 ## Verificação
-- Testes das funções puras fora do projeto, incluindo Camiseta 0,181 kg e Regata Move 0,111 kg. Nenhum temporário fica no repositório.
-- Abrir `/plan` no navegador e rodar o typecheck, mostrando o resultado no final.
-- Arquivos tocados limitados à allowlist e `cop-saldos.ts` intacto.
+
+- Typecheck (`tsgo`) ao final, resultado mostrado antes de concluir.
+- **Sem abrir o navegador**, conforme instruído.
+- Conferência final: `git diff --stat` para provar que só os 3 arquivos da allowlist mudaram e nenhuma migração foi criada.
