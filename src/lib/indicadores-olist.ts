@@ -548,6 +548,8 @@ export function porCliente(
     l.pecas += p.pecasSel;
     map.set(p.cliente_id, l);
   }
+  // 2 ou mais pedidos no período já conta como recorrente
+  for (const l of map.values()) if (l.pedidos >= 2) l.novo = false;
   return [...map.values()].sort((a, b) => b.faturamento - a.faturamento);
 }
 
