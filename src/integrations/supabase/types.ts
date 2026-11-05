@@ -1675,6 +1675,45 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_pausas: {
+        Row: {
+          ate: string | null
+          cor: string
+          criado_em: string
+          criado_por: string | null
+          id: string
+          modelo: string
+          observacao: string | null
+          retomado_em: string | null
+          retomado_por: string | null
+          tipo: string
+        }
+        Insert: {
+          ate?: string | null
+          cor: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          modelo: string
+          observacao?: string | null
+          retomado_em?: string | null
+          retomado_por?: string | null
+          tipo: string
+        }
+        Update: {
+          ate?: string | null
+          cor?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          modelo?: string
+          observacao?: string | null
+          retomado_em?: string | null
+          retomado_por?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

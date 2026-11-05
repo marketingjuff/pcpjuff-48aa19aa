@@ -29,6 +29,13 @@
       "when": 1793885279214,
       "tag": "0003_plan_cores_fora_linha_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793891592997,
+      "tag": "0004_plan_pausas",
+      "breakpoints": true
     }
   ]
 }
