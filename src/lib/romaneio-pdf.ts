@@ -3,7 +3,6 @@
 import logoJuff from "@/assets/loguinhojuffpreto.png.asset.json";
 import type { Cop, CopPeca, Oficina } from "@/lib/cop";
 import { rotuloCop, totalPecasCop, numeroBaseCop, colunasTamanhos } from "@/lib/cop";
-import { cmpModeloCor } from "@/lib/pedidos";
 
 function esc(s: string | number | null | undefined): string {
   if (s === null || s === undefined) return "";
@@ -34,7 +33,7 @@ function agruparModeloCor(pecas: CopPeca[]): { linhas: Linha[]; colunas: string[
   const presentes = new Set<string>();
   for (const l of map.values()) for (const t of Object.keys(l.qtds)) presentes.add(t);
   const colunas = colunasTamanhos(presentes);
-  const linhas = Array.from(map.values()).sort(cmpModeloCor);
+  const linhas = Array.from(map.values());
   return { linhas, colunas };
 }
 
