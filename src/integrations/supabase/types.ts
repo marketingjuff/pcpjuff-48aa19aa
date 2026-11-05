@@ -1636,6 +1636,39 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_estoque_minimo: {
+        Row: {
+          adotado_em: string
+          adotado_por: string | null
+          cor: string
+          id: string
+          minimo_adotado: number
+          modelo: string
+          sugerido_na_adocao: number | null
+          tamanho: string
+        }
+        Insert: {
+          adotado_em?: string
+          adotado_por?: string | null
+          cor: string
+          id?: string
+          minimo_adotado?: number
+          modelo: string
+          sugerido_na_adocao?: number | null
+          tamanho: string
+        }
+        Update: {
+          adotado_em?: string
+          adotado_por?: string | null
+          cor?: string
+          id?: string
+          minimo_adotado?: number
+          modelo?: string
+          sugerido_na_adocao?: number | null
+          tamanho?: string
+        }
+        Relationships: []
+      }
       plan_fichas_modelo: {
         Row: {
           altura_folha_m: number
