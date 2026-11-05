@@ -289,6 +289,8 @@ export function usePlanVendaHistorica() {
 export interface SaldoRealPlan {
   /** Saldo Real por pkKey(modelo, cor, tamanho): max(0, JOKE+JUFF) + disponível COP. */
   saldoReal: Map<string, number>;
+  /** Peça física pronta: max(0, JOKE + JUFF), por modelo/cor/tamanho. */
+  prontoFisico: Map<string, number>;
   /** Produção em andamento (calcEmProducao) — informativa, já embutida no saldo. */
   emProducao: Map<string, number>;
   /** Produtos Olist sem modelo COP no de-para → peças em estoque (fora dos totais). */
@@ -362,7 +364,7 @@ export function usePlanSaldoReal() {
 
   if (isLoading || (!snapsProntos && !itensQ.data)) {
     return {
-      data: { saldoReal: new Map(), emProducao: new Map(), naoMapeados: new Map(), coresNaoReconhecidas: new Map() } as SaldoRealPlan,
+      data: { saldoReal: new Map(), prontoFisico: new Map(), emProducao: new Map(), naoMapeados: new Map(), coresNaoReconhecidas: new Map() } as SaldoRealPlan,
       isLoading: true,
     };
   }
@@ -402,13 +404,15 @@ export function usePlanSaldoReal() {
 
   const chaves = new Set<string>([...joke.keys(), ...juff.keys(), ...disponivel.keys()]);
   const saldoReal = new Map<string, number>();
+  const prontoFisico = new Map<string, number>();
   for (const k of chaves) {
     const multiEmpresa = Math.max(0, (joke.get(k) ?? 0) + (juff.get(k) ?? 0));
+    prontoFisico.set(k, multiEmpresa);
     saldoReal.set(k, multiEmpresa + (disponivel.get(k) ?? 0));
   }
 
   return {
-    data: { saldoReal, emProducao, naoMapeados, coresNaoReconhecidas } as SaldoRealPlan,
+    data: { saldoReal, prontoFisico, emProducao, naoMapeados, coresNaoReconhecidas } as SaldoRealPlan,
     isLoading: false,
   };
 }
@@ -507,6 +511,9 @@ export interface LinhaNecessidade {
   modelo: string;
   cor: string;
   foraDeLinha: boolean;
+  /** Informativos por tamanho; não entram novamente na sugestão de corte. */
+  prontoPorTam: Record<string, number>;
+  producaoPorTam: Record<string, number>;
   /** total a produzir por tamanho (firme + previsto líquido) */
   aProduzirPorTam: Record<string, number>;
   /** parte firme (pedido vendido sem estoque) por tamanho */
@@ -524,6 +531,7 @@ export function montarNecessidade(params: {
   tamanhos: readonly string[];
   saldoReal: Map<string, number>;
   emProducao: Map<string, number>;
+  prontoFisico?: Map<string, number>;
   mediaMensal: Map<string, number>;
   horizonteMeses: number;
   semanasSeguranca: number;
@@ -541,9 +549,13 @@ export function montarNecessidade(params: {
     const foraDeLinha = params.coresForaDeLinha?.has(cor) ?? false;
     const aProduzirPorTam: Record<string, number> = {};
     const firmePorTam: Record<string, number> = {};
+    const prontoPorTam: Record<string, number> = {};
+    const producaoPorTam: Record<string, number> = {};
     let consumo = 0, livreTot = 0, firmeTot = 0, prodTot = 0, aProd = 0;
     for (const t of tamanhos) {
       const k = pkKey(modelo, cor, t);
+      prontoPorTam[t] = params.prontoFisico?.get(k) ?? 0;
+      producaoPorTam[t] = emProducao.get(k) ?? 0;
       const saldo = saldoReal.get(k) ?? 0;
       const media = mediaMensal.get(k) ?? 0;
       const estoqueLivre = Math.max(0, saldo);
@@ -562,7 +574,7 @@ export function montarNecessidade(params: {
     }
     if (consumo === 0 && firmeTot === 0) continue;
     out.push({
-      modelo, cor, foraDeLinha, aProduzirPorTam, firmePorTam,
+      modelo, cor, foraDeLinha, aProduzirPorTam, firmePorTam, prontoPorTam, producaoPorTam,
       vendaPrevistaMensal: consumo,
       jaVendido: firmeTot,
       emEstoque: livreTot,
