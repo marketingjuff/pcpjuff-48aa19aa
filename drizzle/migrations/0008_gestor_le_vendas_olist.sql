@@ -1,0 +1,3 @@
+create policy "olist_import_lotes_select_gestor" on public.olist_import_lotes for select to authenticated using (public.has_role(auth.uid(), 'gestor'::public.app_role));
+create policy "olist_pedidos_select_gestor" on public.olist_pedidos for select to authenticated using (public.has_role(auth.uid(), 'gestor'::public.app_role));
+create policy "olist_itens_select_gestor" on public.olist_itens for select to authenticated using (public.has_role(auth.uid(), 'gestor'::public.app_role));
