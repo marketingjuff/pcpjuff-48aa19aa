@@ -36,6 +36,13 @@
       "when": 1793891592997,
       "tag": "0004_plan_pausas",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793902702297,
+      "tag": "0005_plan_estoque_minimo",
+      "breakpoints": true
     }
   ]
 }

@@ -781,3 +781,194 @@ export function usePlanPausas() {
   });
   return { pausas: query.data ?? [], isLoading: query.isLoading, error: query.error as Error | null, pausar, retomar };
 }
+
+/* --------------------------- estoque mínimo --------------------------- */
+
+export type OrigemLead = "modelo" | "geral" | "parametro";
+
+export interface LeadTimePorModelo {
+  porModelo: Map<string, number>;
+  geral: number | null;
+  amostraPorModelo: Map<string, number>;
+  amostraGeral: number;
+}
+
+export function mediana(valores: number[]): number {
+  if (!valores.length) return 0;
+  const v = [...valores].sort((a, b) => a - b);
+  const m = Math.floor(v.length / 2);
+  return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+}
+
+const DIA_MS = 86_400_000;
+function diasEntre(a: string, b: string): number {
+  return Math.round((Date.parse(b.slice(0, 10)) - Date.parse(a.slice(0, 10))) / DIA_MS);
+}
+
+/** Pura: monta lead time a partir das linhas de COP. */
+export function calcLeadTimePorModelo(
+  cops: { solicitacao_risco: string | null; execucao_corte: string | null; data_recebimento: string | null; pecas: unknown }[],
+): LeadTimePorModelo {
+  const tempos: number[] = [];
+  const porModeloLista = new Map<string, number[]>();
+  for (const c of cops) {
+    if (!c.data_recebimento) continue;
+    const inicio = c.solicitacao_risco ?? c.execucao_corte;
+    if (!inicio) continue;
+    const d = diasEntre(inicio, c.data_recebimento);
+    if (!Number.isFinite(d) || d < 0 || d > 180) continue;
+    tempos.push(d);
+    const modelos = new Set<string>();
+    for (const p of (Array.isArray(c.pecas) ? c.pecas : []) as any[]) if (p?.modelo) modelos.add(String(p.modelo));
+    for (const m of modelos) {
+      const l = porModeloLista.get(m) ?? [];
+      l.push(d);
+      porModeloLista.set(m, l);
+    }
+  }
+  const porModelo = new Map<string, number>();
+  const amostraPorModelo = new Map<string, number>();
+  for (const [m, l] of porModeloLista) {
+    amostraPorModelo.set(m, l.length);
+    if (l.length >= 5) porModelo.set(m, mediana(l));
+  }
+  return { porModelo, geral: tempos.length >= 5 ? mediana(tempos) : null, amostraPorModelo, amostraGeral: tempos.length };
+}
+
+export function usePlanLeadTimePorModelo() {
+  return useQuery({
+    queryKey: [...PLAN_KEY, "lead-time-modelo"],
+    queryFn: async () => {
+      const desde = new Date();
+      desde.setMonth(desde.getMonth() - 12);
+      const rows = await paginar<any>((a, b) =>
+        supabase.from("cops").select("id, solicitacao_risco, execucao_corte, data_recebimento, pecas")
+          .not("data_recebimento", "is", null).gte("data_recebimento", desde.toISOString().slice(0, 10))
+          .order("id").range(a, b));
+      return calcLeadTimePorModelo(rows);
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function leadTimeDoModelo(
+  modelo: string, lead: LeadTimePorModelo | undefined, config: PlanConfig,
+): { dias: number; origem: OrigemLead; amostra: number } {
+  const m = lead?.porModelo.get(modelo);
+  if (m !== undefined) return { dias: m, origem: "modelo", amostra: lead!.amostraPorModelo.get(modelo) ?? 0 };
+  if (lead?.geral != null) return { dias: lead.geral, origem: "geral", amostra: lead.amostraGeral };
+  return { dias: cfg(config, "lead_time_com_cru_dias"), origem: "parametro", amostra: 0 };
+}
+
+export function consumoNaReposicao(mediaMensal: number, leadDias: number): number {
+  return (mediaMensal / 30) * leadDias;
+}
+export function folgaSeguranca(mediaMensal: number, semanasSeguranca: number): number {
+  return (mediaMensal * semanasSeguranca) / 4.33;
+}
+
+export function minimoSugerido(mediaMensal: number, leadDias: number, semanasSeguranca: number): number {
+  if (!(mediaMensal > 0)) return 0;
+  return Math.ceil(consumoNaReposicao(mediaMensal, leadDias) + folgaSeguranca(mediaMensal, semanasSeguranca) - 1e-9);
+}
+
+export interface MinimoSalvo {
+  modelo: string; cor: string; tamanho: string;
+  minimo_adotado: number; sugerido_na_adocao: number | null;
+  adotado_em: string; adotado_por: string | null;
+}
+
+export interface LinhaEstoqueMinimo {
+  modelo: string; cor: string; tamanho: string;
+  mediaMensal: number; leadDias: number; origemLead: OrigemLead; amostraLead: number;
+  consumo: number; folga: number; sugerido: number;
+  adotado: number | null; defasado: boolean; sugeridoNaAdocao: number | null;
+}
+
+export function montarEstoqueMinimo(params: {
+  mediaMensal: Map<string, number>;
+  tamanhos: readonly string[];
+  leadTime: LeadTimePorModelo | undefined;
+  config: PlanConfig;
+  coresForaDeLinha: Set<string>;
+  minimosAdotados: Map<string, MinimoSalvo>;
+  limiarPct: number;
+}): LinhaEstoqueMinimo[] {
+  const { mediaMensal, tamanhos, leadTime, config, coresForaDeLinha, minimosAdotados, limiarPct } = params;
+  const chaves = new Set<string>();
+  for (const [k, v] of mediaMensal) if (v > 0) chaves.add(k);
+  for (const k of minimosAdotados.keys()) chaves.add(k);
+  const semanas = cfg(config, "semanas_seguranca");
+  const out: LinhaEstoqueMinimo[] = [];
+  for (const k of chaves) {
+    const [modelo, cor, tamanho] = k.split("|");
+    if (!modelo || !cor || !tamanho) continue;
+    if (coresForaDeLinha.has(cor)) continue;
+    const media = mediaMensal.get(k) ?? 0;
+    const lt = leadTimeDoModelo(modelo, leadTime, config);
+    const sugerido = minimoSugerido(media, lt.dias, semanas);
+    const salvo = minimosAdotados.get(k);
+    const adotado = salvo ? salvo.minimo_adotado : null;
+    out.push({
+      modelo, cor, tamanho, mediaMensal: media, leadDias: lt.dias, origemLead: lt.origem, amostraLead: lt.amostra,
+      consumo: media > 0 ? consumoNaReposicao(media, lt.dias) : 0,
+      folga: media > 0 ? folgaSeguranca(media, semanas) : 0,
+      sugerido, adotado,
+      defasado: adotado !== null && sugerido > adotado * (1 + limiarPct / 100),
+      sugeridoNaAdocao: salvo?.sugerido_na_adocao ?? null,
+    });
+  }
+  const ordCor = new Map(REFACAO_CORES.map((c, i) => [c.nome, i]));
+  const ordTam = new Map(tamanhos.map((t, i) => [t, i]));
+  out.sort((a, b) =>
+    a.modelo.localeCompare(b.modelo, "pt-BR")
+    || (ordCor.get(a.cor) ?? 999) - (ordCor.get(b.cor) ?? 999) || a.cor.localeCompare(b.cor, "pt-BR")
+    || (ordTam.get(a.tamanho) ?? 999) - (ordTam.get(b.tamanho) ?? 999));
+  return out;
+}
+
+export function usePlanMinimos() {
+  return useQuery({
+    queryKey: [...PLAN_KEY, "estoque-minimo"],
+    queryFn: async () => {
+      const rows = await paginar<MinimoSalvo>((a, b) =>
+        supabase.from("plan_estoque_minimo").select("modelo, cor, tamanho, minimo_adotado, sugerido_na_adocao, adotado_em, adotado_por")
+          .order("id").range(a, b));
+      const m = new Map<string, MinimoSalvo>();
+      for (const r of rows) m.set(pkKey(r.modelo, r.cor, r.tamanho), r);
+      return m;
+    },
+  });
+}
+
+export interface MinimoParaSalvar { modelo: string; cor: string; tamanho: string; minimo: number; sugerido: number }
+
+async function upsertMinimos(itens: MinimoParaSalvar[]) {
+  const { data: u } = await supabase.auth.getUser();
+  const agora = new Date().toISOString();
+  const { error } = await supabase.from("plan_estoque_minimo").upsert(
+    itens.map((i) => ({
+      modelo: i.modelo, cor: i.cor, tamanho: i.tamanho,
+      minimo_adotado: i.minimo, sugerido_na_adocao: i.sugerido,
+      adotado_em: agora, adotado_por: u.user?.id ?? null,
+    })),
+    { onConflict: "modelo,cor,tamanho" },
+  );
+  if (error) throw error;
+}
+
+export function useSalvarMinimo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (i: MinimoParaSalvar) => upsertMinimos([i]),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PLAN_KEY }),
+  });
+}
+
+export function useSalvarMinimosEmLote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (itens: MinimoParaSalvar[]) => (itens.length ? upsertMinimos(itens) : Promise.resolve()),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PLAN_KEY }),
+  });
+}
