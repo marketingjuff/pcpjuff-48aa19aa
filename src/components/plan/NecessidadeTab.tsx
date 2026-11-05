@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +6,7 @@ import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { REFACAO_TAMANHOS } from "@/lib/pedidos";
 import {
-  cfg, montarNecessidade, usePlanConfig, usePlanDisponivel, usePlanVendaHistorica,
+  cfg, montarNecessidade, usePlanConfig, usePlanSaldoReal, usePlanVendaHistorica,
   type LinhaNecessidade,
 } from "@/lib/plan";
 
@@ -64,23 +64,36 @@ export function CorChip({ cor, grande = false }: { cor: string; grande?: boolean
 export function usePlanLinhas() {
   const { data: config, isLoading: lc } = usePlanConfig();
   const [horizonte] = useHorizontePlan();
-  const disp = usePlanDisponivel();
+  const saldo = usePlanSaldoReal();
   const venda = usePlanVendaHistorica();
   const linhas = useMemo(() => {
     if (!venda.data) return [] as LinhaNecessidade[];
     return montarNecessidade({
       tamanhos: REFACAO_TAMANHOS,
-      disponivel: disp.data.disponivel,
-      emProducao: disp.data.emProducao,
+      saldoReal: saldo.data.saldoReal,
+      emProducao: saldo.data.emProducao,
       mediaMensal: venda.data.mediaMensal,
       horizonteMeses: horizonte,
       semanasSeguranca: cfg(config, "semanas_seguranca"),
     });
-  }, [venda.data, disp.data, horizonte, config]);
+  }, [venda.data, saldo.data, horizonte, config]);
+  const naoMapeados = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const [k, v] of venda.data?.naoMapeados ?? []) m.set(k, (m.get(k) ?? 0) + v);
+    for (const [k, v] of saldo.data.naoMapeados) m.set(k, (m.get(k) ?? 0) + v);
+    return m;
+  }, [venda.data, saldo.data]);
+  const coresNaoReconhecidas = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const [k, v] of venda.data?.coresNaoReconhecidas ?? []) m.set(k, (m.get(k) ?? 0) + v);
+    for (const [k, v] of saldo.data.coresNaoReconhecidas) m.set(k, (m.get(k) ?? 0) + v);
+    return m;
+  }, [venda.data, saldo.data]);
   return {
     linhas, config, horizonte,
-    naoMapeados: venda.data?.naoMapeados ?? new Map<string, number>(),
-    isLoading: lc || disp.isLoading || venda.isLoading,
+    naoMapeados,
+    coresNaoReconhecidas,
+    isLoading: lc || saldo.isLoading || venda.isLoading,
     error: venda.error as Error | null,
   };
 }
