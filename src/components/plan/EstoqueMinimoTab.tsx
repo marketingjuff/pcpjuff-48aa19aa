@@ -17,7 +17,23 @@ import { TABLE_WRAPPER_CLASS, TH_CLASS, TD_CLASS, BADGE_SM_CLASS } from "@/compo
 import {
   cfg, montarEstoqueMinimo, usePlanConfig, usePlanCoresForaDeLinha, usePlanLeadTimePorModelo, usePlanMinimos,
   usePlanVendaHistorica, useSalvarMinimo, useSalvarMinimosEmLote, type LinhaEstoqueMinimo,
+  type MinimoParaSalvar,
 } from "@/lib/plan";
+
+type PadraoMinimo = { modelo: string; cor: string; valores: Map<string, number> };
+type ColagemMinimo = { modelo: string; origem: PadraoMinimo; itens: MinimoParaSalvar[]; cores: number };
+
+function copiarValores(linhas: LinhaEstoqueMinimo[]) {
+  return new Map(linhas.filter((l) => l.adotado !== null).map((l) => [l.tamanho, l.adotado as number]));
+}
+
+function montarColagem(linhas: LinhaEstoqueMinimo[], valores: Map<string, number>): MinimoParaSalvar[] {
+  return linhas.flatMap((l) => {
+    const minimo = valores.get(l.tamanho);
+    if (minimo === undefined || minimo === l.adotado) return [];
+    return [{ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, minimo, sugerido: l.sugerido }];
+  });
+}
 
 const fmt = (n: number) => Math.round(n).toLocaleString("pt-BR");
 const fmtMedia = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
@@ -60,15 +76,24 @@ function CampoAdotado({ l, podeEditar, onSalvar }: { l: LinhaEstoqueMinimo; pode
     await onSalvar(Number(txt));
   };
   return (
-    <Input
+    <div className="flex items-center gap-1 justify-end">
+      <Input
       type="text" inputMode="numeric" maxLength={5} value={txt} disabled={!podeEditar}
       placeholder={String(l.sugerido)}
       onClick={(e) => e.stopPropagation()}
       onChange={(e) => setTxt(e.target.value.replace(/\D/g, "").slice(0, 5))}
       onBlur={salvar}
       onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-      className="h-6 w-16 ml-auto text-right text-[11px] tabular-nums px-1.5"
-    />
+        className="h-6 w-16 text-right text-[11px] tabular-nums px-1.5"
+      />
+      {podeEditar && txt !== inicial && txt !== "" && (
+        <Button size="sm" variant="outline" className="h-6 px-1.5 text-[11px]"
+          onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+          onClick={(e) => { e.stopPropagation(); void salvar(); }}>
+          OK
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -87,6 +112,8 @@ export function EstoqueMinimoTab() {
   const [soDefasados, setSoDefasados] = useState(false);
   const [abertos, setAbertos] = useState<Set<string>>(new Set());
   const [confirmar, setConfirmar] = useState<{ modelo: string; linhas: LinhaEstoqueMinimo[] } | null>(null);
+  const [padrao, setPadrao] = useState<PadraoMinimo | null>(null);
+  const [confirmarColagem, setConfirmarColagem] = useState<ColagemMinimo | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
   const limiar = cfg(config, "limiar_alerta_minimo_pct") || 10;
@@ -130,6 +157,35 @@ export function EstoqueMinimoTab() {
     setConfirmar(null);
   };
 
+  const copiarPadrao = (modelo: string, cor: string, ls: LinhaEstoqueMinimo[]) => {
+    if (!podeEditar) return;
+    const valores = copiarValores(ls);
+    if (!valores.size) {
+      setErro("Essa cor ainda não tem nenhum mínimo adotado para copiar.");
+      return;
+    }
+    setErro(null);
+    setPadrao({ modelo, cor, valores });
+  };
+
+  const prepararColagem = (modelo: string, ls: LinhaEstoqueMinimo[]) => {
+    if (!podeEditar || !padrao) return;
+    const itens = montarColagem(ls, padrao.valores);
+    setConfirmarColagem({ modelo, origem: padrao, itens, cores: new Set(itens.map((i) => i.cor)).size });
+  };
+
+  const colarPadrao = async () => {
+    if (!podeEditar || !confirmarColagem) return;
+    setErro(null);
+    try {
+      if (confirmarColagem.itens.length) await salvarLote.mutateAsync(confirmarColagem.itens);
+    } catch (e: unknown) {
+      const mensagem = e && typeof e === "object" && "message" in e ? String(e.message) : "erro";
+      setErro(`Não foi possível colar o padrão no modelo ${confirmarColagem.modelo}: ${mensagem}`);
+    }
+    setConfirmarColagem(null);
+  };
+
   const carregando = venda.isLoading || minimos.isLoading || lead.isLoading || cfgLoading;
   const toggle = (m: string) => setAbertos((s) => { const n = new Set(s); n.has(m) ? n.delete(m) : n.add(m); return n; });
 
@@ -156,6 +212,13 @@ export function EstoqueMinimoTab() {
         </label>
       </div>
 
+      {podeEditar && padrao && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+          <span>Padrão copiado de {padrao.modelo} {padrao.cor}, {padrao.valores.size} tamanhos</span>
+          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setPadrao(null); }}>Limpar</Button>
+        </div>
+      )}
+
       {erro && <p className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-sm text-destructive">{erro}</p>}
       {carregando && <p className="text-sm text-muted-foreground">Carregando…</p>}
       {!carregando && blocos.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma peça para mostrar.</p>}
@@ -168,23 +231,37 @@ export function EstoqueMinimoTab() {
         for (const l of ls) { const a = porCor.get(l.cor) ?? []; a.push(l); porCor.set(l.cor, a); }
         return (
           <Card key={modelo} className="overflow-hidden">
-            <div className="flex items-center justify-between gap-2 p-3 cursor-pointer" onClick={() => toggle(modelo)}>
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 cursor-pointer" onClick={() => toggle(modelo)}>
+              <div className="flex flex-wrap items-center gap-2">
                 {aberto ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 <span className="font-semibold">{modelo}</span>
                 <span className="text-xs text-muted-foreground">{ls.length} combinações</span>
                 {def > 0 && <Badge variant="destructive" className={BADGE_SM_CLASS}>{def} defasados</Badge>}
               </div>
               {podeEditar && (
-                <Button size="sm" variant="outline" disabled={!paraAceitar.length}
-                  onClick={(e) => { e.stopPropagation(); setConfirmar({ modelo, linhas: paraAceitar }); }}>
-                  Aceitar todas deste modelo
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" variant="outline" disabled={!paraAceitar.length}
+                    onClick={(e) => { e.stopPropagation(); setConfirmar({ modelo, linhas: paraAceitar }); }}>
+                    Aceitar todas deste modelo
+                  </Button>
+                  <Button size="sm" variant="outline" disabled={!padrao || salvarLote.isPending}
+                    onClick={(e) => { e.stopPropagation(); prepararColagem(modelo, ls); }}>
+                    Colar padrão aqui
+                  </Button>
+                </div>
               )}
             </div>
             {aberto && Array.from(porCor, ([cor, lc]) => (
               <Fragment key={cor}>
-                <div className="px-3 py-1.5 bg-muted/40 border-t"><CorChip cor={cor} /></div>
+                <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-muted/40 border-t">
+                  <CorChip cor={cor} />
+                  {podeEditar && (
+                    <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
+                      onClick={(e) => { e.stopPropagation(); copiarPadrao(modelo, cor, lc); }}>
+                      Copiar padrão
+                    </Button>
+                  )}
+                </div>
                 <div className={`${TABLE_WRAPPER_CLASS} rounded-none border-x-0`}>
                   <table className="w-full">
                     <thead>
@@ -262,6 +339,22 @@ export function EstoqueMinimoTab() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={aceitarTodas}>Aceitar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={!!confirmarColagem} onOpenChange={(o) => !o && setConfirmarColagem(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Colar o padrão de {confirmarColagem?.origem.modelo} {confirmarColagem?.origem.cor} em {confirmarColagem?.modelo}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmarColagem?.itens.length} linhas vão passar a ter o mínimo adotado igual ao padrão copiado, em {confirmarColagem?.cores} cores. Tamanhos que não estão no padrão não mudam.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.stopPropagation(); void colarPadrao(); }} disabled={salvarLote.isPending}>Colar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
