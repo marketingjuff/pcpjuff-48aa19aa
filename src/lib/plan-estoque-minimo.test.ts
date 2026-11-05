@@ -1,6 +1,14 @@
-import { describe, expect, mock, test } from "bun:test";
+import { describe, test } from "node:test";
+import assert from "node:assert/strict";
 
-mock.module("@/integrations/supabase/client", () => ({ supabase: {} }));
+function expect<T>(actual: T) {
+  return {
+    toBe: (expected: T) => assert.strictEqual(actual, expected),
+    toEqual: (expected: T) => assert.deepStrictEqual(actual, expected),
+    toHaveLength: (expected: number) => assert.strictEqual((actual as { length: number }).length, expected),
+    toBeNull: () => assert.strictEqual(actual, null),
+  };
+}
 const { montarEstoqueMinimo, minimoSobDemandaParaSalvar } = await import("./plan");
 const { itensDaColagem } = await import("../components/plan/EstoqueMinimoTab");
 type MinimoSalvo = import("./plan").MinimoSalvo;
@@ -12,7 +20,7 @@ const salvo: MinimoSalvo = {
 function linha(s: MinimoSalvo | null) {
   const rows = montarEstoqueMinimo({
     mediaMensal: new Map([["Camiseta|amarelo|M", 30]]), tamanhos: ["M"], leadTime: undefined,
-    config: { semanas_seguranca: 0, lead_time_completo_dias: 30 },
+    config: { semanas_seguranca: 0, lead_time_com_cru_dias: 30 },
     coresForaDeLinha: new Set(), minimosAdotados: new Map(s ? [["Camiseta|amarelo|M", s]] : []), limiarPct: 10,
   });
   const row = rows[0];
