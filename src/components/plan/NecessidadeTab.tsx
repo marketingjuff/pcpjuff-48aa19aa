@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { REFACAO_TAMANHOS } from "@/lib/pedidos";
 import {
-  aplicarPausas, cfg, montarNecessidade, usePlanConfig, usePlanCoresForaDeLinha, usePlanPausas, usePlanSaldoReal, usePlanVendaHistorica,
+  aplicarPausas, cfg, montarNecessidade, usePlanMinimos, usePlanConfig, usePlanCoresForaDeLinha, usePlanPausas, usePlanSaldoReal, usePlanVendaHistorica,
   type LinhaComPausa, type LinhaNecessidade, type PlanPausa,
 } from "@/lib/plan";
 
@@ -93,6 +93,8 @@ export function usePlanLinhas(escopo: "corte" | "suprimento" = "corte") {
   const saldo = usePlanSaldoReal();
   const venda = usePlanVendaHistorica();
   const coresForaDeLinha = usePlanCoresForaDeLinha();
+  const minimosQ = usePlanMinimos();
+  const minimos = minimosQ.error ? undefined : minimosQ.data;
   const todasLinhas = useMemo(() => {
     if (!venda.data || coresForaDeLinha.isLoading || coresForaDeLinha.error) return [] as LinhaNecessidade[];
     return montarNecessidade({
@@ -104,8 +106,9 @@ export function usePlanLinhas(escopo: "corte" | "suprimento" = "corte") {
       horizonteMeses: horizonte,
       semanasSeguranca: cfg(config, "semanas_seguranca"),
       coresForaDeLinha: coresForaDeLinha.cores,
+      minimosAdotados: minimos,
     });
-  }, [venda.data, saldo.data, horizonte, config, coresForaDeLinha.cores, coresForaDeLinha.isLoading, coresForaDeLinha.error]);
+  }, [venda.data, saldo.data, horizonte, config, coresForaDeLinha.cores, coresForaDeLinha.isLoading, coresForaDeLinha.error, minimos]);
   const linhas = todasLinhas.filter((l) => !l.foraDeLinha);
   const linhasForaDeLinha = todasLinhas.filter((l) => l.foraDeLinha);
   const naoMapeados = useMemo(() => {
@@ -124,7 +127,7 @@ export function usePlanLinhas(escopo: "corte" | "suprimento" = "corte") {
     linhas, linhasForaDeLinha, config, horizonte,
     naoMapeados,
     coresNaoReconhecidas,
-    isLoading: lc || saldo.isLoading || venda.isLoading || coresForaDeLinha.isLoading,
+    isLoading: lc || saldo.isLoading || venda.isLoading || coresForaDeLinha.isLoading || minimosQ.isLoading,
     error: (coresForaDeLinha.error ?? venda.error) as Error | null,
   };
 }
@@ -347,6 +350,7 @@ export function NecessidadeTab() {
               <tr className={index % 2 === 0 ? "bg-card" : "bg-muted/30"}>
                 <td rowSpan={3} className="border-b px-2 py-1 align-top whitespace-nowrap font-semibold">
                   {l.modelo}
+                  {l.porMinimo > 0 && <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0" title="Parte desta sugestão existe para não ficar abaixo do estoque mínimo adotado">piso do mínimo</Badge>}
                   {l.previsaoSuspensa && <Badge className="ml-2 bg-amber-500 text-white hover:bg-amber-500" title={tituloSelo(l.pausa)}>Só pedido vendido</Badge>}
                 </td>
                 <td rowSpan={3} className="border-b px-2 py-1 align-top"><CorChip cor={l.cor} /></td>
@@ -371,7 +375,7 @@ export function NecessidadeTab() {
                   const v = l.aProduzirPorTam[t] ?? 0;
                   const firme = l.firmePorTam[t] ?? 0;
                   return (
-                    <td key={t} className={`px-2 py-1 text-right tabular-nums align-top ${firme > 0 ? "bg-amber-50" : ""} ${v === 0 ? "text-muted-foreground/40" : "font-semibold"}`}>
+                    <td key={t} className={`px-2 py-1 text-right tabular-nums align-top ${firme > 0 ? "bg-amber-50" : ""} ${v === 0 ? "text-muted-foreground/40" : (l.porMinimoPorTam[t] ?? 0) > 0 ? "font-extrabold" : "font-semibold"}`}>
                       {v}
                       {firme > 0 && <div className="text-[11px] font-normal text-amber-800">{firme} em falta</div>}
                     </td>
