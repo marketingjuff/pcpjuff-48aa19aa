@@ -19,6 +19,7 @@ function normTexto(s: string): string {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
+    // (faixa de diacríticos combinantes U+0300–U+036F)
     .replace(/\s+/g, " ")
     .trim();
 }
