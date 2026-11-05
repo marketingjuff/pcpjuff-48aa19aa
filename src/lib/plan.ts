@@ -280,34 +280,130 @@ export function usePlanVendaHistorica() {
   });
 }
 
-export interface DisponivelPlan {
-  disponivel: Map<string, number>;
+export interface SaldoRealPlan {
+  /** Saldo Real por pkKey(modelo, cor, tamanho): max(0, JOKE+JUFF) + disponível COP. */
+  saldoReal: Map<string, number>;
+  /** Produção em andamento (calcEmProducao) — informativa, já embutida no saldo. */
   emProducao: Map<string, number>;
+  /** Produtos Olist sem modelo COP no de-para → peças em estoque (fora dos totais). */
+  naoMapeados: Map<string, number>;
+  /** Cores do estoque Olist que normalizarCor não reconheceu → peças (fora dos totais). */
+  coresNaoReconhecidas: Map<string, number>;
 }
 
-/** Mesma montagem da aba Disponível do COP. */
-export function usePlanDisponivel() {
+interface ItemEstoqueOlist {
+  empresa: string;
+  produto_olist: string;
+  cor: string | null;
+  tamanho: string | null;
+  qtd: number | null;
+}
+
+/**
+ * Estoque do PLAN = Saldo Real, mesma montagem da aba Saldo Real do COP
+ * (SaldoRealTab.tsx): multiEmpresa com piso zero + disponível do COP.
+ * Usa as mesmas query keys do COP para dividir cache.
+ */
+export function usePlanSaldoReal() {
   const copsQ = useQuery({
     queryKey: ["cops"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("cops" as any).select("*");
-      if (error) throw error;
-      return (data ?? []) as unknown as Cop[];
-    },
+    queryFn: () => paginar<any>((a, b) => supabase.from("cops" as any).select("*").order("id").range(a, b)),
   });
   const pedidosQ = useQuery({
     queryKey: ["pedidos-cop-saldos"],
+    queryFn: () => paginar<any>((a, b) => supabase.from("pedidos" as any).select("*").order("id").range(a, b)),
+  });
+  const snapsQ = useQuery({
+    queryKey: ["estoque-olist", "snapshots"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("pedidos" as any).select("*");
+      const { data, error } = await supabase
+        .from("estoque_olist_snapshots" as any)
+        .select("*")
+        .order("importado_em", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as unknown as Pedido[];
+      return (data ?? []) as any[];
     },
   });
-  const cops = copsQ.data ?? [];
-  const pedidos = pedidosQ.data ?? [];
+  const ultimosIds = (() => {
+    const m = new Map<string, any>();
+    for (const s of snapsQ.data ?? []) if (!m.has(String(s.empresa))) m.set(String(s.empresa), s);
+    return Array.from(m.values()).map((s) => String(s.id)).sort();
+  })();
+  const itensQ = useQuery({
+    queryKey: ["estoque-olist", "itens", ultimosIds],
+    enabled: ultimosIds.length > 0,
+    queryFn: () =>
+      paginar<ItemEstoqueOlist>((a, b) =>
+        supabase.from("estoque_olist_itens" as any)
+          .select("*")
+          .in("snapshot_id", ultimosIds)
+          .order("id", { ascending: true })
+          .range(a, b)),
+  });
+  const mapQ = useQuery({
+    queryKey: ["estoque-olist", "produto-map"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("olist_produto_map" as any).select("*");
+      if (error) throw error;
+      return (data ?? []) as unknown as { produto_olist: string; modelo_cop: string }[];
+    },
+  });
+
+  const snapsProntos = snapsQ.data !== undefined && ultimosIds.length === 0;
+  const isLoading =
+    copsQ.isLoading || pedidosQ.isLoading || snapsQ.isLoading || mapQ.isLoading ||
+    (ultimosIds.length > 0 && itensQ.isLoading);
+
+  if (isLoading || (!snapsProntos && !itensQ.data)) {
+    return {
+      data: { saldoReal: new Map(), emProducao: new Map(), naoMapeados: new Map(), coresNaoReconhecidas: new Map() } as SaldoRealPlan,
+      isLoading: true,
+    };
+  }
+
+  const cops = (copsQ.data ?? []) as unknown as Cop[];
+  const pedidos = (pedidosQ.data ?? []) as unknown as Pedido[];
   const emProducao = calcEmProducao(cops);
   const disponivel = calcDisponivel(emProducao, calcFaltantes(pedidos), calcRecebido(cops), calcPerdas(cops));
-  return { data: { disponivel, emProducao } as DisponivelPlan, isLoading: copsQ.isLoading || pedidosQ.isLoading };
+
+  const modeloPorProduto = new Map<string, string>();
+  for (const r of mapQ.data ?? []) modeloPorProduto.set(String(r.produto_olist), String(r.modelo_cop));
+
+  const joke = new Map<string, number>();
+  const juff = new Map<string, number>();
+  const naoMapeados = new Map<string, number>();
+  const coresNaoReconhecidas = new Map<string, number>();
+  for (const it of itensQ.data ?? []) {
+    const qtd = Number(it.qtd) || 0;
+    const modelo = modeloPorProduto.get(String(it.produto_olist ?? ""));
+    if (!modelo) {
+      const nome = String(it.produto_olist ?? "").trim() || "(sem produto)";
+      naoMapeados.set(nome, (naoMapeados.get(nome) ?? 0) + qtd);
+      continue;
+    }
+    if (!it.cor || !it.tamanho) continue;
+    const cor = normalizarCor(String(it.cor));
+    if (!cor) {
+      const bruta = String(it.cor).trim() || "(sem cor)";
+      coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + qtd);
+      continue;
+    }
+    const k = pkKey(modelo, cor, String(it.tamanho));
+    const alvo = it.empresa === "JOKE" ? joke : juff;
+    alvo.set(k, (alvo.get(k) ?? 0) + qtd);
+  }
+
+  const chaves = new Set<string>([...joke.keys(), ...juff.keys(), ...disponivel.keys()]);
+  const saldoReal = new Map<string, number>();
+  for (const k of chaves) {
+    const multiEmpresa = Math.max(0, (joke.get(k) ?? 0) + (juff.get(k) ?? 0));
+    saldoReal.set(k, multiEmpresa + (disponivel.get(k) ?? 0));
+  }
+
+  return {
+    data: { saldoReal, emProducao, naoMapeados, coresNaoReconhecidas } as SaldoRealPlan,
+    isLoading: false,
+  };
 }
 
 /** Metros restantes de tecido tingido em estoque, por cor. */
