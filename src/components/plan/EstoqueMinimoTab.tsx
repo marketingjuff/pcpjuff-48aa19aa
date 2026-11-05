@@ -93,10 +93,17 @@ function CampoAdotado({ l, podeEditar, onSalvar }: { l: LinhaEstoqueMinimo; pode
       <Input
       type="text" inputMode="numeric" maxLength={5} value={txt} disabled={!podeEditar}
       placeholder={String(l.sugerido)}
+      data-adotado=""
       onClick={(e) => e.stopPropagation()}
       onChange={(e) => setTxt(e.target.value.replace(/\D/g, "").slice(0, 5))}
       onBlur={salvar}
-      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") { (e.target as HTMLInputElement).blur(); return; }
+        if (e.key === "Tab") {
+          const ok = moverComTab(e.currentTarget, e.shiftKey);
+          if (ok) e.preventDefault();
+        }
+      }}
         className="h-6 w-16 text-right text-[11px] tabular-nums px-1.5"
       />
       {podeEditar && txt !== inicial && txt !== "" && (
