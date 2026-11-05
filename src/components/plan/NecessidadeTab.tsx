@@ -224,7 +224,10 @@ export function NecessidadeTab() {
                 <th className="px-2 py-2 text-right">Venda prevista/mês</th>
                 <th className="px-2 py-2 text-right">Já vendido</th>
                 <th className="px-2 py-2 text-right">Em estoque</th>
-                <th className="px-2 py-2 text-right">Em produção</th>
+                <th className="px-2 py-2 text-right">
+                  Em produção
+                  <div className="text-[10px] font-normal text-muted-foreground normal-case">informativo — já está dentro do saldo, não desconta de novo</div>
+                </th>
                 <th className="px-2 py-2 text-right">A produzir</th>
               </tr>
             </thead>
@@ -246,9 +249,9 @@ export function NecessidadeTab() {
       )}
 
       <div className="rounded-md border bg-card p-3 text-sm text-muted-foreground space-y-1">
-        <p><b>Vendido</b>: peça que já foi vendida e não tem no estoque — é o número negativo da aba Disponível do COP. É pedido de verdade, tamanho certo.</p>
-        <p><b>Previsto</b>: média de venda da Olist nos últimos 12 meses, vezes os meses escolhidos, mais {cfg(config, "semanas_seguranca")} semanas de segurança. Já tira o que sobra no Disponível. É estimativa: confira antes de cortar tamanhos que vendem pouco.</p>
-        <p>O número em cada tamanho é o que falta cortar. Peça em estoque e peça já em produção já foram descontadas.</p>
+        <p><b>Firme</b> (fundo destacado na célula): peça já vendida e sem estoque — é o saldo real negativo. É pedido de verdade, tamanho certo.</p>
+        <p><b>Previsto</b>: média de venda da Olist nos últimos 12 meses, vezes os meses escolhidos, mais {cfg(config, "semanas_seguranca")} semanas de segurança, descontando o que já existe no estoque (Saldo Real, igual à aba do COP). É estimativa: confira antes de cortar tamanhos que vendem pouco.</p>
+        <p>O número em cada tamanho é o que falta cortar (firme + previsto). Peça em estoque e peça já em produção já estão dentro do Saldo Real e não são descontadas de novo.</p>
       </div>
     </div>
   );
