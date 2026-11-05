@@ -6,7 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { REFACAO_CORES } from "@/lib/pedidos";
 import { CorChip } from "@/components/plan/NecessidadeTab";
 import { Lock } from "lucide-react";
-import { useIsAdmin } from "@/hooks/use-role";
+import { useMyRoles } from "@/hooks/use-role";
+import { podeEditarPlan } from "@/lib/plan-permissoes";
 import {
   kgPorPeca, usePlanConfig, usePlanConfigRows, usePlanCoresForaDeLinha, usePlanFichas, useSalvarConfig, useSalvarFicha,
   type FichaModelo,
@@ -104,13 +105,13 @@ function LinhaFicha({ f, podeEditar }: { f: FichaModelo; podeEditar: boolean }) 
 }
 
 export function ParametrosTab() {
-  const isAdmin = useIsAdmin();
+  const podeEditar = podeEditarPlan((useMyRoles().data ?? []).map((r) => r.role));
   const rows = usePlanConfigRows();
   const fichas = usePlanFichas();
   const foraDeLinha = usePlanCoresForaDeLinha();
   const [rascunhoCores, setRascunhoCores] = useState<Set<string> | null>(null);
   const marcadas = rascunhoCores ?? foraDeLinha.cores;
-  const bloqueado = !isAdmin || foraDeLinha.isLoading || !!foraDeLinha.error || foraDeLinha.salvar.isPending;
+  const bloqueado = !podeEditar || foraDeLinha.isLoading || !!foraDeLinha.error || foraDeLinha.salvar.isPending;
   const mudouCores = REFACAO_CORES.some((c) => marcadas.has(c.nome) !== foraDeLinha.cores.has(c.nome));
   const salvarCores = async () => {
     if (bloqueado || !mudouCores) return;
@@ -122,16 +123,16 @@ export function ParametrosTab() {
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold tracking-tight">Parâmetros</h2>
-      {!isAdmin && (
+      {!podeEditar && (
         <div className="flex items-center gap-2 rounded-md border border-amber-400 bg-amber-50 p-3 text-sm text-amber-900">
-          <Lock className="h-4 w-4" /> Somente leitura: só admin pode alterar estes parâmetros, as fichas de encaixe e as cores fora de linha.
+          <Lock className="h-4 w-4" /> Somente leitura: só admin ou gestor pode alterar estes parâmetros, as fichas de encaixe e as cores fora de linha.
         </div>
       )}
       <Card>
         <CardHeader><CardTitle>Parâmetros gerais</CardTitle></CardHeader>
         <CardContent className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {rows.error && <p className="text-sm text-destructive">{(rows.error as Error).message}</p>}
-          {(rows.data ?? []).map((r) => <CampoConfig key={r.chave} {...r} podeEditar={isAdmin} />)}
+          {(rows.data ?? []).map((r) => <CampoConfig key={r.chave} {...r} podeEditar={podeEditar} />)}
         </CardContent>
       </Card>
       <Card>
@@ -152,7 +153,7 @@ export function ParametrosTab() {
               </label>
             ))}
           </div>
-          {isAdmin && <Button size="sm" onClick={salvarCores} disabled={bloqueado || !mudouCores}>{foraDeLinha.salvar.isPending ? "Salvando…" : "Salvar cores fora de linha"}</Button>}
+          {podeEditar && <Button size="sm" onClick={salvarCores} disabled={bloqueado || !mudouCores}>{foraDeLinha.salvar.isPending ? "Salvando…" : "Salvar cores fora de linha"}</Button>}
         </CardContent>
       </Card>
       <Card>
@@ -165,7 +166,7 @@ export function ParametrosTab() {
               <th className="px-2 py-1">Peças/folha</th><th className="px-2 py-1">Altura folha (m)</th>
               <th className="px-2 py-1">Largura (m)</th><th className="px-2 py-1 text-right">Kg por peça</th><th />
             </tr></thead>
-            <tbody>{(fichas.data ?? []).map((f) => <LinhaFicha key={f.id} f={f} podeEditar={isAdmin} />)}</tbody>
+            <tbody>{(fichas.data ?? []).map((f) => <LinhaFicha key={f.id} f={f} podeEditar={podeEditar} />)}</tbody>
           </table>
         </CardContent>
       </Card>

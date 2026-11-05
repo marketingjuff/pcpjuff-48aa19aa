@@ -14,7 +14,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertTriangle, ChevronDown, ChevronRight, ClipboardPaste, Copy, Lock } from "lucide-react";
 import { CorChip } from "@/components/plan/NecessidadeTab";
 import { REFACAO_TAMANHOS } from "@/lib/pedidos";
-import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
+import { useMyRoles } from "@/hooks/use-role";
+import { podeEditarPlan } from "@/lib/plan-permissoes";
 import { TABLE_WRAPPER_CLASS, TH_CLASS, TD_CLASS, BADGE_SM_CLASS } from "@/components/shared/table-styles";
 import {
   cfg, itensSobDemandaDaCor, montarEstoqueMinimo, usePlanConfig, usePlanCoresForaDeLinha, usePlanLeadTimePorModelo, usePlanMinimos,
@@ -118,9 +119,7 @@ function CampoAdotado({ l, podeEditar, onSalvar }: { l: LinhaEstoqueMinimo; pode
 }
 
 export function EstoqueMinimoTab() {
-  const isAdmin = useIsAdmin();
-  const isGestor = useMyRoles().data?.some((r) => r.role === "gestor") ?? false;
-  const podeEditar = isAdmin || isGestor;
+  const podeEditar = podeEditarPlan((useMyRoles().data ?? []).map((r) => r.role));
   const venda = usePlanVendaHistorica();
   const lead = usePlanLeadTimePorModelo();
   const { data: config, isLoading: cfgLoading } = usePlanConfig();
