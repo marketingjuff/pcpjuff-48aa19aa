@@ -127,7 +127,7 @@ export function usePlanLinhas(escopo: "corte" | "suprimento" = "corte") {
     linhas, linhasForaDeLinha, config, horizonte,
     naoMapeados,
     coresNaoReconhecidas,
-    isLoading: lc || saldo.isLoading || venda.isLoading || coresForaDeLinha.isLoading,
+    isLoading: lc || saldo.isLoading || venda.isLoading || coresForaDeLinha.isLoading || minimosQ.isLoading,
     error: (coresForaDeLinha.error ?? venda.error) as Error | null,
   };
 }
