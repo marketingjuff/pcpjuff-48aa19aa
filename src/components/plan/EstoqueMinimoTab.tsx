@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle, ChevronDown, ChevronRight, Copy, Lock } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, ClipboardPaste, Copy, Lock } from "lucide-react";
 import { CorChip } from "@/components/plan/NecessidadeTab";
 import { REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
@@ -215,6 +215,21 @@ export function EstoqueMinimoTab() {
   const alternarModelo = (modelo: string, cores: string[], v: boolean) =>
     setSelecao((s) => { const n = new Set(s); for (const c of cores) v ? n.add(chave(modelo, c)) : n.delete(chave(modelo, c)); return n; });
 
+  const quantosMudam = (ls: LinhaEstoqueMinimo[]) => (padrao ? itensDaColagem(ls, padrao.valores, substituir).length : 0);
+
+  const colarEmCor = async (ls: LinhaEstoqueMinimo[]) => {
+    if (!podeEditar || !padrao || salvarLote.isPending) return;
+    const itens = itensDaColagem(ls, padrao.valores, substituir);
+    if (!itens.length) return;
+    setErro(null);
+    try {
+      await salvarLote.mutateAsync(itens);
+    } catch (e: unknown) {
+      const mensagem = e && typeof e === "object" && "message" in e ? String(e.message) : "erro";
+      setErro(`Não foi possível colar o padrão em ${ls[0]?.modelo} ${ls[0]?.cor}: ${mensagem}`);
+    }
+  };
+
   const colarPadrao = async () => {
     if (!podeEditar || !padrao || !itensColagem.length) return;
     setErro(null);
@@ -297,11 +312,23 @@ export function EstoqueMinimoTab() {
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/40 border-t">
                   <CorChip cor={cor} />
                   {podeEditar && (
-                    <Button size="sm" variant={padrao?.modelo === modelo && padrao?.cor === cor ? "secondary" : "ghost"}
-                      className="h-6 px-1.5 gap-1 text-[11px]" title="Copiar padrão desta cor" aria-label="Copiar padrão desta cor"
-                      onClick={(e) => { e.stopPropagation(); copiarPadrao(modelo, cor, lc); }}>
-                      <Copy className="h-3.5 w-3.5" /> Copiar
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant={padrao?.modelo === modelo && padrao?.cor === cor ? "secondary" : "ghost"}
+                        className="h-6 px-1.5 gap-1 text-[11px]" title="Copiar padrão desta cor" aria-label="Copiar padrão desta cor"
+                        onClick={(e) => { e.stopPropagation(); copiarPadrao(modelo, cor, lc); }}>
+                        <Copy className="h-3.5 w-3.5" /> Copiar
+                      </Button>
+                      {padrao && (
+                        <Button size="sm" variant="outline"
+                          className="h-6 px-1.5 gap-1 text-[11px]"
+                          title={`Colar o padrão de ${padrao.modelo} ${padrao.cor} nesta cor`}
+                          aria-label="Colar padrão nesta cor"
+                          disabled={!quantosMudam(lc) || salvarLote.isPending}
+                          onClick={(e) => { e.stopPropagation(); void colarEmCor(lc); }}>
+                          <ClipboardPaste className="h-3.5 w-3.5" /> Colar
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className={`${TABLE_WRAPPER_CLASS} rounded-none border-x-0`}>
