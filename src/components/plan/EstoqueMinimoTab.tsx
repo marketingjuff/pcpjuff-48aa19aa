@@ -312,11 +312,23 @@ export function EstoqueMinimoTab() {
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/40 border-t">
                   <CorChip cor={cor} />
                   {podeEditar && (
-                    <Button size="sm" variant={padrao?.modelo === modelo && padrao?.cor === cor ? "secondary" : "ghost"}
-                      className="h-6 px-1.5 gap-1 text-[11px]" title="Copiar padrão desta cor" aria-label="Copiar padrão desta cor"
-                      onClick={(e) => { e.stopPropagation(); copiarPadrao(modelo, cor, lc); }}>
-                      <Copy className="h-3.5 w-3.5" /> Copiar
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant={padrao?.modelo === modelo && padrao?.cor === cor ? "secondary" : "ghost"}
+                        className="h-6 px-1.5 gap-1 text-[11px]" title="Copiar padrão desta cor" aria-label="Copiar padrão desta cor"
+                        onClick={(e) => { e.stopPropagation(); copiarPadrao(modelo, cor, lc); }}>
+                        <Copy className="h-3.5 w-3.5" /> Copiar
+                      </Button>
+                      {padrao && (
+                        <Button size="sm" variant="outline"
+                          className="h-6 px-1.5 gap-1 text-[11px]"
+                          title={`Colar o padrão de ${padrao.modelo} ${padrao.cor} nesta cor`}
+                          aria-label="Colar padrão nesta cor"
+                          disabled={!quantosMudam(lc) || salvarLote.isPending}
+                          onClick={(e) => { e.stopPropagation(); void colarEmCor(lc); }}>
+                          <ClipboardPaste className="h-3.5 w-3.5" /> Colar
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className={`${TABLE_WRAPPER_CLASS} rounded-none border-x-0`}>
