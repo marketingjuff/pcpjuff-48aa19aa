@@ -107,7 +107,7 @@ function SituacaoBadge({ dias, lead }: { dias: number; lead: number }) {
 }
 
 export function NecessidadeTab() {
-  const { linhas, config, naoMapeados, isLoading, error } = usePlanLinhas();
+  const { linhas, config, naoMapeados, coresNaoReconhecidas, isLoading, error } = usePlanLinhas();
   const [verConferencia, setVerConferencia] = useState(false);
   const lead = cfg(config, "lead_time_completo_dias");
 
@@ -123,6 +123,7 @@ export function NecessidadeTab() {
   }, [linhas]);
 
   const naoMap = Array.from(naoMapeados.entries()).sort((a, b) => b[1] - a[1]);
+  const coresFora = Array.from(coresNaoReconhecidas.entries()).sort((a, b) => b[1] - a[1]);
 
   return (
     <div className="space-y-4">
