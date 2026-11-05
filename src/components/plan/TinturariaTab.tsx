@@ -6,13 +6,13 @@ import { REFACAO_TAMANHOS } from "@/lib/pedidos";
 import {
   cfg, montarTinturaria, usePlanCruParado, usePlanEstoqueTingido, usePlanFichas, usePlanNaTinturaria,
 } from "@/lib/plan";
-import { CorChip, HorizonteSelect, usePlanLinhas } from "@/components/plan/NecessidadeTab";
+import { CorChip, HorizonteSuprimentoSelect, usePlanLinhas } from "@/components/plan/NecessidadeTab";
 
 const kg = (n: number) => `${Math.round(n).toLocaleString("pt-BR")} kg`;
 const dataBr = (d: Date | null) => d ? d.toLocaleDateString("pt-BR", { day: "numeric", month: "long" }) : "—";
 
 export function TinturariaTab() {
-  const { linhas, config, isLoading } = usePlanLinhas();
+  const { linhas, config, isLoading } = usePlanLinhas("suprimento");
   const fichas = usePlanFichas();
   const estoque = usePlanEstoqueTingido();
   const tint = usePlanNaTinturaria();
@@ -43,7 +43,10 @@ export function TinturariaTab() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-2xl font-bold tracking-tight">O que mandar tingir</h2>
-        <HorizonteSelect />
+        <div className="flex flex-col items-end gap-1">
+          <HorizonteSuprimentoSelect />
+          <p className="text-xs text-muted-foreground">Horizonte longo porque a reposição completa leva 65 dias. Se o horizonte for menor que o ciclo, o aviso chega atrasado.</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

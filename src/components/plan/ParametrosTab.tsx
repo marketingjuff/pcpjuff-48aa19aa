@@ -20,7 +20,8 @@ const ROTULOS: Record<string, string> = {
   lead_time_completo_dias: "Reposição completa (dias)",
   lead_time_com_cru_dias: "Reposição com cru parado (dias)",
   lote_minimo_tinturaria_kg: "Lote mínimo da tinturaria (kg)",
-  horizonte_meses_padrao: "Horizonte inicial (meses)",
+  horizonte_meses_padrao: "Horizonte inicial de suprimento (meses)",
+  horizonte_corte_meses_padrao: "Horizonte inicial de corte (meses)",
 };
 
 /** Aceita vírgula ou ponto; até 3 casas decimais. */
