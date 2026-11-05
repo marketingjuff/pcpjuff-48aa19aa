@@ -499,11 +499,14 @@ export function usePlanCruParado() {
 export interface LinhaNecessidade {
   modelo: string;
   cor: string;
-  vendido: Record<string, number>;
-  previsto: Record<string, number>;
+  /** total a produzir por tamanho (firme + previsto líquido) */
+  aProduzirPorTam: Record<string, number>;
+  /** parte firme (pedido vendido sem estoque) por tamanho */
+  firmePorTam: Record<string, number>;
   vendaPrevistaMensal: number;
   jaVendido: number;
   emEstoque: number;
+  /** informativo: já está embutido no saldo real, não desconta de novo */
   emProducao: number;
   aProduzir: number;
   diasRuptura: number;
@@ -511,47 +514,46 @@ export interface LinhaNecessidade {
 
 export function montarNecessidade(params: {
   tamanhos: readonly string[];
-  disponivel: Map<string, number>;
+  saldoReal: Map<string, number>;
   emProducao: Map<string, number>;
   mediaMensal: Map<string, number>;
   horizonteMeses: number;
   semanasSeguranca: number;
 }): LinhaNecessidade[] {
-  const { tamanhos, disponivel, emProducao, mediaMensal, horizonteMeses, semanasSeguranca } = params;
+  const { tamanhos, saldoReal, emProducao, mediaMensal, horizonteMeses, semanasSeguranca } = params;
   const combos = new Map<string, { modelo: string; cor: string }>();
-  for (const k of [...disponivel.keys(), ...mediaMensal.keys()]) {
+  for (const k of [...saldoReal.keys(), ...mediaMensal.keys()]) {
     const [modelo, cor, tam] = k.split("|");
     if (!modelo || !cor || !tamanhos.includes(tam)) continue;
     combos.set(`${modelo}|${cor}`, { modelo, cor });
   }
   const out: LinhaNecessidade[] = [];
   for (const { modelo, cor } of combos.values()) {
-    const vendido: Record<string, number> = {};
-    const previsto: Record<string, number> = {};
+    const aProduzirPorTam: Record<string, number> = {};
+    const firmePorTam: Record<string, number> = {};
     let consumo = 0, livreTot = 0, firmeTot = 0, prodTot = 0, aProd = 0;
     for (const t of tamanhos) {
       const k = pkKey(modelo, cor, t);
-      const disp = disponivel.get(k) ?? 0;
+      const saldo = saldoReal.get(k) ?? 0;
       const media = mediaMensal.get(k) ?? 0;
-      const firme = Math.max(0, -disp);
-      // Disponível positivo = estoque + produção ainda não comprometidos.
-      const livre = Math.max(0, disp);
+      const estoqueLivre = Math.max(0, saldo);
+      const firme = Math.max(0, -saldo);
       const prevBruto = demandaTotal(media, horizonteMeses, 0, semanasSeguranca);
-      vendido[t] = firme;
-      previsto[t] = Math.ceil(necessidadeLiquida(prevBruto, livre, 0) - 1e-9);
+      const prevLiquido = Math.ceil(Math.max(0, prevBruto - estoqueLivre) - 1e-9);
+      firmePorTam[t] = firme;
+      aProduzirPorTam[t] = firme + prevLiquido;
       consumo += media;
-      livreTot += livre;
+      livreTot += estoqueLivre;
       firmeTot += firme;
       prodTot += emProducao.get(k) ?? 0;
-      aProd += vendido[t] + previsto[t];
+      aProd += aProduzirPorTam[t];
     }
     if (consumo === 0 && firmeTot === 0) continue;
-    const livreEstoque = Math.max(0, livreTot - prodTot);
     out.push({
-      modelo, cor, vendido, previsto,
+      modelo, cor, aProduzirPorTam, firmePorTam,
       vendaPrevistaMensal: consumo,
       jaVendido: firmeTot,
-      emEstoque: livreEstoque,
+      emEstoque: livreTot,
       emProducao: prodTot,
       aProduzir: aProd,
       diasRuptura: firmeTot > 0 ? 0 : diasAteRuptura(livreTot, consumo),
@@ -590,7 +592,7 @@ export function montarTinturaria(params: {
   for (const l of linhas) {
     const f = fichaPor.get(l.modelo);
     const kgp = f ? kgPorPeca(f, config) : 0;
-    const pecas = tamanhos.reduce((s, t) => s + (l.vendido[t] ?? 0) + (l.previsto[t] ?? 0), 0);
+    const pecas = tamanhos.reduce((s, t) => s + (l.aProduzirPorTam[t] ?? 0), 0);
     const c = porCor.get(l.cor) ?? { pecas: 0, kg: 0, consumo: 0, dias: Infinity };
     c.pecas += pecas;
     c.kg += pecas * kgp;
