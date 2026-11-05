@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle, ChevronDown, ChevronRight, Copy, Lock } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, ClipboardPaste, Copy, Lock } from "lucide-react";
 import { CorChip } from "@/components/plan/NecessidadeTab";
 import { REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
@@ -214,6 +214,21 @@ export function EstoqueMinimoTab() {
   const alternarCor = (k: string, v: boolean) => setSelecao((s) => { const n = new Set(s); v ? n.add(k) : n.delete(k); return n; });
   const alternarModelo = (modelo: string, cores: string[], v: boolean) =>
     setSelecao((s) => { const n = new Set(s); for (const c of cores) v ? n.add(chave(modelo, c)) : n.delete(chave(modelo, c)); return n; });
+
+  const quantosMudam = (ls: LinhaEstoqueMinimo[]) => (padrao ? itensDaColagem(ls, padrao.valores, substituir).length : 0);
+
+  const colarEmCor = async (ls: LinhaEstoqueMinimo[]) => {
+    if (!podeEditar || !padrao || salvarLote.isPending) return;
+    const itens = itensDaColagem(ls, padrao.valores, substituir);
+    if (!itens.length) return;
+    setErro(null);
+    try {
+      await salvarLote.mutateAsync(itens);
+    } catch (e: unknown) {
+      const mensagem = e && typeof e === "object" && "message" in e ? String(e.message) : "erro";
+      setErro(`Não foi possível colar o padrão em ${ls[0]?.modelo} ${ls[0]?.cor}: ${mensagem}`);
+    }
+  };
 
   const colarPadrao = async () => {
     if (!podeEditar || !padrao || !itensColagem.length) return;
