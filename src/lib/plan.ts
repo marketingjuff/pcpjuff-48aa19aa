@@ -270,6 +270,7 @@ export function usePlanVendaHistorica() {
           const cor = normalizarCor(String(it.cor));
           if (!cor) {
             const bruta = String(it.cor).trim() || "(sem cor)";
+            if (corIgnorada(bruta)) continue;
             coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + qtd);
             continue;
           }
@@ -390,6 +391,7 @@ export function usePlanSaldoReal() {
     const cor = normalizarCor(String(it.cor));
     if (!cor) {
       const bruta = String(it.cor).trim() || "(sem cor)";
+      if (corIgnorada(bruta)) continue;
       coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + qtd);
       continue;
     }
@@ -439,7 +441,7 @@ export function usePlanEstoqueTingido() {
         const restante = Math.max(0, (Number(p.alt_inicial) || 0) - cortado);
         const cor = normalizarCor(bruta);
         if (!cor) {
-          coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + restante);
+          if (!corIgnorada(bruta)) coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + restante);
           continue;
         }
         porCor.set(cor, (porCor.get(cor) ?? 0) + restante);
@@ -466,7 +468,7 @@ export function usePlanNaTinturaria() {
         const kgv = Number(r.kg_enviados) || 0;
         const cor = normalizarCor(bruta);
         if (!cor) {
-          coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + kgv);
+          if (!corIgnorada(bruta)) coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + kgv);
           continue;
         }
         porCor.set(cor, (porCor.get(cor) ?? 0) + kgv);
