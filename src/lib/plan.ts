@@ -206,6 +206,8 @@ export interface VendaHistorica {
   mediaMensal: Map<string, number>;
   /** produtos Olist sem mapeamento → peças nos 12 meses */
   naoMapeados: Map<string, number>;
+  /** cores que normalizarCor não reconheceu → peças nos 12 meses (fora dos totais) */
+  coresNaoReconhecidas: Map<string, number>;
 }
 
 export function usePlanVendaHistorica() {
@@ -240,6 +242,7 @@ export function usePlanVendaHistorica() {
 
       const soma = new Map<string, number>();
       const naoMapeados = new Map<string, number>();
+      const coresNaoReconhecidas = new Map<string, number>();
       for (let i = 0; i < lotesUsados.length; i += 50) {
         const fatia = lotesUsados.slice(i, i + 50);
         const itens = await paginar<any>((a, b) =>
@@ -259,13 +262,19 @@ export function usePlanVendaHistorica() {
             continue;
           }
           if (!it.cor || !it.tamanho) continue;
-          const k = pkKey(modelo, String(it.cor), String(it.tamanho));
+          const cor = normalizarCor(String(it.cor));
+          if (!cor) {
+            const bruta = String(it.cor).trim() || "(sem cor)";
+            coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + qtd);
+            continue;
+          }
+          const k = pkKey(modelo, cor, String(it.tamanho));
           soma.set(k, (soma.get(k) ?? 0) + qtd);
         }
       }
       const mediaMensal = new Map<string, number>();
       for (const [k, v] of soma) mediaMensal.set(k, v / 12);
-      return { mediaMensal, naoMapeados };
+      return { mediaMensal, naoMapeados, coresNaoReconhecidas };
     },
     staleTime: 5 * 60_000,
   });
