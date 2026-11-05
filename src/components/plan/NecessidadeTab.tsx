@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,6 +72,7 @@ export function usePlanLinhas() {
     return montarNecessidade({
       tamanhos: REFACAO_TAMANHOS,
       saldoReal: saldo.data.saldoReal,
+      prontoFisico: saldo.data.prontoFisico,
       emProducao: saldo.data.emProducao,
       mediaMensal: venda.data.mediaMensal,
       horizonteMeses: horizonte,
@@ -182,6 +183,7 @@ export function NecessidadeTab() {
             <tr>
               <th className="px-2 py-2 text-left">Modelo</th>
               <th className="px-2 py-2 text-left">Cor</th>
+              <th className="px-2 py-2 text-left">Indicador</th>
               {REFACAO_TAMANHOS.map((t) => <th key={t} className="px-2 py-2 text-right">{t}</th>)}
               <th className="px-2 py-2 text-right">Total</th>
               <th className="px-2 py-2 text-right">Já vendido</th>
@@ -189,26 +191,41 @@ export function NecessidadeTab() {
             </tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td colSpan={12} className="p-4 text-muted-foreground">Calculando…</td></tr>}
-            {!isLoading && linhas.length === 0 && <tr><td colSpan={12} className="p-4 text-muted-foreground">{error ? "Planejamento indisponível." : "Nada a produzir no horizonte."}</td></tr>}
-            {linhas.map((l) => (
-              <tr key={`${l.modelo}|${l.cor}`} className="border-t">
-                <td className="px-2 py-1 whitespace-nowrap font-semibold">{l.modelo}</td>
-                <td className="px-2 py-1"><CorChip cor={l.cor} /></td>
+            {isLoading && <tr><td colSpan={REFACAO_TAMANHOS.length + 6} className="p-4 text-muted-foreground">Calculando…</td></tr>}
+            {!isLoading && linhas.length === 0 && <tr><td colSpan={REFACAO_TAMANHOS.length + 6} className="p-4 text-muted-foreground">{error ? "Planejamento indisponível." : "Nada a produzir no horizonte."}</td></tr>}
+            {linhas.map((l, index) => (
+              <Fragment key={`${l.modelo}|${l.cor}`}>
+              <tr className={index % 2 === 0 ? "bg-card" : "bg-muted/30"}>
+                <td rowSpan={3} className="border-b px-2 py-1 align-top whitespace-nowrap font-semibold">{l.modelo}</td>
+                <td rowSpan={3} className="border-b px-2 py-1 align-top"><CorChip cor={l.cor} /></td>
+                <td className="px-2 py-1 text-xs text-muted-foreground whitespace-nowrap">Pronto em estoque</td>
+                {REFACAO_TAMANHOS.map((t) => (
+                  <td key={t} className="px-2 py-1 text-right text-xs text-muted-foreground tabular-nums">{l.prontoPorTam[t] ?? 0}</td>
+                ))}
+                <td rowSpan={3} className="border-b px-2 py-1 align-top text-right tabular-nums font-bold">{l.aProduzir}</td>
+                <td rowSpan={3} className="border-b px-2 py-1 align-top text-right tabular-nums">{fmt(l.jaVendido)}</td>
+                <td rowSpan={3} className="border-b px-2 py-1 align-top"><SituacaoBadge dias={l.diasRuptura} lead={lead} /></td>
+              </tr>
+              <tr className={index % 2 === 0 ? "bg-card" : "bg-muted/30"}>
+                <td className="px-2 py-1 text-xs text-muted-foreground whitespace-nowrap">Em produção</td>
+                {REFACAO_TAMANHOS.map((t) => (
+                  <td key={t} className="px-2 py-1 text-right text-xs text-muted-foreground tabular-nums">{l.producaoPorTam[t] ?? 0}</td>
+                ))}
+              </tr>
+              <tr className={`border-b ${index % 2 === 0 ? "bg-card" : "bg-muted/30"}`}>
+                <td className="px-2 py-1 font-semibold whitespace-nowrap">Sugestão de corte</td>
                 {REFACAO_TAMANHOS.map((t) => {
                   const v = l.aProduzirPorTam[t] ?? 0;
                   const firme = l.firmePorTam[t] ?? 0;
                   return (
                     <td key={t} className={`px-2 py-1 text-right tabular-nums align-top ${firme > 0 ? "bg-amber-50" : ""} ${v === 0 ? "text-muted-foreground/40" : "font-semibold"}`}>
                       {v}
-                      {firme > 0 && <div className="text-[11px] font-normal text-amber-800">{firme} firme</div>}
+                      {firme > 0 && <div className="text-[11px] font-normal text-amber-800">{firme} em falta</div>}
                     </td>
                   );
                 })}
-                <td className="px-2 py-1 text-right tabular-nums font-bold">{l.aProduzir}</td>
-                <td className="px-2 py-1 text-right tabular-nums">{fmt(l.jaVendido)}</td>
-                <td className="px-2 py-1"><SituacaoBadge dias={l.diasRuptura} lead={lead} /></td>
               </tr>
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -284,9 +301,9 @@ export function NecessidadeTab() {
       )}
 
       <div className="rounded-md border bg-card p-3 text-sm text-muted-foreground space-y-1">
-        <p><b>Firme</b> (fundo destacado na célula): peça já vendida e sem estoque — é o saldo real negativo. É pedido de verdade, tamanho certo.</p>
+        <p><b>Em falta</b> (fundo destacado na célula): peça já vendida e sem estoque — é o saldo real negativo. É pedido de verdade, tamanho certo.</p>
         <p><b>Previsto</b>: média de venda da Olist nos últimos 12 meses, vezes os meses escolhidos, mais {cfg(config, "semanas_seguranca")} semanas de segurança, descontando o que já existe no estoque (Saldo Real, igual à aba do COP). É estimativa: confira antes de cortar tamanhos que vendem pouco.</p>
-        <p>O número em cada tamanho é o que falta cortar (firme + previsto). Peça em estoque e peça já em produção já estão dentro do Saldo Real e não são descontadas de novo.</p>
+        <p>O número da linha Sugestão de corte é o que falta cortar, somando o que já foi vendido e está em falta com o previsto para o horizonte. Peça pronta e peça em produção já estão descontadas, não precisa descontar de novo.</p>
       </div>
     </div>
   );
