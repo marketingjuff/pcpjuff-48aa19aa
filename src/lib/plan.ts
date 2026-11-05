@@ -8,8 +8,46 @@ import {
   calcDisponivel, calcEmProducao, calcFaltantes, calcPerdas, calcRecebido, pkKey,
 } from "@/lib/cop-saldos";
 import { apenasVigentes, type LotesPorData } from "@/lib/olist-vendas";
+import { REFACAO_CORES } from "@/lib/pedidos";
 
 export { pkKey };
+
+/* ------------------------- normalização de cor ------------------------- */
+
+function normTexto(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Escapa texto para uso literal em RegExp. */
+function escRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const _CORES_NORM: { canonico: string; norm: string; re: RegExp }[] = REFACAO_CORES.map((c) => {
+  const norm = normTexto(c.nome);
+  return { canonico: c.nome, norm, re: new RegExp(`(^| )${escRe(norm)}( |$)`) };
+});
+
+/**
+ * Traduz uma descrição de cor vinda de fora (Olist, MAP) para o nome canônico
+ * de REFACAO_CORES. Casa exato; senão, por palavra inteira em qualquer direção,
+ * somente quando há exatamente uma candidata. Nunca adivinha: sem candidata
+ * única, devolve null.
+ */
+export function normalizarCor(bruto: string): string | null {
+  const t = normTexto(bruto ?? "");
+  if (!t) return null;
+  const exato = _CORES_NORM.find((c) => c.norm === t);
+  if (exato) return exato.canonico;
+  const reT = new RegExp(`(^| )${escRe(t)}( |$)`);
+  const candidatas = _CORES_NORM.filter((c) => c.re.test(t) || reT.test(c.norm));
+  return candidatas.length === 1 ? candidatas[0].canonico : null;
+}
 
 export interface FichaModelo {
   id: string;
@@ -168,6 +206,8 @@ export interface VendaHistorica {
   mediaMensal: Map<string, number>;
   /** produtos Olist sem mapeamento → peças nos 12 meses */
   naoMapeados: Map<string, number>;
+  /** cores que normalizarCor não reconheceu → peças nos 12 meses (fora dos totais) */
+  coresNaoReconhecidas: Map<string, number>;
 }
 
 export function usePlanVendaHistorica() {
@@ -202,6 +242,7 @@ export function usePlanVendaHistorica() {
 
       const soma = new Map<string, number>();
       const naoMapeados = new Map<string, number>();
+      const coresNaoReconhecidas = new Map<string, number>();
       for (let i = 0; i < lotesUsados.length; i += 50) {
         const fatia = lotesUsados.slice(i, i + 50);
         const itens = await paginar<any>((a, b) =>
@@ -221,53 +262,162 @@ export function usePlanVendaHistorica() {
             continue;
           }
           if (!it.cor || !it.tamanho) continue;
-          const k = pkKey(modelo, String(it.cor), String(it.tamanho));
+          const cor = normalizarCor(String(it.cor));
+          if (!cor) {
+            const bruta = String(it.cor).trim() || "(sem cor)";
+            coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + qtd);
+            continue;
+          }
+          const k = pkKey(modelo, cor, String(it.tamanho));
           soma.set(k, (soma.get(k) ?? 0) + qtd);
         }
       }
       const mediaMensal = new Map<string, number>();
       for (const [k, v] of soma) mediaMensal.set(k, v / 12);
-      return { mediaMensal, naoMapeados };
+      return { mediaMensal, naoMapeados, coresNaoReconhecidas };
     },
     staleTime: 5 * 60_000,
   });
 }
 
-export interface DisponivelPlan {
-  disponivel: Map<string, number>;
+export interface SaldoRealPlan {
+  /** Saldo Real por pkKey(modelo, cor, tamanho): max(0, JOKE+JUFF) + disponível COP. */
+  saldoReal: Map<string, number>;
+  /** Produção em andamento (calcEmProducao) — informativa, já embutida no saldo. */
   emProducao: Map<string, number>;
+  /** Produtos Olist sem modelo COP no de-para → peças em estoque (fora dos totais). */
+  naoMapeados: Map<string, number>;
+  /** Cores do estoque Olist que normalizarCor não reconheceu → peças (fora dos totais). */
+  coresNaoReconhecidas: Map<string, number>;
 }
 
-/** Mesma montagem da aba Disponível do COP. */
-export function usePlanDisponivel() {
+interface ItemEstoqueOlist {
+  empresa: string;
+  produto_olist: string;
+  cor: string | null;
+  tamanho: string | null;
+  qtd: number | null;
+}
+
+/**
+ * Estoque do PLAN = Saldo Real, mesma montagem da aba Saldo Real do COP
+ * (SaldoRealTab.tsx): multiEmpresa com piso zero + disponível do COP.
+ * Usa as mesmas query keys do COP para dividir cache.
+ */
+export function usePlanSaldoReal() {
   const copsQ = useQuery({
     queryKey: ["cops"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("cops" as any).select("*");
-      if (error) throw error;
-      return (data ?? []) as unknown as Cop[];
-    },
+    queryFn: () => paginar<any>((a, b) => supabase.from("cops" as any).select("*").order("id").range(a, b)),
   });
   const pedidosQ = useQuery({
     queryKey: ["pedidos-cop-saldos"],
+    queryFn: () => paginar<any>((a, b) => supabase.from("pedidos" as any).select("*").order("id").range(a, b)),
+  });
+  const snapsQ = useQuery({
+    queryKey: ["estoque-olist", "snapshots"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("pedidos" as any).select("*");
+      const { data, error } = await supabase
+        .from("estoque_olist_snapshots" as any)
+        .select("*")
+        .order("importado_em", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as unknown as Pedido[];
+      return (data ?? []) as any[];
     },
   });
-  const cops = copsQ.data ?? [];
-  const pedidos = pedidosQ.data ?? [];
+  const ultimosIds = (() => {
+    const m = new Map<string, any>();
+    for (const s of snapsQ.data ?? []) if (!m.has(String(s.empresa))) m.set(String(s.empresa), s);
+    return Array.from(m.values()).map((s) => String(s.id)).sort();
+  })();
+  const itensQ = useQuery({
+    queryKey: ["estoque-olist", "itens", ultimosIds],
+    enabled: ultimosIds.length > 0,
+    queryFn: () =>
+      paginar<ItemEstoqueOlist>((a, b) =>
+        supabase.from("estoque_olist_itens" as any)
+          .select("*")
+          .in("snapshot_id", ultimosIds)
+          .order("id", { ascending: true })
+          .range(a, b)),
+  });
+  const mapQ = useQuery({
+    queryKey: ["estoque-olist", "produto-map"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("olist_produto_map" as any).select("*");
+      if (error) throw error;
+      return (data ?? []) as unknown as { produto_olist: string; modelo_cop: string }[];
+    },
+  });
+
+  const snapsProntos = snapsQ.data !== undefined && ultimosIds.length === 0;
+  const isLoading =
+    copsQ.isLoading || pedidosQ.isLoading || snapsQ.isLoading || mapQ.isLoading ||
+    (ultimosIds.length > 0 && itensQ.isLoading);
+
+  if (isLoading || (!snapsProntos && !itensQ.data)) {
+    return {
+      data: { saldoReal: new Map(), emProducao: new Map(), naoMapeados: new Map(), coresNaoReconhecidas: new Map() } as SaldoRealPlan,
+      isLoading: true,
+    };
+  }
+
+  const cops = (copsQ.data ?? []) as unknown as Cop[];
+  const pedidos = (pedidosQ.data ?? []) as unknown as Pedido[];
   const emProducao = calcEmProducao(cops);
   const disponivel = calcDisponivel(emProducao, calcFaltantes(pedidos), calcRecebido(cops), calcPerdas(cops));
-  return { data: { disponivel, emProducao } as DisponivelPlan, isLoading: copsQ.isLoading || pedidosQ.isLoading };
+
+  const modeloPorProduto = new Map<string, string>();
+  for (const r of mapQ.data ?? []) modeloPorProduto.set(String(r.produto_olist), String(r.modelo_cop));
+
+  const joke = new Map<string, number>();
+  const juff = new Map<string, number>();
+  const naoMapeados = new Map<string, number>();
+  const coresNaoReconhecidas = new Map<string, number>();
+  for (const it of itensQ.data ?? []) {
+    const qtd = Number(it.qtd) || 0;
+    const modelo = modeloPorProduto.get(String(it.produto_olist ?? ""));
+    if (!modelo) {
+      const nome = String(it.produto_olist ?? "").trim() || "(sem produto)";
+      naoMapeados.set(nome, (naoMapeados.get(nome) ?? 0) + qtd);
+      continue;
+    }
+    if (!it.cor || !it.tamanho) continue;
+    const cor = normalizarCor(String(it.cor));
+    if (!cor) {
+      const bruta = String(it.cor).trim() || "(sem cor)";
+      coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + qtd);
+      continue;
+    }
+    const k = pkKey(modelo, cor, String(it.tamanho));
+    const alvo = it.empresa === "JOKE" ? joke : juff;
+    alvo.set(k, (alvo.get(k) ?? 0) + qtd);
+  }
+
+  const chaves = new Set<string>([...joke.keys(), ...juff.keys(), ...disponivel.keys()]);
+  const saldoReal = new Map<string, number>();
+  for (const k of chaves) {
+    const multiEmpresa = Math.max(0, (joke.get(k) ?? 0) + (juff.get(k) ?? 0));
+    saldoReal.set(k, multiEmpresa + (disponivel.get(k) ?? 0));
+  }
+
+  return {
+    data: { saldoReal, emProducao, naoMapeados, coresNaoReconhecidas } as SaldoRealPlan,
+    isLoading: false,
+  };
 }
 
-/** Metros restantes de tecido tingido em estoque, por cor. */
+export interface MapaPorCor {
+  /** valor agregado por cor canônica (normalizarCor) */
+  porCor: Map<string, number>;
+  /** cores não reconhecidas → valor envolvido (fora dos totais) */
+  coresNaoReconhecidas: Map<string, number>;
+}
+
+/** Metros restantes de tecido tingido em estoque, por cor canônica. */
 export function usePlanEstoqueTingido() {
   return useQuery({
     queryKey: [...PLAN_KEY, "estoque-tingido"],
-    queryFn: async () => {
+    queryFn: async (): Promise<MapaPorCor> => {
       const pecas = await paginar<any>((a, b) =>
         supabase.from("map_estoque_pecas" as any)
           .select("id, cor, alt_inicial, cortes, status, programacao_id")
@@ -275,35 +425,48 @@ export function usePlanEstoqueTingido() {
       const progs = await paginar<any>((a, b) =>
         supabase.from("map_tinturaria_programacoes" as any).select("id, cor").order("id").range(a, b));
       const corProg = new Map<string, string>(progs.map((p) => [String(p.id), String(p.cor ?? "")]));
-      const metrosPorCor = new Map<string, number>();
+      const porCor = new Map<string, number>();
+      const coresNaoReconhecidas = new Map<string, number>();
       for (const p of pecas) {
-        const cor = (corProg.get(String(p.programacao_id)) || p.cor || "").trim();
-        if (!cor) continue;
+        const bruta = (corProg.get(String(p.programacao_id)) || p.cor || "").trim();
+        if (!bruta) continue;
         const cortado = (Array.isArray(p.cortes) ? p.cortes : []).reduce((s: number, c: any) => s + (Number(c?.metros) || 0), 0);
         const restante = Math.max(0, (Number(p.alt_inicial) || 0) - cortado);
-        metrosPorCor.set(cor, (metrosPorCor.get(cor) ?? 0) + restante);
+        const cor = normalizarCor(bruta);
+        if (!cor) {
+          coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + restante);
+          continue;
+        }
+        porCor.set(cor, (porCor.get(cor) ?? 0) + restante);
       }
-      return metrosPorCor;
+      return { porCor, coresNaoReconhecidas };
     },
   });
 }
 
-/** Kg enviados à tinturaria e ainda não recebidos, por cor. */
+/** Kg enviados à tinturaria e ainda não recebidos, por cor canônica. */
 export function usePlanNaTinturaria() {
   return useQuery({
     queryKey: [...PLAN_KEY, "na-tinturaria"],
-    queryFn: async () => {
+    queryFn: async (): Promise<MapaPorCor> => {
       const rows = await paginar<any>((a, b) =>
         supabase.from("map_tinturaria_programacoes" as any)
           .select("id, cor, kg_enviados, data_recebimento")
           .not("kg_enviados", "is", null).is("data_recebimento", null).order("id").range(a, b));
-      const m = new Map<string, number>();
+      const porCor = new Map<string, number>();
+      const coresNaoReconhecidas = new Map<string, number>();
       for (const r of rows) {
-        const cor = String(r.cor ?? "").trim();
-        if (!cor) continue;
-        m.set(cor, (m.get(cor) ?? 0) + (Number(r.kg_enviados) || 0));
+        const bruta = String(r.cor ?? "").trim();
+        if (!bruta) continue;
+        const kgv = Number(r.kg_enviados) || 0;
+        const cor = normalizarCor(bruta);
+        if (!cor) {
+          coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + kgv);
+          continue;
+        }
+        porCor.set(cor, (porCor.get(cor) ?? 0) + kgv);
       }
-      return m;
+      return { porCor, coresNaoReconhecidas };
     },
   });
 }
@@ -336,11 +499,14 @@ export function usePlanCruParado() {
 export interface LinhaNecessidade {
   modelo: string;
   cor: string;
-  vendido: Record<string, number>;
-  previsto: Record<string, number>;
+  /** total a produzir por tamanho (firme + previsto líquido) */
+  aProduzirPorTam: Record<string, number>;
+  /** parte firme (pedido vendido sem estoque) por tamanho */
+  firmePorTam: Record<string, number>;
   vendaPrevistaMensal: number;
   jaVendido: number;
   emEstoque: number;
+  /** informativo: já está embutido no saldo real, não desconta de novo */
   emProducao: number;
   aProduzir: number;
   diasRuptura: number;
@@ -348,47 +514,46 @@ export interface LinhaNecessidade {
 
 export function montarNecessidade(params: {
   tamanhos: readonly string[];
-  disponivel: Map<string, number>;
+  saldoReal: Map<string, number>;
   emProducao: Map<string, number>;
   mediaMensal: Map<string, number>;
   horizonteMeses: number;
   semanasSeguranca: number;
 }): LinhaNecessidade[] {
-  const { tamanhos, disponivel, emProducao, mediaMensal, horizonteMeses, semanasSeguranca } = params;
+  const { tamanhos, saldoReal, emProducao, mediaMensal, horizonteMeses, semanasSeguranca } = params;
   const combos = new Map<string, { modelo: string; cor: string }>();
-  for (const k of [...disponivel.keys(), ...mediaMensal.keys()]) {
+  for (const k of [...saldoReal.keys(), ...mediaMensal.keys()]) {
     const [modelo, cor, tam] = k.split("|");
     if (!modelo || !cor || !tamanhos.includes(tam)) continue;
     combos.set(`${modelo}|${cor}`, { modelo, cor });
   }
   const out: LinhaNecessidade[] = [];
   for (const { modelo, cor } of combos.values()) {
-    const vendido: Record<string, number> = {};
-    const previsto: Record<string, number> = {};
+    const aProduzirPorTam: Record<string, number> = {};
+    const firmePorTam: Record<string, number> = {};
     let consumo = 0, livreTot = 0, firmeTot = 0, prodTot = 0, aProd = 0;
     for (const t of tamanhos) {
       const k = pkKey(modelo, cor, t);
-      const disp = disponivel.get(k) ?? 0;
+      const saldo = saldoReal.get(k) ?? 0;
       const media = mediaMensal.get(k) ?? 0;
-      const firme = Math.max(0, -disp);
-      // Disponível positivo = estoque + produção ainda não comprometidos.
-      const livre = Math.max(0, disp);
+      const estoqueLivre = Math.max(0, saldo);
+      const firme = Math.max(0, -saldo);
       const prevBruto = demandaTotal(media, horizonteMeses, 0, semanasSeguranca);
-      vendido[t] = firme;
-      previsto[t] = Math.ceil(necessidadeLiquida(prevBruto, livre, 0) - 1e-9);
+      const prevLiquido = Math.ceil(Math.max(0, prevBruto - estoqueLivre) - 1e-9);
+      firmePorTam[t] = firme;
+      aProduzirPorTam[t] = firme + prevLiquido;
       consumo += media;
-      livreTot += livre;
+      livreTot += estoqueLivre;
       firmeTot += firme;
       prodTot += emProducao.get(k) ?? 0;
-      aProd += vendido[t] + previsto[t];
+      aProd += aProduzirPorTam[t];
     }
     if (consumo === 0 && firmeTot === 0) continue;
-    const livreEstoque = Math.max(0, livreTot - prodTot);
     out.push({
-      modelo, cor, vendido, previsto,
+      modelo, cor, aProduzirPorTam, firmePorTam,
       vendaPrevistaMensal: consumo,
       jaVendido: firmeTot,
-      emEstoque: livreEstoque,
+      emEstoque: livreTot,
       emProducao: prodTot,
       aProduzir: aProd,
       diasRuptura: firmeTot > 0 ? 0 : diasAteRuptura(livreTot, consumo),
@@ -427,7 +592,7 @@ export function montarTinturaria(params: {
   for (const l of linhas) {
     const f = fichaPor.get(l.modelo);
     const kgp = f ? kgPorPeca(f, config) : 0;
-    const pecas = tamanhos.reduce((s, t) => s + (l.vendido[t] ?? 0) + (l.previsto[t] ?? 0), 0);
+    const pecas = tamanhos.reduce((s, t) => s + (l.aProduzirPorTam[t] ?? 0), 0);
     const c = porCor.get(l.cor) ?? { pecas: 0, kg: 0, consumo: 0, dias: Infinity };
     c.pecas += pecas;
     c.kg += pecas * kgp;

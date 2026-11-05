@@ -21,8 +21,8 @@ export function TinturariaTab() {
 
   const sugestoes = useMemo(() => montarTinturaria({
     linhas, tamanhos: REFACAO_TAMANHOS, fichas: fichas.data ?? [], config,
-    metrosEstoquePorCor: estoque.data ?? new Map(),
-    kgTinturariaPorCor: tint.data ?? new Map(),
+    metrosEstoquePorCor: estoque.data?.porCor ?? new Map(),
+    kgTinturariaPorCor: tint.data?.porCor ?? new Map(),
     cruTotal: cru.data?.total ?? 0,
   }), [linhas, fichas.data, config, estoque.data, tint.data, cru.data]);
 
@@ -50,9 +50,9 @@ export function TinturariaTab() {
         <Card><CardHeader className="pb-1"><CardTitle className="text-sm text-muted-foreground">Tecido necessário</CardTitle></CardHeader>
           <CardContent className="text-2xl font-bold">{carregando ? "…" : kg(tot.nec)}</CardContent></Card>
         <Card><CardHeader className="pb-1"><CardTitle className="text-sm text-muted-foreground">Já tingido em estoque</CardTitle></CardHeader>
-          <CardContent className="text-2xl font-bold">{carregando ? "…" : kg(Array.from((estoque.data ?? new Map()).values()).reduce((s, m) => s + m, 0) * cfg(config, "gramatura_g_por_metro") / 1000)}</CardContent></Card>
+          <CardContent className="text-2xl font-bold">{carregando ? "…" : kg(Array.from((estoque.data?.porCor ?? new Map()).values()).reduce((s, m) => s + m, 0) * cfg(config, "gramatura_g_por_metro") / 1000)}</CardContent></Card>
         <Card><CardHeader className="pb-1"><CardTitle className="text-sm text-muted-foreground">Na tinturaria agora</CardTitle></CardHeader>
-          <CardContent className="text-2xl font-bold">{carregando ? "…" : kg(Array.from((tint.data ?? new Map()).values()).reduce((s, m) => s + m, 0))}</CardContent></Card>
+          <CardContent className="text-2xl font-bold">{carregando ? "…" : kg(Array.from((tint.data?.porCor ?? new Map()).values()).reduce((s, m) => s + m, 0))}</CardContent></Card>
         <Card><CardHeader className="pb-1"><CardTitle className="text-sm text-muted-foreground">Cru parado para tingir</CardTitle></CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{carregando ? "…" : kg(cru.data?.total ?? 0)}</div>
