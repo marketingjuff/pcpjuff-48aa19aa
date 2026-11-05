@@ -43,6 +43,13 @@
       "when": 1793902702297,
       "tag": "0005_plan_estoque_minimo",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793909154209,
+      "tag": "0006_plan_estoque_minimo_sob_demanda",
+      "breakpoints": true
     }
   ]
 }

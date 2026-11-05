@@ -18,7 +18,7 @@ import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
 import { TABLE_WRAPPER_CLASS, TH_CLASS, TD_CLASS, BADGE_SM_CLASS } from "@/components/shared/table-styles";
 import {
   cfg, montarEstoqueMinimo, usePlanConfig, usePlanCoresForaDeLinha, usePlanLeadTimePorModelo, usePlanMinimos,
-  usePlanVendaHistorica, useSalvarMinimo, useSalvarMinimosEmLote, type LinhaEstoqueMinimo,
+  usePlanVendaHistorica, useSalvarMinimo, useSalvarMinimosEmLote, useSalvarSobDemanda, type LinhaEstoqueMinimo,
   type MinimoParaSalvar,
 } from "@/lib/plan";
 
@@ -28,12 +28,12 @@ function copiarValores(linhas: LinhaEstoqueMinimo[]) {
   return new Map(linhas.filter((l) => l.adotado !== null).map((l) => [l.tamanho, l.adotado as number]));
 }
 
-function itensDaColagem(linhas: LinhaEstoqueMinimo[], valores: Map<string, number>, substituir: boolean): MinimoParaSalvar[] {
+export function itensDaColagem(linhas: LinhaEstoqueMinimo[], valores: Map<string, number>, substituir: boolean): MinimoParaSalvar[] {
   return linhas.flatMap((l) => {
     const minimo = valores.get(l.tamanho);
     if (minimo === undefined || minimo === l.adotado) return [];
     if (!substituir && l.adotado !== null) return [];
-    return [{ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, minimo, sugerido: l.sugerido }];
+    return [{ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, minimo, sugerido: l.sugerido, sobDemanda: l.sobDemanda }];
   });
 }
 
@@ -128,6 +128,7 @@ export function EstoqueMinimoTab() {
   const minimos = usePlanMinimos();
   const salvarUm = useSalvarMinimo();
   const salvarLote = useSalvarMinimosEmLote();
+  const salvarSobDemanda = useSalvarSobDemanda();
   const [busca, setBusca] = useState("");
   const [soDefasados, setSoDefasados] = useState(false);
   const [abertos, setAbertos] = useState<Set<string>>(new Set());
@@ -168,15 +169,26 @@ export function EstoqueMinimoTab() {
 
   const gravar = async (l: LinhaEstoqueMinimo, minimo: number) => {
     setErro(null);
-    try { await salvarUm.mutateAsync({ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, minimo, sugerido: l.sugerido }); }
+    try { await salvarUm.mutateAsync({ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, minimo, sugerido: l.sugerido, sobDemanda: l.sobDemanda }); }
     catch (e: any) { setErro(`Não foi possível salvar ${l.modelo} ${l.cor} ${l.tamanho}: ${e?.message ?? "erro"}`); }
+  };
+
+  const alternarSobDemanda = async (l: LinhaEstoqueMinimo) => {
+    if (!podeEditar || salvarSobDemanda.isPending) return;
+    setErro(null);
+    try {
+      await salvarSobDemanda.mutateAsync({ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, sugerido: l.sugerido, sobDemanda: !l.sobDemanda });
+    } catch (e: unknown) {
+      const mensagem = e && typeof e === "object" && "message" in e ? String(e.message) : "erro";
+      setErro(`Não foi possível salvar Sob demanda em ${l.modelo} ${l.cor} ${l.tamanho}: ${mensagem}`);
+    }
   };
 
   const aceitarTodas = async () => {
     if (!confirmar) return;
     setErro(null);
     try {
-      await salvarLote.mutateAsync(confirmar.linhas.map((l) => ({ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, minimo: l.sugerido, sugerido: l.sugerido })));
+      await salvarLote.mutateAsync(confirmar.linhas.map((l) => ({ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, minimo: l.sugerido, sugerido: l.sugerido, sobDemanda: l.sobDemanda })));
     } catch (e: any) { setErro(`Não foi possível salvar o modelo ${confirmar.modelo}: ${e?.message ?? "erro"}`); }
     setConfirmar(null);
   };
@@ -380,7 +392,9 @@ export function EstoqueMinimoTab() {
                                 <CampoAdotado l={l} podeEditar={podeEditar} onSalvar={(n) => gravar(l, n)} />
                               </td>
                               <td className={`${TD_CLASS} text-left align-middle`}>
-                                {l.defasado ? (
+                                {l.sobDemanda ? (
+                                  <Badge variant="secondary" className={BADGE_SM_CLASS}>Sob demanda</Badge>
+                                ) : l.defasado ? (
                                   <span className="inline-flex items-center gap-1 text-destructive">
                                     <AlertTriangle className="h-3 w-3" /> A venda subiu desde que esse mínimo foi definido
                                   </span>
@@ -391,10 +405,17 @@ export function EstoqueMinimoTab() {
                                 )}
                               </td>
                               <td className={`${TD_CLASS} text-right align-middle`}>
-                                {podeEditar && l.adotado !== l.sugerido && (
+                                {podeEditar && !l.sobDemanda && l.adotado !== l.sugerido && (
                                   <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
                                     onClick={(e) => { e.stopPropagation(); void gravar(l, l.sugerido); }}>
                                     Aceitar {fmt(l.sugerido)}
+                                  </Button>
+                                )}
+                                {podeEditar && (
+                                  <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
+                                    disabled={salvarSobDemanda.isPending || salvarUm.isPending || salvarLote.isPending}
+                                    onClick={(e) => { e.stopPropagation(); void alternarSobDemanda(l); }}>
+                                    {l.sobDemanda ? "Voltar ao normal" : "Sob demanda"}
                                   </Button>
                                 )}
                               </td>
@@ -439,7 +460,7 @@ export function EstoqueMinimoTab() {
               <table className="text-xs tabular-nums border">
                 <tbody>
                   <tr>{REFACAO_TAMANHOS.filter((t) => padrao.valores.has(t)).map((t) => <th key={t} className="border px-2 py-1 font-medium bg-muted/40">{t}</th>)}</tr>
-                  <tr>{REFACAO_TAMANHOS.filter((t) => padrao.valores.has(t)).map((t) => <td key={t} className="border px-2 py-1 text-center">{fmt(padrao.valores.get(t)!)}</td>)}</tr>
+                  <tr>{REFACAO_TAMANHOS.filter((t) => padrao.valores.has(t)).map((t) => <td key={t} className="border px-2 py-1 text-center">{fmt(padrao.valores.get(t) ?? 0)}</td>)}</tr>
                 </tbody>
               </table>
             </div>

@@ -888,6 +888,7 @@ export function minimoSugerido(mediaMensal: number, leadDias: number, semanasSeg
 export interface MinimoSalvo {
   modelo: string; cor: string; tamanho: string;
   minimo_adotado: number; sugerido_na_adocao: number | null;
+  sob_demanda: boolean;
   adotado_em: string; adotado_por: string | null;
 }
 
@@ -896,6 +897,7 @@ export interface LinhaEstoqueMinimo {
   mediaMensal: number; leadDias: number; origemLead: OrigemLead; amostraLead: number;
   consumo: number; folga: number; sugerido: number;
   adotado: number | null; defasado: boolean; sugeridoNaAdocao: number | null;
+  sobDemanda: boolean;
 }
 
 export function montarEstoqueMinimo(params: {
@@ -922,12 +924,13 @@ export function montarEstoqueMinimo(params: {
     const sugerido = minimoSugerido(media, lt.dias, semanas);
     const salvo = minimosAdotados.get(k);
     const adotado = salvo ? salvo.minimo_adotado : null;
+    const sobDemanda = salvo?.sob_demanda ?? false;
     out.push({
       modelo, cor, tamanho, mediaMensal: media, leadDias: lt.dias, origemLead: lt.origem, amostraLead: lt.amostra,
       consumo: media > 0 ? consumoNaReposicao(media, lt.dias) : 0,
       folga: media > 0 ? folgaSeguranca(media, semanas) : 0,
-      sugerido, adotado,
-      defasado: adotado !== null && sugerido > adotado * (1 + limiarPct / 100),
+      sugerido, adotado, sobDemanda,
+      defasado: !sobDemanda && adotado !== null && sugerido > adotado * (1 + limiarPct / 100),
       sugeridoNaAdocao: salvo?.sugerido_na_adocao ?? null,
     });
   }
@@ -945,7 +948,7 @@ export function usePlanMinimos() {
     queryKey: [...PLAN_KEY, "estoque-minimo"],
     queryFn: async () => {
       const rows = await paginar<MinimoSalvo>((a, b) =>
-        supabase.from("plan_estoque_minimo").select("modelo, cor, tamanho, minimo_adotado, sugerido_na_adocao, adotado_em, adotado_por")
+        supabase.from("plan_estoque_minimo").select("modelo, cor, tamanho, minimo_adotado, sugerido_na_adocao, adotado_em, adotado_por, sob_demanda")
           .order("id").range(a, b));
       const m = new Map<string, MinimoSalvo>();
       for (const r of rows) m.set(pkKey(r.modelo, r.cor, r.tamanho), r);
@@ -954,7 +957,41 @@ export function usePlanMinimos() {
   });
 }
 
-export interface MinimoParaSalvar { modelo: string; cor: string; tamanho: string; minimo: number; sugerido: number }
+export interface MinimoParaSalvar { modelo: string; cor: string; tamanho: string; minimo: number; sugerido: number; sobDemanda?: boolean }
+
+export function minimoSobDemandaParaSalvar(
+  salvo: Pick<MinimoSalvo, "minimo_adotado" | "sugerido_na_adocao"> | null,
+  sugerido: number,
+  sobDemanda: boolean,
+) {
+  return {
+    minimo_adotado: salvo?.minimo_adotado ?? 0,
+    sugerido_na_adocao: salvo ? salvo.sugerido_na_adocao : sugerido,
+    sob_demanda: sobDemanda,
+  };
+}
+
+export function useSalvarSobDemanda() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (i: Pick<MinimoParaSalvar, "modelo" | "cor" | "tamanho" | "sugerido"> & { sobDemanda: boolean }) => {
+      const { data: salvo, error: leituraErro } = await supabase.from("plan_estoque_minimo")
+        .select("minimo_adotado, sugerido_na_adocao, adotado_em, adotado_por")
+        .eq("modelo", i.modelo).eq("cor", i.cor).eq("tamanho", i.tamanho).maybeSingle();
+      if (leituraErro) throw leituraErro;
+      const { data: u, error: authErro } = await supabase.auth.getUser();
+      if (authErro) throw authErro;
+      const { error } = await supabase.from("plan_estoque_minimo").upsert({
+        modelo: i.modelo, cor: i.cor, tamanho: i.tamanho,
+        ...minimoSobDemandaParaSalvar(salvo, i.sugerido, i.sobDemanda),
+        adotado_em: salvo?.adotado_em ?? new Date().toISOString(),
+        adotado_por: salvo ? salvo.adotado_por : u.user?.id ?? null,
+      }, { onConflict: "modelo,cor,tamanho" });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: PLAN_KEY }),
+  });
+}
 
 async function upsertMinimos(itens: MinimoParaSalvar[]) {
   const { data: u } = await supabase.auth.getUser();
@@ -963,6 +1000,7 @@ async function upsertMinimos(itens: MinimoParaSalvar[]) {
     itens.map((i) => ({
       modelo: i.modelo, cor: i.cor, tamanho: i.tamanho,
       minimo_adotado: i.minimo, sugerido_na_adocao: i.sugerido,
+      sob_demanda: i.sobDemanda ?? false,
       adotado_em: agora, adotado_por: u.user?.id ?? null,
     })),
     { onConflict: "modelo,cor,tamanho" },
