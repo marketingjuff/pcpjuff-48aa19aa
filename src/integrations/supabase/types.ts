@@ -1644,6 +1644,7 @@ export type Database = {
           id: string
           minimo_adotado: number
           modelo: string
+          sob_demanda: boolean
           sugerido_na_adocao: number | null
           tamanho: string
         }
@@ -1654,6 +1655,7 @@ export type Database = {
           id?: string
           minimo_adotado?: number
           modelo: string
+          sob_demanda?: boolean
           sugerido_na_adocao?: number | null
           tamanho: string
         }
@@ -1664,6 +1666,7 @@ export type Database = {
           id?: string
           minimo_adotado?: number
           modelo?: string
+          sob_demanda?: boolean
           sugerido_na_adocao?: number | null
           tamanho?: string
         }
