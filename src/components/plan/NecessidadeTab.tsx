@@ -2,12 +2,14 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, Clock } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { REFACAO_TAMANHOS } from "@/lib/pedidos";
 import {
-  cfg, montarNecessidade, usePlanConfig, usePlanCoresForaDeLinha, usePlanSaldoReal, usePlanVendaHistorica,
-  type LinhaNecessidade,
+  aplicarPausas, cfg, montarNecessidade, usePlanConfig, usePlanCoresForaDeLinha, usePlanPausas, usePlanSaldoReal, usePlanVendaHistorica,
+  type LinhaComPausa, type LinhaNecessidade, type PlanPausa,
 } from "@/lib/plan";
 
 const HORIZONTES_SUPRIMENTO = [3, 5, 6] as const;
@@ -135,8 +137,123 @@ function SituacaoBadge({ dias, lead }: { dias: number; lead: number }) {
   return <Badge className="bg-green-600 text-white hover:bg-green-600">Coberto{Number.isFinite(dias) ? ` · ${Math.round(dias)} d` : ""}</Badge>;
 }
 
+const fmtDataCurta = (iso: string | null) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : "");
+const fmtData = (iso: string | null) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : "");
+
+function somarDias(dias: number): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + dias);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+type Pausar = ReturnType<typeof usePlanPausas>["pausar"];
+
+function PausaPopover({ modelo, cor, pausar }: { modelo: string; cor: string; pausar: Pausar }) {
+  const [open, setOpen] = useState(false);
+  const [escolha, setEscolha] = useState<number | "sob_demanda" | null>(null);
+  const [obs, setObs] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const confirmar = async () => {
+    setErro(null);
+    if (escolha === null) { setErro("Escolha um prazo ou sob demanda."); return; }
+    try {
+      await pausar.mutateAsync(escolha === "sob_demanda"
+        ? { modelo, cor, tipo: "sob_demanda", ate: null, observacao: obs }
+        : { modelo, cor, tipo: "adiado", ate: somarDias(escolha), observacao: obs });
+      setOpen(false); setEscolha(null); setObs("");
+    } catch (e: any) {
+      setErro(e?.message ?? "Não foi possível salvar.");
+    }
+  };
+  return (
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setErro(null); }}>
+      <PopoverTrigger asChild>
+        <Button size="icon" variant="ghost" className="h-7 w-7" aria-label={`Adiar ${modelo} ${cor}`} title="Adiar ou marcar sob demanda">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 space-y-3" align="end">
+        <div className="text-sm font-semibold">{modelo} · {cor}</div>
+        <div className="grid grid-cols-4 gap-1">
+          {[15, 30, 60, 90].map((d) => (
+            <Button key={d} size="sm" variant={escolha === d ? "default" : "outline"} onClick={() => setEscolha(d)}>{d} dias</Button>
+          ))}
+        </div>
+        <Button size="sm" className="w-full" variant={escolha === "sob_demanda" ? "secondary" : "outline"} onClick={() => setEscolha("sob_demanda")}>
+          Sob demanda, sem prazo
+        </Button>
+        {typeof escolha === "number" && <p className="text-xs text-muted-foreground">Volta para a lista em {fmtData(somarDias(escolha))}.</p>}
+        <Input placeholder="Motivo, opcional" value={obs} onChange={(e) => setObs(e.target.value)} />
+        {erro && <p className="text-xs text-destructive">{erro}</p>}
+        <Button size="sm" className="w-full" onClick={confirmar} disabled={pausar.isPending}>
+          {pausar.isPending ? "Salvando…" : "Confirmar"}
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function BlocoPausadas({ titulo, linhas, retomar }: { titulo: string; linhas: LinhaComPausa[]; retomar: ReturnType<typeof usePlanPausas>["retomar"] }) {
+  const [aberto, setAberto] = useState(false);
+  if (linhas.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <Button variant="outline" size="sm" onClick={() => setAberto((v) => !v)}>
+        {aberto ? <ChevronDown className="h-4 w-4 mr-1" /> : <ChevronRight className="h-4 w-4 mr-1" />}
+        {titulo} ({linhas.length})
+      </Button>
+      {aberto && (
+        <div className="rounded-md border bg-card overflow-auto">
+          <table className="w-full text-sm">
+            <thead><tr>
+              <th className="px-2 py-2 text-left">Modelo</th>
+              <th className="px-2 py-2 text-left">Cor</th>
+              <th className="px-2 py-2 text-right">Sugestão sem pausa</th>
+              <th className="px-2 py-2 text-left">Até</th>
+              <th className="px-2 py-2 text-left">Observação</th>
+              <th className="px-2 py-2" />
+            </tr></thead>
+            <tbody>{linhas.map((l) => (
+              <tr key={`${l.modelo}|${l.cor}`} className="border-t">
+                <td className="px-2 py-1">{l.modelo}</td>
+                <td className="px-2 py-1"><CorChip cor={l.cor} /></td>
+                <td className="px-2 py-1 text-right tabular-nums">{fmt(l.aProduzirSemPausa)} pç</td>
+                <td className="px-2 py-1">{l.pausa?.tipo === "adiado" ? fmtData(l.pausa.ate) : "—"}</td>
+                <td className="px-2 py-1 text-muted-foreground">{l.pausa?.observacao ?? ""}</td>
+                <td className="px-2 py-1 text-right">
+                  <Button size="sm" variant="outline" disabled={retomar.isPending} onClick={() => l.pausa && retomar.mutate(l.pausa.id)}>Retomar agora</Button>
+                </td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function tituloSelo(p: PlanPausa | null) {
+  if (!p) return "";
+  return p.tipo === "adiado" ? `Previsão adiada até ${fmtDataCurta(p.ate)}` : "Previsão suspensa, produto sob demanda";
+}
+
 export function NecessidadeTab() {
-  const { linhas, linhasForaDeLinha, config, naoMapeados, coresNaoReconhecidas, isLoading, error } = usePlanLinhas("corte");
+  const { linhas: linhasCruas, linhasForaDeLinha, config, naoMapeados, coresNaoReconhecidas, isLoading: carregandoLinhas, error } = usePlanLinhas("corte");
+  const pausasQ = usePlanPausas();
+  const isLoading = carregandoLinhas || pausasQ.isLoading;
+  const { ativas: linhas, pausadas } = useMemo(() => {
+    if (pausasQ.error) {
+      return { ativas: linhasCruas.map((l) => ({ ...l, pausa: null, previsaoSuspensa: false, aProduzirSemPausa: l.aProduzir })) as LinhaComPausa[], pausadas: [] as LinhaComPausa[] };
+    }
+    return aplicarPausas({ linhas: linhasCruas, pausas: pausasQ.pausas, tamanhos: REFACAO_TAMANHOS });
+  }, [linhasCruas, pausasQ.pausas, pausasQ.error]);
+  const adiados = pausadas.filter((l) => l.pausa?.tipo === "adiado");
+  const sobDemanda = pausadas.filter((l) => l.pausa?.tipo === "sob_demanda");
+  const pecasFora = pausadas.reduce((s, l) => s + l.aProduzirSemPausa, 0)
+    + linhas.reduce((s, l) => s + (l.previsaoSuspensa ? l.aProduzirSemPausa - l.aProduzir : 0), 0);
+  const linhasFora = pausadas.length + linhas.filter((l) => l.previsaoSuspensa).length;
   const [verConferencia, setVerConferencia] = useState(false);
   const lead = cfg(config, "lead_time_completo_dias");
 
@@ -179,6 +296,10 @@ export function NecessidadeTab() {
           </Card>
         ))}
       </div>
+      {!isLoading && linhasFora > 0 && (
+        <p className="text-xs text-muted-foreground">{fmt(pecasFora)} peças fora deste total, em {linhasFora} linhas adiadas ou sob demanda.</p>
+      )}
+      {pausasQ.error && <div className="rounded border border-destructive p-3 text-sm text-destructive">Não foi possível ler as linhas adiadas: {pausasQ.error.message}. Todas as linhas estão aparecendo com a sugestão cheia.</div>}
 
       {naoMap.length > 0 && (
         <div className="rounded-md border border-amber-400 bg-amber-50 p-3 text-sm">
@@ -215,15 +336,19 @@ export function NecessidadeTab() {
               <th className="px-2 py-2 text-right">Total</th>
               <th className="px-2 py-2 text-right">Já vendido</th>
               <th className="px-2 py-2 text-left">Situação</th>
+              <th className="px-2 py-2"><span className="sr-only">Ações</span></th>
             </tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td colSpan={REFACAO_TAMANHOS.length + 6} className="p-4 text-muted-foreground">Calculando…</td></tr>}
-            {!isLoading && linhas.length === 0 && <tr><td colSpan={REFACAO_TAMANHOS.length + 6} className="p-4 text-muted-foreground">{error ? "Planejamento indisponível." : "Nada a produzir no horizonte."}</td></tr>}
+            {isLoading && <tr><td colSpan={REFACAO_TAMANHOS.length + 7} className="p-4 text-muted-foreground">Calculando…</td></tr>}
+            {!isLoading && linhas.length === 0 && <tr><td colSpan={REFACAO_TAMANHOS.length + 7} className="p-4 text-muted-foreground">{error ? "Planejamento indisponível." : "Nada a produzir no horizonte."}</td></tr>}
             {linhas.map((l, index) => (
               <Fragment key={`${l.modelo}|${l.cor}`}>
               <tr className={index % 2 === 0 ? "bg-card" : "bg-muted/30"}>
-                <td rowSpan={3} className="border-b px-2 py-1 align-top whitespace-nowrap font-semibold">{l.modelo}</td>
+                <td rowSpan={3} className="border-b px-2 py-1 align-top whitespace-nowrap font-semibold">
+                  {l.modelo}
+                  {l.previsaoSuspensa && <Badge className="ml-2 bg-amber-500 text-white hover:bg-amber-500" title={tituloSelo(l.pausa)}>Só pedido vendido</Badge>}
+                </td>
                 <td rowSpan={3} className="border-b px-2 py-1 align-top"><CorChip cor={l.cor} /></td>
                 <td className="px-2 py-1 text-xs text-muted-foreground whitespace-nowrap">Pronto em estoque</td>
                 {REFACAO_TAMANHOS.map((t) => (
@@ -232,6 +357,7 @@ export function NecessidadeTab() {
                 <td rowSpan={3} className="border-b px-2 py-1 align-top text-right tabular-nums font-bold">{l.aProduzir}</td>
                 <td rowSpan={3} className="border-b px-2 py-1 align-top text-right tabular-nums">{fmt(l.jaVendido)}</td>
                 <td rowSpan={3} className="border-b px-2 py-1 align-top"><SituacaoBadge dias={l.diasRuptura} lead={lead} /></td>
+                <td rowSpan={3} className="border-b px-1 py-1 align-top"><PausaPopover modelo={l.modelo} cor={l.cor} pausar={pausasQ.pausar} /></td>
               </tr>
               <tr className={index % 2 === 0 ? "bg-card" : "bg-muted/30"}>
                 <td className="px-2 py-1 text-xs text-muted-foreground whitespace-nowrap">Em produção</td>
@@ -256,6 +382,11 @@ export function NecessidadeTab() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <BlocoPausadas titulo="Adiados" linhas={adiados} retomar={pausasQ.retomar} />
+        <BlocoPausadas titulo="Sob demanda" linhas={sobDemanda} retomar={pausasQ.retomar} />
       </div>
 
       <Button variant="outline" size="sm" onClick={() => setVerConferencia((v) => !v)}>

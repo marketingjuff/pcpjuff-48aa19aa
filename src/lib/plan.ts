@@ -653,3 +653,131 @@ export function montarTinturaria(params: {
   }
   return base;
 }
+
+/* ------------------------- pausas (adiar / sob demanda) ------------------------- */
+// Aplicadas SOMENTE na aba Necessidade. A Tinturaria continua usando a previsão cheia.
+
+export interface PlanPausa {
+  id: string;
+  modelo: string;
+  cor: string;
+  tipo: "adiado" | "sob_demanda";
+  ate: string | null;
+  observacao: string | null;
+  criado_em: string;
+}
+
+export interface LinhaComPausa extends LinhaNecessidade {
+  pausa: PlanPausa | null;
+  /** true quando a pausa está valendo e a previsão foi zerada */
+  previsaoSuspensa: boolean;
+  /** sugestão cheia que existiria sem a pausa */
+  aProduzirSemPausa: number;
+}
+
+function dataLocal(iso: string): Date {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  const dt = new Date(y, (m ?? 1) - 1, d ?? 1);
+  dt.setHours(0, 0, 0, 0);
+  return dt;
+}
+
+export function pausaValendo(p: PlanPausa, hoje: Date = new Date()): boolean {
+  if (p.tipo === "sob_demanda") return true;
+  if (p.tipo !== "adiado" || !p.ate) return false;
+  const h = new Date(hoje);
+  h.setHours(0, 0, 0, 0);
+  return dataLocal(p.ate).getTime() >= h.getTime();
+}
+
+export function aplicarPausas(params: {
+  linhas: LinhaNecessidade[];
+  pausas: PlanPausa[];
+  tamanhos: readonly string[];
+  hoje?: Date;
+}): { ativas: LinhaComPausa[]; pausadas: LinhaComPausa[] } {
+  const hoje = params.hoje ?? new Date();
+  const porChave = new Map<string, PlanPausa>();
+  for (const p of params.pausas) if (pausaValendo(p, hoje)) porChave.set(`${p.modelo}|${p.cor}`, p);
+  const ativas: LinhaComPausa[] = [];
+  const pausadas: LinhaComPausa[] = [];
+  for (const l of params.linhas) {
+    const pausa = porChave.get(`${l.modelo}|${l.cor}`) ?? null;
+    if (!pausa) {
+      ativas.push({ ...l, pausa: null, previsaoSuspensa: false, aProduzirSemPausa: l.aProduzir });
+      continue;
+    }
+    const aProduzirPorTam: Record<string, number> = {};
+    let soma = 0;
+    for (const t of params.tamanhos) {
+      // fora de linha mantém a regra existente: sugestão zero
+      const v = l.foraDeLinha ? 0 : (l.firmePorTam[t] ?? 0);
+      aProduzirPorTam[t] = v;
+      soma += v;
+    }
+    const nova: LinhaComPausa = {
+      ...l, aProduzirPorTam, aProduzir: soma,
+      pausa, previsaoSuspensa: true, aProduzirSemPausa: l.aProduzir,
+    };
+    (l.jaVendido > 0 ? ativas : pausadas).push(nova);
+  }
+  pausadas.sort((a, b) => {
+    const ta = a.pausa!.tipo === "adiado" ? 0 : 1;
+    const tb = b.pausa!.tipo === "adiado" ? 0 : 1;
+    if (ta !== tb) return ta - tb;
+    if (ta === 0) {
+      const d = (a.pausa!.ate ?? "").localeCompare(b.pausa!.ate ?? "");
+      if (d !== 0) return d;
+    }
+    return a.modelo.localeCompare(b.modelo, "pt-BR") || a.cor.localeCompare(b.cor, "pt-BR");
+  });
+  return { ativas, pausadas };
+}
+
+export function usePlanPausas() {
+  const qc = useQueryClient();
+  const query = useQuery({
+    queryKey: [...PLAN_KEY, "pausas"],
+    queryFn: () =>
+      paginar<PlanPausa>((a, b) =>
+        supabase.from("plan_pausas" as any)
+          .select("id, modelo, cor, tipo, ate, observacao, criado_em")
+          .is("retomado_em", null).order("id").range(a, b)),
+  });
+  const pausar = useMutation({
+    mutationFn: async (p: { modelo: string; cor: string; tipo: "adiado" | "sob_demanda"; ate: string | null; observacao: string | null }) => {
+      if (p.tipo === "adiado" && !p.ate) throw new Error("Escolha até quando adiar.");
+      const ate = p.tipo === "sob_demanda" ? null : p.ate;
+      const { data: u } = await supabase.auth.getUser();
+      const agora = new Date().toISOString();
+      const { error: e1 } = await supabase.from("plan_pausas" as any)
+        .update({ retomado_em: agora, retomado_por: u.user?.id ?? null })
+        .eq("modelo", p.modelo).eq("cor", p.cor).is("retomado_em", null);
+      if (e1) throw e1;
+      const obs = p.observacao?.trim() || null;
+      const { error: e2 } = await supabase.from("plan_pausas" as any)
+        .insert({ modelo: p.modelo, cor: p.cor, tipo: p.tipo, ate, observacao: obs });
+      if (e2) throw e2;
+    },
+    onSuccess: async (_d, p) => {
+      await qc.invalidateQueries({ queryKey: PLAN_KEY });
+      toast.success(p.tipo === "adiado" ? "Linha adiada." : "Linha marcada como sob demanda.");
+    },
+    onError: () => toast.error("Não foi possível salvar."),
+  });
+  const retomar = useMutation({
+    mutationFn: async (id: string) => {
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from("plan_pausas" as any)
+        .update({ retomado_em: new Date().toISOString(), retomado_por: u.user?.id ?? null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: PLAN_KEY });
+      toast.success("Linha retomada.");
+    },
+    onError: () => toast.error("Não foi possível retomar."),
+  });
+  return { pausas: query.data ?? [], isLoading: query.isLoading, error: query.error as Error | null, pausar, retomar };
+}
