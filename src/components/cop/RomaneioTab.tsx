@@ -1352,7 +1352,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
       )}
 
       {/* Busca de peças */}
-      <BuscaPecasBlock cops={cops} oficinas={oficinas} onSelect={setSelectedId} />
+      <BuscaPecasBlock cops={cops} listaFiltrada={listaFiltrada} oficinas={oficinas} onSelect={setSelectedId} />
 
 
       {/* Lista */}
@@ -1452,7 +1452,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
   );
 }
 
-function BuscaPecasBlock({ cops, oficinas, onSelect }: { cops: Cop[]; oficinas: Oficina[]; onSelect: (id: string) => void }) {
+function BuscaPecasBlock({ cops, listaFiltrada, oficinas, onSelect }: { cops: Cop[]; listaFiltrada: Cop[]; oficinas: Oficina[]; onSelect: (id: string) => void }) {
   const [modelo, setModelo] = useState<string>("");
   const [cor, setCor] = useState<string>("");
   const [tamanho, setTamanho] = useState<string>("");
@@ -1470,7 +1470,7 @@ function BuscaPecasBlock({ cops, oficinas, onSelect }: { cops: Cop[]; oficinas: 
   const resultados = useMemo<Resultado[]>(() => {
     if (!aplicado) return [];
     const out: Resultado[] = [];
-    for (const c of cops) {
+    for (const c of listaFiltrada) {
       const qtd = (c.pecas || []).reduce((s, p) => {
         if (modelo && p.modelo !== modelo) return s;
         if (cor && p.cor !== cor) return s;
@@ -1485,7 +1485,7 @@ function BuscaPecasBlock({ cops, oficinas, onSelect }: { cops: Cop[]; oficinas: 
       }
     }
     return out.sort((a, b) => a.oficinaNome.localeCompare(b.oficinaNome) || a.rotulo.localeCompare(b.rotulo));
-  }, [cops, modelo, cor, tamanho, aplicado, oficinaPorId, carga]);
+  }, [cops, listaFiltrada, modelo, cor, tamanho, aplicado, oficinaPorId, carga]);
 
   const totalGeral = resultados.reduce((s, r) => s + r.qtd, 0);
 
