@@ -57,6 +57,13 @@
       "when": 1793913725764,
       "tag": "0007_plan_gestor_pode_editar",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793916840997,
+      "tag": "0008_gestor_le_vendas_olist",
+      "breakpoints": true
     }
   ]
 }
