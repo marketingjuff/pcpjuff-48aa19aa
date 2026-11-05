@@ -83,6 +83,7 @@ export const CATALOGO_PERMISSOES: AbaPermissao[] = [
   // PLAN
   { key: "plan.necessidade", modulo: "plan", tabValue: "necessidade", label: "O que produzir", nivelConfiguravel: false },
   { key: "plan.tinturaria", modulo: "plan", tabValue: "tinturaria", label: "O que mandar tingir", nivelConfiguravel: false },
+  { key: "plan.estoque_minimo", modulo: "plan", tabValue: "estoque_minimo", label: "Estoque mínimo", nivelConfiguravel: false },
   { key: "plan.parametros", modulo: "plan", tabValue: "parametros", label: "Parâmetros", nivelConfiguravel: false },
   // Entregas (motorista)
   { key: "entregas.motorista", modulo: "entregas", tabValue: "entregas", label: "Entregas (motorista)", nivelConfiguravel: false },

@@ -12,6 +12,7 @@ import { MacroSwitch } from "@/routes/_authenticated/cop";
 import { NecessidadeTab } from "@/components/plan/NecessidadeTab";
 import { TinturariaTab } from "@/components/plan/TinturariaTab";
 import { ParametrosTab } from "@/components/plan/ParametrosTab";
+import { EstoqueMinimoTab } from "@/components/plan/EstoqueMinimoTab";
 
 export const Route = createFileRoute("/_authenticated/plan")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -131,6 +132,11 @@ function PlanHome() {
           {montada("tinturaria") && pode("plan.tinturaria") && (
             <TabsContent value="tinturaria" forceMount hidden={tab !== "tinturaria"}>
               <TinturariaTab />
+            </TabsContent>
+          )}
+          {montada("estoque_minimo") && pode("plan.estoque_minimo") && (
+            <TabsContent value="estoque_minimo" forceMount hidden={tab !== "estoque_minimo"}>
+              <EstoqueMinimoTab />
             </TabsContent>
           )}
           {montada("parametros") && pode("plan.parametros") && (isAdmin || isGestor) && (
