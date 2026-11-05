@@ -1,6 +1,7 @@
 // Módulo PLAN — cálculos de sugestão. Somente leitura sobre COP/MAP/Olist;
-// escreve apenas em plan_config e plan_fichas_modelo.
+// escreve em plan_config, plan_fichas_modelo e na chave plan_cores_fora_de_linha de map_config.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Cop } from "@/lib/cop";
 import type { Pedido } from "@/lib/pedidos";
@@ -130,6 +131,42 @@ export function dataLimiteDecisao(diasRuptura: number, leadTimeDias: number, hoj
 /* ------------------------------- hooks ------------------------------- */
 
 const PLAN_KEY = ["plan"] as const;
+
+export const CHAVE_CORES_FORA_LINHA = "plan_cores_fora_de_linha";
+
+/** Nomes canônicos de REFACAO_CORES que não entram no planejamento. */
+export function validarCoresForaDeLinha(value: unknown): Set<string> {
+  const oficiais = new Set(REFACAO_CORES.map((c) => c.nome));
+  return new Set(Array.isArray(value) ? value.filter((c): c is string => typeof c === "string" && oficiais.has(c)) : []);
+}
+
+export function usePlanCoresForaDeLinha() {
+  const qc = useQueryClient();
+  const query = useQuery({
+    queryKey: [...PLAN_KEY, "cores-fora-de-linha"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("map_config").select("value").eq("key", CHAVE_CORES_FORA_LINHA).maybeSingle();
+      if (error) throw error;
+      return validarCoresForaDeLinha(data?.value);
+    },
+  });
+  const salvar = useMutation({
+    mutationFn: async (cores: string[]) => {
+      const { error } = await supabase.from("map_config").upsert({
+        key: CHAVE_CORES_FORA_LINHA,
+        value: Array.from(validarCoresForaDeLinha(cores)),
+        updated_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: PLAN_KEY });
+      toast.success("Cores fora de linha salvas.");
+    },
+    onError: () => toast.error("Não foi possível salvar as cores fora de linha."),
+  });
+  return { cores: query.data ?? new Set<string>(), isLoading: query.isLoading, error: query.error, salvar };
+}
 
 async function paginar<T>(build: (from: number, to: number) => PromiseLike<{ data: unknown; error: any }>): Promise<T[]> {
   const out: T[] = [];
@@ -501,6 +538,7 @@ export function usePlanCruParado() {
 export interface LinhaNecessidade {
   modelo: string;
   cor: string;
+  foraDeLinha: boolean;
   /** total a produzir por tamanho (firme + previsto líquido) */
   aProduzirPorTam: Record<string, number>;
   /** parte firme (pedido vendido sem estoque) por tamanho */
@@ -521,6 +559,7 @@ export function montarNecessidade(params: {
   mediaMensal: Map<string, number>;
   horizonteMeses: number;
   semanasSeguranca: number;
+  coresForaDeLinha?: Set<string>;
 }): LinhaNecessidade[] {
   const { tamanhos, saldoReal, emProducao, mediaMensal, horizonteMeses, semanasSeguranca } = params;
   const combos = new Map<string, { modelo: string; cor: string }>();
@@ -531,6 +570,7 @@ export function montarNecessidade(params: {
   }
   const out: LinhaNecessidade[] = [];
   for (const { modelo, cor } of combos.values()) {
+    const foraDeLinha = params.coresForaDeLinha?.has(cor) ?? false;
     const aProduzirPorTam: Record<string, number> = {};
     const firmePorTam: Record<string, number> = {};
     let consumo = 0, livreTot = 0, firmeTot = 0, prodTot = 0, aProd = 0;
@@ -543,7 +583,9 @@ export function montarNecessidade(params: {
       const prevBruto = demandaTotal(media, horizonteMeses, 0, semanasSeguranca);
       const prevLiquido = Math.ceil(Math.max(0, prevBruto - estoqueLivre) - 1e-9);
       firmePorTam[t] = firme;
-      aProduzirPorTam[t] = firme + prevLiquido;
+      // Fora de linha pode ter peça já vendida e não entregue: preservar firme,
+      // mas sugerir zero produção mesmo com saldo negativo, por regra de negócio.
+      aProduzirPorTam[t] = foraDeLinha ? 0 : firme + prevLiquido;
       consumo += media;
       livreTot += estoqueLivre;
       firmeTot += firme;
@@ -552,7 +594,7 @@ export function montarNecessidade(params: {
     }
     if (consumo === 0 && firmeTot === 0) continue;
     out.push({
-      modelo, cor, aProduzirPorTam, firmePorTam,
+      modelo, cor, foraDeLinha, aProduzirPorTam, firmePorTam,
       vendaPrevistaMensal: consumo,
       jaVendido: firmeTot,
       emEstoque: livreTot,

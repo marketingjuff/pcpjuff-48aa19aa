@@ -6,7 +6,7 @@ import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 import { REFACAO_TAMANHOS } from "@/lib/pedidos";
 import {
-  cfg, montarNecessidade, usePlanConfig, usePlanSaldoReal, usePlanVendaHistorica,
+  cfg, montarNecessidade, usePlanConfig, usePlanCoresForaDeLinha, usePlanSaldoReal, usePlanVendaHistorica,
   type LinhaNecessidade,
 } from "@/lib/plan";
 
@@ -66,8 +66,9 @@ export function usePlanLinhas() {
   const [horizonte] = useHorizontePlan();
   const saldo = usePlanSaldoReal();
   const venda = usePlanVendaHistorica();
-  const linhas = useMemo(() => {
-    if (!venda.data) return [] as LinhaNecessidade[];
+  const coresForaDeLinha = usePlanCoresForaDeLinha();
+  const todasLinhas = useMemo(() => {
+    if (!venda.data || coresForaDeLinha.isLoading || coresForaDeLinha.error) return [] as LinhaNecessidade[];
     return montarNecessidade({
       tamanhos: REFACAO_TAMANHOS,
       saldoReal: saldo.data.saldoReal,
@@ -75,8 +76,11 @@ export function usePlanLinhas() {
       mediaMensal: venda.data.mediaMensal,
       horizonteMeses: horizonte,
       semanasSeguranca: cfg(config, "semanas_seguranca"),
+      coresForaDeLinha: coresForaDeLinha.cores,
     });
-  }, [venda.data, saldo.data, horizonte, config]);
+  }, [venda.data, saldo.data, horizonte, config, coresForaDeLinha.cores, coresForaDeLinha.isLoading, coresForaDeLinha.error]);
+  const linhas = todasLinhas.filter((l) => !l.foraDeLinha);
+  const linhasForaDeLinha = todasLinhas.filter((l) => l.foraDeLinha);
   const naoMapeados = useMemo(() => {
     const m = new Map<string, number>();
     for (const [k, v] of venda.data?.naoMapeados ?? []) m.set(k, (m.get(k) ?? 0) + v);
@@ -90,11 +94,11 @@ export function usePlanLinhas() {
     return m;
   }, [venda.data, saldo.data]);
   return {
-    linhas, config, horizonte,
+    linhas, linhasForaDeLinha, config, horizonte,
     naoMapeados,
     coresNaoReconhecidas,
-    isLoading: lc || saldo.isLoading || venda.isLoading,
-    error: venda.error as Error | null,
+    isLoading: lc || saldo.isLoading || venda.isLoading || coresForaDeLinha.isLoading,
+    error: (coresForaDeLinha.error ?? venda.error) as Error | null,
   };
 }
 
@@ -107,7 +111,7 @@ function SituacaoBadge({ dias, lead }: { dias: number; lead: number }) {
 }
 
 export function NecessidadeTab() {
-  const { linhas, config, naoMapeados, coresNaoReconhecidas, isLoading, error } = usePlanLinhas();
+  const { linhas, linhasForaDeLinha, config, naoMapeados, coresNaoReconhecidas, isLoading, error } = usePlanLinhas();
   const [verConferencia, setVerConferencia] = useState(false);
   const lead = cfg(config, "lead_time_completo_dias");
 
@@ -132,7 +136,7 @@ export function NecessidadeTab() {
         <HorizonteSelect />
       </div>
 
-      {error && <div className="rounded border border-destructive p-3 text-sm text-destructive">Erro ao ler vendas: {error.message}</div>}
+      {error && <div className="rounded border border-destructive p-3 text-sm text-destructive">Erro ao ler dados do planejamento: {error.message}</div>}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
@@ -143,7 +147,7 @@ export function NecessidadeTab() {
         ].map(([l, v]) => (
           <Card key={l as string}>
             <CardHeader className="pb-1"><CardTitle className="text-sm text-muted-foreground">{l}</CardTitle></CardHeader>
-            <CardContent className="text-2xl font-bold">{isLoading ? "…" : `${fmt(v as number)} pç`}</CardContent>
+            <CardContent className="text-2xl font-bold">{error ? "—" : isLoading ? "…" : `${fmt(v as number)} pç`}</CardContent>
           </Card>
         ))}
       </div>
@@ -186,7 +190,7 @@ export function NecessidadeTab() {
           </thead>
           <tbody>
             {isLoading && <tr><td colSpan={12} className="p-4 text-muted-foreground">Calculando…</td></tr>}
-            {!isLoading && linhas.length === 0 && <tr><td colSpan={12} className="p-4 text-muted-foreground">Nada a produzir no horizonte.</td></tr>}
+            {!isLoading && linhas.length === 0 && <tr><td colSpan={12} className="p-4 text-muted-foreground">{error ? "Planejamento indisponível." : "Nada a produzir no horizonte."}</td></tr>}
             {linhas.map((l) => (
               <tr key={`${l.modelo}|${l.cor}`} className="border-t">
                 <td className="px-2 py-1 whitespace-nowrap font-semibold">{l.modelo}</td>
@@ -246,6 +250,37 @@ export function NecessidadeTab() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {linhasForaDeLinha.length > 0 && (
+        <section className="space-y-3">
+          <h3 className="text-lg font-semibold">Cores fora de linha</h3>
+          <p className="text-sm text-muted-foreground">Estas cores não entram no planejamento nem na sugestão de tingimento. Elas continuam no sistema e continuam vendendo até o estoque acabar. Para ativar de novo, vá em Parâmetros.</p>
+          <div className="tbl-congelada max-h-[70vh] overflow-auto rounded-md border bg-card">
+            <table className="w-full text-sm">
+              <thead><tr>
+                <th className="px-2 py-2 text-left">Modelo</th>
+                <th className="px-2 py-2 text-left">Cor</th>
+                <th className="px-2 py-2 text-right">Venda prevista/mês</th>
+                <th className="px-2 py-2 text-right">Já vendido</th>
+                <th className="px-2 py-2 text-right">Em estoque</th>
+                <th className="px-2 py-2 text-right">Em produção<div className="text-[10px] font-normal text-muted-foreground normal-case">informativo — já está dentro do saldo, não desconta de novo</div></th>
+                <th className="px-2 py-2 text-right">A produzir</th>
+              </tr></thead>
+              <tbody>{linhasForaDeLinha.map((l) => (
+                <tr key={`${l.modelo}|${l.cor}`} className="border-t">
+                  <td className="px-2 py-1">{l.modelo}</td>
+                  <td className="px-2 py-1"><div className="flex flex-wrap items-center gap-2"><CorChip cor={l.cor} /><Badge variant="outline">Cor fora de linha</Badge></div></td>
+                  <td className="px-2 py-1 text-right tabular-nums">{l.vendaPrevistaMensal.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}</td>
+                  <td className="px-2 py-1 text-right tabular-nums">{fmt(l.jaVendido)}</td>
+                  <td className="px-2 py-1 text-right tabular-nums">{fmt(l.emEstoque)}</td>
+                  <td className="px-2 py-1 text-right tabular-nums">{fmt(l.emProducao)}</td>
+                  <td className="px-2 py-1 text-right tabular-nums font-bold">{fmt(l.aProduzir)}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        </section>
       )}
 
       <div className="rounded-md border bg-card p-3 text-sm text-muted-foreground space-y-1">
