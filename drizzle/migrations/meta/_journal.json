@@ -22,6 +22,13 @@
       "when": 1793818327329,
       "tag": "0002_plan_modulo",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793885279214,
+      "tag": "0003_plan_cores_fora_linha_permissions",
+      "breakpoints": true
     }
   ]
 }
