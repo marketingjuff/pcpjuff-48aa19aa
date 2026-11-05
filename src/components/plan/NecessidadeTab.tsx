@@ -160,6 +160,18 @@ export function NecessidadeTab() {
         </div>
       )}
 
+      {coresFora.length > 0 && (
+        <div className="rounded-md border border-amber-400 bg-amber-50 p-3 text-sm">
+          <div className="flex items-center gap-2 font-semibold text-amber-900">
+            <AlertTriangle className="h-4 w-4" />
+            {coresFora.length} cor(es) não reconhecida(s) — {fmt(coresFora.reduce((s, x) => s + x[1], 0))} peças ficaram fora dos totais.
+          </div>
+          <ul className="mt-2 max-h-40 overflow-auto grid sm:grid-cols-2 gap-x-6 text-amber-900">
+            {coresFora.map(([c, q]) => <li key={c}>{c} — {fmt(q)} pç</li>)}
+          </ul>
+        </div>
+      )}
+
       <div className="tbl-congelada max-h-[70vh] overflow-auto rounded-md border bg-card">
         <table className="w-full text-sm">
           <thead>
@@ -168,36 +180,31 @@ export function NecessidadeTab() {
               <th className="px-2 py-2 text-left">Cor</th>
               {REFACAO_TAMANHOS.map((t) => <th key={t} className="px-2 py-2 text-right">{t}</th>)}
               <th className="px-2 py-2 text-right">Total</th>
+              <th className="px-2 py-2 text-right">Já vendido</th>
               <th className="px-2 py-2 text-left">Situação</th>
             </tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td colSpan={11} className="p-4 text-muted-foreground">Calculando…</td></tr>}
-            {!isLoading && linhas.length === 0 && <tr><td colSpan={11} className="p-4 text-muted-foreground">Nada a produzir no horizonte.</td></tr>}
+            {isLoading && <tr><td colSpan={12} className="p-4 text-muted-foreground">Calculando…</td></tr>}
+            {!isLoading && linhas.length === 0 && <tr><td colSpan={12} className="p-4 text-muted-foreground">Nada a produzir no horizonte.</td></tr>}
             {linhas.map((l) => (
-              <Fragment key={`${l.modelo}|${l.cor}`}>
-                {(["vendido", "previsto"] as const).map((orig, i) => {
-                  const vals = l[orig];
-                  const tot = REFACAO_TAMANHOS.reduce((s, t) => s + (vals[t] ?? 0), 0);
+              <tr key={`${l.modelo}|${l.cor}`} className="border-t">
+                <td className="px-2 py-1 whitespace-nowrap font-semibold">{l.modelo}</td>
+                <td className="px-2 py-1"><CorChip cor={l.cor} /></td>
+                {REFACAO_TAMANHOS.map((t) => {
+                  const v = l.aProduzirPorTam[t] ?? 0;
+                  const firme = l.firmePorTam[t] ?? 0;
                   return (
-                    <tr key={orig} className={orig === "previsto" ? "bg-muted/40 border-b" : "border-t"}>
-                      <td className="px-2 py-1 whitespace-nowrap">
-                        {i === 0 && <span className="font-semibold mr-2">{l.modelo}</span>}
-                        <span className={`inline-block rounded border px-1.5 text-[11px] font-bold uppercase ${orig === "vendido" ? "border-foreground" : "border-dashed border-muted-foreground text-muted-foreground"}`}>
-                          {orig === "vendido" ? "Vendido" : "Previsto"}
-                        </span>
-                      </td>
-                      <td className="px-2 py-1">{i === 0 && <CorChip cor={l.cor} />}</td>
-                      {REFACAO_TAMANHOS.map((t) => {
-                        const v = vals[t] ?? 0;
-                        return <td key={t} className={`px-2 py-1 text-right tabular-nums ${v === 0 ? "text-muted-foreground/40" : "font-semibold"}`}>{v}</td>;
-                      })}
-                      <td className="px-2 py-1 text-right tabular-nums font-bold">{tot}</td>
-                      <td className="px-2 py-1">{i === 0 && <SituacaoBadge dias={l.diasRuptura} lead={lead} />}</td>
-                    </tr>
+                    <td key={t} className={`px-2 py-1 text-right tabular-nums align-top ${firme > 0 ? "bg-amber-50" : ""} ${v === 0 ? "text-muted-foreground/40" : "font-semibold"}`}>
+                      {v}
+                      {firme > 0 && <div className="text-[11px] font-normal text-amber-800">{firme} firme</div>}
+                    </td>
                   );
                 })}
-              </Fragment>
+                <td className="px-2 py-1 text-right tabular-nums font-bold">{l.aProduzir}</td>
+                <td className="px-2 py-1 text-right tabular-nums">{fmt(l.jaVendido)}</td>
+                <td className="px-2 py-1"><SituacaoBadge dias={l.diasRuptura} lead={lead} /></td>
+              </tr>
             ))}
           </tbody>
         </table>
