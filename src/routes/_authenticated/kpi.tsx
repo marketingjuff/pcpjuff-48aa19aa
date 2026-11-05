@@ -15,6 +15,8 @@ import { IndicadoresTab } from "@/components/kpi/IndicadoresTab";
 import { KpiPcpTab } from "@/components/kpi/KpiPcpTab";
 import { KpiCopMapTab } from "@/components/kpi/KpiCopMapTab";
 
+const CHAVE_OLHO = "kpi:olho";
+
 export const Route = createFileRoute("/_authenticated/kpi")({
   validateSearch: (s: Record<string, unknown>) => ({
     tab: typeof s.tab === "string" ? s.tab : undefined,
@@ -34,7 +36,14 @@ function KpiHome() {
   const TABS = abas.map((a) => ({ value: a.tabValue, label: a.label }));
   const { isLoading } = useMyRoles();
   const podeFaturamento = usePode("kpi.faturamento");
-  const [olhoAberto, setOlhoAberto] = useState(true);
+  // Olho fechado por padrão ao entrar; a escolha de quem abre fica salva.
+  const [olhoAberto, setOlhoAberto] = useState(false);
+  const alternarOlho = () =>
+    setOlhoAberto((v) => {
+      const novo = !v;
+      if (typeof window !== "undefined") window.localStorage.setItem(CHAVE_OLHO, novo ? "1" : "0");
+      return novo;
+    });
   const search = Route.useSearch();
   const [tab, setTabState] = useState(() => {
     if (search.tab) return search.tab;
@@ -53,6 +62,11 @@ function KpiHome() {
   useEffect(() => {
     if (search.tab) setTabState(search.tab);
   }, [search.tab]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setOlhoAberto(window.localStorage.getItem(CHAVE_OLHO) === "1");
+  }, []);
 
   // Abas já visitadas continuam montadas (hidden) para preservar filtros e estado.
   const visitadas = useRef<Set<string>>(new Set([tab]));
@@ -104,7 +118,7 @@ function KpiHome() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setOlhoAberto((v) => !v)}
+                onClick={alternarOlho}
                 aria-label={olhoAberto ? "Ocultar faturamento" : "Mostrar faturamento"}
                 title={olhoAberto ? "Ocultar faturamento" : "Mostrar faturamento"}
               >
