@@ -971,22 +971,38 @@ export function minimoSobDemandaParaSalvar(
   };
 }
 
+type SobDemandaParaSalvar = Pick<MinimoParaSalvar, "modelo" | "cor" | "tamanho" | "sugerido"> & { sobDemanda: boolean };
+
+export function itensSobDemandaDaCor(linhas: LinhaEstoqueMinimo[], modelo: string, cor: string): SobDemandaParaSalvar[] {
+  const daCor = linhas.filter((l) => l.modelo === modelo && l.cor === cor);
+  const sobDemanda = !daCor.every((l) => l.sobDemanda);
+  return daCor.filter((l) => l.sobDemanda !== sobDemanda).map((l) => ({
+    modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, sugerido: l.sugerido, sobDemanda,
+  }));
+}
+
 export function useSalvarSobDemanda() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (i: Pick<MinimoParaSalvar, "modelo" | "cor" | "tamanho" | "sugerido"> & { sobDemanda: boolean }) => {
-      const { data: salvo, error: leituraErro } = await supabase.from("plan_estoque_minimo")
-        .select("minimo_adotado, sugerido_na_adocao, adotado_em, adotado_por")
-        .eq("modelo", i.modelo).eq("cor", i.cor).eq("tamanho", i.tamanho).maybeSingle();
-      if (leituraErro) throw leituraErro;
+    mutationFn: async (entrada: SobDemandaParaSalvar | SobDemandaParaSalvar[]) => {
+      const itens = Array.isArray(entrada) ? entrada : [entrada];
+      if (!itens.length) return;
       const { data: u, error: authErro } = await supabase.auth.getUser();
       if (authErro) throw authErro;
-      const { error } = await supabase.from("plan_estoque_minimo").upsert({
-        modelo: i.modelo, cor: i.cor, tamanho: i.tamanho,
-        ...minimoSobDemandaParaSalvar(salvo, i.sugerido, i.sobDemanda),
-        adotado_em: salvo?.adotado_em ?? new Date().toISOString(),
-        adotado_por: salvo ? salvo.adotado_por : u.user?.id ?? null,
-      }, { onConflict: "modelo,cor,tamanho" });
+      const agora = new Date().toISOString();
+      const registros = await Promise.all(itens.map(async (i) => {
+        const { data: salvo, error: leituraErro } = await supabase.from("plan_estoque_minimo")
+          .select("minimo_adotado, sugerido_na_adocao, adotado_em, adotado_por")
+          .eq("modelo", i.modelo).eq("cor", i.cor).eq("tamanho", i.tamanho).maybeSingle();
+        if (leituraErro) throw leituraErro;
+        return {
+          modelo: i.modelo, cor: i.cor, tamanho: i.tamanho,
+          ...minimoSobDemandaParaSalvar(salvo, i.sugerido, i.sobDemanda),
+          adotado_em: salvo?.adotado_em ?? agora,
+          adotado_por: salvo ? salvo.adotado_por : u.user?.id ?? null,
+        };
+      }));
+      const { error } = await supabase.from("plan_estoque_minimo").upsert(registros, { onConflict: "modelo,cor,tamanho" });
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: PLAN_KEY }),

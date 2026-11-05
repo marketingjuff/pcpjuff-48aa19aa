@@ -9,7 +9,7 @@ function expect<T>(actual: T) {
     toBeNull: () => assert.strictEqual(actual, null),
   };
 }
-const { montarEstoqueMinimo, minimoSobDemandaParaSalvar } = await import("./plan");
+const { montarEstoqueMinimo, minimoSobDemandaParaSalvar, itensSobDemandaDaCor } = await import("./plan");
 const { itensDaColagem } = await import("../components/plan/EstoqueMinimoTab");
 type MinimoSalvo = import("./plan").MinimoSalvo;
 
@@ -69,5 +69,24 @@ describe("Sob demanda por tamanho", () => {
   });
   test("colar sem substituir não altera mínimo zero já definido", () => {
     expect(itensDaColagem([linha(salvo)], new Map([["M", 50]]), false)).toEqual([]);
+  });
+  test("ação por cor inclui todos os tamanhos e exclui outro modelo e cor", () => {
+    const l = linha(salvo);
+    const itens = itensSobDemandaDaCor([l, { ...l, tamanho: "P", adotado: 7 },
+      { ...l, cor: "preto" }, { ...l, modelo: "Polo" }], "Camiseta", "amarelo");
+    expect(itens.map((i) => i.tamanho)).toEqual(["M", "P"]);
+    expect(itens.every((i) => i.sobDemanda)).toBe(true);
+  });
+  test("cor parcialmente marcada completa somente os tamanhos restantes", () => {
+    const l = linha(salvo);
+    expect(itensSobDemandaDaCor([l, { ...l, tamanho: "P", sobDemanda: true }], "Camiseta", "amarelo"))
+      .toEqual([{ modelo: "Camiseta", cor: "amarelo", tamanho: "M", sugerido: 30, sobDemanda: true }]);
+  });
+  test("cor inteira marcada volta ao normal preservando mínimos de cada tamanho", () => {
+    const l = { ...linha(salvo), sobDemanda: true };
+    const itens = itensSobDemandaDaCor([l, { ...l, tamanho: "P", adotado: 7 }], "Camiseta", "amarelo");
+    expect(itens.map((i) => i.sobDemanda)).toEqual([false, false]);
+    expect([salvo, { ...salvo, minimo_adotado: 7 }].map((s, idx) =>
+      minimoSobDemandaParaSalvar(s, 30, itens[idx]?.sobDemanda ?? true).minimo_adotado)).toEqual([0, 7]);
   });
 });
