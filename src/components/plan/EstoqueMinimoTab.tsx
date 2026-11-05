@@ -9,7 +9,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AlertTriangle, ChevronDown, ChevronRight, Lock } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertTriangle, ChevronDown, ChevronRight, Copy, Lock } from "lucide-react";
 import { CorChip } from "@/components/plan/NecessidadeTab";
 import { REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
@@ -21,16 +23,16 @@ import {
 } from "@/lib/plan";
 
 type PadraoMinimo = { modelo: string; cor: string; valores: Map<string, number> };
-type ColagemMinimo = { modelo: string; origem: PadraoMinimo; itens: MinimoParaSalvar[]; cores: number };
 
 function copiarValores(linhas: LinhaEstoqueMinimo[]) {
   return new Map(linhas.filter((l) => l.adotado !== null).map((l) => [l.tamanho, l.adotado as number]));
 }
 
-function montarColagem(linhas: LinhaEstoqueMinimo[], valores: Map<string, number>): MinimoParaSalvar[] {
+function itensDaColagem(linhas: LinhaEstoqueMinimo[], valores: Map<string, number>, substituir: boolean): MinimoParaSalvar[] {
   return linhas.flatMap((l) => {
     const minimo = valores.get(l.tamanho);
     if (minimo === undefined || minimo === l.adotado) return [];
+    if (!substituir && l.adotado !== null) return [];
     return [{ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, minimo, sugerido: l.sugerido }];
   });
 }
@@ -113,7 +115,11 @@ export function EstoqueMinimoTab() {
   const [abertos, setAbertos] = useState<Set<string>>(new Set());
   const [confirmar, setConfirmar] = useState<{ modelo: string; linhas: LinhaEstoqueMinimo[] } | null>(null);
   const [padrao, setPadrao] = useState<PadraoMinimo | null>(null);
-  const [confirmarColagem, setConfirmarColagem] = useState<ColagemMinimo | null>(null);
+  const [dlgAberto, setDlgAberto] = useState(false);
+  const [substituir, setSubstituir] = useState(true);
+  const [buscaDlg, setBuscaDlg] = useState("");
+  const [selecao, setSelecao] = useState<Set<string>>(new Set());
+  const [dlgAbertos, setDlgAbertos] = useState<Set<string>>(new Set());
   const [erro, setErro] = useState<string | null>(null);
 
   const limiar = cfg(config, "limiar_alerta_minimo_pct") || 10;
@@ -168,22 +174,58 @@ export function EstoqueMinimoTab() {
     setPadrao({ modelo, cor, valores });
   };
 
-  const prepararColagem = (modelo: string, ls: LinhaEstoqueMinimo[]) => {
-    if (!podeEditar || !padrao) return;
-    const itens = montarColagem(ls, padrao.valores);
-    setConfirmarColagem({ modelo, origem: padrao, itens, cores: new Set(itens.map((i) => i.cor)).size });
+  const chave = (m: string, c: string) => `${m}|${c}`;
+
+  // Todos os modelos/cores, sem os filtros da tela
+  const porModeloCor = useMemo(() => {
+    const m = new Map<string, Map<string, LinhaEstoqueMinimo[]>>();
+    for (const l of linhas) {
+      const mc = m.get(l.modelo) ?? new Map<string, LinhaEstoqueMinimo[]>();
+      const a = mc.get(l.cor) ?? []; a.push(l); mc.set(l.cor, a); m.set(l.modelo, mc);
+    }
+    return m;
+  }, [linhas]);
+
+  const gruposDlg = useMemo(() => {
+    const q = buscaDlg.trim().toLowerCase();
+    return Array.from(porModeloCor, ([modelo, mc]) => {
+      const cores = Array.from(mc.keys()).filter((c) => !q || modelo.toLowerCase().includes(q) || c.toLowerCase().includes(q));
+      return { modelo, cores, total: mc.size };
+    }).filter((g) => g.cores.length);
+  }, [porModeloCor, buscaDlg]);
+
+  const itensColagem = useMemo(() => {
+    if (!padrao) return [];
+    const out: MinimoParaSalvar[] = [];
+    for (const k of selecao) {
+      const [m, c] = k.split("|");
+      const ls = porModeloCor.get(m)?.get(c);
+      if (ls) out.push(...itensDaColagem(ls, padrao.valores, substituir));
+    }
+    return out;
+  }, [padrao, selecao, porModeloCor, substituir]);
+
+  const resumo = {
+    linhas: itensColagem.length,
+    cores: new Set(itensColagem.map((i) => chave(i.modelo, i.cor))).size,
+    modelos: new Set(itensColagem.map((i) => i.modelo)).size,
   };
 
+  const alternarCor = (k: string, v: boolean) => setSelecao((s) => { const n = new Set(s); v ? n.add(k) : n.delete(k); return n; });
+  const alternarModelo = (modelo: string, cores: string[], v: boolean) =>
+    setSelecao((s) => { const n = new Set(s); for (const c of cores) v ? n.add(chave(modelo, c)) : n.delete(chave(modelo, c)); return n; });
+
   const colarPadrao = async () => {
-    if (!podeEditar || !confirmarColagem) return;
+    if (!podeEditar || !padrao || !itensColagem.length) return;
     setErro(null);
     try {
-      if (confirmarColagem.itens.length) await salvarLote.mutateAsync(confirmarColagem.itens);
+      await salvarLote.mutateAsync(itensColagem);
+      setDlgAberto(false);
+      setSelecao(new Set());
     } catch (e: unknown) {
       const mensagem = e && typeof e === "object" && "message" in e ? String(e.message) : "erro";
-      setErro(`Não foi possível colar o padrão no modelo ${confirmarColagem.modelo}: ${mensagem}`);
+      setErro(`Não foi possível colar o padrão: ${mensagem}`);
     }
-    setConfirmarColagem(null);
   };
 
   const carregando = venda.isLoading || minimos.isLoading || lead.isLoading || cfgLoading;
@@ -215,7 +257,10 @@ export function EstoqueMinimoTab() {
       {podeEditar && padrao && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
           <span>Padrão copiado de {padrao.modelo} {padrao.cor}, {padrao.valores.size} tamanhos</span>
-          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setPadrao(null); }}>Limpar</Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="default" onClick={(e) => { e.stopPropagation(); setBuscaDlg(""); setDlgAberto(true); }}>Colar em...</Button>
+            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setPadrao(null); }}>Limpar</Button>
+          </div>
         </div>
       )}
 
@@ -244,21 +289,18 @@ export function EstoqueMinimoTab() {
                     onClick={(e) => { e.stopPropagation(); setConfirmar({ modelo, linhas: paraAceitar }); }}>
                     Aceitar todas deste modelo
                   </Button>
-                  <Button size="sm" variant="outline" disabled={!padrao || salvarLote.isPending}
-                    onClick={(e) => { e.stopPropagation(); prepararColagem(modelo, ls); }}>
-                    Colar padrão aqui
-                  </Button>
                 </div>
               )}
             </div>
             {aberto && Array.from(porCor, ([cor, lc]) => (
               <Fragment key={cor}>
-                <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-muted/40 border-t">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/40 border-t">
                   <CorChip cor={cor} />
                   {podeEditar && (
-                    <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
+                    <Button size="sm" variant={padrao?.modelo === modelo && padrao?.cor === cor ? "secondary" : "ghost"}
+                      className="h-6 px-1.5 gap-1 text-[11px]" title="Copiar padrão desta cor" aria-label="Copiar padrão desta cor"
                       onClick={(e) => { e.stopPropagation(); copiarPadrao(modelo, cor, lc); }}>
-                      Copiar padrão
+                      <Copy className="h-3.5 w-3.5" /> Copiar
                     </Button>
                   )}
                 </div>
@@ -342,22 +384,70 @@ export function EstoqueMinimoTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <AlertDialog open={!!confirmarColagem} onOpenChange={(o) => !o && setConfirmarColagem(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Colar o padrão de {confirmarColagem?.origem.modelo} {confirmarColagem?.origem.cor} em {confirmarColagem?.modelo}?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirmarColagem?.itens.length} linhas vão passar a ter o mínimo adotado igual ao padrão copiado, em {confirmarColagem?.cores} cores. Tamanhos que não estão no padrão não mudam.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.stopPropagation(); void colarPadrao(); }} disabled={salvarLote.isPending}>Colar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Dialog open={dlgAberto && !!padrao && podeEditar} onOpenChange={setDlgAberto}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>Colar o padrão de {padrao?.modelo} {padrao?.cor}</DialogTitle>
+          </DialogHeader>
+          {padrao && (
+            <div className="overflow-x-auto">
+              <table className="text-xs tabular-nums border">
+                <tbody>
+                  <tr>{REFACAO_TAMANHOS.filter((t) => padrao.valores.has(t)).map((t) => <th key={t} className="border px-2 py-1 font-medium bg-muted/40">{t}</th>)}</tr>
+                  <tr>{REFACAO_TAMANHOS.filter((t) => padrao.valores.has(t)).map((t) => <td key={t} className="border px-2 py-1 text-center">{fmt(padrao.valores.get(t)!)}</td>)}</tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div>
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={substituir} onCheckedChange={setSubstituir} /> Substituir mínimos já definidos
+            </label>
+            <p className="mt-1 text-xs text-muted-foreground">Tamanho que não existe no modelo de destino é ignorado, e tamanho que está no destino mas não está no padrão não muda.</p>
+          </div>
+          <Input type="text" placeholder="Buscar modelo ou cor" value={buscaDlg} onChange={(e) => setBuscaDlg(e.target.value)} />
+          <div className="flex-1 overflow-y-auto rounded-md border min-h-[120px]">
+            {gruposDlg.length === 0 && <p className="p-3 text-sm text-muted-foreground">Nada encontrado.</p>}
+            {gruposDlg.map(({ modelo, cores, total }) => {
+              const marcadas = cores.filter((c) => selecao.has(chave(modelo, c))).length;
+              const estado = marcadas === 0 ? false : marcadas === cores.length ? true : "indeterminate";
+              const ab = dlgAbertos.has(modelo);
+              return (
+                <div key={modelo} className="border-b last:border-b-0">
+                  <div className="flex items-center gap-2 px-3 py-2 cursor-pointer"
+                    onClick={(e) => { e.stopPropagation(); setDlgAbertos((s) => { const n = new Set(s); n.has(modelo) ? n.delete(modelo) : n.add(modelo); return n; }); }}>
+                    <Checkbox checked={estado} onClick={(e) => e.stopPropagation()}
+                      onCheckedChange={(v) => alternarModelo(modelo, cores, v === true)} aria-label={`Marcar ${modelo}`} />
+                    <span className="font-medium text-sm">{modelo}</span>
+                    <span className="text-xs text-muted-foreground">{total} cores</span>
+                    <span className="ml-auto">{ab ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</span>
+                  </div>
+                  {ab && cores.map((cor) => {
+                    const k = chave(modelo, cor);
+                    const n = padrao ? itensDaColagem(porModeloCor.get(modelo)?.get(cor) ?? [], padrao.valores, substituir).length : 0;
+                    return (
+                      <label key={cor} className={`flex items-center gap-2 pl-9 pr-3 py-1.5 cursor-pointer ${n === 0 ? "opacity-60" : ""}`}
+                        onClick={(e) => e.stopPropagation()}>
+                        <Checkbox checked={selecao.has(k)} onCheckedChange={(v) => alternarCor(k, v === true)} />
+                        <CorChip cor={cor} />
+                        {padrao?.modelo === modelo && padrao?.cor === cor && <Badge variant="outline" className={BADGE_SM_CLASS}>origem</Badge>}
+                        <span className="text-[11px] text-muted-foreground">{n === 0 ? "nada a mudar" : `${n} ${n === 1 ? "tamanho muda" : "tamanhos mudam"}`}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+          <DialogFooter className="sm:justify-between items-center gap-2">
+            <span className="text-xs text-muted-foreground">{resumo.linhas} linhas, {resumo.cores} cores, {resumo.modelos} modelos</span>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={(e) => { e.stopPropagation(); setDlgAberto(false); }}>Cancelar</Button>
+              <Button disabled={!itensColagem.length || salvarLote.isPending} onClick={(e) => { e.stopPropagation(); void colarPadrao(); }}>Colar</Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
