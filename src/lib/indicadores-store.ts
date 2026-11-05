@@ -2,7 +2,7 @@
 // O parse é APENAS classificação: não altera qtd, valor_unitario, desconto ou
 // qualquer cálculo financeiro. Indicadores e importação usam este módulo.
 import type { ItemCalc, LinhaRanking, PedidoFiltrado } from "@/lib/indicadores-olist";
-import { REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
+import { CORES_APELIDOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 
 export type TipoPecaStore = "LISA" | "ESTAMPADA";
 
@@ -49,6 +49,9 @@ const MODELOS_BASE = [
 
 const TAM_POR_NORM = new Map<string, string>(REFACAO_TAMANHOS.map((t) => [norm(t), t]));
 const COR_POR_NORM = new Map<string, string>(REFACAO_CORES.map((c) => [norm(c.nome), c.nome]));
+for (const [apelido, canonica] of Object.entries(CORES_APELIDOS)) {
+  COR_POR_NORM.set(norm(apelido), canonica);
+}
 
 const cache = new Map<string, ProdutoStore>();
 

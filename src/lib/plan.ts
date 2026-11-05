@@ -8,7 +8,7 @@ import {
   calcDisponivel, calcEmProducao, calcFaltantes, calcPerdas, calcRecebido, pkKey,
 } from "@/lib/cop-saldos";
 import { apenasVigentes, type LotesPorData } from "@/lib/olist-vendas";
-import { REFACAO_CORES } from "@/lib/pedidos";
+import { CORES_APELIDOS, REFACAO_CORES } from "@/lib/pedidos";
 
 export { pkKey };
 
@@ -42,6 +42,8 @@ const _CORES_NORM: { canonico: string; norm: string; re: RegExp }[] = REFACAO_CO
 export function normalizarCor(bruto: string): string | null {
   const t = normTexto(bruto ?? "");
   if (!t) return null;
+  const apelido = CORES_APELIDOS[t];
+  if (apelido) return apelido;
   const exato = _CORES_NORM.find((c) => c.norm === t);
   if (exato) return exato.canonico;
   const reT = new RegExp(`(^| )${escRe(t)}( |$)`);

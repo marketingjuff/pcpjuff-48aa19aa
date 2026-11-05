@@ -73,6 +73,16 @@ export const REFACAO_CORES: { nome: string; hex: string }[] = [
   { nome: "vermelho",       hex: "#c12b3d" },
 ];
 
+/**
+ * Apelidos de cor vindos de cadastros externos (Olist) que devem ser lidos
+ * como uma cor canônica de REFACAO_CORES. Chave já em minúsculas e sem acento.
+ * Não confundir com REFACAO_CORES: apelido NÃO é cor do sistema e NUNCA pode
+ * aparecer em dropdown, filtro, chip de cor ou configuração.
+ */
+export const CORES_APELIDOS: Record<string, string> = {
+  "rosa ultra": "rosa pop",
+};
+
 // Ordem "de corte" — usada em toda a UI/PDFs para ordenar modelo/cor
 // conforme definido pelo setor de corte, e não alfabeticamente.
 const _MODELO_ORD = new Map<string, number>(REFACAO_MODELOS.map((m, i) => [m, i]));
