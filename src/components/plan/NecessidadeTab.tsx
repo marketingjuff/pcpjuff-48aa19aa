@@ -10,43 +10,65 @@ import {
   type LinhaNecessidade,
 } from "@/lib/plan";
 
-const HORIZONTES = [3, 5, 6] as const;
-const LS_HORIZONTE = "plan:horizonte";
+const HORIZONTES_SUPRIMENTO = [3, 5, 6] as const;
+const HORIZONTES_CORTE = [1, 2, 3] as const;
+const LS_HORIZONTE_SUPRIMENTO = "plan:horizonte";
+const LS_HORIZONTE_CORTE = "plan:horizonte-corte";
 
-/** Horizonte de planejamento compartilhado entre as abas do PLAN. */
-export function useHorizontePlan(): [number, (h: number) => void] {
+function useHorizonteGenerico(
+  opcoes: readonly number[], lsKey: string, evento: string, chaveCfg: string,
+): [number, (h: number) => void] {
   const { data: config } = usePlanConfig();
-  const padrao = cfg(config, "horizonte_meses_padrao");
+  const padrao = cfg(config, chaveCfg);
   const [h, setH] = useState<number | null>(null);
   useEffect(() => {
     const ler = () => {
-      const s = Number(window.localStorage.getItem(LS_HORIZONTE));
-      setH(HORIZONTES.includes(s as any) ? s : null);
+      const s = Number(window.localStorage.getItem(lsKey));
+      setH(opcoes.includes(s) ? s : null);
     };
     ler();
-    window.addEventListener("plan-horizonte", ler);
-    return () => window.removeEventListener("plan-horizonte", ler);
-  }, []);
+    window.addEventListener(evento, ler);
+    return () => window.removeEventListener(evento, ler);
+  }, [opcoes, lsKey, evento]);
   const set = (v: number) => {
-    window.localStorage.setItem(LS_HORIZONTE, String(v));
+    window.localStorage.setItem(lsKey, String(v));
     setH(v);
-    window.dispatchEvent(new Event("plan-horizonte"));
+    window.dispatchEvent(new Event(evento));
   };
   return [h ?? padrao, set];
 }
 
-export function HorizonteSelect() {
-  const [h, setH] = useHorizontePlan();
+/** Horizonte da sugestão de corte (aba O que produzir). */
+export function useHorizonteCorte() {
+  return useHorizonteGenerico(HORIZONTES_CORTE, LS_HORIZONTE_CORTE, "plan-horizonte-corte", "horizonte_corte_meses_padrao");
+}
+
+/** Horizonte de suprimento (aba Tinturaria). */
+export function useHorizonteSuprimento() {
+  return useHorizonteGenerico(HORIZONTES_SUPRIMENTO, LS_HORIZONTE_SUPRIMENTO, "plan-horizonte", "horizonte_meses_padrao");
+}
+
+function SeletorHorizonte({ rotulo, opcoes, h, setH }: { rotulo: string; opcoes: readonly number[]; h: number; setH: (v: number) => void }) {
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span className="text-muted-foreground">Horizonte:</span>
-      {HORIZONTES.map((v) => (
+      <span className="text-muted-foreground">{rotulo}</span>
+      {opcoes.map((v) => (
         <Button key={v} size="sm" variant={h === v ? "default" : "outline"} onClick={() => setH(v)}>
-          {v} meses
+          {v} {v === 1 ? "mês" : "meses"}
         </Button>
       ))}
     </div>
   );
+}
+
+export function HorizonteCorteSelect() {
+  const [h, setH] = useHorizonteCorte();
+  return <SeletorHorizonte rotulo="Cobrir corte por:" opcoes={HORIZONTES_CORTE} h={h} setH={setH} />;
+}
+
+export function HorizonteSuprimentoSelect() {
+  const [h, setH] = useHorizonteSuprimento();
+  return <SeletorHorizonte rotulo="Cobrir suprimento por:" opcoes={HORIZONTES_SUPRIMENTO} h={h} setH={setH} />;
 }
 
 export function CorChip({ cor, grande = false }: { cor: string; grande?: boolean }) {
@@ -61,9 +83,11 @@ export function CorChip({ cor, grande = false }: { cor: string; grande?: boolean
   );
 }
 
-export function usePlanLinhas() {
+export function usePlanLinhas(escopo: "corte" | "suprimento" = "corte") {
   const { data: config, isLoading: lc } = usePlanConfig();
-  const [horizonte] = useHorizontePlan();
+  const [hCorte] = useHorizonteCorte();
+  const [hSuprimento] = useHorizonteSuprimento();
+  const horizonte = escopo === "corte" ? hCorte : hSuprimento;
   const saldo = usePlanSaldoReal();
   const venda = usePlanVendaHistorica();
   const coresForaDeLinha = usePlanCoresForaDeLinha();
@@ -112,7 +136,7 @@ function SituacaoBadge({ dias, lead }: { dias: number; lead: number }) {
 }
 
 export function NecessidadeTab() {
-  const { linhas, linhasForaDeLinha, config, naoMapeados, coresNaoReconhecidas, isLoading, error } = usePlanLinhas();
+  const { linhas, linhasForaDeLinha, config, naoMapeados, coresNaoReconhecidas, isLoading, error } = usePlanLinhas("corte");
   const [verConferencia, setVerConferencia] = useState(false);
   const lead = cfg(config, "lead_time_completo_dias");
 
@@ -134,7 +158,10 @@ export function NecessidadeTab() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-2xl font-bold tracking-tight">O que produzir</h2>
-        <HorizonteSelect />
+        <div className="flex flex-col items-end gap-1">
+          <HorizonteCorteSelect />
+          <p className="text-xs text-muted-foreground">Horizonte curto porque cortar é rápido quando já existe tecido tingido. Quem decide tingir é a aba Tinturaria, que tem horizonte próprio.</p>
+        </div>
       </div>
 
       {error && <div className="rounded border border-destructive p-3 text-sm text-destructive">Erro ao ler dados do planejamento: {error.message}</div>}

@@ -40,6 +40,7 @@ export const CONFIG_PADRAO: PlanConfig = {
   lead_time_com_cru_dias: 40,
   lote_minimo_tinturaria_kg: 80,
   horizonte_meses_padrao: 3,
+  horizonte_corte_meses_padrao: 2,
 };
 
 export function cfg(config: PlanConfig | undefined, chave: string): number {
