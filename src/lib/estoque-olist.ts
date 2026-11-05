@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
+import { CORES_APELIDOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 
 export type EmpresaOlist = "JOKE" | "JUFF";
 
@@ -33,7 +33,8 @@ const COR_SET = new Map<string, string>(REFACAO_CORES.map((c) => [semAcento(c.no
 
 /** Casa a cor da planilha com a cor canônica do COP (ignora acentos/caixa). */
 export function normalizarCor(cor: string): string {
-  return COR_SET.get(semAcento(cor)) ?? cor.trim();
+  const n = semAcento(cor);
+  return COR_SET.get(n) ?? CORES_APELIDOS[n] ?? cor.trim();
 }
 
 export function normalizarTamanho(t: string): string | null {
