@@ -17,7 +17,7 @@ import { REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { useIsAdmin, useMyRoles } from "@/hooks/use-role";
 import { TABLE_WRAPPER_CLASS, TH_CLASS, TD_CLASS, BADGE_SM_CLASS } from "@/components/shared/table-styles";
 import {
-  cfg, montarEstoqueMinimo, usePlanConfig, usePlanCoresForaDeLinha, usePlanLeadTimePorModelo, usePlanMinimos,
+  cfg, itensSobDemandaDaCor, montarEstoqueMinimo, usePlanConfig, usePlanCoresForaDeLinha, usePlanLeadTimePorModelo, usePlanMinimos,
   usePlanVendaHistorica, useSalvarMinimo, useSalvarMinimosEmLote, useSalvarSobDemanda, type LinhaEstoqueMinimo,
   type MinimoParaSalvar,
 } from "@/lib/plan";
@@ -193,6 +193,17 @@ export function EstoqueMinimoTab() {
     setConfirmar(null);
   };
 
+  const alternarSobDemandaDaCor = async (modelo: string, cor: string) => {
+    if (!podeEditar || salvarSobDemanda.isPending || salvarUm.isPending || salvarLote.isPending) return;
+    setErro(null);
+    try {
+      await salvarSobDemanda.mutateAsync(itensSobDemandaDaCor(linhas, modelo, cor));
+    } catch (e: unknown) {
+      const mensagem = e && typeof e === "object" && "message" in e ? String(e.message) : "erro";
+      setErro(`Não foi possível salvar Sob demanda em ${modelo} ${cor}: ${mensagem}`);
+    }
+  };
+
   const copiarPadrao = (modelo: string, cor: string, ls: LinhaEstoqueMinimo[]) => {
     if (!podeEditar) return;
     const valores = copiarValores(ls);
@@ -339,7 +350,7 @@ export function EstoqueMinimoTab() {
             </div>
             {aberto && Array.from(porCor, ([cor, lc]) => (
               <Fragment key={cor}>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/40 border-t">
+                <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 bg-muted/40 border-t">
                   <CorChip cor={cor} />
                   {podeEditar && (
                     <div className="flex items-center gap-1">
@@ -358,6 +369,13 @@ export function EstoqueMinimoTab() {
                           <ClipboardPaste className="h-3.5 w-3.5" /> Colar
                         </Button>
                       )}
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
+                        aria-label={`Alternar Sob demanda para todos os tamanhos de ${modelo} ${cor}`}
+                        title="Aplicar a todos os tamanhos desta cor"
+                        disabled={salvarSobDemanda.isPending || salvarUm.isPending || salvarLote.isPending}
+                        onClick={(e) => { e.stopPropagation(); void alternarSobDemandaDaCor(modelo, cor); }}>
+                        {linhas.filter((l) => l.modelo === modelo && l.cor === cor).every((l) => l.sobDemanda) ? "Voltar ao normal" : "Sob demanda"}
+                      </Button>
                     </div>
                   )}
                 </div>
