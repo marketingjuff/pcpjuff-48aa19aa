@@ -406,11 +406,18 @@ export function usePlanSaldoReal() {
   };
 }
 
-/** Metros restantes de tecido tingido em estoque, por cor. */
+export interface MapaPorCor {
+  /** valor agregado por cor canônica (normalizarCor) */
+  porCor: Map<string, number>;
+  /** cores não reconhecidas → valor envolvido (fora dos totais) */
+  coresNaoReconhecidas: Map<string, number>;
+}
+
+/** Metros restantes de tecido tingido em estoque, por cor canônica. */
 export function usePlanEstoqueTingido() {
   return useQuery({
     queryKey: [...PLAN_KEY, "estoque-tingido"],
-    queryFn: async () => {
+    queryFn: async (): Promise<MapaPorCor> => {
       const pecas = await paginar<any>((a, b) =>
         supabase.from("map_estoque_pecas" as any)
           .select("id, cor, alt_inicial, cortes, status, programacao_id")
@@ -418,35 +425,48 @@ export function usePlanEstoqueTingido() {
       const progs = await paginar<any>((a, b) =>
         supabase.from("map_tinturaria_programacoes" as any).select("id, cor").order("id").range(a, b));
       const corProg = new Map<string, string>(progs.map((p) => [String(p.id), String(p.cor ?? "")]));
-      const metrosPorCor = new Map<string, number>();
+      const porCor = new Map<string, number>();
+      const coresNaoReconhecidas = new Map<string, number>();
       for (const p of pecas) {
-        const cor = (corProg.get(String(p.programacao_id)) || p.cor || "").trim();
-        if (!cor) continue;
+        const bruta = (corProg.get(String(p.programacao_id)) || p.cor || "").trim();
+        if (!bruta) continue;
         const cortado = (Array.isArray(p.cortes) ? p.cortes : []).reduce((s: number, c: any) => s + (Number(c?.metros) || 0), 0);
         const restante = Math.max(0, (Number(p.alt_inicial) || 0) - cortado);
-        metrosPorCor.set(cor, (metrosPorCor.get(cor) ?? 0) + restante);
+        const cor = normalizarCor(bruta);
+        if (!cor) {
+          coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + restante);
+          continue;
+        }
+        porCor.set(cor, (porCor.get(cor) ?? 0) + restante);
       }
-      return metrosPorCor;
+      return { porCor, coresNaoReconhecidas };
     },
   });
 }
 
-/** Kg enviados à tinturaria e ainda não recebidos, por cor. */
+/** Kg enviados à tinturaria e ainda não recebidos, por cor canônica. */
 export function usePlanNaTinturaria() {
   return useQuery({
     queryKey: [...PLAN_KEY, "na-tinturaria"],
-    queryFn: async () => {
+    queryFn: async (): Promise<MapaPorCor> => {
       const rows = await paginar<any>((a, b) =>
         supabase.from("map_tinturaria_programacoes" as any)
           .select("id, cor, kg_enviados, data_recebimento")
           .not("kg_enviados", "is", null).is("data_recebimento", null).order("id").range(a, b));
-      const m = new Map<string, number>();
+      const porCor = new Map<string, number>();
+      const coresNaoReconhecidas = new Map<string, number>();
       for (const r of rows) {
-        const cor = String(r.cor ?? "").trim();
-        if (!cor) continue;
-        m.set(cor, (m.get(cor) ?? 0) + (Number(r.kg_enviados) || 0));
+        const bruta = String(r.cor ?? "").trim();
+        if (!bruta) continue;
+        const kgv = Number(r.kg_enviados) || 0;
+        const cor = normalizarCor(bruta);
+        if (!cor) {
+          coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + kgv);
+          continue;
+        }
+        porCor.set(cor, (porCor.get(cor) ?? 0) + kgv);
       }
-      return m;
+      return { porCor, coresNaoReconhecidas };
     },
   });
 }
