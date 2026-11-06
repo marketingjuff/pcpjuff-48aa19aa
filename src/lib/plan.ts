@@ -9,7 +9,8 @@ import {
   calcDisponivel, calcEmProducao, calcFaltantes, calcPerdas, calcRecebido, pkKey,
 } from "@/lib/cop-saldos";
 import { apenasVigentes, type LotesPorData } from "@/lib/olist-vendas";
-import { REFACAO_CORES } from "@/lib/pedidos";
+import { CATALOGO_PADRAO } from "./plan-catalogo";
+import { REFACAO_MODELOS, REFACAO_TAMANHOS, REFACAO_CORES } from "@/lib/pedidos";
 import { corIgnorada, normalizarCor } from "@/lib/plan-cores";
 
 export { pkKey };
@@ -133,6 +134,117 @@ export function usePlanCoresForaDeLinha() {
     onError: () => toast.error("Não foi possível salvar as cores fora de linha."),
   });
   return { cores: query.data ?? new Set<string>(), isLoading: query.isLoading, error: query.error, salvar };
+}
+
+export type CatalogoModelos = typeof CATALOGO_PADRAO;
+export type EstadoCorCatalogo = "normal" | "outlet" | "ausente";
+export type ClassificacaoCor = EstadoCorCatalogo | "geral";
+export const CHAVE_CATALOGO = "plan_catalogo_modelos";
+export function copiarCatalogo(catalogo: CatalogoModelos = CATALOGO_PADRAO): CatalogoModelos {
+  return Object.fromEntries(Object.entries(catalogo).map(([m, v]) => [m, { tamanhos: [...v.tamanhos], normais: [...v.normais], outlet: [...v.outlet] }]));
+}
+export function validarCatalogo(value: unknown): CatalogoModelos {
+  const padrao = copiarCatalogo();
+  if (!value || typeof value !== "object" || Array.isArray(value)) return padrao;
+  const cores = new Set(REFACAO_CORES.map(c => c.nome));
+  let validos = 0;
+  for (const [modelo, raw] of Object.entries(value)) {
+    if (!REFACAO_MODELOS.some(m => m === modelo)) continue;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return copiarCatalogo();
+    const v = raw as Record<string, unknown>;
+    if (!Array.isArray(v.tamanhos) || !Array.isArray(v.normais) || !Array.isArray(v.outlet)) return copiarCatalogo();
+    const normais = [...new Set(v.normais.filter((c): c is string => typeof c === "string" && cores.has(c)))];
+    const outlet = [...new Set(v.outlet.filter((c): c is string => typeof c === "string" && cores.has(c)))];
+    if (normais.some(c => outlet.includes(c))) return copiarCatalogo();
+    padrao[modelo] = { tamanhos: [...new Set(v.tamanhos.filter((t): t is string => typeof t === "string" && REFACAO_TAMANHOS.some(x => x === t)))], normais, outlet };
+    validos++;
+  }
+  return validos ? padrao : copiarCatalogo();
+}
+export function classificarCor(catalogo: CatalogoModelos, modelo: string, cor: string, globais: Set<string> = new Set()): ClassificacaoCor {
+  if (globais.has(cor)) return "geral";
+  const v = catalogo[modelo];
+  return v?.normais.includes(cor) ? "normal" : v?.outlet.includes(cor) ? "outlet" : "ausente";
+}
+export function rotuloClassificacao(estado: ClassificacaoCor) {
+  return estado === "geral" ? "Fora de linha geral" : estado === "outlet" ? "Outlet" : estado === "ausente" ? "Não tem a cor" : "Normal";
+}
+export function mudarCorCatalogo(catalogo: CatalogoModelos, modelo: string, cor: string, estado: EstadoCorCatalogo): CatalogoModelos {
+  const novo = copiarCatalogo(catalogo);
+  const v = novo[modelo];
+  if (!v) return novo;
+  v.normais = v.normais.filter(c => c !== cor);
+  v.outlet = v.outlet.filter(c => c !== cor);
+  if (estado === "normal") v.normais.push(cor);
+  if (estado === "outlet") v.outlet.push(cor);
+  return novo;
+}
+export function mudarCorEmTodos(catalogo: CatalogoModelos, cor: string, estado: "normal" | "outlet") {
+  let novo = catalogo;
+  let quantidade = 0;
+  for (const modelo of Object.keys(catalogo)) {
+    const atual = classificarCor(catalogo, modelo, cor);
+    if (atual === "ausente" || atual === estado) continue;
+    novo = mudarCorCatalogo(novo, modelo, cor, estado);
+    quantidade++;
+  }
+  return { catalogo: novo, quantidade };
+}
+export function restaurarModeloCatalogo(catalogo: CatalogoModelos, modelo: string) {
+  const novo = copiarCatalogo(catalogo);
+  const padrao = copiarCatalogo()[modelo];
+  if (padrao) novo[modelo] = padrao;
+  return novo;
+}
+export interface FiltroPlan { modelos: string[]; cores: string[] }
+export function filtrarModeloCor<T extends { modelo: string; cor: string }>(linhas: T[], filtro: FiltroPlan): T[] {
+  return linhas.filter(l => (!filtro.modelos.length || filtro.modelos.includes(l.modelo)) && (!filtro.cores.length || filtro.cores.includes(l.cor)));
+}
+export function totaisNecessidade(linhas: LinhaNecessidade[]) {
+  const estoque = linhas.reduce((s, l) => s + l.emEstoque, 0);
+  const producao = linhas.reduce((s, l) => s + l.emProducao, 0);
+  const falta = linhas.reduce((s, l) => s + l.aProduzir, 0);
+  return { demanda: falta + estoque + producao, estoque, producao, falta };
+}
+export function usePlanCatalogoModelos() {
+  const qc = useQueryClient();
+  const query = useQuery({ queryKey: [...PLAN_KEY, "catalogo"], queryFn: async () => {
+    const { data, error } = await supabase.from("map_config").select("value").eq("key", CHAVE_CATALOGO).maybeSingle();
+    if (error) throw error;
+    return validarCatalogo(data?.value);
+  } });
+  const salvar = useMutation({ mutationFn: async (catalogo: CatalogoModelos) => {
+    const { error } = await supabase.from("map_config").upsert({ key: CHAVE_CATALOGO, value: validarCatalogo(catalogo), updated_at: new Date().toISOString() });
+    if (error) throw error;
+  }, onSuccess: async () => { await qc.invalidateQueries({ queryKey: PLAN_KEY }); toast.success("Catálogo salvo."); },
+  onError: () => toast.error("Não foi possível salvar o catálogo.") });
+  const promover = useMutation({ mutationFn: async ({ catalogo, modelo, cor, globais }: { catalogo: CatalogoModelos; modelo: string; cor: string; globais: Set<string> }) => {
+    if (globais.has(cor)) throw new Error("Esta cor está fora de linha para a Juff inteira, mude em Parâmetros");
+    const { data: atual, error: leituraErro } = await supabase.from("map_config").select("value").eq("key", CHAVE_CATALOGO).maybeSingle();
+    if (leituraErro) throw leituraErro;
+    const maisRecente = atual ? validarCatalogo(atual.value) : catalogo;
+    const { data: globalAtual, error: globalErro } = await supabase.from("map_config").select("value").eq("key", CHAVE_CORES_FORA_LINHA).maybeSingle();
+    if (globalErro) throw globalErro;
+    if (validarCoresForaDeLinha(globalAtual?.value).has(cor)) throw new Error("Esta cor está fora de linha para a Juff inteira, mude em Parâmetros");
+    const tamanhos = maisRecente[modelo]?.tamanhos ?? [];
+    if (!tamanhos.length) return;
+    const { data: marcados, error: marcadosErro } = await supabase.from("plan_estoque_minimo").select("tamanho").eq("modelo", modelo).eq("cor", cor).in("tamanho", tamanhos).eq("sob_demanda", true);
+    if (marcadosErro) throw marcadosErro;
+    const { error: erroMinimo } = await supabase.from("plan_estoque_minimo").update({ sob_demanda: false }).eq("modelo", modelo).eq("cor", cor).in("tamanho", tamanhos).eq("sob_demanda", true);
+    if (erroMinimo) throw erroMinimo;
+    const novo = mudarCorCatalogo(maisRecente, modelo, cor, "normal");
+    const { error } = await supabase.from("map_config").upsert({ key: CHAVE_CATALOGO, value: novo, updated_at: new Date().toISOString() });
+    if (error) {
+      const tamanhosMarcados = (marcados ?? []).map(r => r.tamanho);
+      if (tamanhosMarcados.length) {
+        const { error: restaurarErro } = await supabase.from("plan_estoque_minimo").update({ sob_demanda: true }).eq("modelo", modelo).eq("cor", cor).in("tamanho", tamanhosMarcados);
+        if (restaurarErro) throw new Error("Não foi possível concluir a mudança nem restaurar todas as marcações. Confira Sob demanda desta cor.");
+      }
+      throw error;
+    }
+  }, onSettled: () => qc.invalidateQueries({ queryKey: PLAN_KEY }), onSuccess: () => toast.success("Cor voltou para a linha."),
+  onError: () => toast.error("Não foi possível concluir a mudança da cor. Confira antes de tentar novamente.") });
+  return { catalogo: query.data ?? CATALOGO_PADRAO, isLoading: query.isLoading, error: query.error, salvar, promover };
 }
 
 async function paginar<T>(build: (from: number, to: number) => PromiseLike<{ data: unknown; error: any }>): Promise<T[]> {
@@ -509,6 +621,7 @@ export function usePlanCruParado() {
 /* --------------------------- montagem da grade --------------------------- */
 
 export interface LinhaNecessidade {
+  classificacao?: ClassificacaoCor;
   modelo: string;
   cor: string;
   foraDeLinha: boolean;
@@ -541,24 +654,22 @@ export function montarNecessidade(params: {
   semanasSeguranca: number;
   coresForaDeLinha?: Set<string>;
   minimosAdotados?: Map<string, MinimoSalvo>;
+  catalogo?: CatalogoModelos;
 }): LinhaNecessidade[] {
   const { tamanhos, saldoReal, emProducao, mediaMensal, horizonteMeses, semanasSeguranca } = params;
-  const combos = new Map<string, { modelo: string; cor: string }>();
-  for (const k of [...saldoReal.keys(), ...mediaMensal.keys()]) {
-    const [modelo, cor, tam] = k.split("|");
-    if (!modelo || !cor || !tamanhos.includes(tam)) continue;
-    combos.set(`${modelo}|${cor}`, { modelo, cor });
-  }
+  const catalogo = params.catalogo ?? CATALOGO_PADRAO;
+  const combos = Object.entries(catalogo).flatMap(([modelo, v]) => v.tamanhos.length ? REFACAO_CORES.map(c => ({ modelo, cor: c.nome })) : []);
   const out: LinhaNecessidade[] = [];
-  for (const { modelo, cor } of combos.values()) {
-    const foraDeLinha = params.coresForaDeLinha?.has(cor) ?? false;
+  for (const { modelo, cor } of combos) {
+    const classificacao = classificarCor(catalogo, modelo, cor, params.coresForaDeLinha);
+    const foraDeLinha = classificacao !== "normal";
     const aProduzirPorTam: Record<string, number> = {};
     const firmePorTam: Record<string, number> = {};
     const prontoPorTam: Record<string, number> = {};
     const producaoPorTam: Record<string, number> = {};
     const porMinimoPorTam: Record<string, number> = {};
     let consumo = 0, livreTot = 0, firmeTot = 0, prodTot = 0, aProd = 0, porMinTot = 0;
-    for (const t of tamanhos) {
+    for (const t of catalogo[modelo]?.tamanhos ?? []) {
       const k = pkKey(modelo, cor, t);
       prontoPorTam[t] = params.prontoFisico?.get(k) ?? 0;
       producaoPorTam[t] = emProducao.get(k) ?? 0;
@@ -583,9 +694,8 @@ export function montarNecessidade(params: {
       prodTot += emProducao.get(k) ?? 0;
       aProd += aProduzirPorTam[t];
     }
-    if (consumo === 0 && firmeTot === 0) continue;
     out.push({
-      modelo, cor, foraDeLinha, aProduzirPorTam, firmePorTam, prontoPorTam, producaoPorTam,
+      modelo, cor, foraDeLinha, classificacao, aProduzirPorTam, firmePorTam, prontoPorTam, producaoPorTam,
       porMinimoPorTam, porMinimo: porMinTot,
       vendaPrevistaMensal: consumo,
       jaVendido: firmeTot,
@@ -893,6 +1003,7 @@ export interface MinimoSalvo {
 }
 
 export interface LinhaEstoqueMinimo {
+  classificacao?: ClassificacaoCor;
   modelo: string; cor: string; tamanho: string;
   mediaMensal: number; leadDias: number; origemLead: OrigemLead; amostraLead: number;
   consumo: number; folga: number; sugerido: number;
@@ -908,25 +1019,26 @@ export function montarEstoqueMinimo(params: {
   coresForaDeLinha: Set<string>;
   minimosAdotados: Map<string, MinimoSalvo>;
   limiarPct: number;
+  catalogo?: CatalogoModelos;
 }): LinhaEstoqueMinimo[] {
   const { mediaMensal, tamanhos, leadTime, config, coresForaDeLinha, minimosAdotados, limiarPct } = params;
-  const chaves = new Set<string>();
-  for (const [k, v] of mediaMensal) if (v > 0) chaves.add(k);
-  for (const k of minimosAdotados.keys()) chaves.add(k);
+  const catalogo = params.catalogo ?? CATALOGO_PADRAO;
+  const chaves = Object.entries(catalogo).flatMap(([modelo, v]) => REFACAO_CORES.flatMap(c => v.tamanhos.map(t => pkKey(modelo, c.nome, t))));
   const semanas = cfg(config, "semanas_seguranca");
   const out: LinhaEstoqueMinimo[] = [];
   for (const k of chaves) {
     const [modelo, cor, tamanho] = k.split("|");
     if (!modelo || !cor || !tamanho) continue;
-    if (coresForaDeLinha.has(cor)) continue;
+    const classificacao = classificarCor(catalogo, modelo, cor, coresForaDeLinha);
+    const foraDeLinha = classificacao !== "normal";
     const media = mediaMensal.get(k) ?? 0;
     const lt = leadTimeDoModelo(modelo, leadTime, config);
-    const sugerido = minimoSugerido(media, lt.dias, semanas);
+    const sugerido = foraDeLinha ? 0 : minimoSugerido(media, lt.dias, semanas);
     const salvo = minimosAdotados.get(k);
     const adotado = salvo ? salvo.minimo_adotado : null;
-    const sobDemanda = salvo?.sob_demanda ?? false;
+    const sobDemanda = foraDeLinha || (salvo?.sob_demanda ?? false);
     out.push({
-      modelo, cor, tamanho, mediaMensal: media, leadDias: lt.dias, origemLead: lt.origem, amostraLead: lt.amostra,
+      modelo, cor, tamanho, classificacao, mediaMensal: media, leadDias: lt.dias, origemLead: lt.origem, amostraLead: lt.amostra,
       consumo: media > 0 ? consumoNaReposicao(media, lt.dias) : 0,
       folga: media > 0 ? folgaSeguranca(media, semanas) : 0,
       sugerido, adotado, sobDemanda,

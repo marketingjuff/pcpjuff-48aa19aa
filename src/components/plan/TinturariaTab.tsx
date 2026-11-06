@@ -1,3 +1,5 @@
+import { FiltroModeloCor, useFiltroModeloCor } from "./FiltroModeloCor";
+import { filtrarModeloCor } from "@/lib/plan";
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +14,9 @@ const kg = (n: number) => `${Math.round(n).toLocaleString("pt-BR")} kg`;
 const dataBr = (d: Date | null) => d ? d.toLocaleDateString("pt-BR", { day: "numeric", month: "long" }) : "—";
 
 export function TinturariaTab() {
-  const { linhas, config, isLoading } = usePlanLinhas("suprimento");
+  const { linhas: todasLinhas, catalogo, config, isLoading } = usePlanLinhas("suprimento");
+  const filtroQ = useFiltroModeloCor("tinturaria");
+  const linhas = useMemo(() => filtrarModeloCor(todasLinhas, filtroQ.filtro), [todasLinhas, filtroQ.filtro]);
   const fichas = usePlanFichas();
   const estoque = usePlanEstoqueTingido();
   const tint = usePlanNaTinturaria();
@@ -48,6 +52,8 @@ export function TinturariaTab() {
           <p className="text-xs text-muted-foreground">Horizonte longo porque a reposição completa leva 65 dias. Se o horizonte for menor que o ciclo, o aviso chega atrasado.</p>
         </div>
       </div>
+
+      <FiltroModeloCor {...filtroQ} modelos={Object.keys(catalogo)} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card><CardHeader className="pb-1"><CardTitle className="text-sm text-muted-foreground">Tecido necessário</CardTitle></CardHeader>

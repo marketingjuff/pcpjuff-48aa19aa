@@ -12,6 +12,9 @@ import {
   type LinhaComPausa, type LinhaNecessidade, type PlanPausa,
 } from "@/lib/plan";
 
+import { FiltroModeloCor, useFiltroModeloCor } from "./FiltroModeloCor";
+import { filtrarModeloCor, totaisNecessidade, usePlanCatalogoModelos, rotuloClassificacao } from "@/lib/plan";
+
 const HORIZONTES_SUPRIMENTO = [3, 5, 6] as const;
 const HORIZONTES_CORTE = [1, 2, 3] as const;
 const LS_HORIZONTE_SUPRIMENTO = "plan:horizonte";
@@ -93,11 +96,13 @@ export function usePlanLinhas(escopo: "corte" | "suprimento" = "corte") {
   const saldo = usePlanSaldoReal();
   const venda = usePlanVendaHistorica();
   const coresForaDeLinha = usePlanCoresForaDeLinha();
+  const catalogoQ = usePlanCatalogoModelos();
   const minimosQ = usePlanMinimos();
   const minimos = minimosQ.error ? undefined : minimosQ.data;
   const todasLinhas = useMemo(() => {
     if (!venda.data || coresForaDeLinha.isLoading || coresForaDeLinha.error) return [] as LinhaNecessidade[];
     return montarNecessidade({
+      catalogo: catalogoQ.catalogo,
       tamanhos: REFACAO_TAMANHOS,
       saldoReal: saldo.data.saldoReal,
       prontoFisico: saldo.data.prontoFisico,
@@ -108,7 +113,7 @@ export function usePlanLinhas(escopo: "corte" | "suprimento" = "corte") {
       coresForaDeLinha: coresForaDeLinha.cores,
       minimosAdotados: minimos,
     });
-  }, [venda.data, saldo.data, horizonte, config, coresForaDeLinha.cores, coresForaDeLinha.isLoading, coresForaDeLinha.error, minimos]);
+  }, [venda.data, saldo.data, horizonte, config, coresForaDeLinha.cores, coresForaDeLinha.isLoading, coresForaDeLinha.error, minimos, catalogoQ.catalogo]);
   const linhas = todasLinhas.filter((l) => !l.foraDeLinha);
   const linhasForaDeLinha = todasLinhas.filter((l) => l.foraDeLinha);
   const naoMapeados = useMemo(() => {
@@ -124,11 +129,11 @@ export function usePlanLinhas(escopo: "corte" | "suprimento" = "corte") {
     return m;
   }, [venda.data, saldo.data]);
   return {
-    linhas, linhasForaDeLinha, config, horizonte,
+    linhas, linhasForaDeLinha, config, horizonte, catalogo: catalogoQ.catalogo,
     naoMapeados,
     coresNaoReconhecidas,
-    isLoading: lc || saldo.isLoading || venda.isLoading || coresForaDeLinha.isLoading || minimosQ.isLoading,
-    error: (coresForaDeLinha.error ?? venda.error) as Error | null,
+    isLoading: lc || saldo.isLoading || venda.isLoading || coresForaDeLinha.isLoading || minimosQ.isLoading || catalogoQ.isLoading,
+    error: (catalogoQ.error ?? coresForaDeLinha.error ?? venda.error) as Error | null,
   };
 }
 
@@ -243,15 +248,19 @@ function tituloSelo(p: PlanPausa | null) {
 }
 
 export function NecessidadeTab() {
-  const { linhas: linhasCruas, linhasForaDeLinha, config, naoMapeados, coresNaoReconhecidas, isLoading: carregandoLinhas, error } = usePlanLinhas("corte");
+  const { linhas: linhasCruas, linhasForaDeLinha: foraCruas, config, catalogo, naoMapeados, coresNaoReconhecidas, isLoading: carregandoLinhas, error } = usePlanLinhas("corte");
+  const filtroQ = useFiltroModeloCor("necessidade");
+  const linhasForaDeLinha = filtrarModeloCor(foraCruas, filtroQ.filtro);
   const pausasQ = usePlanPausas();
   const isLoading = carregandoLinhas || pausasQ.isLoading;
-  const { ativas: linhas, pausadas } = useMemo(() => {
+  const { ativas: ativasCruas, pausadas: pausadasCruas } = useMemo(() => {
     if (pausasQ.error) {
       return { ativas: linhasCruas.map((l) => ({ ...l, pausa: null, previsaoSuspensa: false, aProduzirSemPausa: l.aProduzir })) as LinhaComPausa[], pausadas: [] as LinhaComPausa[] };
     }
     return aplicarPausas({ linhas: linhasCruas, pausas: pausasQ.pausas, tamanhos: REFACAO_TAMANHOS });
   }, [linhasCruas, pausasQ.pausas, pausasQ.error]);
+  const linhas = filtrarModeloCor(ativasCruas, filtroQ.filtro);
+  const pausadas = filtrarModeloCor(pausadasCruas, filtroQ.filtro);
   const adiados = pausadas.filter((l) => l.pausa?.tipo === "adiado");
   const sobDemanda = pausadas.filter((l) => l.pausa?.tipo === "sob_demanda");
   const pecasFora = pausadas.reduce((s, l) => s + l.aProduzirSemPausa, 0)
@@ -260,16 +269,7 @@ export function NecessidadeTab() {
   const [verConferencia, setVerConferencia] = useState(false);
   const lead = cfg(config, "lead_time_completo_dias");
 
-  const totais = useMemo(() => {
-    let estoque = 0, producao = 0, falta = 0;
-    for (const l of linhas) {
-      estoque += l.emEstoque;
-      producao += l.emProducao;
-      falta += l.aProduzir;
-    }
-    // Demanda = o que falta + o que já está coberto por estoque e produção.
-    return { demanda: falta + estoque + producao, estoque, producao, falta };
-  }, [linhas]);
+  const totais = totaisNecessidade(linhas);
 
   const naoMap = Array.from(naoMapeados.entries()).sort((a, b) => b[1] - a[1]);
   const coresFora = Array.from(coresNaoReconhecidas.entries()).sort((a, b) => b[1] - a[1]);
@@ -283,6 +283,8 @@ export function NecessidadeTab() {
           <p className="text-xs text-muted-foreground">Horizonte curto porque cortar é rápido quando já existe tecido tingido. Quem decide tingir é a aba Tinturaria, que tem horizonte próprio.</p>
         </div>
       </div>
+
+      <FiltroModeloCor {...filtroQ} modelos={Object.keys(catalogo)} />
 
       {error && <div className="rounded border border-destructive p-3 text-sm text-destructive">Erro ao ler dados do planejamento: {error.message}</div>}
 
@@ -356,7 +358,7 @@ export function NecessidadeTab() {
                 <td rowSpan={3} className="border-b px-2 py-1 align-top"><CorChip cor={l.cor} /></td>
                 <td className="px-2 py-1 text-xs text-muted-foreground whitespace-nowrap">Pronto em estoque</td>
                 {REFACAO_TAMANHOS.map((t) => (
-                  <td key={t} className="px-2 py-1 text-right text-xs text-muted-foreground tabular-nums">{l.prontoPorTam[t] ?? 0}</td>
+                  <td key={t} className="px-2 py-1 text-right text-xs text-muted-foreground tabular-nums">{l.prontoPorTam[t] ?? "—"}</td>
                 ))}
                 <td rowSpan={3} className="border-b px-2 py-1 align-top text-right tabular-nums font-bold">{l.aProduzir}</td>
                 <td rowSpan={3} className="border-b px-2 py-1 align-top text-right tabular-nums">{fmt(l.jaVendido)}</td>
@@ -366,7 +368,7 @@ export function NecessidadeTab() {
               <tr className={index % 2 === 0 ? "bg-card" : "bg-muted/30"}>
                 <td className="px-2 py-1 text-xs text-muted-foreground whitespace-nowrap">Em produção</td>
                 {REFACAO_TAMANHOS.map((t) => (
-                  <td key={t} className="px-2 py-1 text-right text-xs text-muted-foreground tabular-nums">{l.producaoPorTam[t] ?? 0}</td>
+                  <td key={t} className="px-2 py-1 text-right text-xs text-muted-foreground tabular-nums">{l.producaoPorTam[t] ?? "—"}</td>
                 ))}
               </tr>
               <tr className={`border-b ${index % 2 === 0 ? "bg-card" : "bg-muted/30"}`}>
@@ -376,7 +378,7 @@ export function NecessidadeTab() {
                   const firme = l.firmePorTam[t] ?? 0;
                   return (
                     <td key={t} className={`px-2 py-1 text-right tabular-nums align-top ${firme > 0 ? "bg-amber-50" : ""} ${v === 0 ? "text-muted-foreground/40" : (l.porMinimoPorTam[t] ?? 0) > 0 ? "font-extrabold" : "font-semibold"}`}>
-                      {v}
+                      {catalogo[l.modelo]?.tamanhos.includes(t) ? v : "—"}
                       {firme > 0 && <div className="text-[11px] font-normal text-amber-800">{firme} em falta</div>}
                     </td>
                   );
@@ -449,7 +451,7 @@ export function NecessidadeTab() {
               <tbody>{linhasForaDeLinha.map((l) => (
                 <tr key={`${l.modelo}|${l.cor}`} className="border-t">
                   <td className="px-2 py-1">{l.modelo}</td>
-                  <td className="px-2 py-1"><div className="flex flex-wrap items-center gap-2"><CorChip cor={l.cor} /><Badge variant="outline">Cor fora de linha</Badge></div></td>
+                  <td className="px-2 py-1"><div className="flex flex-wrap items-center gap-2"><CorChip cor={l.cor} /><Badge variant="outline">{rotuloClassificacao(l.classificacao ?? "geral")}</Badge></div></td>
                   <td className="px-2 py-1 text-right tabular-nums">{l.vendaPrevistaMensal.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}</td>
                   <td className="px-2 py-1 text-right tabular-nums">{fmt(l.jaVendido)}</td>
                   <td className="px-2 py-1 text-right tabular-nums">{fmt(l.emEstoque)}</td>
