@@ -367,6 +367,7 @@ export function EstoqueMinimoTab() {
               const renderCor = ([cor, lc]: [string, LinhaEstoqueMinimo[]]) => (
               <Fragment key={cor}>
                 <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 bg-muted/40 border-t">
+                  <span className="text-xs font-semibold whitespace-nowrap">{modelo}</span>
                   <CorChip cor={cor} />
                   {lc[0]?.classificacao !== "normal" && <Badge variant="outline">{rotuloClassificacao(lc[0]?.classificacao ?? "ausente")}</Badge>}
                   {lc[0]?.classificacao === "geral" ? <span className="text-xs text-muted-foreground">Esta cor está fora de linha para a Juff inteira, mude em Parâmetros</span> : lc[0]?.classificacao !== "normal" && podeEditar ? (
@@ -545,6 +546,7 @@ export function EstoqueMinimoTab() {
                       <label key={cor} className={`flex items-center gap-2 pl-9 pr-3 py-1.5 cursor-pointer ${n === 0 ? "opacity-60" : ""}`}
                         onClick={(e) => e.stopPropagation()}>
                         <Checkbox checked={selecao.has(k)} onCheckedChange={(v) => alternarCor(k, v === true)} />
+                        <span className="text-xs font-medium whitespace-nowrap">{modelo}</span>
                         <CorChip cor={cor} />
                         {padrao?.modelo === modelo && padrao?.cor === cor && <Badge variant="outline" className={BADGE_SM_CLASS}>origem</Badge>}
                         <span className="text-[11px] text-muted-foreground">{n === 0 ? "nada a mudar" : `${n} ${n === 1 ? "tamanho muda" : "tamanhos mudam"}`}</span>
