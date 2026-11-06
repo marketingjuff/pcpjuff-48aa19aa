@@ -31,8 +31,9 @@ export function useFiltroModeloCor(aba: string) {
 export function FiltroModeloCor({ filtro, mudar, modelos }: {
   filtro: FiltroPlan; mudar: (f: FiltroPlan) => void; modelos: string[];
 }) {
+  const [aberto, setAberto] = useState<"modelos" | "cores" | null>(null);
   const seletor = (campo: "modelos" | "cores", titulo: string, opcoes: string[]) => (
-    <Popover>
+    <Popover open={aberto === campo} onOpenChange={open => setAberto(open ? campo : null)}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" aria-label={`Filtrar ${titulo.toLowerCase()}`}>
           {titulo}{filtro[campo].length > 0 ? ` (${filtro[campo].length})` : ""}<ChevronDown className="h-4 w-4" />

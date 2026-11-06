@@ -174,13 +174,14 @@ export function EstoqueMinimoTab() {
   }, [linhas, busca, soDefasados, filtroQ.filtro]);
 
   const gravar = async (l: LinhaEstoqueMinimo, minimo: number) => {
+    if (!podeEditar || catalogoQ.isLoading || catalogoQ.error) return;
     setErro(null);
     try { await salvarUm.mutateAsync({ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, minimo, sugerido: l.sugerido, sobDemanda: l.sobDemanda }); }
     catch (e: any) { setErro(`Não foi possível salvar ${l.modelo} ${l.cor} ${l.tamanho}: ${e?.message ?? "erro"}`); }
   };
 
   const alternarSobDemanda = async (l: LinhaEstoqueMinimo) => {
-    if (!podeEditar || salvarSobDemanda.isPending) return;
+    if (!podeEditar || salvarSobDemanda.isPending || l.classificacao !== "normal") return;
     setErro(null);
     try {
       await salvarSobDemanda.mutateAsync({ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, sugerido: l.sugerido, sobDemanda: !l.sobDemanda });
@@ -191,16 +192,18 @@ export function EstoqueMinimoTab() {
   };
 
   const aceitarTodas = async () => {
-    if (!confirmar) return;
+    if (!confirmar || !podeEditar || salvarLote.isPending) return;
     setErro(null);
     try {
-      await salvarLote.mutateAsync(confirmar.linhas.map((l) => ({ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, minimo: l.sugerido, sugerido: l.sugerido, sobDemanda: l.sobDemanda })));
+      const chaves = new Set(confirmar.linhas.map(l => `${l.modelo}|${l.cor}|${l.tamanho}`));
+      await salvarLote.mutateAsync(linhas.filter(l => chaves.has(`${l.modelo}|${l.cor}|${l.tamanho}`) && l.classificacao === "normal" && !l.sobDemanda && l.sugerido > 0).map((l) => ({ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, minimo: l.sugerido, sugerido: l.sugerido, sobDemanda: l.sobDemanda })));
     } catch (e: any) { setErro(`Não foi possível salvar o modelo ${confirmar.modelo}: ${e?.message ?? "erro"}`); }
     setConfirmar(null);
   };
 
   const alternarSobDemandaDaCor = async (modelo: string, cor: string) => {
     if (!podeEditar || salvarSobDemanda.isPending || salvarUm.isPending || salvarLote.isPending) return;
+    if (linhas.some(l => l.modelo === modelo && l.cor === cor && l.classificacao !== "normal")) return;
     setErro(null);
     try {
       await salvarSobDemanda.mutateAsync(itensSobDemandaDaCor(linhas, modelo, cor));

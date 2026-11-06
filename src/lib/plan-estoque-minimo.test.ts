@@ -152,7 +152,7 @@ describe("Catálogo completo do PLAN", () => {
   test("validar descarta nomes inválidos e conserva tamanho vazio", () => {
     const v = validarCatalogo({ Camiseta: { tamanhos: ["M", "99", "M"], normais: ["amarelo", "rosa ultra"], outlet: [] }, Fantasma: { tamanhos: ["M"], normais: [], outlet: [] } });
     expect(v.Camiseta).toEqual({ tamanhos: ["M"], normais: ["amarelo"], outlet: [] });
-    expect(v.Fantasma).toBe(undefined);
+    expect(Object.hasOwn(v, "Fantasma")).toBe(false);
     expect(v["Baby Look"]).toEqual(CATALOGO_PADRAO["Baby Look"]);
     expect(grade({ Camiseta: { tamanhos: [], normais: ["amarelo"], outlet: [] } })).toHaveLength(0);
   });

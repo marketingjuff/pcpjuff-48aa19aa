@@ -220,13 +220,28 @@ export function usePlanCatalogoModelos() {
   onError: () => toast.error("Não foi possível salvar o catálogo.") });
   const promover = useMutation({ mutationFn: async ({ catalogo, modelo, cor, globais }: { catalogo: CatalogoModelos; modelo: string; cor: string; globais: Set<string> }) => {
     if (globais.has(cor)) throw new Error("Esta cor está fora de linha para a Juff inteira, mude em Parâmetros");
-    const tamanhos = catalogo[modelo]?.tamanhos ?? [];
+    const { data: atual, error: leituraErro } = await supabase.from("map_config").select("value").eq("key", CHAVE_CATALOGO).maybeSingle();
+    if (leituraErro) throw leituraErro;
+    const maisRecente = atual ? validarCatalogo(atual.value) : catalogo;
+    const { data: globalAtual, error: globalErro } = await supabase.from("map_config").select("value").eq("key", CHAVE_CORES_FORA_LINHA).maybeSingle();
+    if (globalErro) throw globalErro;
+    if (validarCoresForaDeLinha(globalAtual?.value).has(cor)) throw new Error("Esta cor está fora de linha para a Juff inteira, mude em Parâmetros");
+    const tamanhos = maisRecente[modelo]?.tamanhos ?? [];
     if (!tamanhos.length) return;
+    const { data: marcados, error: marcadosErro } = await supabase.from("plan_estoque_minimo").select("tamanho").eq("modelo", modelo).eq("cor", cor).in("tamanho", tamanhos).eq("sob_demanda", true);
+    if (marcadosErro) throw marcadosErro;
     const { error: erroMinimo } = await supabase.from("plan_estoque_minimo").update({ sob_demanda: false }).eq("modelo", modelo).eq("cor", cor).in("tamanho", tamanhos).eq("sob_demanda", true);
     if (erroMinimo) throw erroMinimo;
-    const novo = mudarCorCatalogo(catalogo, modelo, cor, "normal");
+    const novo = mudarCorCatalogo(maisRecente, modelo, cor, "normal");
     const { error } = await supabase.from("map_config").upsert({ key: CHAVE_CATALOGO, value: novo, updated_at: new Date().toISOString() });
-    if (error) throw error;
+    if (error) {
+      const tamanhosMarcados = (marcados ?? []).map(r => r.tamanho);
+      if (tamanhosMarcados.length) {
+        const { error: restaurarErro } = await supabase.from("plan_estoque_minimo").update({ sob_demanda: true }).eq("modelo", modelo).eq("cor", cor).in("tamanho", tamanhosMarcados);
+        if (restaurarErro) throw new Error("Não foi possível concluir a mudança nem restaurar todas as marcações. Confira Sob demanda desta cor.");
+      }
+      throw error;
+    }
   }, onSettled: () => qc.invalidateQueries({ queryKey: PLAN_KEY }), onSuccess: () => toast.success("Cor voltou para a linha."),
   onError: () => toast.error("Não foi possível concluir a mudança da cor. Confira antes de tentar novamente.") });
   return { catalogo: query.data ?? CATALOGO_PADRAO, isLoading: query.isLoading, error: query.error, salvar, promover };
