@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { REFACAO_CORES } from "@/lib/pedidos";
+import { REFACAO_TAMANHOS, REFACAO_CORES } from "@/lib/pedidos";
 import { CorChip } from "@/components/plan/NecessidadeTab";
 import { Lock } from "lucide-react";
 import { useMyRoles } from "@/hooks/use-role";
@@ -12,6 +12,63 @@ import {
   kgPorPeca, usePlanConfig, usePlanConfigRows, usePlanCoresForaDeLinha, usePlanFichas, useSalvarConfig, useSalvarFicha,
   type FichaModelo,
 } from "@/lib/plan";
+
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { classificarCor, copiarCatalogo, mudarCorCatalogo, mudarCorEmTodos, restaurarModeloCatalogo, usePlanCatalogoModelos, type CatalogoModelos, type EstadoCorCatalogo } from "@/lib/plan";
+
+function EditorCatalogo({ podeEditar }: { podeEditar: boolean }) {
+  const q = usePlanCatalogoModelos();
+  const [rascunho, setRascunho] = useState<CatalogoModelos | null>(null);
+  const [modelo, setModelo] = useState("Camiseta");
+  const [confirmacao, setConfirmacao] = useState<{ cor: string; estado: "normal" | "outlet" } | null>(null);
+  const catalogo = rascunho ?? q.catalogo;
+  const ficha = catalogo[modelo];
+  const bloqueado = !podeEditar || q.isLoading || !!q.error || q.salvar.isPending || q.promover.isPending;
+  const lote = confirmacao ? mudarCorEmTodos(catalogo, confirmacao.cor, confirmacao.estado) : null;
+  const mudou = JSON.stringify(catalogo) !== JSON.stringify(q.catalogo);
+  return <Card>
+    <CardHeader><CardTitle>Cores e tamanhos por modelo</CardTitle></CardHeader>
+    <CardContent className="space-y-4">
+      {q.error && <p className="text-sm text-destructive">Não foi possível ler o catálogo: {q.error.message}</p>}
+      <Select value={modelo} onValueChange={setModelo}>
+        <SelectTrigger className="max-w-xs" aria-label="Modelo do catálogo"><SelectValue /></SelectTrigger>
+        <SelectContent>{Object.keys(catalogo).map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+      </Select>
+      <div className="space-y-2">
+        <p className="text-sm font-medium">Tamanhos</p>
+        <ToggleGroup type="multiple" value={ficha?.tamanhos ?? []} disabled={bloqueado} className="flex flex-wrap justify-start" onValueChange={tamanhos => {
+          if (bloqueado || !ficha) return;
+          const novo = copiarCatalogo(catalogo); novo[modelo] = { ...ficha, tamanhos: REFACAO_TAMANHOS.filter(t => tamanhos.includes(t)) }; setRascunho(novo);
+        }}>{REFACAO_TAMANHOS.map(t => <ToggleGroupItem key={t} value={t} aria-label={`Fabricar tamanho ${t}`} variant="outline">{t}</ToggleGroupItem>)}</ToggleGroup>
+      </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        {REFACAO_CORES.map(c => <div key={c.nome} className="border-b pb-3 space-y-2">
+          <CorChip cor={c.nome} />
+          <ToggleGroup type="single" value={classificarCor(catalogo, modelo, c.nome)} disabled={bloqueado} className="justify-start flex-wrap" onValueChange={estado => {
+            if (bloqueado || !["normal", "outlet", "ausente"].includes(estado)) return;
+            setRascunho(mudarCorCatalogo(catalogo, modelo, c.nome, estado as EstadoCorCatalogo));
+          }}>{([["normal", "Normal"], ["outlet", "Outlet"], ["ausente", "Não tem"]] as const).map(([v, titulo]) => <ToggleGroupItem key={v} value={v} variant="outline" aria-label={`${modelo} ${c.nome} ${titulo}`}>{titulo}</ToggleGroupItem>)}</ToggleGroup>
+          {podeEditar && <div className="flex flex-wrap gap-1">
+            <Button size="sm" variant="ghost" className="h-auto whitespace-normal text-left text-xs" disabled={bloqueado || mudarCorEmTodos(catalogo, c.nome, "outlet").quantidade === 0} onClick={() => setConfirmacao({ cor: c.nome, estado: "outlet" })}>Marcar em todos os modelos como Outlet</Button>
+            <Button size="sm" variant="ghost" className="h-auto whitespace-normal text-left text-xs" disabled={bloqueado || mudarCorEmTodos(catalogo, c.nome, "normal").quantidade === 0} onClick={() => setConfirmacao({ cor: c.nome, estado: "normal" })}>Voltar ao normal em todos os modelos</Button>
+          </div>}
+        </div>)}
+      </div>
+      {podeEditar && <div className="flex flex-wrap gap-2">
+        <Button disabled={bloqueado || !mudou} onClick={() => { void q.salvar.mutateAsync(catalogo).then(() => setRascunho(null)).catch(() => {}); }}>{q.salvar.isPending ? "Salvando…" : "Salvar catálogo"}</Button>
+        <Button variant="outline" disabled={bloqueado} onClick={() => setRascunho(restaurarModeloCatalogo(catalogo, modelo))}>Restaurar padrão</Button>
+      </div>}
+    </CardContent>
+    <AlertDialog open={!!confirmacao} onOpenChange={aberto => { if (!aberto) setConfirmacao(null); }}>
+      <AlertDialogContent><AlertDialogHeader>
+        <AlertDialogTitle>{confirmacao?.estado === "outlet" ? "Marcar em todos os modelos como Outlet?" : "Voltar ao normal em todos os modelos?"}</AlertDialogTitle>
+        <AlertDialogDescription>{lote?.quantidade ?? 0} modelos vão mudar para a cor {confirmacao?.cor}. Modelos que não têm essa cor não mudam. Salve o catálogo para confirmar as alterações.</AlertDialogDescription>
+      </AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction disabled={bloqueado || !lote?.quantidade} onClick={() => { if (lote && !bloqueado) setRascunho(lote.catalogo); setConfirmacao(null); }}>Confirmar</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+    </AlertDialog>
+  </Card>;
+}
 
 const ROTULOS: Record<string, string> = {
   gramatura_g_por_metro: "Gramatura (g por metro)",
@@ -156,6 +213,7 @@ export function ParametrosTab() {
           {podeEditar && <Button size="sm" onClick={salvarCores} disabled={bloqueado || !mudouCores}>{foraDeLinha.salvar.isPending ? "Salvando…" : "Salvar cores fora de linha"}</Button>}
         </CardContent>
       </Card>
+      <EditorCatalogo podeEditar={podeEditar} />
       <Card>
         <CardHeader><CardTitle>Ficha de encaixe</CardTitle></CardHeader>
         <CardContent className="overflow-auto">
