@@ -1,8 +1,9 @@
 # Módulo PLAN
-- [ ] Incorporar a versão 2: nenhuma cor omitida, etiqueta global prioritária e cartões de produção seguindo filtros.
-- [ ] Aprovar o plano do catálogo por modelo, cores fora de linha e filtros múltiplos.
-- [ ] Após aprovação, implementar somente nos oito arquivos autorizados e verificar permissões existentes sem alterá-las.
-- [ ] Executar testes e conferir checagem automática, fluxo na tela e diff.
+- [x] Incorporar a versão 2: nenhuma cor omitida, etiqueta global prioritária e cartões de produção seguindo filtros.
+- [x] Aprovar o plano do catálogo por modelo, cores fora de linha e filtros múltiplos.
+- [x] Implementar catálogo, blocos fora de linha, editor e filtros nos oito arquivos autorizados.
+- [x] Executar 34 testes, conferir checagem automática e validar fluxo real como admin, com diff dos oito arquivos.
+- [ ] Verificar leitura/gravação do catálogo como gestor e leitura como operador: falta sessão desses papéis; permissões existentes da nova chave ainda não verificadas e nenhuma policy pode ser alterada nesta tarefa.
 - [x] Tabelas de parâmetros e fichas, com 15 fichas e 8 parâmetros já preenchidos.
 - [x] Botão PLAN laranja, permissões e preset.
 - [x] Aba "O que produzir" com Vendido/Previsto rotulados e aviso de produtos Olist sem de-para.
