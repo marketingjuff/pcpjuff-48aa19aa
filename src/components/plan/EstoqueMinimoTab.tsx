@@ -23,6 +23,9 @@ import {
   type MinimoParaSalvar,
 } from "@/lib/plan";
 
+import { FiltroModeloCor, useFiltroModeloCor } from "./FiltroModeloCor";
+import { filtrarModeloCor, usePlanCatalogoModelos, rotuloClassificacao } from "@/lib/plan";
+
 type PadraoMinimo = { modelo: string; cor: string; valores: Map<string, number> };
 
 function copiarValores(linhas: LinhaEstoqueMinimo[]) {
@@ -31,6 +34,7 @@ function copiarValores(linhas: LinhaEstoqueMinimo[]) {
 
 export function itensDaColagem(linhas: LinhaEstoqueMinimo[], valores: Map<string, number>, substituir: boolean): MinimoParaSalvar[] {
   return linhas.flatMap((l) => {
+    if (l.classificacao && l.classificacao !== "normal") return [];
     const minimo = valores.get(l.tamanho);
     if (minimo === undefined || minimo === l.adotado) return [];
     if (!substituir && l.adotado !== null) return [];
@@ -120,6 +124,9 @@ function CampoAdotado({ l, podeEditar, onSalvar }: { l: LinhaEstoqueMinimo; pode
 
 export function EstoqueMinimoTab() {
   const podeEditar = podeEditarPlan((useMyRoles().data ?? []).map((r) => r.role));
+  const catalogoQ = usePlanCatalogoModelos();
+  const filtroQ = useFiltroModeloCor("estoque_minimo");
+  const [foraAbertos, setForaAbertos] = useState<Set<string>>(new Set());
   const venda = usePlanVendaHistorica();
   const lead = usePlanLeadTimePorModelo();
   const { data: config, isLoading: cfgLoading } = usePlanConfig();
@@ -146,17 +153,17 @@ export function EstoqueMinimoTab() {
   const linhas = useMemo(() => {
     if (!venda.data || !minimos.data) return [];
     return montarEstoqueMinimo({
-      mediaMensal: venda.data.mediaMensal, tamanhos: REFACAO_TAMANHOS, leadTime: lead.data, config,
+      catalogo: catalogoQ.catalogo, mediaMensal: venda.data.mediaMensal, tamanhos: REFACAO_TAMANHOS, leadTime: lead.data, config,
       coresForaDeLinha: foraLinha, minimosAdotados: minimos.data, limiarPct: limiar,
     });
-  }, [venda.data, minimos.data, lead.data, config, foraLinha, limiar]);
+  }, [venda.data, minimos.data, lead.data, config, foraLinha, limiar, catalogoQ.catalogo]);
 
   const totalDefasados = linhas.filter((l) => l.defasado).length;
 
   const blocos = useMemo(() => {
     const q = busca.trim().toLowerCase();
     const m = new Map<string, LinhaEstoqueMinimo[]>();
-    for (const l of linhas) {
+    for (const l of filtrarModeloCor(linhas, filtroQ.filtro)) {
       if (soDefasados && !l.defasado) continue;
       if (q && !l.modelo.toLowerCase().includes(q) && !l.cor.toLowerCase().includes(q)) continue;
       const arr = m.get(l.modelo) ?? [];
@@ -164,7 +171,7 @@ export function EstoqueMinimoTab() {
       m.set(l.modelo, arr);
     }
     return Array.from(m, ([modelo, ls]) => ({ modelo, linhas: ls }));
-  }, [linhas, busca, soDefasados]);
+  }, [linhas, busca, soDefasados, filtroQ.filtro]);
 
   const gravar = async (l: LinhaEstoqueMinimo, minimo: number) => {
     setErro(null);
@@ -220,6 +227,7 @@ export function EstoqueMinimoTab() {
   const porModeloCor = useMemo(() => {
     const m = new Map<string, Map<string, LinhaEstoqueMinimo[]>>();
     for (const l of linhas) {
+      if (l.classificacao !== "normal") continue;
       const mc = m.get(l.modelo) ?? new Map<string, LinhaEstoqueMinimo[]>();
       const a = mc.get(l.cor) ?? []; a.push(l); mc.set(l.cor, a); m.set(l.modelo, mc);
     }
@@ -283,7 +291,7 @@ export function EstoqueMinimoTab() {
     }
   };
 
-  const carregando = venda.isLoading || minimos.isLoading || lead.isLoading || cfgLoading;
+  const carregando = venda.isLoading || minimos.isLoading || lead.isLoading || cfgLoading || catalogoQ.isLoading;
   const toggle = (m: string) => setAbertos((s) => { const n = new Set(s); n.has(m) ? n.delete(m) : n.add(m); return n; });
 
   return (
@@ -302,6 +310,8 @@ export function EstoqueMinimoTab() {
         </div>
       )}
 
+      <FiltroModeloCor {...filtroQ} modelos={Object.keys(catalogoQ.catalogo)} />
+      {catalogoQ.error && <p className="text-sm text-destructive">Não foi possível ler o catálogo: {catalogoQ.error.message}</p>}
       <div className="flex flex-wrap items-center gap-3">
         <Input type="text" placeholder="Buscar modelo ou cor" value={busca} onChange={(e) => setBusca(e.target.value)} className="max-w-xs" />
         <label className="flex items-center gap-2 text-sm">
@@ -326,7 +336,7 @@ export function EstoqueMinimoTab() {
       {blocos.map(({ modelo, linhas: ls }) => {
         const aberto = abertos.has(modelo);
         const def = ls.filter((l) => l.defasado).length;
-        const paraAceitar = ls.filter((l) => l.adotado !== l.sugerido);
+        const paraAceitar = ls.filter((l) => !l.sobDemanda && l.sugerido > 0 && l.adotado !== l.sugerido);
         const porCor = new Map<string, LinhaEstoqueMinimo[]>();
         for (const l of ls) { const a = porCor.get(l.cor) ?? []; a.push(l); porCor.set(l.cor, a); }
         return (
@@ -347,11 +357,21 @@ export function EstoqueMinimoTab() {
                 </div>
               )}
             </div>
-            {aberto && Array.from(porCor, ([cor, lc]) => (
+            {aberto && (() => {
+              const grupos = Array.from(porCor);
+              const emLinha = grupos.filter(([, lc]) => lc[0]?.classificacao === "normal");
+              const fora = grupos.filter(([, lc]) => lc[0]?.classificacao !== "normal");
+              const renderCor = ([cor, lc]: [string, LinhaEstoqueMinimo[]]) => (
               <Fragment key={cor}>
                 <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 bg-muted/40 border-t">
                   <CorChip cor={cor} />
-                  {podeEditar && (
+                  {lc[0]?.classificacao !== "normal" && <Badge variant="outline">{rotuloClassificacao(lc[0]?.classificacao ?? "ausente")}</Badge>}
+                  {lc[0]?.classificacao === "geral" ? <span className="text-xs text-muted-foreground">Esta cor está fora de linha para a Juff inteira, mude em Parâmetros</span> : lc[0]?.classificacao !== "normal" && podeEditar ? (
+                    <Button size="sm" variant="outline" disabled={catalogoQ.promover.isPending || !!catalogoQ.error} onClick={() => {
+                      void catalogoQ.promover.mutateAsync({ catalogo: catalogoQ.catalogo, modelo, cor, globais: foraLinha }).catch((e: unknown) => setErro(e instanceof Error ? e.message : "Não foi possível mudar a cor."));
+                    }}>Tirar de fora de linha</Button>
+                  ) : null}
+                  {podeEditar && lc[0]?.classificacao === "normal" && (
                     <div className="flex items-center gap-1">
                       <Button size="sm" variant={padrao?.modelo === modelo && padrao?.cor === cor ? "secondary" : "ghost"}
                         className="h-6 px-1.5 gap-1 text-[11px]" title="Copiar padrão desta cor" aria-label="Copiar padrão desta cor"
@@ -428,7 +448,7 @@ export function EstoqueMinimoTab() {
                                     Aceitar {fmt(l.sugerido)}
                                   </Button>
                                 )}
-                                {podeEditar && (
+                                {podeEditar && l.classificacao === "normal" && (
                                   <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]"
                                     disabled={salvarSobDemanda.isPending || salvarUm.isPending || salvarLote.isPending}
                                     onClick={(e) => { e.stopPropagation(); void alternarSobDemanda(l); }}>
@@ -448,7 +468,17 @@ export function EstoqueMinimoTab() {
                   </table>
                 </div>
               </Fragment>
-            ))}
+              );
+              return <>
+                {emLinha.map(renderCor)}
+                {fora.length > 0 && <div className="border-t p-3">
+                  <Button size="sm" variant="outline" aria-expanded={foraAbertos.has(modelo)} onClick={() => setForaAbertos(prev => { const novo = new Set(prev); novo.has(modelo) ? novo.delete(modelo) : novo.add(modelo); return novo; })}>
+                    {foraAbertos.has(modelo) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}Ver cores fora de linha ({fora.length})
+                  </Button>
+                </div>}
+                {foraAbertos.has(modelo) && fora.map(renderCor)}
+              </>;
+            })()}
           </Card>
         );
       })}
