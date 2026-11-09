@@ -659,6 +659,8 @@ export interface LinhaNecessidade {
   firmePorTam: Record<string, number>;
   /** parte da sugestão que só existe por causa do piso do mínimo adotado */
   porMinimoPorTam: Record<string, number>;
+  /** firme + o que falta para chegar no mínimo adotado, por tamanho (só exibição) */
+  sugestaoMinimoPorTam: Record<string, number>;
   porMinimo: number;
   vendaPrevistaMensal: number;
   jaVendido: number;
@@ -693,6 +695,7 @@ export function montarNecessidade(params: {
     const prontoPorTam: Record<string, number> = {};
     const producaoPorTam: Record<string, number> = {};
     const porMinimoPorTam: Record<string, number> = {};
+    const sugestaoMinimoPorTam: Record<string, number> = {};
     let consumo = 0, livreTot = 0, firmeTot = 0, prodTot = 0, aProd = 0, porMinTot = 0;
     for (const t of catalogo[modelo]?.tamanhos ?? []) {
       const k = pkKey(modelo, cor, t);
@@ -712,6 +715,7 @@ export function montarNecessidade(params: {
       const previsao = Math.max(prevLiquido, faltaParaMinimo);
       aProduzirPorTam[t] = foraDeLinha ? 0 : firme + previsao;
       porMinimoPorTam[t] = foraDeLinha ? 0 : Math.max(0, faltaParaMinimo - prevLiquido);
+      sugestaoMinimoPorTam[t] = foraDeLinha ? 0 : firme + faltaParaMinimo;
       porMinTot += porMinimoPorTam[t];
       consumo += media;
       livreTot += estoqueLivre;
@@ -721,7 +725,7 @@ export function montarNecessidade(params: {
     }
     out.push({
       modelo, cor, foraDeLinha, classificacao, aProduzirPorTam, firmePorTam, prontoPorTam, producaoPorTam,
-      porMinimoPorTam, porMinimo: porMinTot,
+      porMinimoPorTam, porMinimo: porMinTot, sugestaoMinimoPorTam,
       vendaPrevistaMensal: consumo,
       jaVendido: firmeTot,
       emEstoque: livreTot,
@@ -855,16 +859,18 @@ export function aplicarPausas(params: {
     }
     const aProduzirPorTam: Record<string, number> = {};
     const porMinimoPorTam: Record<string, number> = {};
+    const sugestaoMinimoPorTam: Record<string, number> = {};
     let soma = 0;
     for (const t of params.tamanhos) {
       porMinimoPorTam[t] = 0;
       // fora de linha mantém a regra existente: sugestão zero
       const v = l.foraDeLinha ? 0 : (l.firmePorTam[t] ?? 0);
       aProduzirPorTam[t] = v;
+      sugestaoMinimoPorTam[t] = v;
       soma += v;
     }
     const nova: LinhaComPausa = {
-      ...l, aProduzirPorTam, aProduzir: soma, porMinimoPorTam, porMinimo: 0,
+      ...l, aProduzirPorTam, aProduzir: soma, porMinimoPorTam, porMinimo: 0, sugestaoMinimoPorTam,
       pausa, previsaoSuspensa: true, aProduzirSemPausa: l.aProduzir,
     };
     (l.jaVendido > 0 ? ativas : pausadas).push(nova);
