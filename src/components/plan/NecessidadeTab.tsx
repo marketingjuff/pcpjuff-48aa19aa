@@ -350,20 +350,20 @@ export function NecessidadeTab() {
             {linhas.map((l, index) => (
               <Fragment key={`${l.modelo}|${l.cor}`}>
               <tr className={index % 2 === 0 ? "bg-card" : "bg-muted/30"}>
-                <td rowSpan={3} className="border-b px-2 py-1 align-top whitespace-nowrap font-semibold">
+                <td rowSpan={4} className="border-b px-2 py-1 align-top whitespace-nowrap font-semibold">
                   {l.modelo}
                   {l.porMinimo > 0 && <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0" title="Parte desta sugestão existe para não ficar abaixo do estoque mínimo adotado">piso do mínimo</Badge>}
                   {l.previsaoSuspensa && <Badge className="ml-2 bg-amber-500 text-white hover:bg-amber-500" title={tituloSelo(l.pausa)}>Só pedido vendido</Badge>}
                 </td>
-                <td rowSpan={3} className="border-b px-2 py-1 align-top"><CorChip cor={l.cor} /></td>
+                <td rowSpan={4} className="border-b px-2 py-1 align-top"><CorChip cor={l.cor} /></td>
                 <td className="px-2 py-1 text-xs text-muted-foreground whitespace-nowrap">Pronto em estoque</td>
                 {REFACAO_TAMANHOS.map((t) => (
                   <td key={t} className="px-2 py-1 text-right text-xs text-muted-foreground tabular-nums">{l.prontoPorTam[t] ?? "—"}</td>
                 ))}
-                <td rowSpan={3} className="border-b px-2 py-1 align-top text-right tabular-nums font-bold">{l.aProduzir}</td>
-                <td rowSpan={3} className="border-b px-2 py-1 align-top text-right tabular-nums">{fmt(l.jaVendido)}</td>
-                <td rowSpan={3} className="border-b px-2 py-1 align-top"><SituacaoBadge dias={l.diasRuptura} lead={lead} /></td>
-                <td rowSpan={3} className="border-b px-1 py-1 align-top"><PausaPopover modelo={l.modelo} cor={l.cor} pausar={pausasQ.pausar} /></td>
+                <td rowSpan={4} className="border-b px-2 py-1 align-top text-right tabular-nums font-bold">{l.aProduzir}</td>
+                <td rowSpan={4} className="border-b px-2 py-1 align-top text-right tabular-nums">{fmt(l.jaVendido)}</td>
+                <td rowSpan={4} className="border-b px-2 py-1 align-top"><SituacaoBadge dias={l.diasRuptura} lead={lead} /></td>
+                <td rowSpan={4} className="border-b px-1 py-1 align-top"><PausaPopover modelo={l.modelo} cor={l.cor} pausar={pausasQ.pausar} /></td>
               </tr>
               <tr className={index % 2 === 0 ? "bg-card" : "bg-muted/30"}>
                 <td className="px-2 py-1 text-xs text-muted-foreground whitespace-nowrap">Em produção</td>
@@ -371,15 +371,26 @@ export function NecessidadeTab() {
                   <td key={t} className="px-2 py-1 text-right text-xs text-muted-foreground tabular-nums">{l.producaoPorTam[t] ?? "—"}</td>
                 ))}
               </tr>
-              <tr className={`border-b ${index % 2 === 0 ? "bg-card" : "bg-muted/30"}`}>
-                <td className="px-2 py-1 font-semibold whitespace-nowrap">Sugestão de corte</td>
+              <tr className={index % 2 === 0 ? "bg-card" : "bg-muted/30"}>
+                <td className="px-2 py-1 text-xs text-muted-foreground whitespace-nowrap">Sugestão de corte</td>
                 {REFACAO_TAMANHOS.map((t) => {
                   const v = l.aProduzirPorTam[t] ?? 0;
                   const firme = l.firmePorTam[t] ?? 0;
                   return (
-                    <td key={t} className={`px-2 py-1 text-right tabular-nums align-top ${firme > 0 ? "bg-amber-50" : ""} ${v === 0 ? "text-muted-foreground/40" : (l.porMinimoPorTam[t] ?? 0) > 0 ? "font-extrabold" : "font-semibold"}`}>
+                    <td key={t} className={`px-2 py-1 text-right text-xs text-muted-foreground tabular-nums align-top ${firme > 0 ? "bg-amber-50" : ""}`}>
                       {catalogo[l.modelo]?.tamanhos.includes(t) ? v : "—"}
                       {firme > 0 && <div className="text-[11px] font-normal text-amber-800">{firme} em falta</div>}
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr className={`border-b ${index % 2 === 0 ? "bg-card" : "bg-muted/30"}`}>
+                <td className="px-2 py-1 font-semibold whitespace-nowrap">Sugestão pelo estoque mínimo</td>
+                {REFACAO_TAMANHOS.map((t) => {
+                  const v = l.sugestaoMinimoPorTam[t] ?? 0;
+                  return (
+                    <td key={t} className={`px-2 py-1 text-right tabular-nums align-top ${v === 0 ? "text-muted-foreground/40" : "font-semibold"}`}>
+                      {catalogo[l.modelo]?.tamanhos.includes(t) ? v : "—"}
                     </td>
                   );
                 })}
@@ -468,6 +479,7 @@ export function NecessidadeTab() {
         <p><b>Em falta</b> (fundo destacado na célula): peça já vendida e sem estoque — é o saldo real negativo. É pedido de verdade, tamanho certo.</p>
         <p><b>Previsto</b>: média de venda da Olist nos últimos 12 meses, vezes os meses escolhidos, mais {cfg(config, "semanas_seguranca")} semanas de segurança, descontando o que já existe no estoque (Saldo Real, igual à aba do COP). É estimativa: confira antes de cortar tamanhos que vendem pouco.</p>
         <p>O número da linha Sugestão de corte é o que falta cortar, somando o que já foi vendido e está em falta com o previsto para o horizonte. Peça pronta e peça em produção já estão descontadas, não precisa descontar de novo.</p>
+        <p><b>Sugestão pelo estoque mínimo</b>: peça já vendida em falta mais o que falta para o estoque chegar no mínimo adotado na aba Estoque mínimo. Não considera a previsão de venda.</p>
       </div>
     </div>
   );
