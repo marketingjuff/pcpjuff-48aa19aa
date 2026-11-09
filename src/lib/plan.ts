@@ -1,6 +1,7 @@
 // Módulo PLAN — cálculos de sugestão. Somente leitura sobre COP/MAP/Olist;
 // escreve em plan_config, plan_fichas_modelo e na chave plan_cores_fora_de_linha de map_config.
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Cop } from "@/lib/cop";
@@ -99,6 +100,20 @@ export function dataLimiteDecisao(diasRuptura: number, leadTimeDias: number, hoj
 /* ------------------------------- hooks ------------------------------- */
 
 const PLAN_KEY = ["plan"] as const;
+const KEY_CORES_FORA = [...PLAN_KEY, "cores-fora-de-linha"] as const;
+const KEY_CATALOGO = [...PLAN_KEY, "catalogo"] as const;
+const KEY_FICHAS = [...PLAN_KEY, "fichas"] as const;
+const KEY_CONFIG = [...PLAN_KEY, "config"] as const;
+const KEY_PAUSAS = [...PLAN_KEY, "pausas"] as const;
+const KEY_MINIMOS = [...PLAN_KEY, "estoque-minimo"] as const;
+const MUT_MINIMOS = [...PLAN_KEY, "salvar-minimos"] as const;
+/** Histórico de 12 meses: recarrega ao reabrir a tela após cinco minutos. */
+const CACHE_HISTORICO = { staleTime: 5 * 60_000, refetchOnWindowFocus: false } as const;
+/** Dados externos compartilhados com COP/MAP/Olist. */
+const CACHE_EXTERNO = { staleTime: 5 * 60_000 } as const;
+const CACHE_LEVE = { staleTime: 60_000 } as const;
+const SET_VAZIO: Set<string> = new Set();
+const PAUSAS_VAZIAS: PlanPausa[] = [];
 
 export const CHAVE_CORES_FORA_LINHA = "plan_cores_fora_de_linha";
 
@@ -111,7 +126,7 @@ export function validarCoresForaDeLinha(value: unknown): Set<string> {
 export function usePlanCoresForaDeLinha() {
   const qc = useQueryClient();
   const query = useQuery({
-    queryKey: [...PLAN_KEY, "cores-fora-de-linha"],
+    queryKey: KEY_CORES_FORA, ...CACHE_LEVE,
     queryFn: async () => {
       const { data, error } = await supabase.from("map_config").select("value").eq("key", CHAVE_CORES_FORA_LINHA).maybeSingle();
       if (error) throw error;
@@ -128,12 +143,12 @@ export function usePlanCoresForaDeLinha() {
       if (error) throw error;
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: PLAN_KEY });
+      await qc.invalidateQueries({ queryKey: KEY_CORES_FORA });
       toast.success("Cores fora de linha salvas.");
     },
     onError: () => toast.error("Não foi possível salvar as cores fora de linha."),
   });
-  return { cores: query.data ?? new Set<string>(), isLoading: query.isLoading, error: query.error, salvar };
+  return { cores: query.data ?? SET_VAZIO, isLoading: query.isLoading, error: query.error, salvar };
 }
 
 export type CatalogoModelos = typeof CATALOGO_PADRAO;
@@ -208,7 +223,7 @@ export function totaisNecessidade(linhas: LinhaNecessidade[]) {
 }
 export function usePlanCatalogoModelos() {
   const qc = useQueryClient();
-  const query = useQuery({ queryKey: [...PLAN_KEY, "catalogo"], queryFn: async () => {
+  const query = useQuery({ queryKey: KEY_CATALOGO, ...CACHE_LEVE, queryFn: async () => {
     const { data, error } = await supabase.from("map_config").select("value").eq("key", CHAVE_CATALOGO).maybeSingle();
     if (error) throw error;
     return validarCatalogo(data?.value);
@@ -216,7 +231,7 @@ export function usePlanCatalogoModelos() {
   const salvar = useMutation({ mutationFn: async (catalogo: CatalogoModelos) => {
     const { error } = await supabase.from("map_config").upsert({ key: CHAVE_CATALOGO, value: validarCatalogo(catalogo), updated_at: new Date().toISOString() });
     if (error) throw error;
-  }, onSuccess: async () => { await qc.invalidateQueries({ queryKey: PLAN_KEY }); toast.success("Catálogo salvo."); },
+  }, onSuccess: async () => { await qc.invalidateQueries({ queryKey: KEY_CATALOGO }); toast.success("Catálogo salvo."); },
   onError: () => toast.error("Não foi possível salvar o catálogo.") });
   const promover = useMutation({ mutationFn: async ({ catalogo, modelo, cor, globais }: { catalogo: CatalogoModelos; modelo: string; cor: string; globais: Set<string> }) => {
     if (globais.has(cor)) throw new Error("Esta cor está fora de linha para a Juff inteira, mude em Parâmetros");
@@ -242,7 +257,7 @@ export function usePlanCatalogoModelos() {
       }
       throw error;
     }
-  }, onSettled: () => qc.invalidateQueries({ queryKey: PLAN_KEY }), onSuccess: () => toast.success("Cor voltou para a linha."),
+  }, onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: KEY_CATALOGO }), qc.invalidateQueries({ queryKey: KEY_MINIMOS })]), onSuccess: () => toast.success("Cor voltou para a linha."),
   onError: () => toast.error("Não foi possível concluir a mudança da cor. Confira antes de tentar novamente.") });
   return { catalogo: query.data ?? CATALOGO_PADRAO, isLoading: query.isLoading, error: query.error, salvar, promover };
 }
@@ -262,7 +277,7 @@ async function paginar<T>(build: (from: number, to: number) => PromiseLike<{ dat
 
 export function usePlanFichas() {
   return useQuery({
-    queryKey: [...PLAN_KEY, "fichas"],
+    queryKey: KEY_FICHAS, ...CACHE_LEVE,
     queryFn: async () => {
       const { data, error } = await supabase.from("plan_fichas_modelo" as any).select("*").order("modelo");
       if (error) throw error;
@@ -278,7 +293,7 @@ export function usePlanFichas() {
 
 export function usePlanConfigRows() {
   return useQuery({
-    queryKey: [...PLAN_KEY, "config"],
+    queryKey: KEY_CONFIG, ...CACHE_LEVE,
     queryFn: async () => {
       const { data, error } = await supabase.from("plan_config" as any).select("*").order("chave");
       if (error) throw error;
@@ -289,9 +304,12 @@ export function usePlanConfigRows() {
 
 export function usePlanConfig(): { data: PlanConfig; isLoading: boolean } {
   const q = usePlanConfigRows();
-  const data: PlanConfig = { ...CONFIG_PADRAO };
-  for (const r of q.data ?? []) data[r.chave] = r.valor;
-  return { data, isLoading: q.isLoading };
+  const data = useMemo(() => {
+    const config: PlanConfig = { ...CONFIG_PADRAO };
+    for (const r of q.data ?? []) config[r.chave] = r.valor;
+    return config;
+  }, [q.data]);
+  return useMemo(() => ({ data, isLoading: q.isLoading }), [data, q.isLoading]);
 }
 
 export function useSalvarConfig() {
@@ -302,7 +320,7 @@ export function useSalvarConfig() {
         .update({ valor, updated_at: new Date().toISOString() } as any).eq("chave", chave);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: PLAN_KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY_CONFIG }),
   });
 }
 
@@ -315,7 +333,7 @@ export function useSalvarFicha() {
         .update({ ...rest, updated_at: new Date().toISOString() } as any).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: PLAN_KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY_FICHAS }),
   });
 }
 
@@ -395,7 +413,7 @@ export function usePlanVendaHistorica() {
       for (const [k, v] of soma) mediaMensal.set(k, v / 12);
       return { mediaMensal, naoMapeados, coresNaoReconhecidas };
     },
-    staleTime: 5 * 60_000,
+    ...CACHE_HISTORICO,
   });
 }
 
@@ -411,6 +429,11 @@ export interface SaldoRealPlan {
   /** Cores do estoque Olist que normalizarCor não reconheceu → peças (fora dos totais). */
   coresNaoReconhecidas: Map<string, number>;
 }
+
+const SALDO_VAZIO: SaldoRealPlan = {
+  saldoReal: new Map(), prontoFisico: new Map(), emProducao: new Map(),
+  naoMapeados: new Map(), coresNaoReconhecidas: new Map(),
+};
 
 interface ItemEstoqueOlist {
   empresa: string;
@@ -428,14 +451,17 @@ interface ItemEstoqueOlist {
 export function usePlanSaldoReal() {
   const copsQ = useQuery({
     queryKey: ["cops"],
+    ...CACHE_EXTERNO,
     queryFn: () => paginar<any>((a, b) => supabase.from("cops" as any).select("*").order("id").range(a, b)),
   });
   const pedidosQ = useQuery({
     queryKey: ["pedidos-cop-saldos"],
+    ...CACHE_EXTERNO,
     queryFn: () => paginar<any>((a, b) => supabase.from("pedidos" as any).select("*").order("id").range(a, b)),
   });
   const snapsQ = useQuery({
     queryKey: ["estoque-olist", "snapshots"],
+    ...CACHE_EXTERNO,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("estoque_olist_snapshots" as any)
@@ -452,6 +478,7 @@ export function usePlanSaldoReal() {
   })();
   const itensQ = useQuery({
     queryKey: ["estoque-olist", "itens", ultimosIds],
+    ...CACHE_EXTERNO,
     enabled: ultimosIds.length > 0,
     queryFn: () =>
       paginar<ItemEstoqueOlist>((a, b) =>
@@ -463,6 +490,7 @@ export function usePlanSaldoReal() {
   });
   const mapQ = useQuery({
     queryKey: ["estoque-olist", "produto-map"],
+    ...CACHE_EXTERNO,
     queryFn: async () => {
       const { data, error } = await supabase.from("olist_produto_map" as any).select("*");
       if (error) throw error;
@@ -475,59 +503,53 @@ export function usePlanSaldoReal() {
     copsQ.isLoading || pedidosQ.isLoading || snapsQ.isLoading || mapQ.isLoading ||
     (ultimosIds.length > 0 && itensQ.isLoading);
 
-  if (isLoading || (!snapsProntos && !itensQ.data)) {
-    return {
-      data: { saldoReal: new Map(), prontoFisico: new Map(), emProducao: new Map(), naoMapeados: new Map(), coresNaoReconhecidas: new Map() } as SaldoRealPlan,
-      isLoading: true,
-    };
-  }
-
-  const cops = (copsQ.data ?? []) as unknown as Cop[];
-  const pedidos = (pedidosQ.data ?? []) as unknown as Pedido[];
-  const emProducao = calcEmProducao(cops);
-  const disponivel = calcDisponivel(emProducao, calcFaltantes(pedidos), calcRecebido(cops), calcPerdas(cops));
-
-  const modeloPorProduto = new Map<string, string>();
-  for (const r of mapQ.data ?? []) modeloPorProduto.set(String(r.produto_olist), String(r.modelo_cop));
-
-  const joke = new Map<string, number>();
-  const juff = new Map<string, number>();
-  const naoMapeados = new Map<string, number>();
-  const coresNaoReconhecidas = new Map<string, number>();
-  for (const it of itensQ.data ?? []) {
-    const qtd = Number(it.qtd) || 0;
-    const modelo = modeloPorProduto.get(String(it.produto_olist ?? ""));
-    if (!modelo) {
-      const nome = String(it.produto_olist ?? "").trim() || "(sem produto)";
-      naoMapeados.set(nome, (naoMapeados.get(nome) ?? 0) + qtd);
-      continue;
+  const carregando = isLoading || (!snapsProntos && !itensQ.data);
+  const data = useMemo((): SaldoRealPlan => {
+    if (carregando) return SALDO_VAZIO;
+    const cops = (copsQ.data ?? []) as unknown as Cop[];
+    const pedidos = (pedidosQ.data ?? []) as unknown as Pedido[];
+    const emProducao = calcEmProducao(cops);
+    const disponivel = calcDisponivel(emProducao, calcFaltantes(pedidos), calcRecebido(cops), calcPerdas(cops));
+  
+    const modeloPorProduto = new Map<string, string>();
+    for (const r of mapQ.data ?? []) modeloPorProduto.set(String(r.produto_olist), String(r.modelo_cop));
+  
+    const joke = new Map<string, number>();
+    const juff = new Map<string, number>();
+    const naoMapeados = new Map<string, number>();
+    const coresNaoReconhecidas = new Map<string, number>();
+    for (const it of itensQ.data ?? []) {
+      const qtd = Number(it.qtd) || 0;
+      const modelo = modeloPorProduto.get(String(it.produto_olist ?? ""));
+      if (!modelo) {
+        const nome = String(it.produto_olist ?? "").trim() || "(sem produto)";
+        naoMapeados.set(nome, (naoMapeados.get(nome) ?? 0) + qtd);
+        continue;
+      }
+      if (!it.cor || !it.tamanho) continue;
+      const cor = normalizarCor(String(it.cor));
+      if (!cor) {
+        const bruta = String(it.cor).trim() || "(sem cor)";
+        if (corIgnorada(bruta)) continue;
+        coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + qtd);
+        continue;
+      }
+      const k = pkKey(modelo, cor, String(it.tamanho));
+      const alvo = it.empresa === "JOKE" ? joke : juff;
+      alvo.set(k, (alvo.get(k) ?? 0) + qtd);
     }
-    if (!it.cor || !it.tamanho) continue;
-    const cor = normalizarCor(String(it.cor));
-    if (!cor) {
-      const bruta = String(it.cor).trim() || "(sem cor)";
-      if (corIgnorada(bruta)) continue;
-      coresNaoReconhecidas.set(bruta, (coresNaoReconhecidas.get(bruta) ?? 0) + qtd);
-      continue;
+  
+    const chaves = new Set<string>([...joke.keys(), ...juff.keys(), ...disponivel.keys()]);
+    const saldoReal = new Map<string, number>();
+    const prontoFisico = new Map<string, number>();
+    for (const k of chaves) {
+      const multiEmpresa = Math.max(0, (joke.get(k) ?? 0) + (juff.get(k) ?? 0));
+      prontoFisico.set(k, multiEmpresa);
+      saldoReal.set(k, multiEmpresa + (disponivel.get(k) ?? 0));
     }
-    const k = pkKey(modelo, cor, String(it.tamanho));
-    const alvo = it.empresa === "JOKE" ? joke : juff;
-    alvo.set(k, (alvo.get(k) ?? 0) + qtd);
-  }
-
-  const chaves = new Set<string>([...joke.keys(), ...juff.keys(), ...disponivel.keys()]);
-  const saldoReal = new Map<string, number>();
-  const prontoFisico = new Map<string, number>();
-  for (const k of chaves) {
-    const multiEmpresa = Math.max(0, (joke.get(k) ?? 0) + (juff.get(k) ?? 0));
-    prontoFisico.set(k, multiEmpresa);
-    saldoReal.set(k, multiEmpresa + (disponivel.get(k) ?? 0));
-  }
-
-  return {
-    data: { saldoReal, prontoFisico, emProducao, naoMapeados, coresNaoReconhecidas } as SaldoRealPlan,
-    isLoading: false,
-  };
+    return { saldoReal, prontoFisico, emProducao, naoMapeados, coresNaoReconhecidas };
+  }, [carregando, copsQ.data, pedidosQ.data, itensQ.data, mapQ.data]);
+  return useMemo(() => ({ data, isLoading: carregando }), [data, carregando]);
 }
 
 export interface MapaPorCor {
@@ -541,6 +563,7 @@ export interface MapaPorCor {
 export function usePlanEstoqueTingido() {
   return useQuery({
     queryKey: [...PLAN_KEY, "estoque-tingido"],
+    ...CACHE_EXTERNO,
     queryFn: async (): Promise<MapaPorCor> => {
       const pecas = await paginar<any>((a, b) =>
         supabase.from("map_estoque_pecas" as any)
@@ -572,6 +595,7 @@ export function usePlanEstoqueTingido() {
 export function usePlanNaTinturaria() {
   return useQuery({
     queryKey: [...PLAN_KEY, "na-tinturaria"],
+    ...CACHE_EXTERNO,
     queryFn: async (): Promise<MapaPorCor> => {
       const rows = await paginar<any>((a, b) =>
         supabase.from("map_tinturaria_programacoes" as any)
@@ -600,6 +624,7 @@ export interface CruParado { total: number; porProd: { numero: number; kg: numbe
 export function usePlanCruParado() {
   return useQuery({
     queryKey: [...PLAN_KEY, "cru-parado"],
+    ...CACHE_EXTERNO,
     queryFn: async (): Promise<CruParado> => {
       const [prods, entregas, progs] = await Promise.all([
         paginar<any>((a, b) => supabase.from("map_producoes" as any).select("id, numero").order("id").range(a, b)),
@@ -860,7 +885,7 @@ export function aplicarPausas(params: {
 export function usePlanPausas() {
   const qc = useQueryClient();
   const query = useQuery({
-    queryKey: [...PLAN_KEY, "pausas"],
+    queryKey: KEY_PAUSAS, ...CACHE_LEVE,
     queryFn: () =>
       paginar<PlanPausa>((a, b) =>
         supabase.from("plan_pausas" as any)
@@ -883,7 +908,7 @@ export function usePlanPausas() {
       if (e2) throw e2;
     },
     onSuccess: async (_d, p) => {
-      await qc.invalidateQueries({ queryKey: PLAN_KEY });
+      await qc.invalidateQueries({ queryKey: KEY_PAUSAS });
       toast.success(p.tipo === "adiado" ? "Linha adiada." : "Linha marcada como sob demanda.");
     },
     onError: () => toast.error("Não foi possível salvar."),
@@ -897,12 +922,12 @@ export function usePlanPausas() {
       if (error) throw error;
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: PLAN_KEY });
+      await qc.invalidateQueries({ queryKey: KEY_PAUSAS });
       toast.success("Linha retomada.");
     },
     onError: () => toast.error("Não foi possível retomar."),
   });
-  return { pausas: query.data ?? [], isLoading: query.isLoading, error: query.error as Error | null, pausar, retomar };
+  return { pausas: query.data ?? PAUSAS_VAZIAS, isLoading: query.isLoading, error: query.error as Error | null, pausar, retomar };
 }
 
 /* --------------------------- estoque mínimo --------------------------- */
@@ -970,7 +995,7 @@ export function usePlanLeadTimePorModelo() {
           .order("id").range(a, b));
       return calcLeadTimePorModelo(rows);
     },
-    staleTime: 5 * 60_000,
+    ...CACHE_HISTORICO,
   });
 }
 
@@ -1057,7 +1082,7 @@ export function montarEstoqueMinimo(params: {
 
 export function usePlanMinimos() {
   return useQuery({
-    queryKey: [...PLAN_KEY, "estoque-minimo"],
+    queryKey: KEY_MINIMOS, ...CACHE_LEVE,
     queryFn: async () => {
       const rows = await paginar<MinimoSalvo>((a, b) =>
         supabase.from("plan_estoque_minimo").select("modelo, cor, tamanho, minimo_adotado, sugerido_na_adocao, adotado_em, adotado_por, sob_demanda")
@@ -1093,6 +1118,58 @@ export function itensSobDemandaDaCor(linhas: LinhaEstoqueMinimo[], modelo: strin
   }));
 }
 
+/** Só cores normais com todos os tamanhos explicitamente zerados. */
+export function itensZeradosSobDemanda(linhas: LinhaEstoqueMinimo[]): SobDemandaParaSalvar[] {
+  const porCor = new Map<string, LinhaEstoqueMinimo[]>();
+  for (const l of linhas) {
+    if (l.classificacao !== "normal") continue;
+    const k = `${l.modelo}|${l.cor}`;
+    const lista = porCor.get(k) ?? [];
+    lista.push(l);
+    porCor.set(k, lista);
+  }
+  const out: SobDemandaParaSalvar[] = [];
+  for (const lista of porCor.values()) {
+    if (!lista.every((l) => l.adotado === 0)) continue;
+    for (const l of lista) {
+      if (!l.sobDemanda) out.push({ modelo: l.modelo, cor: l.cor, tamanho: l.tamanho, sugerido: l.sugerido, sobDemanda: true });
+    }
+  }
+  return out;
+}
+
+type CacheMinimos = Map<string, MinimoSalvo>;
+
+async function aplicarOtimista(qc: QueryClient, mudar: (atual: CacheMinimos) => CacheMinimos) {
+  await qc.cancelQueries({ queryKey: KEY_MINIMOS });
+  const anterior = qc.getQueryData<CacheMinimos>(KEY_MINIMOS);
+  if (anterior) qc.setQueryData<CacheMinimos>(KEY_MINIMOS, mudar(new Map(anterior)));
+  return { anterior };
+}
+
+function desfazerOtimista(qc: QueryClient, ctx: { anterior?: CacheMinimos } | undefined) {
+  if (ctx?.anterior) qc.setQueryData<CacheMinimos>(KEY_MINIMOS, ctx.anterior);
+}
+
+/** Apenas a última gravação recarrega; não mantém a mutation pendente. */
+function recarregarMinimosSeUltima(qc: QueryClient) {
+  if (qc.isMutating({ mutationKey: MUT_MINIMOS }) === 1) void qc.invalidateQueries({ queryKey: KEY_MINIMOS });
+}
+
+function otimistaMinimos(m: CacheMinimos, itens: MinimoParaSalvar[]) {
+  const agora = new Date().toISOString();
+  for (const i of itens) {
+    const k = pkKey(i.modelo, i.cor, i.tamanho);
+    m.set(k, {
+      modelo: i.modelo, cor: i.cor, tamanho: i.tamanho,
+      minimo_adotado: i.minimo, sugerido_na_adocao: i.sugerido,
+      sob_demanda: i.sobDemanda ?? false,
+      adotado_em: agora, adotado_por: m.get(k)?.adotado_por ?? null,
+    });
+  }
+  return m;
+}
+
 export function useSalvarSobDemanda() {
   const qc = useQueryClient();
   return useMutation({
@@ -1102,22 +1179,42 @@ export function useSalvarSobDemanda() {
       const { data: u, error: authErro } = await supabase.auth.getUser();
       if (authErro) throw authErro;
       const agora = new Date().toISOString();
-      const registros = await Promise.all(itens.map(async (i) => {
-        const { data: salvo, error: leituraErro } = await supabase.from("plan_estoque_minimo")
-          .select("minimo_adotado, sugerido_na_adocao, adotado_em, adotado_por")
-          .eq("modelo", i.modelo).eq("cor", i.cor).eq("tamanho", i.tamanho).maybeSingle();
-        if (leituraErro) throw leituraErro;
+      const { data: salvos, error: leituraErro } = await supabase.from("plan_estoque_minimo")
+        .select("modelo, cor, tamanho, minimo_adotado, sugerido_na_adocao, adotado_em, adotado_por")
+        .in("modelo", [...new Set(itens.map(i => i.modelo))])
+        .in("cor", [...new Set(itens.map(i => i.cor))])
+        .in("tamanho", [...new Set(itens.map(i => i.tamanho))]);
+      if (leituraErro) throw leituraErro;
+      const porChave = new Map((salvos ?? []).map(r => [pkKey(r.modelo, r.cor, r.tamanho), r]));
+      const registros = itens.map((i) => {
+        const salvo = porChave.get(pkKey(i.modelo, i.cor, i.tamanho));
         return {
           modelo: i.modelo, cor: i.cor, tamanho: i.tamanho,
-          ...minimoSobDemandaParaSalvar(salvo, i.sugerido, i.sobDemanda),
+          ...minimoSobDemandaParaSalvar(salvo ?? null, i.sugerido, i.sobDemanda),
           adotado_em: salvo?.adotado_em ?? agora,
           adotado_por: salvo ? salvo.adotado_por : u.user?.id ?? null,
         };
-      }));
+      });
       const { error } = await supabase.from("plan_estoque_minimo").upsert(registros, { onConflict: "modelo,cor,tamanho" });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: PLAN_KEY }),
+    mutationKey: MUT_MINIMOS,
+    onMutate: (entrada) => aplicarOtimista(qc, (m) => {
+      const agora = new Date().toISOString();
+      for (const i of Array.isArray(entrada) ? entrada : [entrada]) {
+        const k = pkKey(i.modelo, i.cor, i.tamanho);
+        const salvo = m.get(k);
+        m.set(k, {
+          modelo: i.modelo, cor: i.cor, tamanho: i.tamanho,
+          ...minimoSobDemandaParaSalvar(salvo ?? null, i.sugerido, i.sobDemanda),
+          adotado_em: salvo?.adotado_em ?? agora,
+          adotado_por: salvo?.adotado_por ?? null,
+        });
+      }
+      return m;
+    }),
+    onError: (_e, _v, ctx) => desfazerOtimista(qc, ctx),
+    onSettled: () => recarregarMinimosSeUltima(qc),
   });
 }
 
@@ -1140,7 +1237,10 @@ export function useSalvarMinimo() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (i: MinimoParaSalvar) => upsertMinimos([i]),
-    onSuccess: () => qc.invalidateQueries({ queryKey: PLAN_KEY }),
+    mutationKey: MUT_MINIMOS,
+    onMutate: (itens) => aplicarOtimista(qc, (m) => otimistaMinimos(m, Array.isArray(itens) ? itens : [itens])),
+    onError: (_e, _v, ctx) => desfazerOtimista(qc, ctx),
+    onSettled: () => recarregarMinimosSeUltima(qc),
   });
 }
 
@@ -1148,6 +1248,9 @@ export function useSalvarMinimosEmLote() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (itens: MinimoParaSalvar[]) => (itens.length ? upsertMinimos(itens) : Promise.resolve()),
-    onSuccess: () => qc.invalidateQueries({ queryKey: PLAN_KEY }),
+    mutationKey: MUT_MINIMOS,
+    onMutate: (itens) => aplicarOtimista(qc, (m) => otimistaMinimos(m, Array.isArray(itens) ? itens : [itens])),
+    onError: (_e, _v, ctx) => desfazerOtimista(qc, ctx),
+    onSettled: () => recarregarMinimosSeUltima(qc),
   });
 }

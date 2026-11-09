@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ import { useMyRoles } from "@/hooks/use-role";
 import { podeEditarPlan } from "@/lib/plan-permissoes";
 import { TABLE_WRAPPER_CLASS, TH_CLASS, TD_CLASS, BADGE_SM_CLASS } from "@/components/shared/table-styles";
 import {
-  cfg, itensSobDemandaDaCor, montarEstoqueMinimo, usePlanConfig, usePlanCoresForaDeLinha, usePlanLeadTimePorModelo, usePlanMinimos,
+  cfg, itensSobDemandaDaCor, itensZeradosSobDemanda, montarEstoqueMinimo, usePlanConfig, usePlanCoresForaDeLinha, usePlanLeadTimePorModelo, usePlanMinimos,
   usePlanVendaHistorica, useSalvarMinimo, useSalvarMinimosEmLote, useSalvarSobDemanda, type LinhaEstoqueMinimo,
   type MinimoParaSalvar,
 } from "@/lib/plan";
@@ -146,6 +147,7 @@ export function EstoqueMinimoTab() {
   const [selecao, setSelecao] = useState<Set<string>>(new Set());
   const [dlgAbertos, setDlgAbertos] = useState<Set<string>>(new Set());
   const [erro, setErro] = useState<string | null>(null);
+  const [confirmarZerados, setConfirmarZerados] = useState(false);
 
   const limiar = cfg(config, "limiar_alerta_minimo_pct") || 10;
   const semanas = cfg(config, "semanas_seguranca");
@@ -158,6 +160,18 @@ export function EstoqueMinimoTab() {
     });
   }, [venda.data, minimos.data, lead.data, config, foraLinha, limiar, catalogoQ.catalogo]);
 
+  const zerados = useMemo(() => itensZeradosSobDemanda(linhas), [linhas]);
+  const resumoZerados = useMemo(() => {
+    const porModelo = new Map<string, string[]>();
+    for (const i of zerados) {
+      const cores = porModelo.get(i.modelo) ?? [];
+      if (!cores.includes(i.cor)) cores.push(i.cor);
+      porModelo.set(i.modelo, cores);
+    }
+    const cores = Array.from(porModelo.values()).reduce((s, c) => s + c.length, 0);
+    return { porModelo: Array.from(porModelo), cores, modelos: porModelo.size, tamanhos: zerados.length };
+  }, [zerados]);
+  const salvando = salvarSobDemanda.isPending || salvarUm.isPending || salvarLote.isPending;
   const totalDefasados = linhas.filter((l) => l.defasado).length;
 
   const blocos = useMemo(() => {
@@ -295,6 +309,20 @@ export function EstoqueMinimoTab() {
   };
 
   const carregando = venda.isLoading || minimos.isLoading || lead.isLoading || cfgLoading || catalogoQ.isLoading;
+  const marcarZerados = async () => {
+    if (!podeEditar || carregando || catalogoQ.error || salvando || !zerados.length) return;
+    setErro(null);
+    try {
+      const quantidade = resumoZerados.cores;
+      await salvarSobDemanda.mutateAsync(zerados);
+      toast.success(quantidade === 1 ? "1 cor marcada sob demanda." : `${quantidade} cores marcadas sob demanda.`);
+      setConfirmarZerados(false);
+    } catch (e: unknown) {
+      const mensagem = e && typeof e === "object" && "message" in e ? String(e.message) : "erro";
+      setErro(`Não foi possível marcar zerados sob demanda: ${mensagem}`);
+      setConfirmarZerados(false);
+    }
+  };
   const toggle = (m: string) => setAbertos((s) => { const n = new Set(s); n.has(m) ? n.delete(m) : n.add(m); return n; });
 
   return (
@@ -304,7 +332,15 @@ export function EstoqueMinimoTab() {
           <p className="text-lg font-semibold">Estoque mínimo</p>
           <p className="text-sm text-muted-foreground">Quanto de cada peça precisa estar sempre em casa. O sistema sugere, você confirma ou corrige.</p>
         </div>
-        {totalDefasados > 0 && <Badge variant="destructive">{totalDefasados} defasados</Badge>}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {totalDefasados > 0 && <Badge variant="destructive">{totalDefasados} defasados</Badge>}
+          {podeEditar && <Button size="sm" variant="outline"
+            disabled={carregando || !!catalogoQ.error || !zerados.length || salvando}
+            title={resumoZerados.cores ? `${resumoZerados.cores} cores com todos os tamanhos em zero` : "Nenhuma cor com todos os tamanhos em zero"}
+            onClick={() => setConfirmarZerados(true)}>
+            Marcar zerados sob demanda
+          </Button>}
+        </div>
       </div>
 
       {!podeEditar && (
@@ -487,6 +523,32 @@ export function EstoqueMinimoTab() {
         );
       })}
 
+      <AlertDialog open={confirmarZerados && podeEditar} onOpenChange={setConfirmarZerados}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Marcar zerados sob demanda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {resumoZerados.cores} cores, {resumoZerados.modelos} modelos e {resumoZerados.tamanhos} tamanhos serão marcados sob demanda.
+              {" "}Só entram cores com todos os tamanhos com mínimo 0. Cor com algum tamanho com número ou em branco fica como está.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="max-h-60 overflow-y-auto space-y-3">
+            {resumoZerados.porModelo.map(([modelo, cores]) => (
+              <div key={modelo} className="space-y-1">
+                <p className="text-sm font-medium">{modelo}</p>
+                <div className="flex flex-wrap gap-2">
+                  {cores.map(cor => <span key={cor} className="flex items-center gap-1 text-xs"><span>{modelo}</span><CorChip cor={cor} /></span>)}
+                </div>
+              </div>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction disabled={carregando || !!catalogoQ.error || salvando || !zerados.length}
+              onClick={() => { void marcarZerados(); }}>Marcar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={!!confirmar} onOpenChange={(o) => !o && setConfirmar(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

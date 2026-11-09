@@ -205,3 +205,46 @@ describe("Catálogo completo do PLAN", () => {
     expect(calc(filtrarModeloCor(rows, { modelos: ["Camiseta"], cores: [] }))?.kgATingir).toBe(30);
   });
 });
+
+const { itensZeradosSobDemanda } = await import("./plan");
+const TAM_CROSS = ["P", "M", "G", "GG"];
+function crossCom(cores: Record<string, (number | null)[]>, sob: Record<string, boolean[]> = {}, globais = new Set<string>()) {
+  const m = new Map<string, MinimoSalvo>();
+  for (const [cor, valores] of Object.entries(cores)) {
+    TAM_CROSS.forEach((t, i) => {
+      const v = valores[i];
+      if (v === null || v === undefined) return;
+      m.set(`Regata Cross|${cor}|${t}`, { ...salvo, modelo: "Regata Cross", cor, tamanho: t, minimo_adotado: v, sob_demanda: sob[cor]?.[i] ?? false });
+    });
+  }
+  return montarEstoqueMinimo({ catalogo: CATALOGO_PADRAO, mediaMensal: new Map([["Regata Cross|preto|M", 12]]), tamanhos: ["PP", "P", "M", "G", "GG", "EXG", "EXXG"], leadTime: undefined, config: {}, coresForaDeLinha: globais, minimosAdotados: m, limiarPct: 10 });
+}
+describe("Marcar zerados sob demanda", () => {
+  test("cor com todos os tamanhos em zero é marcada inteira", () => {
+    const itens = itensZeradosSobDemanda(crossCom({ preto: [0, 0, 0, 0] }));
+    expect(itens.map((i) => `${i.cor}|${i.tamanho}`)).toEqual(["preto|P", "preto|M", "preto|G", "preto|GG"]);
+    expect(itens.every((i) => i.sobDemanda && i.modelo === "Regata Cross")).toBe(true);
+  });
+  test("um tamanho com número segura a cor inteira", () => {
+    expect(itensZeradosSobDemanda(crossCom({ preto: [0, 5, 0, 0] }))).toEqual([]);
+  });
+  test("tamanho em branco não conta como zero", () => {
+    expect(itensZeradosSobDemanda(crossCom({ preto: [0, null, 0, 0] }))).toEqual([]);
+  });
+  test("tamanho já sob demanda não é enviado de novo", () => {
+    const itens = itensZeradosSobDemanda(crossCom({ preto: [0, 0, 0, 0] }, { preto: [true, false, true, false] }));
+    expect(itens.map((i) => i.tamanho)).toEqual(["M", "GG"]);
+  });
+  test("cor toda já sob demanda não gera nada", () => {
+    expect(itensZeradosSobDemanda(crossCom({ preto: [0, 0, 0, 0] }, { preto: [true, true, true, true] }))).toEqual([]);
+  });
+  test("Outlet e fora de linha geral nunca entram", () => {
+    expect(itensZeradosSobDemanda(crossCom({ "fúcsia": [0, 0, 0, 0] }))).toEqual([]);
+    expect(itensZeradosSobDemanda(crossCom({ preto: [0, 0, 0, 0] }, {}, new Set(["preto"])))).toEqual([]);
+  });
+  test("pega todas as cores zeradas de uma vez e ignora as parciais", () => {
+    const itens = itensZeradosSobDemanda(crossCom({ preto: [0, 0, 0, 0], branco: [0, 0, 0, 0], areia: [0, 0, 3, 0] }));
+    expect([...new Set(itens.map((i) => i.cor))].sort()).toEqual(["branco", "preto"]);
+    expect(itens).toHaveLength(8);
+  });
+});
