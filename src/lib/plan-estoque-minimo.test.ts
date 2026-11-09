@@ -9,7 +9,7 @@ function expect<T>(actual: T) {
     toBeNull: () => assert.strictEqual(actual, null),
   };
 }
-const { montarEstoqueMinimo, minimoSobDemandaParaSalvar, itensSobDemandaDaCor } = await import("./plan");
+const { montarEstoqueMinimo, minimoSobDemandaParaSalvar, itensSobDemandaDaCor, sobDemandaAoSalvar } = await import("./plan");
 const { itensDaColagem } = await import("../components/plan/EstoqueMinimoTab");
 type MinimoSalvo = import("./plan").MinimoSalvo;
 
