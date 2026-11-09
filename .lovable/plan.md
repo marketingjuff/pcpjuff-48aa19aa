@@ -1,4 +1,4 @@
-# PLAN v3 — salvamento mais rápido e marcação de cores zeradas
+# PLAN v3.1 — salvamento mais rápido e marcação de cores zeradas
 
 ## Resultado esperado
 - Salvar Adotado, marcar Sob demanda, colar e aceitar sugestões sem recarregar todo o PLAN nem manter os botões bloqueados enquanto as leituras terminam.
@@ -7,6 +7,9 @@
 
 ## Escopo
 Implementação apenas nos três arquivos autorizados abaixo. Sem SQL, migração, alteração de permissões, cache global, cálculos compartilhados do COP, outras abas ou exports existentes. Os testes atuais serão preservados integralmente. Este plano não autoriza alterações de código: a implementação aguarda aprovação explícita.
+
+## Proteção dos dados — obrigatória
+O preview usa o banco de produção. Nenhuma verificação desta tarefa gravará dados, seja pela tela, por SQL ou por testes conectados ao banco. Não salvar números, marcar/desmarcar Sob demanda, usar o botão novo, colar, aceitar sugestões, adiar/retomar, salvar parâmetros, fichas, catálogo ou cores. Não simular falhas nem restaurar dados. No preview, apenas abrir as abas para observar carregamento e erros, sem digitar valores ou confirmar diálogos. As verificações de gravação e interação ficam para a equipe depois da publicação.
 
 ## Arquivo por arquivo
 
@@ -48,12 +51,13 @@ Implementação apenas nos três arquivos autorizados abaixo. Sem SQL, migraçã
 ## Validação e entrega
 - Executar os dois arquivos de testes do PLAN com o mesmo comando usado anteriormente: `bun test src/lib/plan-estoque-minimo.test.ts src/lib/plan-permissoes.test.ts`; expectativa de 41 testes passando.
 - Conferir a checagem automática de tipos e compilação, distinguindo os 15 erros antigos citados em `FaltaPecaPopup.tsx` de qualquer erro novo; não tocar nesse arquivo nem executar builds/typechecks manuais do projeto.
-- Validar com sessão autorizada: salvar valores com Tab em cinco linhas, conferir após atualização da página, salvar zero sem marcação automática, observar atualização antes da resposta e reversão após falha simulada.
-- Observar as requisições após salvar: nenhuma releitura de Olist/COP/MAP; somente usuário, gravação e recarga de mínimos. Verificar que os controles não esperam pela recarga.
-- Conferir ações de configuração, ficha, catálogo e pausas com recarga restrita, além do retorno à janela dentro de 5 minutos.
-- Validar confirmação e marcação de zerados mesmo com filtro/busca/defasados ativos, exclusões, preservação dos mínimos e uma única leitura prévia e gravação; restaurar os dados temporários usados na verificação.
+- Revisar no código as três mutations de mínimos: chave comum, atualização otimista, restauração do cache em erro e conclusão sem esperar a recarga; nenhuma simulação de falha será executada.
+- Conferir no código as invalidações específicas, políticas de cache e preservação das cinco consultas compartilhadas; não executar salvamentos para observar requisições.
+- Conferir no código que o botão usa `linhas`, respeita permissões e bloqueios e realiza uma única chamada; verificar nos sete testes puros as regras de seleção e exclusão, sem conexão de gravação com o banco.
+- Opcionalmente abrir as abas do PLAN apenas para observar se carregam sem erro, sem digitar valores, salvar ou confirmar diálogos.
+- Deixar para a equipe, depois da publicação, todas as verificações na tela que envolvem gravação, Tab com valores, atualização imediata, falha, marcação em lote, recargas e retorno à janela. Não publicar automaticamente.
 - Conferir ausência de invalidação com `PLAN_KEY` puro e que o diff de aplicação contém somente os três arquivos autorizados.
 - Entregar resultado das verificações e diff completo; indicar explicitamente qualquer verificação não realizada.
 
 ## Limite desta versão
-A versão 3 elimina as recargas pesadas disparadas por salvamentos e limita a frequência das leituras. Não acrescenta propagação de `AbortSignal` às consultas paginadas, pois essa mudança não faz parte da implementação prescrita.
+A versão 3.1 elimina as recargas pesadas disparadas por salvamentos e limita a frequência das leituras. Não acrescenta propagação de `AbortSignal` às consultas paginadas, pois essa mudança não faz parte da implementação prescrita. A validação desta entrega será por revisão de código, testes automatizados sem gravação e checagem automática de tipos; não será apresentada como validação de salvamentos na tela.
