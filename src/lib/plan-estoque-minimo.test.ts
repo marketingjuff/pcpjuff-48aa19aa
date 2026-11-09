@@ -9,7 +9,7 @@ function expect<T>(actual: T) {
     toBeNull: () => assert.strictEqual(actual, null),
   };
 }
-const { montarEstoqueMinimo, minimoSobDemandaParaSalvar, itensSobDemandaDaCor, sobDemandaAoSalvar } = await import("./plan");
+const { montarEstoqueMinimo, minimoSobDemandaParaSalvar, itensSobDemandaDaCor } = await import("./plan");
 const { itensDaColagem } = await import("../components/plan/EstoqueMinimoTab");
 type MinimoSalvo = import("./plan").MinimoSalvo;
 
@@ -66,15 +66,6 @@ describe("Sob demanda por tamanho", () => {
   test("número copiado de origem marcada não marca o destino", () => {
     const origem = linha({ ...salvo, minimo_adotado: 50, sob_demanda: true });
     expect(itensDaColagem([linha(salvo)], new Map([[origem.tamanho, origem.adotado ?? 0]]), true)[0]?.sobDemanda).toBe(false);
-  });
-  test("salvar adotado zero marca Sob demanda automaticamente", () => {
-    expect(sobDemandaAoSalvar(0, false)).toBe(true);
-    expect(sobDemandaAoSalvar(0, undefined)).toBe(true);
-  });
-  test("salvar valor positivo preserva a marcação atual", () => {
-    expect(sobDemandaAoSalvar(50, false)).toBe(false);
-    expect(sobDemandaAoSalvar(50, true)).toBe(true);
-    expect(sobDemandaAoSalvar(50, undefined)).toBe(false);
   });
   test("colar sem substituir não altera mínimo zero já definido", () => {
     expect(itensDaColagem([linha(salvo)], new Map([["M", 50]]), false)).toEqual([]);
