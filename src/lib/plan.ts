@@ -1121,6 +1121,11 @@ export function useSalvarSobDemanda() {
   });
 }
 
+/** Regra de negócio: salvar mínimo adotado zero marca o tamanho como Sob demanda automaticamente. */
+export function sobDemandaAoSalvar(minimo: number, sobDemanda: boolean | undefined): boolean {
+  return minimo === 0 ? true : (sobDemanda ?? false);
+}
+
 async function upsertMinimos(itens: MinimoParaSalvar[]) {
   const { data: u } = await supabase.auth.getUser();
   const agora = new Date().toISOString();
@@ -1128,7 +1133,7 @@ async function upsertMinimos(itens: MinimoParaSalvar[]) {
     itens.map((i) => ({
       modelo: i.modelo, cor: i.cor, tamanho: i.tamanho,
       minimo_adotado: i.minimo, sugerido_na_adocao: i.sugerido,
-      sob_demanda: i.sobDemanda ?? false,
+      sob_demanda: sobDemandaAoSalvar(i.minimo, i.sobDemanda),
       adotado_em: agora, adotado_por: u.user?.id ?? null,
     })),
     { onConflict: "modelo,cor,tamanho" },
