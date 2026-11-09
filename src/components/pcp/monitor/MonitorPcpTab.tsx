@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CalendarDays, Flag, Video, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
@@ -44,6 +48,20 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
   const [detalhe, setDetalhe] = useState<Pedido | null>(null);
   const [celula, setCelula] = useState<{ etapa: Etapa; ini: string; fim: string; pedidoIds: string[] } | null>(null);
   const [edicao, setEdicao] = useState<{ pedido: Pedido; proposta: Partial<Pedido> | null; conflito: ConflitoTipo } | null>(null);
+  const [arrastoPendente, setArrastoPendente] = useState<{ pedido: Pedido; offset: number } | null>(null);
+  const confirmacaoArrastoRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!arrastoPendente) return;
+    function cancelarAoClicarFora(event: PointerEvent) {
+      const conteudo = confirmacaoArrastoRef.current;
+      if (conteudo && event.target instanceof Node && !conteudo.contains(event.target)) {
+        setArrastoPendente(null);
+      }
+    }
+    document.addEventListener("pointerdown", cancelarAoClicarFora, true);
+    return () => document.removeEventListener("pointerdown", cancelarAoClicarFora, true);
+  }, [arrastoPendente]);
 
   const { de, ate } = useMemo(() => janelaMonitor(), []);
   // eixo de exibição: todos os dias corridos (sáb/dom/feriado aparecem em cinza)
@@ -173,7 +191,7 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
     return null;
   }
 
-  function arrastar(p: Pedido, offset: number) {
+  function executarArrasto(p: Pedido, offset: number) {
     if (soLeitura) return;
     const travada = etapaTravada(p);
     if (travada) { toast.error(`Não é possível mover: ${travada} já foi executada.`); return; }
@@ -199,6 +217,25 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
     }
     onSave({ id: p.id, ...proposta, inicio_acabamento: novoIniAcab } as any);
   }
+
+  function arrastar(p: Pedido, offset: number) {
+    if (soLeitura) return;
+    const travada = etapaTravada(p);
+    if (travada) { toast.error(`Não é possível mover: ${travada} já foi executada.`); return; }
+    if (offset === 0) return;
+    setArrastoPendente({ pedido: p, offset });
+  }
+
+  const datasArrasto = arrastoPendente ? [
+    { label: "Arte", atual: arrastoPendente.pedido.arte_data },
+    { label: "Início da estamparia", atual: arrastoPendente.pedido.inicio_estamparia },
+    { label: "Término da estamparia", atual: arrastoPendente.pedido.termino_estamparia },
+    { label: "Término do acabamento", atual: arrastoPendente.pedido.termino_acabamento },
+  ].flatMap(({ label, atual }) => atual ? [{
+    label,
+    atual: formatDateBR(atual),
+    nova: formatDateBR(addDiasUteis(atual, arrastoPendente.offset, feriados)),
+  }] : []) : [];
 
   return (
     <div className="space-y-3">
@@ -375,6 +412,37 @@ export function MonitorPcpTab({ pedidos, onSave, onNavigate, soLeitura = false }
         </SheetContent>
       </Sheet>
 
+
+      <AlertDialog open={!!arrastoPendente} onOpenChange={(v) => { if (!v) setArrastoPendente(null); }}>
+        <AlertDialogContent ref={confirmacaoArrastoRef}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar alteração de datas</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Pedido #{arrastoPendente?.pedido.pedido_olist ?? "—"} ({arrastoPendente?.pedido.qtd ?? 0} pçs)</p>
+                <div className="space-y-1">
+                  {datasArrasto.map(({ label, atual, nova }) => (
+                    <p key={label} className="break-words">
+                      <span className="font-medium">{label}:</span> {atual} para {nova}
+                    </p>
+                  ))}
+                </div>
+                <p>Todas as datas do pedido serão movidas juntas.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setArrastoPendente(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (!arrastoPendente) return;
+              executarArrasto(arrastoPendente.pedido, arrastoPendente.offset);
+              setArrastoPendente(null);
+            }}>
+              Confirmar alteração
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <EditarDatasDialog
         open={!!edicao}
