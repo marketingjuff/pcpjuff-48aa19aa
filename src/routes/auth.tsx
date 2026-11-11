@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import { oauthReturnPath } from "@/lib/oauth-return-path";
 import logoJuff from "@/assets/logo-juff.jpg.asset.json";
 
 export const Route = createFileRoute("/auth")({
@@ -20,10 +21,12 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Destino depois do login (ex.: tela de autorização do conector). Só caminhos internos.
+  const destino = () => oauthReturnPath(new URLSearchParams(window.location.search).get("next"));
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/", replace: true });
+      if (data.user) navigate({ href: destino(), replace: true });
     });
   }, [navigate]);
 
@@ -34,7 +37,7 @@ function AuthPage() {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Bem-vindo!");
-    navigate({ to: "/", replace: true });
+    navigate({ href: destino(), replace: true });
   }
 
 
