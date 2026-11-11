@@ -70,15 +70,15 @@ function MiniCard({ def, perdas, onBarra }: { def: Def; perdas: PerdaConsolidada
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dados} layout="vertical" margin={{ left: 0, right: 56, top: 4, bottom: 4 }}>
                 <XAxis type="number" hide allowDecimals={false} />
-                <YAxis type="category" dataKey="nome" width={170} fontSize={11} interval={0} axisLine={false} tickLine={false} tickFormatter={(v: string) => (v.length > 28 ? v.slice(0, 27) + "…" : v)} />
-                <Tooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }} formatter={(v: number) => [`${v} peças`, ""]} separator="" />
+                <YAxis type="category" dataKey="nome" width={170} fontSize={11} fontFamily="var(--font-sans)" interval={0} axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)" }} tickFormatter={(v: string) => (v.length > 28 ? v.slice(0, 27) + "…" : v)} />
+                <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.4 }} formatter={(v: number) => [`${v} peças`, ""]} separator="" />
                 <Bar dataKey="qtd" barSize={16} radius={[0, 4, 4, 0]} className="cursor-pointer" onClick={(d: { nome?: string; payload?: { nome: string } }) => onBarra(d.payload?.nome ?? d.nome ?? "")}>
                   {dados.map((d) => {
                     const fill = def.porCor ? corHex(d.nome) : d.nome === "Não informado" ? "#9ca3af" : "#16a34a";
                     const claro = def.porCor && CORES_CLARAS.has(normCor(d.nome));
                     return <Cell key={d.nome} fill={fill} stroke={claro ? "#d1d5db" : undefined} strokeWidth={claro ? 1 : 0} className="cursor-pointer" />;
                   })}
-                  <LabelList dataKey="qtd" position="right" fontSize={11} fill="hsl(var(--foreground))" className="tabular-nums" formatter={(v: number) => `${v} · ${total ? Math.round((v / total) * 100) : 0}%`} />
+                  <LabelList dataKey="qtd" position="right" fontSize={11} fontFamily="var(--font-sans)" fill="var(--foreground)" stroke="none" strokeWidth={0} className="tabular-nums" formatter={(v: number) => `${v} · ${total ? Math.round((v / total) * 100) : 0}%`} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
