@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAppList } from "@/lib/app-lists";
-import { MOTIVOS_PERDA_PADRAO, type Oficina } from "@/lib/cop";
+import { useAppList, useOpcoesErro } from "@/lib/app-lists";
+import type { Oficina } from "@/lib/cop";
 import type { PerdaConsolidada } from "@/lib/perdas-consolidado";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
@@ -29,8 +29,9 @@ export function CorrigirPerdaDialog({
   const [destino, setDestino] = useState<string>("");
   const [observacao, setObservacao] = useState<string>("");
 
-  const { items: motivosItems } = useAppList("motivo_perda");
-  const motivos = motivosItems.length ? motivosItems.map((i) => i.nome) : MOTIVOS_PERDA_PADRAO;
+  const { grupos } = useOpcoesErro();
+  const [areaNova, setAreaNova] = useState<string>("");
+  const SEP = "||";
   const { items: destinosItems } = useAppList("destino_perda" as any);
 
   const { data: oficinas = [] } = useQuery({
@@ -43,7 +44,7 @@ export function CorrigirPerdaDialog({
   });
 
   function reset() {
-    setQtd(String(perda?.qtd ?? 1)); setMotivoNovo(""); setOficinaId(""); setBerco(""); setDestino(""); setObservacao("");
+    setQtd(String(perda?.qtd ?? 1)); setMotivoNovo(""); setAreaNova(""); setOficinaId(""); setBerco(""); setDestino(""); setObservacao("");
   }
 
   const salvar = useMutation({
@@ -52,7 +53,8 @@ export function CorrigirPerdaDialog({
       const q = Number(qtd);
       if (!Number.isFinite(q) || q <= 0) throw new Error("Quantidade inválida.");
       if (q > perda.qtd) throw new Error(`Quantidade máxima: ${perda.qtd}.`);
-      if (!motivoNovo) throw new Error("Selecione o motivo novo.");
+      if (!motivoNovo || !areaNova) throw new Error("Selecione o problema novo.");
+      const interna = grupos.find((g) => g.area === areaNova)?.interna ?? false;
       if (!observacao.trim()) throw new Error("Observação é obrigatória.");
       const { data: userData } = await supabase.auth.getUser();
       const payload = {
@@ -64,6 +66,8 @@ export function CorrigirPerdaDialog({
         motivo_original: perda.motivo ?? null,
         area_erro_original: perda.area_erro ?? (perda.erro_producao ? "Produção" : null),
         motivo_novo: motivoNovo,
+        area_erro_novo: areaNova,
+        erro_producao_novo: interna,
         oficina_id: oficinaId || null,
         berco: berco.trim() || null,
         destino: destino || null,
@@ -99,10 +103,28 @@ export function CorrigirPerdaDialog({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div><Label>Quantidade a reclassificar (máx {perda.qtd})</Label><Input type="number" min="1" max={perda.qtd} value={qtd} onChange={(e) => setQtd(e.target.value)} /></div>
           <div>
-            <Label>Motivo novo *</Label>
-            <Select value={motivoNovo} onValueChange={setMotivoNovo}>
-              <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
-              <SelectContent>{motivos.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+            <Label>Problema novo *</Label>
+            <Select
+              value={motivoNovo && areaNova ? `${areaNova}${SEP}${motivoNovo}` : ""}
+              onValueChange={(v) => { const [a, pr] = v.split(SEP); setAreaNova(a); setMotivoNovo(pr); }}
+            >
+              <SelectTrigger>
+                <span className="truncate">{motivoNovo && areaNova ? `${areaNova} · ${motivoNovo}` : "Selecione…"}</span>
+              </SelectTrigger>
+              <SelectContent>
+                {grupos.length === 0 ? (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">Sem áreas cadastradas.</div>
+                ) : grupos.map((g) => (
+                  <SelectGroup key={`${g.interna}-${g.area}`}>
+                    <SelectLabel>{g.interna ? "Dentro da Juff" : "Fora da Juff"} · {g.area}</SelectLabel>
+                    {g.problemas.length === 0 ? (
+                      <div className="px-2 py-1 text-xs text-muted-foreground">Sem opções cadastradas</div>
+                    ) : g.problemas.map((pr) => (
+                      <SelectItem key={pr} value={`${g.area}${SEP}${pr}`}>{pr}</SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
             </Select>
           </div>
           <div>

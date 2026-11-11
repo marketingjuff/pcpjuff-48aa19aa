@@ -1561,11 +1561,13 @@ export type Database = {
       }
       perdas_reclassificacoes: {
         Row: {
+          area_erro_novo: string | null
           area_erro_original: string | null
           berco: string | null
           cor: string
           created_at: string
           destino: string | null
+          erro_producao_novo: boolean | null
           id: string
           modelo: string
           motivo_novo: string
@@ -1580,11 +1582,13 @@ export type Database = {
           usuario_id: string | null
         }
         Insert: {
+          area_erro_novo?: string | null
           area_erro_original?: string | null
           berco?: string | null
           cor: string
           created_at?: string
           destino?: string | null
+          erro_producao_novo?: boolean | null
           id?: string
           modelo: string
           motivo_novo: string
@@ -1599,11 +1603,13 @@ export type Database = {
           usuario_id?: string | null
         }
         Update: {
+          area_erro_novo?: string | null
           area_erro_original?: string | null
           berco?: string | null
           cor?: string
           created_at?: string
           destino?: string | null
+          erro_producao_novo?: boolean | null
           id?: string
           modelo?: string
           motivo_novo?: string

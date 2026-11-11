@@ -78,6 +78,13 @@
       "when": 1794427726630,
       "tag": "0010_cadastrar_areas_e_problemas_de_perda",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794430359016,
+      "tag": "0011_perdas_reclass_area_erro_novo",
+      "breakpoints": true
     }
   ]
 }

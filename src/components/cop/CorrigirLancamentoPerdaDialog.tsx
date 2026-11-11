@@ -3,17 +3,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
 import { Combobox } from "@/components/shared/combobox";
 import type { Cop, LancamentoPerda, PerdaItemRef } from "@/lib/cop";
-import { MOTIVOS_PERDA_PADRAO, formatCopNumero, getPerda } from "@/lib/cop";
+import { formatCopNumero, getPerda } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import { useAppList } from "@/lib/app-lists";
+import { useOpcoesErro } from "@/lib/app-lists";
 import { AlertTriangle, Plus, X } from "lucide-react";
 
-const SEM_MOTIVO = "__sem__";
+const SEP = "||";
 
-type Linha = { destino: string; qtd: string; motivo: string };
+type Linha = { destino: string; qtd: string; motivo: string; area_erro: string; erro_producao: boolean | null };
 
 type Props = {
   open: boolean;
@@ -47,8 +47,7 @@ function fmtDataHora(iso?: string): string {
 }
 
 export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancamento, onConfirm, disabled }: Props) {
-  const { names: motivosDb } = useAppList("motivo_perda");
-  const motivos = motivosDb.length > 0 ? motivosDb : MOTIVOS_PERDA_PADRAO;
+  const { grupos } = useOpcoesErro();
 
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [observacao, setObservacao] = useState("");
@@ -69,7 +68,9 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
     setLinhas([{
       destino: `${lancamento.modelo}|${lancamento.cor}|${lancamento.tamanho}`,
       qtd: String(lancamento.qtd),
-      motivo: lancamento.motivo ?? SEM_MOTIVO,
+      motivo: lancamento.area_erro ? (lancamento.motivo ?? "") : "",
+      area_erro: lancamento.area_erro ?? "",
+      erro_producao: lancamento.area_erro ? (lancamento.erro_producao ?? null) : null,
     }]);
     setObservacao("");
   }, [open, lancamento]);
@@ -78,7 +79,7 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
     setLinhas((arr) => arr.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
   }
   function addLinha() {
-    setLinhas((arr) => [...arr, { destino: arr[0]?.destino ?? "", qtd: "", motivo: SEM_MOTIVO }]);
+    setLinhas((arr) => [...arr, { destino: arr[0]?.destino ?? "", qtd: "", motivo: "", area_erro: "", erro_producao: null }]);
   }
   function removerLinha(i: number) {
     setLinhas((arr) => arr.filter((_, idx) => idx !== i));
@@ -86,7 +87,8 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
 
   const itens: PerdaItemRef[] = linhas.map((l) => {
     const [m, c, t] = l.destino ? l.destino.split("|") : ["", "", ""];
-    return { modelo: m, cor: c, tamanho: t, qtd: l.qtd === "" ? 0 : parseInt(l.qtd, 10) || 0, motivo: l.motivo === SEM_MOTIVO ? null : l.motivo };
+    return { modelo: m, cor: c, tamanho: t, qtd: l.qtd === "" ? 0 : parseInt(l.qtd, 10) || 0, motivo: l.motivo || null,
+      problema: l.motivo || null, area_erro: l.area_erro || null, erro_producao: l.erro_producao };
   });
 
   const total = itens.reduce((s, i) => s + i.qtd, 0);
@@ -108,7 +110,8 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
     return out;
   }, [itens, cop, lancamento]);
 
-  const podeSalvar = !ro && todasValidas && observacao.trim().length > 0 && estouros.length === 0;
+  const faltaProblema = linhas.some((l) => !l.motivo || !l.area_erro);
+  const podeSalvar = !ro && todasValidas && !faltaProblema && observacao.trim().length > 0 && estouros.length === 0;
 
   function salvar() {
     if (!lancamento || !podeSalvar) return;
@@ -118,6 +121,7 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
       antes: {
         modelo: lancamento.modelo, cor: lancamento.cor, tamanho: lancamento.tamanho,
         qtd: lancamento.qtd, motivo: lancamento.motivo ?? null,
+        area_erro: lancamento.area_erro ?? null, problema: lancamento.problema ?? null, erro_producao: lancamento.erro_producao ?? null,
       },
       depois: itens,
       observacao: observacao.trim(),
@@ -160,15 +164,15 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
             </div>
           </div>
 
-          <div className="grid grid-cols-[1fr_92px_220px_36px] gap-2 text-[11px] font-medium text-muted-foreground">
+          <div className="grid grid-cols-[1fr_92px_260px_36px] gap-2 text-[11px] font-medium text-muted-foreground">
             <span>Linha de destino</span>
             <span className="text-right">Qtd</span>
-            <span>Motivo</span>
+            <span>Problema</span>
             <span />
           </div>
 
           {linhas.map((l, i) => (
-            <div key={i} className="grid grid-cols-[1fr_92px_220px_36px] gap-2 items-center">
+            <div key={i} className="grid grid-cols-[1fr_92px_260px_36px] gap-2 items-center">
               <Combobox
                 value={l.destino}
                 onChange={(v) => setLinha(i, { destino: v })}
@@ -183,11 +187,31 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
                 onChange={(e) => setLinha(i, { qtd: e.target.value.replace(/[^\d]/g, "") })}
                 disabled={ro}
               />
-              <Select value={l.motivo} onValueChange={(m) => setLinha(i, { motivo: m })} disabled={ro}>
-                <SelectTrigger className="h-8"><SelectValue placeholder="—" /></SelectTrigger>
+              <Select
+                value={l.motivo && l.area_erro ? `${l.area_erro}${SEP}${l.motivo}` : ""}
+                onValueChange={(v) => {
+                  const [area, pr] = v.split(SEP);
+                  const g = grupos.find((x) => x.area === area);
+                  setLinha(i, { area_erro: area, motivo: pr, erro_producao: g ? g.interna : null });
+                }}
+                disabled={ro}
+              >
+                <SelectTrigger className="h-8">
+                  <span className="truncate">{l.motivo && l.area_erro ? `${l.area_erro} · ${l.motivo}` : "Escolha o problema"}</span>
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={SEM_MOTIVO}>—</SelectItem>
-                  {motivos.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                  {grupos.length === 0 ? (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">Sem áreas cadastradas.</div>
+                  ) : grupos.map((g) => (
+                    <SelectGroup key={`${g.interna}-${g.area}`}>
+                      <SelectLabel>{g.interna ? "Dentro da Juff" : "Fora da Juff"} · {g.area}</SelectLabel>
+                      {g.problemas.length === 0 ? (
+                        <div className="px-2 py-1 text-xs text-muted-foreground">Sem opções cadastradas</div>
+                      ) : g.problemas.map((pr) => (
+                        <SelectItem key={pr} value={`${g.area}${SEP}${pr}`}>{pr}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
                 </SelectContent>
               </Select>
               {linhas.length > 1 ? (
@@ -216,6 +240,10 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
             />
           </div>
         </div>
+
+        {faltaProblema && !ro && (
+          <div className="text-sm text-destructive">Escolha o problema de todas as linhas.</div>
+        )}
 
         {estouros.length > 0 && (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive space-y-0.5">

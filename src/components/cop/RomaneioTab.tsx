@@ -359,7 +359,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
           em: garantirEmUnico(historico_perdas, new Date().toISOString()),
           tipo: "perda",
           total: extras.reduce((s, e) => s + Number(e.qtd || 0), 0),
-          itens: extras.map((e) => ({ modelo: e.modelo, cor: e.cor, tamanho: e.tamanho, qtd: e.qtd, motivo: e.motivo ?? null })),
+          itens: extras.map((e) => ({ modelo: e.modelo, cor: e.cor, tamanho: e.tamanho, qtd: e.qtd, motivo: e.motivo ?? null, area_erro: e.area_erro ?? null, problema: e.problema ?? null, erro_producao: e.erro_producao ?? null })),
           observacao: `Desmembrado da correção: ${observacao}`,
           usuario_id: ses.user?.id ?? null,
         });

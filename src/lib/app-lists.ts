@@ -109,14 +109,12 @@ export function kindProblemaDaArea(areaId: string): AppListKind {
   return PROBLEMA_LEGADO_POR_AREA_ID[areaId] ?? `refacao_problema_area:${areaId}`;
 }
 
-/** Resolve pelo nome escolhido (áreas da Juff primeiro, depois de fora); se a área não existe ou a lista dela está vazia, usa os motivos de perda. */
+/** Resolve pelo nome escolhido (áreas da Juff primeiro, depois de fora). Área encontrada usa sempre a própria lista, mesmo vazia. */
 export function useKindProblemaPorArea(areaNome: string): AppListKind {
   const { items: areasInt } = useAppList("refacao_area_erro");
   const { items: areasExt } = useAppList("refacao_area_erro_externa");
   const area = areasInt.find((a) => a.nome === areaNome) ?? areasExt.find((a) => a.nome === areaNome);
   const kind: AppListKind = area ? kindProblemaDaArea(area.id) : "motivo_perda";
-  const { items, isLoading } = useAppList(kind);
-  if (kind !== "motivo_perda" && !isLoading && items.length === 0) return "motivo_perda";
   return kind;
 }
 
@@ -131,7 +129,6 @@ export type GrupoOpcoesErro = { interna: boolean; area: string; problemas: strin
 export function useOpcoesErro(): { grupos: GrupoOpcoesErro[]; isLoading: boolean } {
   const { items: areasInt, isLoading: l1 } = useAppList("refacao_area_erro");
   const { items: areasExt, isLoading: l2 } = useAppList("refacao_area_erro_externa");
-  const { items: motivos, isLoading: l3 } = useAppList("motivo_perda");
   const areas = [...areasInt.map((a) => ({ a, interna: true })), ...areasExt.map((a) => ({ a, interna: false }))];
   const kinds = areas.map(({ a }) => kindProblemaDaArea(a.id));
   const { data: itens = [], isLoading: l4 } = useQuery({
@@ -146,10 +143,9 @@ export function useOpcoesErro(): { grupos: GrupoOpcoesErro[]; isLoading: boolean
       return (data ?? []) as AppListItem[];
     },
   });
-  const fallback = motivos.map((m) => m.nome);
   const grupos = areas.map(({ a, interna }, i) => {
     const probs = itens.filter((it) => it.kind === kinds[i]).map((it) => it.nome);
-    return { interna, area: a.nome, problemas: probs.length > 0 ? probs : fallback };
+    return { interna, area: a.nome, problemas: probs };
   });
-  return { grupos, isLoading: l1 || l2 || l3 || l4 };
+  return { grupos, isLoading: l1 || l2 || l4 };
 }

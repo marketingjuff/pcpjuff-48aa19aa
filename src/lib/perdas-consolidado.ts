@@ -84,6 +84,8 @@ export type PerdaReclassRow = {
   motivo_original: string | null;
   area_erro_original: string | null;
   motivo_novo: string;
+  area_erro_novo?: string | null;
+  erro_producao_novo?: boolean | null;
   oficina_id: string | null;
   berco: string | null;
   destino: string | null;
@@ -355,6 +357,9 @@ export function usePerdasConsolidadas() {
         tamanho: r.tamanho,
         qtd: Number(r.qtd) || 0,
         motivo: r.motivo_novo,
+        area_erro: r.area_erro_novo ?? null,
+        erro_producao: r.erro_producao_novo ?? null,
+        problema: r.motivo_novo,
         oficina_id: r.oficina_id ?? null,
         oficina_nome: oficinaNome(r.oficina_id),
         berco: r.berco ?? null,

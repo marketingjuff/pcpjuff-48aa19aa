@@ -64,14 +64,6 @@ export const LISTAS_CATALOGO: ListaCatalogoItem[] = [
   },
 
   // ---------- PCP + COP · Perdas (compartilhada) ----------
-  {
-    kind: "motivo_perda",
-    titulo: "Motivos de perda",
-    placeholder: "Ex.: Mancha no tecido",
-    modulos: ["pcp", "cop"],
-    grupo: "Perdas",
-    notaUso: "Escolhida nos registros de perda do COP e, na Refação do PCP, quando a área de erro não é Arte/DTF/Silk/Acabamento.",
-  },
 
   // ---------- COP · Perdas ----------
   {

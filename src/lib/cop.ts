@@ -298,6 +298,9 @@ export type PerdaItemRef = {
   tamanho: string;
   qtd: number;
   motivo: string | null;
+  area_erro?: string | null;
+  problema?: string | null;
+  erro_producao?: boolean | null;
 };
 
 /** Registro de uma perda registrada no romaneio (delta), correção ou estorno. */
@@ -370,6 +373,7 @@ export function lancamentosPerda(cop: { historico_perdas?: HistoricoPerda[] | nu
       if (!alvo.corrigido) {
         alvo.original = ev.antes ?? {
           modelo: alvo.modelo, cor: alvo.cor, tamanho: alvo.tamanho, qtd: alvo.qtd, motivo: alvo.motivo,
+          area_erro: alvo.area_erro ?? null, problema: alvo.problema ?? null, erro_producao: alvo.erro_producao ?? null,
         };
       }
       alvo.modelo = ev.depois.modelo;
@@ -377,6 +381,11 @@ export function lancamentosPerda(cop: { historico_perdas?: HistoricoPerda[] | nu
       alvo.tamanho = ev.depois.tamanho;
       alvo.qtd = Math.max(0, Number(ev.depois.qtd) || 0);
       alvo.motivo = ev.depois.motivo ?? null;
+      if (typeof ev.depois.area_erro === "string" && ev.depois.area_erro.trim() !== "") {
+        alvo.area_erro = ev.depois.area_erro;
+        alvo.problema = ev.depois.problema ?? null;
+        alvo.erro_producao = ev.depois.erro_producao ?? null;
+      }
       alvo.corrigido = true;
     } else if (ev.tipo === "estorno_perda") {
       for (const l of out) {
