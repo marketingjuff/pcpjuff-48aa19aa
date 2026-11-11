@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Pencil, History as HistoryIcon } from "lucide-react";
+import { Plus, Trash2, Pencil, History as HistoryIcon, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { PerdasQuebrasPainel } from "./PerdasQuebrasPainel";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -206,6 +208,8 @@ export function ControlePerdasTab() {
         <Card className="flex items-center justify-center">{podeRegistrarManual ? <Button onClick={() => setNovoManual(true)}><Plus className="h-4 w-4 mr-1" /> Registrar perda manual</Button> : <span className="text-xs text-muted-foreground px-2 text-center">Sem permissão para registrar perda manual</span>}</Card>
       </div>
 
+      <PerdasQuebrasPainel perdas={filtradas} motivoDe={motivoDe} onAbrirDetalhe={setDetalhe} />
+
       {/* Gráfico */}
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Perdas por mês — {filtroAno}</CardTitle></CardHeader>
@@ -223,10 +227,15 @@ export function ControlePerdasTab() {
       </Card>
 
       {/* Tabela */}
+      <Collapsible defaultOpen={false} className="group/consol">
       <Card>
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+        <CollapsibleTrigger asChild>
+        <CardHeader className="pb-2 flex flex-row items-center justify-between cursor-pointer">
           <CardTitle className="text-base">Perdas consolidadas ({filtradas.length})</CardTitle>
+          <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/consol:rotate-180" />
         </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
         <CardContent>
           <div className="overflow-x-auto tbl-congelada [&>div]:max-h-[70vh] [&>div]:overflow-auto">
             <Table>
@@ -295,7 +304,9 @@ export function ControlePerdasTab() {
             </Table>
           </div>
         </CardContent>
+        </CollapsibleContent>
       </Card>
+      </Collapsible>
 
       <PerdaDetalheDialog perda={detalhe} open={!!detalhe} onOpenChange={(v) => !v && setDetalhe(null)} />
       <CorrigirPerdaDialog perda={corrigir} open={!!corrigir} onOpenChange={(v) => !v && setCorrigir(null)} />
