@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 import type { PerdaConsolidada } from "@/lib/perdas-consolidado";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
@@ -37,6 +37,9 @@ function grupoDe(def: Def, p: PerdaConsolidada): string | null {
   return v;
 }
 
+const CORES_CLARAS = new Set(["branco", "areia", "verde agua", "amarelo"]);
+const normCor = (c: string) => c.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
 function MiniCard({ def, perdas, onBarra }: { def: Def; perdas: PerdaConsolidada[]; onBarra: (nome: string) => void }) {
   const { dados, total, semOficina } = useMemo(() => {
     const m = new Map<string, number>();
@@ -50,7 +53,7 @@ function MiniCard({ def, perdas, onBarra }: { def: Def; perdas: PerdaConsolidada
     return { dados: arr, total: arr.reduce((s, x) => s + x.qtd, 0), semOficina: sem };
   }, [def, perdas]);
 
-  const altura = Math.max(120, dados.length * 28 + 40);
+  const altura = Math.max(120, dados.length * 30 + 16);
   return (
     <div className="rounded-md border p-3">
       <div className="flex items-baseline justify-between mb-2">
@@ -65,12 +68,17 @@ function MiniCard({ def, perdas, onBarra }: { def: Def; perdas: PerdaConsolidada
         <>
           <div style={{ height: altura }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dados} layout="vertical" margin={{ left: 0, right: 16, top: 4, bottom: 4 }}>
-                <XAxis type="number" fontSize={11} allowDecimals={false} />
-                <YAxis type="category" dataKey="nome" width={130} fontSize={11} interval={0} />
-                <Tooltip formatter={(v: number) => [`${v} peças`, ""]} separator="" />
-                <Bar dataKey="qtd" fill="#16a34a" className="cursor-pointer" onClick={(d: { nome?: string; payload?: { nome: string } }) => onBarra(d.payload?.nome ?? d.nome ?? "")}>
-                  {def.porCor && dados.map((d) => <Cell key={d.nome} fill={corHex(d.nome)} className="cursor-pointer" />)}
+              <BarChart data={dados} layout="vertical" margin={{ left: 0, right: 56, top: 4, bottom: 4 }}>
+                <XAxis type="number" hide allowDecimals={false} />
+                <YAxis type="category" dataKey="nome" width={170} fontSize={11} interval={0} axisLine={false} tickLine={false} tickFormatter={(v: string) => (v.length > 28 ? v.slice(0, 27) + "…" : v)} />
+                <Tooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }} formatter={(v: number) => [`${v} peças`, ""]} separator="" />
+                <Bar dataKey="qtd" barSize={16} radius={[0, 4, 4, 0]} className="cursor-pointer" onClick={(d: { nome?: string; payload?: { nome: string } }) => onBarra(d.payload?.nome ?? d.nome ?? "")}>
+                  {dados.map((d) => {
+                    const fill = def.porCor ? corHex(d.nome) : d.nome === "Não informado" ? "#9ca3af" : "#16a34a";
+                    const claro = def.porCor && CORES_CLARAS.has(normCor(d.nome));
+                    return <Cell key={d.nome} fill={fill} stroke={claro ? "#d1d5db" : undefined} strokeWidth={claro ? 1 : 0} className="cursor-pointer" />;
+                  })}
+                  <LabelList dataKey="qtd" position="right" fontSize={11} fill="hsl(var(--foreground))" className="tabular-nums" formatter={(v: number) => `${v} · ${total ? Math.round((v / total) * 100) : 0}%`} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
