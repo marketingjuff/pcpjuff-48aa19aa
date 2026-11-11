@@ -1,0 +1,531 @@
+{
+  "version": 1,
+  "sdk_version": "3.4.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://onefhxpavfhxdjqsybaf.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ],
+    "jwks_uri": "https://onefhxpavfhxdjqsybaf.supabase.co/auth/v1/.well-known/jwks.json"
+  },
+  "mcp": {
+    "server": {
+      "name": "pcp-juff",
+      "version": "1.0.0",
+      "title": "PCP Juff"
+    },
+    "tools": [
+      {
+        "name": "mapa_do_sistema",
+        "title": "Mapa do sistema",
+        "description": "Chame primeiro. Explica os módulos e o vocabulário da Juff, diz quem é a pessoa conectada, o que ela pode ver e traz contagens rápidas só dos módulos liberados.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "pedidos_listar",
+        "title": "Listar pedidos do PCP",
+        "description": "Lista pedidos de produção do PCP com filtros. Use para perguntas como quais pedidos estão atrasados no Silk ou o que a Mirela tem em produção.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "etapa": {
+              "type": "string",
+              "enum": [
+                "dados_in",
+                "arte",
+                "dtf",
+                "silk",
+                "acabamento",
+                "expedicao",
+                "finalizado"
+              ],
+              "description": "Etapa atual do pedido."
+            },
+            "vendedor": {
+              "type": "string",
+              "description": "Nome (ou parte) do vendedor."
+            },
+            "tipo_estampa": {
+              "type": "string",
+              "enum": [
+                "DTF",
+                "Silk",
+                "DTF+Silk",
+                "Lisa"
+              ],
+              "description": "Tipo de estampa."
+            },
+            "atrasados": {
+              "type": "boolean",
+              "description": "Só pedidos atrasados em algum setor."
+            },
+            "com_refacao": {
+              "type": "boolean",
+              "description": "Só pedidos com refação."
+            },
+            "captacao_video": {
+              "type": "boolean",
+              "description": "Só pedidos que precisam de captação de vídeo."
+            },
+            "entrada_de": {
+              "type": "string",
+              "description": "Entrada a partir de (AAAA-MM-DD)."
+            },
+            "entrada_ate": {
+              "type": "string",
+              "description": "Entrada até (AAAA-MM-DD)."
+            },
+            "entrega_de": {
+              "type": "string",
+              "description": "Entrega a partir de (AAAA-MM-DD)."
+            },
+            "entrega_ate": {
+              "type": "string",
+              "description": "Entrega até (AAAA-MM-DD)."
+            },
+            "incluir_finalizados": {
+              "type": "boolean",
+              "description": "Incluir pedidos finalizados (padrão não)."
+            },
+            "busca": {
+              "type": "string",
+              "description": "Parte do número do pedido Olist ou do orçamento."
+            },
+            "limite": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Máximo de pedidos (padrão 50, máximo 200)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "pedido_detalhe",
+        "title": "Detalhe de um pedido",
+        "description": "Mostra tudo de um pedido do PCP: etapa, datas, peças, refações e correções. Use para perguntas como em que pé está o pedido 3996.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identificador interno do pedido."
+            },
+            "numero": {
+              "type": "string",
+              "description": "Número do pedido Olist (ex.: 3996 ou 3996A) ou do orçamento."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "producao_panorama",
+        "title": "Panorama da produção",
+        "description": "Fotografia da produção em aberto: pedidos e peças por etapa, batidas na fila, atrasos por setor, o que vence nesta semana e na próxima e o que está parado. Use para perguntas como como está a fábrica hoje.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "ate": {
+              "type": "string",
+              "description": "Data de referência (AAAA-MM-DD); padrão hoje."
+            },
+            "dias_parado": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 60,
+              "description": "Dias sem mexer para considerar parado (padrão 3)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "cops_listar",
+        "title": "Listar COPs",
+        "description": "Lista ordens de corte (COPs) com filtros por status, oficina, modelo, cor e período. Use para perguntas como quais COPs estão na oficina X ou o que tem urgência.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "Aguardando Risco",
+                "Aguardando Corte",
+                "Aguardando Romaneio",
+                "Aguardando Oficina",
+                "Na Oficina (Costura)",
+                "Romaneio Parcial",
+                "Romaneio Completo",
+                "Em Oficina",
+                "Aguardando Pagamento",
+                "Finalizado"
+              ],
+              "description": "Status do COP."
+            },
+            "oficina": {
+              "type": "string",
+              "description": "Nome (ou parte) da oficina."
+            },
+            "modelo": {
+              "type": "string",
+              "description": "Modelo que aparece nas peças do COP."
+            },
+            "cor": {
+              "type": "string",
+              "description": "Cor que aparece nas peças do COP."
+            },
+            "com_urgencia": {
+              "type": "boolean",
+              "description": "Só COPs com urgência marcada."
+            },
+            "pagamento_pendente": {
+              "type": "boolean",
+              "description": "Só COPs com pagamento ainda não pago (precisa permissão de pagamento)."
+            },
+            "de": {
+              "type": "string",
+              "description": "Criado a partir de (AAAA-MM-DD)."
+            },
+            "ate": {
+              "type": "string",
+              "description": "Criado até (AAAA-MM-DD)."
+            },
+            "busca": {
+              "type": "string",
+              "description": "Número do COP (ex.: 0152)."
+            },
+            "limite": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Máximo de COPs (padrão 50, máximo 200)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "cop_detalhe",
+        "title": "Detalhe de um COP",
+        "description": "Mostra um COP completo: grade por modelo, cor e tamanho, datas de corte, quem cortou, romaneio, recebimentos, urgências e oficina. Use para perguntas como o que falta receber do COP 0152A.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identificador interno do COP."
+            },
+            "numero": {
+              "type": "string",
+              "description": "Número do COP, com ou sem letra (ex.: 0152 ou 0152A)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "map_consultar",
+        "title": "Consultar tecidos (MAP)",
+        "description": "Consulta o MAP: produções de tecido (PROD), estoque de peças de malha, devoluções e quebra. Use para perguntas como quanto tem de malha preta no estoque ou em que pé está o PROD101.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "visao": {
+              "type": "string",
+              "enum": [
+                "prods",
+                "estoque",
+                "devolucoes",
+                "quebra"
+              ],
+              "description": "O que consultar."
+            },
+            "numero_prod": {
+              "type": "integer",
+              "description": "Número do PROD (ex.: 101)."
+            },
+            "empresa": {
+              "type": "string",
+              "enum": [
+                "Juff",
+                "Joke"
+              ],
+              "description": "Empresa faturada."
+            },
+            "cor": {
+              "type": "string",
+              "description": "Cor (ou parte)."
+            },
+            "status_peca": {
+              "type": "string",
+              "enum": [
+                "Fechada",
+                "Aberta",
+                "Corte",
+                "Devolvida",
+                "100% utilizada"
+              ],
+              "description": "Status da peça no estoque."
+            },
+            "de": {
+              "type": "string",
+              "description": "A partir de (AAAA-MM-DD)."
+            },
+            "ate": {
+              "type": "string",
+              "description": "Até (AAAA-MM-DD)."
+            },
+            "incluir_finalizados": {
+              "type": "boolean",
+              "description": "Incluir PRODs finalizados (padrão não)."
+            },
+            "limite": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Máximo de linhas (padrão 50, máximo 200)."
+            }
+          },
+          "required": [
+            "visao"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "compras_consultar",
+        "title": "Consultar compras (SUP)",
+        "description": "Consulta o SUP: pedidos de compra (PC), fornecedores, produtos com preço, histórico de preços e comissões. Use para perguntas como o que está em aberto com o fornecedor X ou quanto custa a linha preta hoje.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "visao": {
+              "type": "string",
+              "enum": [
+                "pedidos_compra",
+                "fornecedores",
+                "produtos",
+                "historico_precos",
+                "comissoes"
+              ],
+              "description": "O que consultar."
+            },
+            "fornecedor": {
+              "type": "string",
+              "description": "Razão social ou nome fantasia (ou parte)."
+            },
+            "numero_pc": {
+              "type": "string",
+              "description": "Número do PC (ex.: PC26MAI-01)."
+            },
+            "status": {
+              "type": "string",
+              "description": "Status (ex.: enviado, confirmado, recebido, pago, cancelado)."
+            },
+            "produto": {
+              "type": "string",
+              "description": "Nome do produto (ou parte)."
+            },
+            "de": {
+              "type": "string",
+              "description": "A partir de (AAAA-MM-DD)."
+            },
+            "ate": {
+              "type": "string",
+              "description": "Até (AAAA-MM-DD)."
+            },
+            "limite": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Máximo de linhas (padrão 50, máximo 200)."
+            }
+          },
+          "required": [
+            "visao"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "vendas_olist_resumo",
+        "title": "Resumo de vendas Olist",
+        "description": "Resumo de vendas importadas da Olist por período, separando Juff Custom e Juff Store. Valores em R$ só aparecem para quem tem permissão de faturamento.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "de": {
+              "type": "string",
+              "description": "Início do período (AAAA-MM-DD)."
+            },
+            "ate": {
+              "type": "string",
+              "description": "Fim do período (AAAA-MM-DD)."
+            },
+            "frente": {
+              "type": "string",
+              "enum": [
+                "custom",
+                "store",
+                "ambas"
+              ],
+              "description": "Juff Custom, Juff Store ou ambas (padrão ambas)."
+            },
+            "empresa": {
+              "type": "string",
+              "enum": [
+                "CONSOLIDADO",
+                "JOKE",
+                "JUFF"
+              ],
+              "description": "Empresa (padrão CONSOLIDADO)."
+            },
+            "vendedor": {
+              "type": "string",
+              "description": "Nome exato do vendedor como aparece no KPI."
+            },
+            "por_mes": {
+              "type": "boolean",
+              "description": "Abrir também mês a mês."
+            }
+          },
+          "required": [
+            "de",
+            "ate"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "dados_consultar",
+        "title": "Consultar outras tabelas",
+        "description": "Consulta tabelas de apoio por área (estoque mínimo e pausas do PLAN, perdas, oficinas, saldo Olist, feriados, listas, históricos e usuários). Use para perguntas como qual o mínimo da Camiseta preta P ou quais perdas foram lançadas esta semana.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "area": {
+              "type": "string",
+              "enum": [
+                "plan_estoque_minimo",
+                "plan_pausas",
+                "plan_fichas_modelo",
+                "plan_config",
+                "perdas_manuais",
+                "perdas_reclassificacoes",
+                "cop_perdas",
+                "oficinas",
+                "saldo_estoque_olist",
+                "capacidade_etapas",
+                "feriados",
+                "listas_configuracao",
+                "map_config",
+                "sup_departamentos",
+                "historico_pedidos",
+                "historico_cop",
+                "historico_map",
+                "historico_sup",
+                "usuarios"
+              ],
+              "description": "Qual área consultar."
+            },
+            "filtros": {
+              "type": "object",
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean"
+                ]
+              },
+              "description": "Filtros de igualdade coluna → valor, só com colunas aceitas pela área."
+            },
+            "busca": {
+              "type": "string",
+              "description": "Texto para busca parcial na coluna de busca da área."
+            },
+            "limite": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Máximo de linhas (padrão 50, máximo 200)."
+            }
+          },
+          "required": [
+            "area"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
