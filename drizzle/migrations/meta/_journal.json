@@ -71,6 +71,13 @@
       "when": 1794426967618,
       "tag": "0009_cop_perdas_identificacao_erro",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794427726630,
+      "tag": "0010_cadastrar_areas_e_problemas_de_perda",
+      "breakpoints": true
     }
   ]
 }
