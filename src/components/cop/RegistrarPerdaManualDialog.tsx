@@ -9,8 +9,9 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
-import { useAppList, useKindProblemaPorArea, type AppListKind } from "@/lib/app-lists";
-import { MOTIVOS_PERDA_PADRAO, type Oficina } from "@/lib/cop";
+import { areaExigeOficina, useAppList } from "@/lib/app-lists";
+import { type Oficina } from "@/lib/cop";
+import { IdentificacaoErroCampos, IDENTIFICACAO_VAZIA, validarIdentificacaoErro, type IdentificacaoErro } from "./IdentificacaoErroCampos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
 
@@ -28,10 +29,7 @@ export function RegistrarPerdaManualDialog({
   const [cor, setCor] = useState<string>(REFACAO_CORES[0].nome);
   const [tamanho, setTamanho] = useState<string>(REFACAO_TAMANHOS[2]); // M
   const [qtd, setQtd] = useState<string>("1");
-  const [areaIdentificou, setAreaIdentificou] = useState<string>("");
-  const [erroProd, setErroProd] = useState<"sim" | "nao" | "">("");
-  const [areaErro, setAreaErro] = useState<string>("");
-  const [problema, setProblema] = useState<string>("");
+  const [ident, setIdent] = useState<IdentificacaoErro>(IDENTIFICACAO_VAZIA);
   const [err, setErr] = useState<string>("");
   const [oficinaId, setOficinaId] = useState<string>("");
   const [berco, setBerco] = useState<string>("");
@@ -39,16 +37,8 @@ export function RegistrarPerdaManualDialog({
   const [responsavel, setResponsavel] = useState<string>("");
   const [observacoes, setObservacoes] = useState<string>("");
 
-  const { items: motivosItems } = useAppList("motivo_perda");
-  const motivosList = motivosItems.length > 0 ? motivosItems.map((i) => i.nome) : MOTIVOS_PERDA_PADRAO;
   const { items: destinosItems } = useAppList("destino_perda" as any);
   const destinosList = destinosItems.map((i) => i.nome);
-  const { names: areasIdentifica } = useAppList("refacao_area_identifica");
-  const { names: areasErro } = useAppList("refacao_area_erro");
-  const kindArea = useKindProblemaPorArea(areaErro);
-  const kindProblema: AppListKind = erroProd === "sim" ? kindArea : "motivo_perda";
-  const { names: problemasArea } = useAppList(kindProblema);
-  const problemaOptions = kindProblema === "motivo_perda" ? motivosList : problemasArea;
 
   const { data: oficinas = [] } = useQuery({
     queryKey: ["oficinas"],
@@ -65,9 +55,12 @@ export function RegistrarPerdaManualDialog({
       const { data: r, error } = await (supabase as any).from("perdas_manuais").select("*").eq("id", editId).maybeSingle();
       if (error || !r) { toast.error("Não foi possível carregar a perda."); return; }
       setData(r.data); setModelo(r.modelo); setCor(r.cor); setTamanho(r.tamanho); setQtd(String(r.qtd));
-      setAreaIdentificou(r.area_identificou ?? "");
-      setErroProd(r.erro_producao === true ? "sim" : r.erro_producao === false ? "nao" : "");
-      setAreaErro(r.area_erro ?? ""); setProblema(r.problema ?? "");
+      setIdent({
+        areaIdentificou: r.area_identificou ?? "",
+        dentroJuff: r.erro_producao === true ? "sim" : r.erro_producao === false ? "nao" : "",
+        areaErro: r.area_erro ?? "",
+        problema: r.problema ?? "",
+      });
       setOficinaId(r.oficina_id ?? ""); setBerco(r.berco ?? ""); setDestino(r.destino ?? "");
       setResponsavel(r.responsavel ?? ""); setObservacoes(r.observacoes ?? "");
     })();
@@ -76,15 +69,13 @@ export function RegistrarPerdaManualDialog({
   function reset() {
     setData(new Date().toISOString().slice(0, 10));
     setModelo(REFACAO_MODELOS[0]); setCor(REFACAO_CORES[0].nome); setTamanho(REFACAO_TAMANHOS[2]);
-    setQtd("1"); setAreaIdentificou(""); setErroProd(""); setAreaErro(""); setProblema(""); setErr("");
+    setQtd("1"); setIdent(IDENTIFICACAO_VAZIA); setErr("");
     setOficinaId(""); setBerco(""); setDestino(""); setResponsavel(""); setObservacoes("");
   }
 
   function validar(): boolean {
-    if (!areaIdentificou) { setErr("Informe qual área identificou o problema."); return false; }
-    if (erroProd === "") { setErr("Informe se houve erro da produção."); return false; }
-    if (erroProd === "sim" && !areaErro) { setErr("Informe qual área errou."); return false; }
-    if (!problema) { setErr("Informe qual foi o problema."); return false; }
+    const e = validarIdentificacaoErro(ident, oficinaId);
+    if (e) { setErr(e); return false; }
     setErr("");
     return true;
   }
@@ -97,10 +88,10 @@ export function RegistrarPerdaManualDialog({
       const payload = {
         data,
         modelo, cor, tamanho, qtd: q,
-        area_identificou: areaIdentificou,
-        erro_producao: erroProd === "sim",
-        area_erro: erroProd === "sim" ? areaErro : null,
-        problema: problema,
+        area_identificou: ident.areaIdentificou,
+        erro_producao: ident.dentroJuff === "sim",
+        area_erro: ident.areaErro,
+        problema: ident.problema,
         oficina_id: oficinaId || null,
         berco: berco.trim() || null,
         destino: destino || null,
@@ -132,52 +123,7 @@ export function RegistrarPerdaManualDialog({
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className="max-w-[720px]">
         <DialogHeader><DialogTitle>{editId ? "Corrigir perda manual" : "Registrar perda manual"}</DialogTitle></DialogHeader>
-        <div className="rounded-md border bg-muted/20 p-3 space-y-3">
-          <div className="text-[11px] text-muted-foreground font-medium uppercase">Identificação do problema</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label>Qual área identificou o problema? *</Label>
-              <Select value={areaIdentificou} onValueChange={setAreaIdentificou}>
-                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
-                <SelectContent>{areasIdentifica.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Houve erro da produção? *</Label>
-              <Select value={erroProd} onValueChange={(v) => {
-                setErroProd(v as "sim" | "nao");
-                if (v === "nao") setAreaErro("");
-                setProblema("");
-              }}>
-                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sim">Sim</SelectItem>
-                  <SelectItem value="nao">Não</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {erroProd === "sim" && (
-              <div>
-                <Label>Qual área errou? *</Label>
-                <Select value={areaErro} onValueChange={(v) => { setAreaErro(v); setProblema(""); }}>
-                  <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
-                  <SelectContent>{areasErro.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            )}
-            <div>
-              <Label>Qual foi o problema? *</Label>
-              <Select value={problema} onValueChange={setProblema}>
-                <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
-                <SelectContent>
-                  {problemaOptions.length === 0
-                    ? <div className="px-2 py-1.5 text-xs text-muted-foreground">Sem opções cadastradas.</div>
-                    : problemaOptions.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
+        <IdentificacaoErroCampos value={ident} onChange={setIdent} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div><Label>Data</Label><Input type="date" value={data} onChange={(e) => setData(e.target.value)} /></div>
           <div><Label>Quantidade</Label><Input type="number" min="1" value={qtd} onChange={(e) => setQtd(e.target.value)} /></div>
@@ -214,7 +160,7 @@ export function RegistrarPerdaManualDialog({
             </Select>
           </div>
           <div>
-            <Label>Oficina (opcional)</Label>
+            <Label>{areaExigeOficina(ident.areaErro) ? "Oficina *" : "Oficina (opcional)"}</Label>
             <Select value={oficinaId || "__none__"} onValueChange={(v) => setOficinaId(v === "__none__" ? "" : v)}>
               <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>

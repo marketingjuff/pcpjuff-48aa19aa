@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { IdentificacaoErroCampos, IDENTIFICACAO_VAZIA, validarIdentificacaoErro, type IdentificacaoErro } from "./IdentificacaoErroCampos";
+import { areaExigeOficina } from "@/lib/app-lists";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -214,29 +215,39 @@ export function PerdasTab() {
 
   // ============ Form de perdas manuais (existente) ============
   const [form, setForm] = useState({
-    oficina_id: "", etiqueta: "", modelo: "", cor: "", tamanho: "", qtd: 1, motivo: "",
+    oficina_id: "", etiqueta: "", modelo: "", cor: "", tamanho: "", qtd: 1,
   });
+  const [ident, setIdent] = useState<IdentificacaoErro>(IDENTIFICACAO_VAZIA);
+  const [errForm, setErrForm] = useState<string>("");
   const salvar = useMutation({
     mutationFn: async () => {
       if (!form.modelo || !form.cor || !form.tamanho || form.qtd <= 0) {
         throw new Error("Preencha modelo, cor, tamanho e quantidade.");
       }
+      const eIdent = validarIdentificacaoErro(ident, form.oficina_id);
+      if (eIdent) throw new Error(eIdent);
       const { data: ses } = await supabase.auth.getUser();
       const { error } = await supabase.from("cop_perdas" as any).insert({
         oficina_id: form.oficina_id || null,
         etiqueta: form.etiqueta || null,
         modelo: form.modelo, cor: form.cor, tamanho: form.tamanho, qtd: form.qtd,
-        motivo: form.motivo || null,
+        motivo: ident.problema,
+        area_identificou: ident.areaIdentificou,
+        erro_producao: ident.dentroJuff === "sim",
+        area_erro: ident.areaErro,
+        problema: ident.problema,
         registrado_por: ses.user?.id ?? null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Perda registrada.");
-      setForm({ oficina_id: "", etiqueta: "", modelo: "", cor: "", tamanho: "", qtd: 1, motivo: "" });
+      setForm({ oficina_id: "", etiqueta: "", modelo: "", cor: "", tamanho: "", qtd: 1 });
+      setIdent(IDENTIFICACAO_VAZIA);
+      setErrForm("");
       qc.invalidateQueries({ queryKey: ["cop_perdas"] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Erro."),
+    onError: (e: any) => setErrForm(e?.message ?? "Erro."),
   });
   const remover = useMutation({
     mutationFn: async (id: string) => {
@@ -269,10 +280,11 @@ export function PerdasTab() {
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Registrar perda</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <IdentificacaoErroCampos value={ident} onChange={setIdent} />
           <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
             <div className="md:col-span-2">
-              <Label>Oficina</Label>
+              <Label>{areaExigeOficina(ident.areaErro) ? "Oficina *" : "Oficina"}</Label>
               <Select value={form.oficina_id} onValueChange={(v) => setForm((f) => ({ ...f, oficina_id: v }))}>
                 <SelectTrigger className="h-9"><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
@@ -317,10 +329,7 @@ export function PerdasTab() {
               <Label>Qtd</Label>
               <Input type="number" min={1} value={form.qtd} onChange={(e) => setForm((f) => ({ ...f, qtd: Math.max(1, Math.floor(Number(e.target.value) || 1)) }))} />
             </div>
-            <div className="md:col-span-7">
-              <Label>Motivo</Label>
-              <Textarea rows={2} className="uppercase" value={form.motivo} onChange={(e) => setForm((f) => ({ ...f, motivo: e.target.value }))} />
-            </div>
+            {errForm && <div className="md:col-span-7 text-sm text-destructive">{errForm}</div>}
             <div className="md:col-span-7 flex justify-end">
               <Button onClick={() => salvar.mutate()} disabled={salvar.isPending}><Plus className="h-4 w-4 mr-1" /> Registrar perda</Button>
             </div>

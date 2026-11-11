@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { tipoIncluiDTF, type PecaPerdida } from "@/lib/pedidos";
 import { PecasPerdidasEditor, pecaLinhaCompleta, somaPecas } from "./PecasPerdidasEditor";
-import { useAppList, useKindProblemaPorArea, type AppListKind } from "@/lib/app-lists";
+import { areaExigeOficina, useAppList, useKindProblemaPorArea, type AppListKind } from "@/lib/app-lists";
 
 export type RefacaoFormPayload = {
   pecas_refazer: number;
@@ -75,7 +75,10 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
   const { names: problemas } = useAppList((kindProblema ?? "motivo_perda") as AppListKind);
   const problemaOptions = useMemo(() => (kindProblema ? problemas : []), [kindProblema, problemas]);
   const { names: areasIdentifica } = useAppList("refacao_area_identifica");
-  const { names: areasErro } = useAppList("refacao_area_erro");
+  const { names: areasErroInt } = useAppList("refacao_area_erro");
+  const { names: areasErroExtTodas } = useAppList("refacao_area_erro_externa");
+  const areasErroExt = useMemo(() => areasErroExtTodas.filter((n) => !areaExigeOficina(n)), [areasErroExtTodas]);
+  const areasErro = erroProd === "nao" ? areasErroExt : areasErroInt;
 
   function confirmar() {
     // Novas perguntas obrigatórias (antes das existentes)
@@ -84,11 +87,15 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
       return;
     }
     if (erroProd === "") {
-      setErr("Informe se houve erro da produção.");
+      setErr("Informe se o erro foi dentro da Juff.");
       return;
     }
     if (erroProd === "sim") {
       if (!areaErro) { setErr("Informe qual área errou."); return; }
+      if (!problema) { setErr("Informe qual foi o problema."); return; }
+    }
+    if (erroProd === "nao") {
+      if (!areaErro) { setErr("Informe quem errou de fora da Juff."); return; }
       if (!problema) { setErr("Informe qual foi o problema."); return; }
     }
 
@@ -153,8 +160,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
       pecas_perdidas: pecasPerdidasFinal,
       area_identificou: areaIdentificou,
       erro_producao: erroProd === "sim",
-      area_erro: erroProd === "sim" ? areaErro : undefined,
-      problema: erroProd === "sim" ? problema : undefined,
+      area_erro: areaErro || undefined,
+      problema: problema || undefined,
       falta_adesivos: mostraAdesivos ? houveFaltaAdesivos === "sim" : undefined,
       qtd_falta_adesivos: mostraAdesivos && houveFaltaAdesivos === "sim" ? nFaltaAdesivos : undefined,
     });
@@ -188,17 +195,17 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
             </div>
 
             <div className="space-y-1">
-              <Label>Houve erro interno (Arte, DTF, Silk, Acabamento ou Comercial)? *</Label>
+              <Label>O erro foi dentro da Juff? *</Label>
               <div className="flex gap-2">
-                <Button type="button" size="sm" variant={erroProd === "sim" ? "default" : "outline"} onClick={() => setErroProd("sim")}>Sim</Button>
+                <Button type="button" size="sm" variant={erroProd === "sim" ? "default" : "outline"} onClick={() => { if (erroProd !== "sim") { setAreaErro(""); setProblema(""); } setErroProd("sim"); }}>Sim</Button>
                 <Button type="button" size="sm" variant={erroProd === "nao" ? "default" : "outline"} onClick={() => { setErroProd("nao"); setAreaErro(""); setProblema(""); }}>Não</Button>
               </div>
             </div>
 
-            {erroProd === "sim" && (
+            {erroProd !== "" && (
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <Label>Qual área errou? *</Label>
+                  <Label>{erroProd === "sim" ? "Qual área errou? *" : "Quem errou de fora da Juff? *"}</Label>
                   <Select value={areaErro} onValueChange={(v) => { setAreaErro(v); setProblema(""); }}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>

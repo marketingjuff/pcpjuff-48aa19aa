@@ -6,12 +6,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CopPeca, CopPerdaLinha, HistoricoPerda, LancamentoPerda } from "@/lib/cop";
-import { MOTIVOS_PERDA_PADRAO, getPerda, lancamentosPerda, motivosDaLinha } from "@/lib/cop";
+import { getPerda, lancamentosPerda, motivosDaLinha } from "@/lib/cop";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
-import { useAppList } from "@/lib/app-lists";
+import { useOpcoesErro } from "@/lib/app-lists";
 import { ChevronDown, ChevronRight, Info, Pencil, Plus, Undo2, X } from "lucide-react";
 
 type Props = {
@@ -27,7 +27,7 @@ type Props = {
   disabled?: boolean;
 };
 
-const SEM_MOTIVO = "__sem__";
+const SEP = "||";
 
 function fmtDataHora(iso: string): string {
   const d = new Date(iso);
@@ -49,17 +49,18 @@ export function RegistrarPerdaDialog({
   onConfirm, onCorrigir, onEstornar, disabled,
 }: Props) {
   const key = (m: string, c: string, t: string) => `${m}|${c}|${t}`;
-  type Entrada = { qtd: number; motivo?: string };
+  type Entrada = { qtd: number; motivo?: string; area_erro?: string; erro_producao?: boolean };
   const [vals, setVals] = useState<Record<string, Entrada[]>>({});
   const [verAnteriores, setVerAnteriores] = useState(false);
   const [estornoAlvo, setEstornoAlvo] = useState<LancamentoPerda | null>(null);
-  const { names: motivosDb } = useAppList("motivo_perda");
-  const motivos = motivosDb.length > 0 ? motivosDb : MOTIVOS_PERDA_PADRAO;
+  const { grupos } = useOpcoesErro();
+  const [errMsg, setErrMsg] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setVals({});
     setVerAnteriores(false);
+    setErrMsg("");
   }, [open]);
 
   const totalLancamento = useMemo(
@@ -105,9 +106,11 @@ export function RegistrarPerdaDialog({
     setEntradas(p, arr);
   }
 
-  function setMotivo(p: CopPeca, idx: number, motivo: string) {
+  function setMotivo(p: CopPeca, idx: number, valor: string) {
     const arr = entradas(p).map((e) => ({ ...e }));
-    arr[idx] = { ...arr[idx], motivo: motivo === SEM_MOTIVO ? undefined : motivo };
+    const [area, problema] = valor.split(SEP);
+    const g = grupos.find((x) => x.area === area);
+    arr[idx] = { ...arr[idx], motivo: problema, area_erro: area, erro_producao: g ? g.interna : undefined };
     setEntradas(p, arr);
   }
 
@@ -125,10 +128,15 @@ export function RegistrarPerdaDialog({
     for (const p of pecas) {
       for (const e of vals[key(p.modelo, p.cor, p.tamanho)] ?? []) {
         if ((Number(e.qtd) || 0) > 0) {
-          out.push({ modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: e.qtd, motivo: e.motivo ?? null });
+          if (!e.motivo || !e.area_erro) { setErrMsg("Escolha o problema de todas as perdas lançadas."); return; }
+          out.push({
+            modelo: p.modelo, cor: p.cor, tamanho: p.tamanho, qtd: e.qtd, motivo: e.motivo,
+            area_erro: e.area_erro, problema: e.motivo, erro_producao: e.erro_producao ?? null,
+          });
         }
       }
     }
+    setErrMsg("");
     onConfirm(out);
   }
 
@@ -188,17 +196,23 @@ export function RegistrarPerdaDialog({
                                 disabled={disabled || max === 0}
                               />
                               <Select
-                                value={e.motivo ?? SEM_MOTIVO}
+                                value={e.motivo && e.area_erro ? `${e.area_erro}${SEP}${e.motivo}` : ""}
                                 onValueChange={(m) => setMotivo(p, idx, m)}
                                 disabled={disabled || (Number(e.qtd) || 0) === 0}
                               >
-                                <SelectTrigger className="h-7 w-40">
-                                  <SelectValue placeholder="—" />
+                                <SelectTrigger className="h-7 w-56">
+                                  <span className="truncate">{e.motivo && e.area_erro ? `${e.area_erro} · ${e.motivo}` : "Escolha o problema"}</span>
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value={SEM_MOTIVO}>—</SelectItem>
-                                  {motivos.map((m) => (
-                                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                                  {grupos.length === 0 ? (
+                                    <div className="px-2 py-1.5 text-xs text-muted-foreground">Sem áreas cadastradas.</div>
+                                  ) : grupos.map((g) => (
+                                    <SelectGroup key={`${g.interna}-${g.area}`}>
+                                      <SelectLabel>{g.interna ? "Dentro da Juff" : "Fora da Juff"} · {g.area}</SelectLabel>
+                                      {g.problemas.map((pr) => (
+                                        <SelectItem key={pr} value={`${g.area}${SEP}${pr}`}>{pr}</SelectItem>
+                                      ))}
+                                    </SelectGroup>
                                   ))}
                                 </SelectContent>
                               </Select>
@@ -311,6 +325,7 @@ export function RegistrarPerdaDialog({
             )}
           </div>
 
+          {errMsg && <div className="text-sm text-destructive">{errMsg}</div>}
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button

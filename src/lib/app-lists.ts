@@ -6,7 +6,7 @@ export type AppListKind =
   | "status_arte" | "corte_dtf" | "revelacao_silk" | "motivo_perda"
   | "refacao_problema_arte" | "refacao_problema_dtf" | "refacao_problema_silk" | "refacao_problema_acabamento"
   | "refacao_problema_input_vendedor"
-  | "refacao_area_identifica" | "refacao_area_erro"
+  | "refacao_area_identifica" | "refacao_area_erro" | "refacao_area_erro_externa"
   | "map_fio_fornecedor" | "map_malharia" | "map_tinturaria" | "map_acabamento"
   | "map_motivo_devolucao"
   | "destino_perda"
@@ -109,12 +109,47 @@ export function kindProblemaDaArea(areaId: string): AppListKind {
   return PROBLEMA_LEGADO_POR_AREA_ID[areaId] ?? `refacao_problema_area:${areaId}`;
 }
 
-/** Resolve pelo nome escolhido; se a área não existe ou a lista dela está vazia, usa os motivos de perda. */
+/** Resolve pelo nome escolhido (áreas da Juff primeiro, depois de fora); se a área não existe ou a lista dela está vazia, usa os motivos de perda. */
 export function useKindProblemaPorArea(areaNome: string): AppListKind {
-  const { items: areas } = useAppList("refacao_area_erro");
-  const area = areas.find((a) => a.nome === areaNome);
+  const { items: areasInt } = useAppList("refacao_area_erro");
+  const { items: areasExt } = useAppList("refacao_area_erro_externa");
+  const area = areasInt.find((a) => a.nome === areaNome) ?? areasExt.find((a) => a.nome === areaNome);
   const kind: AppListKind = area ? kindProblemaDaArea(area.id) : "motivo_perda";
   const { items, isLoading } = useAppList(kind);
   if (kind !== "motivo_perda" && !isLoading && items.length === 0) return "motivo_perda";
   return kind;
+}
+
+/** Área cujo nome contém "oficina" (sem acento e sem maiúscula). */
+export function areaExigeOficina(nome: string): boolean {
+  return (nome ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("oficina");
+}
+
+export type GrupoOpcoesErro = { interna: boolean; area: string; problemas: string[] };
+
+/** Todas as áreas (Juff e de fora) com seus problemas, numa consulta só. */
+export function useOpcoesErro(): { grupos: GrupoOpcoesErro[]; isLoading: boolean } {
+  const { items: areasInt, isLoading: l1 } = useAppList("refacao_area_erro");
+  const { items: areasExt, isLoading: l2 } = useAppList("refacao_area_erro_externa");
+  const { items: motivos, isLoading: l3 } = useAppList("motivo_perda");
+  const areas = [...areasInt.map((a) => ({ a, interna: true })), ...areasExt.map((a) => ({ a, interna: false }))];
+  const kinds = areas.map(({ a }) => kindProblemaDaArea(a.id));
+  const { data: itens = [], isLoading: l4 } = useQuery({
+    queryKey: ["app-lists-multi", kinds],
+    enabled: kinds.length > 0,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("app_lists").select("id, kind, nome, ordem").in("kind", kinds)
+        .order("ordem", { ascending: true }).order("nome", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as AppListItem[];
+    },
+  });
+  const fallback = motivos.map((m) => m.nome);
+  const grupos = areas.map(({ a, interna }, i) => {
+    const probs = itens.filter((it) => it.kind === kinds[i]).map((it) => it.nome);
+    return { interna, area: a.nome, problemas: probs.length > 0 ? probs : fallback };
+  });
+  return { grupos, isLoading: l1 || l2 || l3 || l4 };
 }

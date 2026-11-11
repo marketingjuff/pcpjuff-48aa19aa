@@ -200,6 +200,9 @@ export type CopPerdaLinha = {
   tamanho: string;
   qtd: number;
   motivo?: string | null;
+  area_erro?: string | null;
+  problema?: string | null;
+  erro_producao?: boolean | null;
 };
 
 /** Motivos de perda padrão (fallback quando app_lists não tem entradas). */
@@ -323,6 +326,9 @@ export type LancamentoPerda = {
   tamanho: string;
   qtd: number;
   motivo: string | null;
+  area_erro?: string | null;
+  problema?: string | null;
+  erro_producao?: boolean | null;
   corrigido: boolean;
   estornado: boolean;
   /** estado original, preenchido quando corrigido */
@@ -349,6 +355,9 @@ export function lancamentosPerda(cop: { historico_perdas?: HistoricoPerda[] | nu
           tamanho: it.tamanho,
           qtd: Math.max(0, Number(it.qtd) || 0),
           motivo: it.motivo ?? null,
+          area_erro: it.area_erro ?? null,
+          problema: it.problema ?? null,
+          erro_producao: it.erro_producao ?? null,
           corrigido: false,
           estornado: false,
         };

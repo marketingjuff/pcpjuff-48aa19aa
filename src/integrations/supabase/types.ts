@@ -106,42 +106,54 @@ export type Database = {
       }
       cop_perdas: {
         Row: {
+          area_erro: string | null
+          area_identificou: string | null
           cop_id: string | null
           cor: string
           created_at: string
+          erro_producao: boolean | null
           etiqueta: string | null
           id: string
           modelo: string
           motivo: string | null
           oficina_id: string | null
+          problema: string | null
           qtd: number
           registrado_por: string | null
           tamanho: string
           updated_at: string
         }
         Insert: {
+          area_erro?: string | null
+          area_identificou?: string | null
           cop_id?: string | null
           cor: string
           created_at?: string
+          erro_producao?: boolean | null
           etiqueta?: string | null
           id?: string
           modelo: string
           motivo?: string | null
           oficina_id?: string | null
+          problema?: string | null
           qtd: number
           registrado_por?: string | null
           tamanho: string
           updated_at?: string
         }
         Update: {
+          area_erro?: string | null
+          area_identificou?: string | null
           cop_id?: string | null
           cor?: string
           created_at?: string
+          erro_producao?: boolean | null
           etiqueta?: string | null
           id?: string
           modelo?: string
           motivo?: string | null
           oficina_id?: string | null
+          problema?: string | null
           qtd?: number
           registrado_por?: string | null
           tamanho?: string

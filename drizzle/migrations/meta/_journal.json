@@ -64,6 +64,13 @@
       "when": 1793916840997,
       "tag": "0008_gestor_le_vendas_olist",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794426967618,
+      "tag": "0009_cop_perdas_identificacao_erro",
+      "breakpoints": true
     }
   ]
 }

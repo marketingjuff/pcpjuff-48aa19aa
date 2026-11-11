@@ -1208,6 +1208,7 @@ function ListasTab({ canAccessCop, canAccessMap, canAccessSup }: { canAccessCop:
   }
 
   const { items: areasErro } = useAppList("refacao_area_erro");
+  const { items: areasErroExt } = useAppList("refacao_area_erro_externa");
   const catalogo: ListaCatalogoItem[] = useMemo(() => {
     const fixos = LISTAS_CATALOGO.filter((i) => !i.kind.startsWith("refacao_problema_"));
     const idx = fixos.findIndex((i) => i.kind === "refacao_area_erro");
@@ -1219,8 +1220,19 @@ function ListasTab({ canAccessCop, canAccessMap, canAccessSup }: { canAccessCop:
       grupo: "Refação",
       notaUso: `Escolhida na Refação do PCP e na perda manual do COP quando a área que errou é ${a.nome}. Se ficar vazia, aparecem os motivos de perda.`,
     }));
-    return [...fixos.slice(0, idx + 1), ...dinamicos, ...fixos.slice(idx + 1)];
-  }, [areasErro]);
+    const comInternos = [...fixos.slice(0, idx + 1), ...dinamicos, ...fixos.slice(idx + 1)];
+    const idxExt = comInternos.findIndex((i) => i.kind === "refacao_area_erro_externa");
+    const externos: ListaCatalogoItem[] = areasErroExt.map((a) => ({
+      kind: kindProblemaDaArea(a.id),
+      titulo: `Problemas — ${a.nome}`,
+      placeholder: "Novo problema",
+      modulos: ["pcp", "cop"],
+      grupo: "Refação",
+      notaUso: `Escolhida quando quem errou de fora da Juff é ${a.nome}.`,
+    }));
+    if (idxExt < 0) return comInternos;
+    return [...comInternos.slice(0, idxExt + 1), ...externos, ...comInternos.slice(idxExt + 1)];
+  }, [areasErro, areasErroExt]);
 
   function cardDe(item: ListaCatalogoItem) {
     const compartilhada = item.modulos.length > 1;

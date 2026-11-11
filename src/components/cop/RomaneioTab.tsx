@@ -292,6 +292,7 @@ export function RomaneioTab({ selectedId = null, onSelect, onChangeTab }: { sele
         total: novos.reduce((s, x) => s + (Number(x.qtd) || 0), 0),
         itens: novos.map((x) => ({
           modelo: x.modelo, cor: x.cor, tamanho: x.tamanho, qtd: Number(x.qtd) || 0, motivo: x.motivo ?? null,
+          area_erro: x.area_erro ?? null, problema: x.problema ?? null, erro_producao: x.erro_producao ?? null,
         })),
       });
 

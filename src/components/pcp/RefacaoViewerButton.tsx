@@ -306,8 +306,8 @@ function EpisodioRead({
 
       <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-sm pt-2 border-t">
         <Read label="Identificado por" value={episodio.area_identificou ?? "—"} />
-        <Read label="Erro de produção da Estamparia" value={typeof episodio.erro_producao === "boolean" ? (episodio.erro_producao ? "Sim" : "Não") : "—"} />
-        {episodio.erro_producao && (
+        <Read label="Erro dentro da Juff" value={typeof episodio.erro_producao === "boolean" ? (episodio.erro_producao ? "Sim" : "Não") : "—"} />
+        {episodio.area_erro && (
           <>
             <Read label="Área que errou" value={episodio.area_erro ?? "—"} />
             <Read label="Problema" value={episodio.problema ?? "—"} />
