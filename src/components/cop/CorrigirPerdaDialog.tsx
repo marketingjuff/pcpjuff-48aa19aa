@@ -10,7 +10,7 @@ import { AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { areaExigeOficina, useAppList, useOpcoesErro } from "@/lib/app-lists";
-import { OficinaBercoCampos, useBercosDoProblema } from "./IdentificacaoErroCampos";
+import { OficinaBercoCampos, erroBerco, useBercosDoProblema } from "./IdentificacaoErroCampos";
 import type { PerdaConsolidada } from "@/lib/perdas-consolidado";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
@@ -49,7 +49,7 @@ export function CorrigirPerdaDialog({
       if (!motivoNovo || !areaNova) throw new Error("Selecione o problema novo.");
       const interna = grupos.find((g) => g.area === areaNova)?.interna ?? false;
       if (areaExigeOficina(areaNova) && !oficinaId) throw new Error("Informe qual oficina.");
-      if (pedeBerco && bercosLista.length > 0 && !berco) throw new Error("Informe qual berço.");
+      if (pedeBerco) { const eB = erroBerco(berco, bercosLista); if (eB) throw new Error(eB); }
       if (!observacao.trim()) throw new Error("Observação é obrigatória.");
       const { data: userData } = await supabase.auth.getUser();
       const payload = {

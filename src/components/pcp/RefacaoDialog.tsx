@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { tipoIncluiDTF, type PecaPerdida } from "@/lib/pedidos";
 import { PecasPerdidasEditor, pecaLinhaCompleta, somaPecas } from "./PecasPerdidasEditor";
-import { OficinaBercoCampos, useBercosDoProblema } from "@/components/cop/IdentificacaoErroCampos";
+import { OficinaBercoCampos, erroBerco, useBercosDoProblema } from "@/components/cop/IdentificacaoErroCampos";
 import { areaExigeOficina, useAppList, useKindProblemaPorArea, type AppListKind } from "@/lib/app-lists";
 
 export type RefacaoFormPayload = {
@@ -107,7 +107,7 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
       if (!problema) { setErr("Informe qual foi o problema."); return; }
     }
     if (areaExigeOficina(areaErro) && !oficinaId) { setErr("Informe qual oficina."); return; }
-    if (pedeBerco && bercosLista.length > 0 && !berco) { setErr("Informe qual berço."); return; }
+    if (pedeBerco) { const eB = erroBerco(berco, bercosLista); if (eB) { setErr(eB); return; } }
 
     const nPecas = Number(pecasRefazer);
     if (!Number.isFinite(nPecas) || nPecas < 1) {
