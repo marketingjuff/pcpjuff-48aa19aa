@@ -53,7 +53,9 @@ export function RegistrarPerdaDialog({
   const [vals, setVals] = useState<Record<string, Entrada[]>>({});
   const [verAnteriores, setVerAnteriores] = useState(false);
   const [estornoAlvo, setEstornoAlvo] = useState<LancamentoPerda | null>(null);
-  const { grupos } = useOpcoesErro();
+  const { grupos: gruposTodos } = useOpcoesErro();
+  // Romaneio: só áreas de fora da Juff (a oficina vem do próprio COP).
+  const grupos = gruposTodos.filter((g) => !g.interna);
   const [errMsg, setErrMsg] = useState("");
 
   useEffect(() => {
@@ -208,7 +210,7 @@ export function RegistrarPerdaDialog({
                                     <div className="px-2 py-1.5 text-xs text-muted-foreground">Sem áreas cadastradas.</div>
                                   ) : grupos.map((g) => (
                                     <SelectGroup key={`${g.interna}-${g.area}`}>
-                                      <SelectLabel>{g.interna ? "Dentro da Juff" : "Fora da Juff"} · {g.area}</SelectLabel>
+                                      <SelectLabel>{g.area}</SelectLabel>
                                       {g.problemas.map((pr) => (
                                         <SelectItem key={pr} value={`${g.area}${SEP}${pr}`}>{pr}</SelectItem>
                                       ))}

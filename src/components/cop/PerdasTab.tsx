@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { IdentificacaoErroCampos, IDENTIFICACAO_VAZIA, validarIdentificacaoErro, type IdentificacaoErro } from "./IdentificacaoErroCampos";
+import { IdentificacaoErroCampos, IDENTIFICACAO_VAZIA, useBercosDoProblema, validarIdentificacaoErro, type IdentificacaoErro } from "./IdentificacaoErroCampos";
 import { areaExigeOficina } from "@/lib/app-lists";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -218,17 +218,20 @@ export function PerdasTab() {
     oficina_id: "", etiqueta: "", modelo: "", cor: "", tamanho: "", qtd: 1,
   });
   const [ident, setIdent] = useState<IdentificacaoErro>(IDENTIFICACAO_VAZIA);
+  const [berco, setBerco] = useState("");
+  const { lista: bercosLista, pede: pedeBerco } = useBercosDoProblema(ident.areaErro, ident.problema);
   const [errForm, setErrForm] = useState<string>("");
   const salvar = useMutation({
     mutationFn: async () => {
       if (!form.modelo || !form.cor || !form.tamanho || form.qtd <= 0) {
         throw new Error("Preencha modelo, cor, tamanho e quantidade.");
       }
-      const eIdent = validarIdentificacaoErro(ident, form.oficina_id);
+      const eIdent = validarIdentificacaoErro(ident, form.oficina_id, berco, bercosLista);
       if (eIdent) throw new Error(eIdent);
       const { data: ses } = await supabase.auth.getUser();
       const { error } = await supabase.from("cop_perdas" as any).insert({
-        oficina_id: form.oficina_id || null,
+        oficina_id: areaExigeOficina(ident.areaErro) ? (form.oficina_id || null) : null,
+        berco: pedeBerco ? (berco || null) : null,
         etiqueta: form.etiqueta || null,
         modelo: form.modelo, cor: form.cor, tamanho: form.tamanho, qtd: form.qtd,
         motivo: ident.problema,
@@ -244,6 +247,7 @@ export function PerdasTab() {
       toast.success("Perda registrada.");
       setForm({ oficina_id: "", etiqueta: "", modelo: "", cor: "", tamanho: "", qtd: 1 });
       setIdent(IDENTIFICACAO_VAZIA);
+      setBerco("");
       setErrForm("");
       qc.invalidateQueries({ queryKey: ["cop_perdas"] });
     },
@@ -281,17 +285,10 @@ export function PerdasTab() {
           <CardTitle className="text-base">Registrar perda</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <IdentificacaoErroCampos value={ident} onChange={setIdent} />
+          <IdentificacaoErroCampos value={ident} onChange={setIdent}
+            oficinaId={form.oficina_id} onOficinaChange={(v) => setForm((f) => ({ ...f, oficina_id: v }))}
+            berco={berco} onBercoChange={setBerco} />
           <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
-            <div className="md:col-span-2">
-              <Label>{areaExigeOficina(ident.areaErro) ? "Oficina *" : "Oficina"}</Label>
-              <Select value={form.oficina_id} onValueChange={(v) => setForm((f) => ({ ...f, oficina_id: v }))}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="—" /></SelectTrigger>
-                <SelectContent>
-                  {oficinas.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
             <div>
               <Label>Etiqueta</Label>
               <Input value={form.etiqueta} onChange={(e) => setForm((f) => ({ ...f, etiqueta: e.target.value }))} />

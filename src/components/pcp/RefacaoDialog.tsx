@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { tipoIncluiDTF, type PecaPerdida } from "@/lib/pedidos";
 import { PecasPerdidasEditor, pecaLinhaCompleta, somaPecas } from "./PecasPerdidasEditor";
+import { OficinaBercoCampos, useBercosDoProblema } from "@/components/cop/IdentificacaoErroCampos";
 import { areaExigeOficina, useAppList, useKindProblemaPorArea, type AppListKind } from "@/lib/app-lists";
 
 export type RefacaoFormPayload = {
@@ -23,6 +24,8 @@ export type RefacaoFormPayload = {
   erro_producao?: boolean;
   area_erro?: string;
   problema?: string;
+  oficina_id?: string;
+  berco?: string;
   falta_adesivos?: boolean;
   qtd_falta_adesivos?: number;
 };
@@ -51,6 +54,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
   const [erroProd, setErroProd] = useState<"sim" | "nao" | "">("");
   const [areaErro, setAreaErro] = useState<string>("");
   const [problema, setProblema] = useState<string>("");
+  const [oficinaId, setOficinaId] = useState<string>("");
+  const [berco, setBerco] = useState<string>("");
   const [err, setErr] = useState<string>("");
 
   useEffect(() => {
@@ -67,6 +72,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
       setErroProd("");
       setAreaErro("");
       setProblema("");
+      setOficinaId("");
+      setBerco("");
       setErr("");
     }
   }, [open]);
@@ -77,7 +84,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
   const { names: areasIdentifica } = useAppList("refacao_area_identifica");
   const { names: areasErroInt } = useAppList("refacao_area_erro");
   const { names: areasErroExtTodas } = useAppList("refacao_area_erro_externa");
-  const areasErroExt = useMemo(() => areasErroExtTodas.filter((n) => !areaExigeOficina(n)), [areasErroExtTodas]);
+  const areasErroExt = areasErroExtTodas;
+  const { lista: bercosLista, pede: pedeBerco } = useBercosDoProblema(areaErro, problema);
   const areasErro = erroProd === "nao" ? areasErroExt : areasErroInt;
 
   function confirmar() {
@@ -98,6 +106,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
       if (!areaErro) { setErr("Informe quem errou de fora da Juff."); return; }
       if (!problema) { setErr("Informe qual foi o problema."); return; }
     }
+    if (areaExigeOficina(areaErro) && !oficinaId) { setErr("Informe qual oficina."); return; }
+    if (pedeBerco && bercosLista.length > 0 && !berco) { setErr("Informe qual berço."); return; }
 
     const nPecas = Number(pecasRefazer);
     if (!Number.isFinite(nPecas) || nPecas < 1) {
@@ -162,6 +172,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
       erro_producao: erroProd === "sim",
       area_erro: areaErro || undefined,
       problema: problema || undefined,
+      oficina_id: areaExigeOficina(areaErro) && oficinaId ? oficinaId : undefined,
+      berco: pedeBerco && berco ? berco : undefined,
       falta_adesivos: mostraAdesivos ? houveFaltaAdesivos === "sim" : undefined,
       qtd_falta_adesivos: mostraAdesivos && houveFaltaAdesivos === "sim" ? nFaltaAdesivos : undefined,
     });
@@ -206,7 +218,7 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
                   <Label>{erroProd === "sim" ? "Qual área errou? *" : "Quem errou de fora da Juff? *"}</Label>
-                  <Select value={areaErro} onValueChange={(v) => { setAreaErro(v); setProblema(""); }}>
+                  <Select value={areaErro} onValueChange={(v) => { setAreaErro(v); setProblema(""); setBerco(""); if (!areaExigeOficina(v)) setOficinaId(""); }}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
                       {areasErro.length === 0 ? (
@@ -217,7 +229,7 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
                 </div>
                 <div className="space-y-1">
                   <Label>Qual foi o problema? *</Label>
-                  <Select value={problema} onValueChange={setProblema} disabled={!areaErro}>
+                  <Select value={problema} onValueChange={(v) => { setProblema(v); setBerco(""); }} disabled={!areaErro}>
                     <SelectTrigger><SelectValue placeholder={areaErro ? "Selecione..." : "Escolha a área primeiro"} /></SelectTrigger>
                     <SelectContent>
                       {problemaOptions.length === 0 ? (
@@ -226,6 +238,8 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
                     </SelectContent>
                   </Select>
                 </div>
+                <OficinaBercoCampos areaErro={areaErro} problema={problema}
+                  oficinaId={oficinaId} onOficinaChange={setOficinaId} berco={berco} onBercoChange={setBerco} />
               </div>
             )}
           </div>

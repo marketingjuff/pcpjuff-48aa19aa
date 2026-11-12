@@ -8,9 +8,9 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAppList, useOpcoesErro } from "@/lib/app-lists";
-import type { Oficina } from "@/lib/cop";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { areaExigeOficina, useAppList, useOpcoesErro } from "@/lib/app-lists";
+import { OficinaBercoCampos, useBercosDoProblema } from "./IdentificacaoErroCampos";
 import type { PerdaConsolidada } from "@/lib/perdas-consolidado";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
@@ -34,14 +34,7 @@ export function CorrigirPerdaDialog({
   const SEP = "||";
   const { items: destinosItems } = useAppList("destino_perda" as any);
 
-  const { data: oficinas = [] } = useQuery({
-    queryKey: ["oficinas"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("oficinas" as any).select("id, nome").order("nome");
-      if (error) throw error;
-      return (data ?? []) as unknown as Pick<Oficina, "id" | "nome">[];
-    },
-  });
+  const { lista: bercosLista, pede: pedeBerco } = useBercosDoProblema(areaNova, motivoNovo);
 
   function reset() {
     setQtd(String(perda?.qtd ?? 1)); setMotivoNovo(""); setAreaNova(""); setOficinaId(""); setBerco(""); setDestino(""); setObservacao("");
@@ -55,6 +48,8 @@ export function CorrigirPerdaDialog({
       if (q > perda.qtd) throw new Error(`Quantidade máxima: ${perda.qtd}.`);
       if (!motivoNovo || !areaNova) throw new Error("Selecione o problema novo.");
       const interna = grupos.find((g) => g.area === areaNova)?.interna ?? false;
+      if (areaExigeOficina(areaNova) && !oficinaId) throw new Error("Informe qual oficina.");
+      if (pedeBerco && bercosLista.length > 0 && !berco) throw new Error("Informe qual berço.");
       if (!observacao.trim()) throw new Error("Observação é obrigatória.");
       const { data: userData } = await supabase.auth.getUser();
       const payload = {
@@ -68,8 +63,8 @@ export function CorrigirPerdaDialog({
         motivo_novo: motivoNovo,
         area_erro_novo: areaNova,
         erro_producao_novo: interna,
-        oficina_id: oficinaId || null,
-        berco: berco.trim() || null,
+        oficina_id: areaExigeOficina(areaNova) ? (oficinaId || null) : null,
+        berco: pedeBerco ? (berco || null) : null,
         destino: destino || null,
         observacao: observacao.trim(),
         usuario_id: userData.user?.id ?? null,
@@ -106,7 +101,12 @@ export function CorrigirPerdaDialog({
             <Label>Problema novo *</Label>
             <Select
               value={motivoNovo && areaNova ? `${areaNova}${SEP}${motivoNovo}` : ""}
-              onValueChange={(v) => { const [a, pr] = v.split(SEP); setAreaNova(a); setMotivoNovo(pr); }}
+              onValueChange={(v) => {
+                const [a, pr] = v.split(SEP);
+                if (!areaExigeOficina(a)) setOficinaId("");
+                setBerco("");
+                setAreaNova(a); setMotivoNovo(pr);
+              }}
             >
               <SelectTrigger>
                 <span className="truncate">{motivoNovo && areaNova ? `${areaNova} · ${motivoNovo}` : "Selecione…"}</span>
@@ -127,17 +127,8 @@ export function CorrigirPerdaDialog({
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>Oficina (opcional)</Label>
-            <Select value={oficinaId || "__none__"} onValueChange={(v) => setOficinaId(v === "__none__" ? "" : v)}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">—</SelectItem>
-                {oficinas.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div><Label>Berço (opcional)</Label><Input value={berco} onChange={(e) => setBerco(e.target.value)} /></div>
+          <OficinaBercoCampos areaErro={areaNova} problema={motivoNovo}
+            oficinaId={oficinaId} onOficinaChange={setOficinaId} berco={berco} onBercoChange={setBerco} />
           <div>
             <Label>Destino (opcional)</Label>
             <Select value={destino || "__none__"} onValueChange={(v) => setDestino(v === "__none__" ? "" : v)}>

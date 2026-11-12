@@ -62,6 +62,7 @@ function OficinasCard() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Código</TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>CNPJ / CPF</TableHead>
               <TableHead>CEP</TableHead>
@@ -71,11 +72,12 @@ function OficinasCard() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5}>Carregando…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6}>Carregando…</TableCell></TableRow>
             ) : oficinas.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-muted-foreground">Nenhuma oficina.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-muted-foreground">Nenhuma oficina.</TableCell></TableRow>
             ) : oficinas.map((o) => (
               <TableRow key={o.id}>
+                <TableCell className="tabular-nums">{o.codigo ?? "—"}</TableCell>
                 <TableCell className="font-medium">{o.nome}</TableCell>
                 <TableCell>{o.cnpj || o.cpf || o.cnpj_cpf || "—"}</TableCell>
                 <TableCell>{o.cep ?? "—"}</TableCell>
@@ -108,6 +110,8 @@ function OficinasCard() {
 function OficinaDialog({ oficina, onClose, onSaved }: { oficina: Oficina | null; onClose: () => void; onSaved: () => void }) {
   const isNew = !oficina;
   const [nome, setNome] = useState(oficina?.nome ?? "");
+  const [codigo, setCodigo] = useState(oficina?.codigo != null ? String(oficina.codigo) : "");
+  const [erro, setErro] = useState<string | null>(null);
   const [cnpj, setCnpj] = useState(oficina?.cnpj ?? "");
   const [cpf, setCpf] = useState(oficina?.cpf ?? "");
   const [endereco, setEndereco] = useState(oficina?.endereco ?? "");
@@ -124,6 +128,9 @@ function OficinaDialog({ oficina, onClose, onSaved }: { oficina: Oficina | null;
 
   async function handleSave() {
     if (!nome.trim()) { toast.error("Informe o nome."); return; }
+    const codT = codigo.trim();
+    if (codT && !/^\d+$/.test(codT)) { setErro("O código deve ser um número inteiro."); return; }
+    setErro(null);
     setSaving(true);
     const vpm: Record<string, number> = {};
     for (const m of REFACAO_MODELOS) {
@@ -134,6 +141,7 @@ function OficinaDialog({ oficina, onClose, onSaved }: { oficina: Oficina | null;
     const cpfT = cpf.trim();
     const payload: any = {
       nome: nome.trim(),
+      codigo: codT ? Number(codT) : null,
       cnpj: cnpjT || null,
       cpf: cpfT || null,
       cnpj_cpf: cnpjT || cpfT || null,
@@ -149,7 +157,10 @@ function OficinaDialog({ oficina, onClose, onSaved }: { oficina: Oficina | null;
       : supabase.from("oficinas" as any).update(payload).eq("id", oficina!.id);
     const { error } = await q;
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      if ((error as any).code === "23505") { setErro("Já existe uma oficina com esse código."); return; }
+      setErro(error.message); return;
+    }
     toast.success("Oficina salva.");
     onSaved();
   }
@@ -160,7 +171,9 @@ function OficinaDialog({ oficina, onClose, onSaved }: { oficina: Oficina | null;
         <DialogHeader className="px-6 pt-6 pb-3 shrink-0"><DialogTitle>{isNew ? "Nova oficina" : `Editar — ${oficina!.nome}`}</DialogTitle></DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="md:col-span-2"><Label>Nome</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} /></div>
+          <div><Label>Código</Label><Input type="text" inputMode="numeric" value={codigo} onChange={(e) => { setCodigo(e.target.value.replace(/\D/g, "")); setErro(null); }} placeholder="Opcional" /></div>
+          <div><Label>Nome</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} /></div>
+          {erro && <div className="md:col-span-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">{erro}</div>}
           <div><Label>CNPJ</Label><Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} /></div>
           <div><Label>CPF</Label><Input value={cpf} onChange={(e) => setCpf(e.target.value)} /></div>
           <div><Label>CEP</Label><Input value={cep} onChange={(e) => setCep(e.target.value)} /></div>

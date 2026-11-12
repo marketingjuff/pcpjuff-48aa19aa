@@ -420,6 +420,7 @@ export function motivosDaLinha(
 export type Oficina = {
   id: string;
   nome: string;
+  codigo: number | null;
   cnpj_cpf: string | null;
   cnpj: string | null;
   cpf: string | null;
@@ -432,6 +433,22 @@ export type Oficina = {
   created_at: string;
   updated_at: string;
 };
+
+/** "<codigo> · <nome>" quando há código; só o nome quando não há. */
+export function rotuloOficina(o: { nome: string; codigo?: number | null }): string {
+  return o.codigo != null ? `${o.codigo} · ${o.nome}` : o.nome;
+}
+
+/** Código crescente; oficinas sem código no fim, por nome. */
+export function ordenarOficinas<T extends { nome: string; codigo?: number | null }>(lista: T[]): T[] {
+  return [...lista].sort((a, b) => {
+    const ca = a.codigo ?? null, cb = b.codigo ?? null;
+    if (ca != null && cb != null) return ca - cb;
+    if (ca != null) return -1;
+    if (cb != null) return 1;
+    return a.nome.localeCompare(b.nome, "pt-BR");
+  });
+}
 
 /** Nome da oficina interna da Juff. Romaneios dessa oficina não geram pagamento
  *  (a oficina é a própria empresa), então vão direto para pago com valor zero. */

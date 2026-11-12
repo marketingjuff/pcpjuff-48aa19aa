@@ -7,11 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { REFACAO_MODELOS, REFACAO_CORES, REFACAO_TAMANHOS } from "@/lib/pedidos";
 import { areaExigeOficina, useAppList } from "@/lib/app-lists";
-import { type Oficina } from "@/lib/cop";
-import { IdentificacaoErroCampos, IDENTIFICACAO_VAZIA, validarIdentificacaoErro, type IdentificacaoErro } from "./IdentificacaoErroCampos";
+import { IdentificacaoErroCampos, IDENTIFICACAO_VAZIA, useBercosDoProblema, validarIdentificacaoErro, type IdentificacaoErro } from "./IdentificacaoErroCampos";
 import { corHex, corTextoSobre } from "@/components/pcp/PecasPerdidasEditor";
 
 
@@ -40,14 +39,7 @@ export function RegistrarPerdaManualDialog({
   const { items: destinosItems } = useAppList("destino_perda" as any);
   const destinosList = destinosItems.map((i) => i.nome);
 
-  const { data: oficinas = [] } = useQuery({
-    queryKey: ["oficinas"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("oficinas" as any).select("id, nome").order("nome");
-      if (error) throw error;
-      return (data ?? []) as unknown as Pick<Oficina, "id" | "nome">[];
-    },
-  });
+  const { lista: bercosLista, pede: pedeBerco } = useBercosDoProblema(ident.areaErro, ident.problema);
 
   useEffect(() => {
     if (!open || !editId) return;
@@ -74,7 +66,7 @@ export function RegistrarPerdaManualDialog({
   }
 
   function validar(): boolean {
-    const e = validarIdentificacaoErro(ident, oficinaId);
+    const e = validarIdentificacaoErro(ident, oficinaId, berco, bercosLista);
     if (e) { setErr(e); return false; }
     setErr("");
     return true;
@@ -85,15 +77,20 @@ export function RegistrarPerdaManualDialog({
       const q = Number(qtd);
       if (!Number.isFinite(q) || q <= 0) throw new Error("Quantidade inválida.");
       const { data: userData } = await supabase.auth.getUser();
+      // Oficina/berço só gravam quando a regra pede; em edição antiga, mantém o que estava.
+      const extras: Record<string, string | null> = {};
+      if (areaExigeOficina(ident.areaErro)) extras.oficina_id = oficinaId || null;
+      else if (!editId) extras.oficina_id = null;
+      if (pedeBerco) extras.berco = berco || null;
+      else if (!editId) extras.berco = null;
       const payload = {
+        ...extras,
         data,
         modelo, cor, tamanho, qtd: q,
         area_identificou: ident.areaIdentificou,
         erro_producao: ident.dentroJuff === "sim",
         area_erro: ident.areaErro,
         problema: ident.problema,
-        oficina_id: oficinaId || null,
-        berco: berco.trim() || null,
         destino: destino || null,
         responsavel: responsavel.trim() || null,
         observacoes: observacoes.trim() || null,
@@ -123,7 +120,7 @@ export function RegistrarPerdaManualDialog({
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className="max-w-[720px]">
         <DialogHeader><DialogTitle>{editId ? "Corrigir perda manual" : "Registrar perda manual"}</DialogTitle></DialogHeader>
-        <IdentificacaoErroCampos value={ident} onChange={setIdent} />
+        <IdentificacaoErroCampos value={ident} onChange={setIdent} oficinaId={oficinaId} onOficinaChange={setOficinaId} berco={berco} onBercoChange={setBerco} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div><Label>Data</Label><Input type="date" value={data} onChange={(e) => setData(e.target.value)} /></div>
           <div><Label>Quantidade</Label><Input type="number" min="1" value={qtd} onChange={(e) => setQtd(e.target.value)} /></div>
@@ -159,17 +156,6 @@ export function RegistrarPerdaManualDialog({
               <SelectContent>{REFACAO_TAMANHOS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>{areaExigeOficina(ident.areaErro) ? "Oficina *" : "Oficina (opcional)"}</Label>
-            <Select value={oficinaId || "__none__"} onValueChange={(v) => setOficinaId(v === "__none__" ? "" : v)}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">—</SelectItem>
-                {oficinas.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div><Label>Berço (opcional)</Label><Input value={berco} onChange={(e) => setBerco(e.target.value)} placeholder="Ex.: Berço 3" /></div>
           <div>
             <Label>Destino (opcional)</Label>
             <Select value={destino || "__none__"} onValueChange={(v) => setDestino(v === "__none__" ? "" : v)}>

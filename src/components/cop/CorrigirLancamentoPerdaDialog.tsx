@@ -47,7 +47,9 @@ function fmtDataHora(iso?: string): string {
 }
 
 export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancamento, onConfirm, disabled }: Props) {
-  const { grupos } = useOpcoesErro();
+  const { grupos: gruposTodos } = useOpcoesErro();
+  // Romaneio: só áreas de fora da Juff (a oficina vem do próprio COP).
+  const grupos = gruposTodos.filter((g) => !g.interna);
 
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [observacao, setObservacao] = useState("");
@@ -204,7 +206,7 @@ export function CorrigirLancamentoPerdaDialog({ open, onOpenChange, cop, lancame
                     <div className="px-2 py-1.5 text-xs text-muted-foreground">Sem áreas cadastradas.</div>
                   ) : grupos.map((g) => (
                     <SelectGroup key={`${g.interna}-${g.area}`}>
-                      <SelectLabel>{g.interna ? "Dentro da Juff" : "Fora da Juff"} · {g.area}</SelectLabel>
+                      <SelectLabel>{g.area}</SelectLabel>
                       {g.problemas.length === 0 ? (
                         <div className="px-2 py-1 text-xs text-muted-foreground">Sem opções cadastradas</div>
                       ) : g.problemas.map((pr) => (

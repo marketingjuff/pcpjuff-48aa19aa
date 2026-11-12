@@ -125,6 +125,8 @@ export type RefacaoEpisodio = {
   erro_producao?: boolean;
   area_erro?: string;
   problema?: string;
+  oficina_id?: string;
+  berco?: string;
   // --- Falta de adesivo (independente de perda) ---
   falta_adesivos?: boolean;
   qtd_falta_adesivos?: number;

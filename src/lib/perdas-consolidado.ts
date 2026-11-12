@@ -299,6 +299,7 @@ export function usePerdasConsolidadas() {
         problema: (r as any).problema ?? null,
         oficina_id: r.oficina_id ?? null,
         oficina_nome: oficinaNome(r.oficina_id),
+        berco: (r as any).berco ?? null,
         responsavel: r.registrado_por ?? null,
         fonte: { kind: "cop_registro", registroId: r.id },
       });
@@ -335,6 +336,9 @@ export function usePerdasConsolidadas() {
             erro_producao: ep.erro_producao ?? null,
             area_identificou: ep.area_identificou ?? null,
             problema: ep.problema ?? null,
+            oficina_id: ep.oficina_id ?? null,
+            oficina_nome: oficinaNome(ep.oficina_id ?? null),
+            berco: ep.berco ?? null,
             fonte: { kind: "pcp", pedidoId: p.id, refacaoData: ep.data, refacaoIdx: refIdx, itemIdx },
           });
         });

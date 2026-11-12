@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { BercosConfigCard } from "@/components/pcp/BercosConfigCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -278,7 +279,10 @@ function ConfiguracoesPage() {
               <TabsContent value="cop"><CoresCopCard /></TabsContent>
             </Tabs>
           ) : atual?.slug === "listas" ? (
-            <ListasTab canAccessCop={canAccessCop} canAccessMap={canAccessMap} canAccessSup={canAccessSup} />
+            <div className="space-y-4">
+              {isAdmin && <BercosConfigCard />}
+              <ListasTab canAccessCop={canAccessCop} canAccessMap={canAccessMap} canAccessSup={canAccessSup} />
+            </div>
           ) : atual?.slug === "cop" ? (
             <CopConfigPanel />
           ) : atual?.slug === "map" ? (

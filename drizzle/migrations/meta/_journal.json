@@ -85,6 +85,13 @@
       "when": 1794430359016,
       "tag": "0011_perdas_reclass_area_erro_novo",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794493801354,
+      "tag": "0012_padronizacao_perdas_oficina_codigo_bercos",
+      "breakpoints": true
     }
   ]
 }

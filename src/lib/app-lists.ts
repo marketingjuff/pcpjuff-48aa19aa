@@ -120,7 +120,22 @@ export function useKindProblemaPorArea(areaNome: string): AppListKind {
 
 /** Área cujo nome contém "oficina" (sem acento e sem maiúscula). */
 export function areaExigeOficina(nome: string): boolean {
-  return (nome ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("oficina");
+  const n = normalizarTexto(nome);
+  return n.includes("costura") || n.includes("oficina");
+}
+
+function normalizarTexto(s: string | null | undefined): string {
+  return (s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+/** Problemas de peça desfiada no berço pedem o berço; o tipo vem da área. */
+export function tipoBercoDoProblema(areaNome: string, problema: string): "dtf" | "silk" | null {
+  const p = normalizarTexto(problema);
+  if (!(p.includes("desfiad") && p.includes("berco"))) return null;
+  const a = normalizarTexto(areaNome);
+  if (a.includes("dtf")) return "dtf";
+  if (a.includes("silk")) return "silk";
+  return null;
 }
 
 export type GrupoOpcoesErro = { interna: boolean; area: string; problemas: string[] };

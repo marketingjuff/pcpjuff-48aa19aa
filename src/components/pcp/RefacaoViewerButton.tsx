@@ -21,6 +21,14 @@ import { History, Save } from "lucide-react";
 import { PecasPerdidasEditor, pecaLinhaCompleta, somaPecas } from "./PecasPerdidasEditor";
 import { useReclassificacoesDoPedido } from "@/lib/perdas-consolidado";
 import { DesfazerRefacaoButton } from "./DesfazerRefacaoButton";
+import { useOficinasOrdenadas } from "@/components/cop/IdentificacaoErroCampos";
+import { rotuloOficina } from "@/lib/cop";
+
+function OficinaRead({ oficinaId }: { oficinaId: string }) {
+  const oficinas = useOficinasOrdenadas();
+  const o = oficinas.find((x) => x.id === oficinaId);
+  return <Read label="Oficina" value={o ? rotuloOficina(o) : "—"} />;
+}
 
 const ORANGE = "#ff8c2f";
 
@@ -313,6 +321,8 @@ function EpisodioRead({
             <Read label="Problema" value={episodio.problema ?? "—"} />
           </>
         )}
+        {episodio.oficina_id && <OficinaRead oficinaId={episodio.oficina_id} />}
+        {episodio.berco && <Read label="Berço" value={episodio.berco} />}
       </div>
 
       <div>

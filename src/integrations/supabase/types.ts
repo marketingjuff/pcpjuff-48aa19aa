@@ -108,6 +108,7 @@ export type Database = {
         Row: {
           area_erro: string | null
           area_identificou: string | null
+          berco: string | null
           cop_id: string | null
           cor: string
           created_at: string
@@ -126,6 +127,7 @@ export type Database = {
         Insert: {
           area_erro?: string | null
           area_identificou?: string | null
+          berco?: string | null
           cop_id?: string | null
           cor: string
           created_at?: string
@@ -144,6 +146,7 @@ export type Database = {
         Update: {
           area_erro?: string | null
           area_identificou?: string | null
+          berco?: string | null
           cop_id?: string | null
           cor?: string
           created_at?: string
@@ -848,6 +851,7 @@ export type Database = {
           cep: string | null
           cnpj: string | null
           cnpj_cpf: string | null
+          codigo: number | null
           cpf: string | null
           created_at: string
           endereco: string | null
@@ -863,6 +867,7 @@ export type Database = {
           cep?: string | null
           cnpj?: string | null
           cnpj_cpf?: string | null
+          codigo?: number | null
           cpf?: string | null
           created_at?: string
           endereco?: string | null
@@ -878,6 +883,7 @@ export type Database = {
           cep?: string | null
           cnpj?: string | null
           cnpj_cpf?: string | null
+          codigo?: number | null
           cpf?: string | null
           created_at?: string
           endereco?: string | null
@@ -1145,18 +1151,21 @@ export type Database = {
           atualizado_em: string
           atualizado_por: string | null
           etapa: string
+          qtd_bercos: number | null
           teto_dia: number
         }
         Insert: {
           atualizado_em?: string
           atualizado_por?: string | null
           etapa: string
+          qtd_bercos?: number | null
           teto_dia?: number
         }
         Update: {
           atualizado_em?: string
           atualizado_por?: string | null
           etapa?: string
+          qtd_bercos?: number | null
           teto_dia?: number
         }
         Relationships: []
