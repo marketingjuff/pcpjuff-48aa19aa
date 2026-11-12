@@ -49,14 +49,15 @@ export function formatCelula(v: string | number | null, tipo: DrillTipo): string
   }
 }
 
-function csvEscape(v: string) {
-  return `"${v.replace(/"/g, '""')}"`;
+function csvEscape(v: string, texto = false) {
+  const neutro = texto && /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+  return `"${neutro.replace(/"/g, '""')}"`;
 }
 
 function baixarCsv(payload: DrillPayload, linhas: DrillLinha[]) {
   const head = payload.colunas.map((c) => csvEscape(c.label)).join(";");
   const body = linhas
-    .map((l) => payload.colunas.map((c) => csvEscape(formatCelula(l[c.chave] ?? null, c.tipo))).join(";"))
+    .map((l) => payload.colunas.map((c) => csvEscape(formatCelula(l[c.chave] ?? null, c.tipo), c.tipo === "texto")).join(";"))
     .join("\n");
   const blob = new Blob([`\uFEFF${head}\n${body}`], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);

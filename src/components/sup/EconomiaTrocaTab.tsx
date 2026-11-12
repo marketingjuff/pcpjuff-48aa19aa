@@ -121,22 +121,31 @@ export function EconomiaTrocaTab({ de, ate }: Props) {
     return v.toFixed(2).replace(".", ",");
   }
 
+  function celTexto(v: string): string {
+    const neutro = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+    return `"${neutro.replace(/"/g, '""')}"`;
+  }
+
+  function celNum(v: string): string {
+    return `"${v.replace(/"/g, '""')}"`;
+  }
+
   function exportarCsv() {
     const cab = [
       "Data", "PC", "Grupo", "Fornecedor anterior", "R$/un. ref anterior", "Fornecedor atual",
       "R$/un. ref atual", "Variação %", "Qtd (un. ref)", "Economia R$",
-    ];
+    ].map(celNum);
     const linhasCsv = linhas.map((l) => [
-      fmtDataBR(l.data),
-      l.pc,
-      l.grupo,
-      l.fornecedorAnterior ?? "—",
-      l.precoRefAnterior == null ? "—" : num(l.precoRefAnterior),
-      l.fornecedorAtual,
-      num(l.precoRefAtual),
-      l.deltaPct == null ? "—" : num(l.deltaPct),
-      num(l.qtdRef),
-      num(l.economiaRs),
+      celNum(fmtDataBR(l.data)),
+      celTexto(l.pc),
+      celTexto(l.grupo),
+      celTexto(l.fornecedorAnterior ?? "—"),
+      celNum(l.precoRefAnterior == null ? "—" : num(l.precoRefAnterior)),
+      celTexto(l.fornecedorAtual),
+      celNum(num(l.precoRefAtual)),
+      celNum(l.deltaPct == null ? "—" : num(l.deltaPct)),
+      celNum(num(l.qtdRef)),
+      celNum(num(l.economiaRs)),
     ]);
     const csv = [cab, ...linhasCsv].map((r) => r.join(";")).join("\r\n");
     const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
