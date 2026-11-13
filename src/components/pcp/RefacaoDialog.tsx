@@ -168,7 +168,8 @@ function BlocoMotivoCampos({
       {mostraPerguntaAdesivo && (
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <Label>Houve perda de adesivos? *</Label>
+            <Label>Algum adesivo estragou e foi descartado? *</Label>
+            <div className="text-[11px] text-muted-foreground">Adesivo que foi impresso mas saiu errado, torto ou queimou na prensa</div>
             <div className="flex gap-2">
               <Button type="button" size="sm" variant={bloco.houvePerdaAdesivos === "sim" ? "default" : "outline"} onClick={() => onChange({ houvePerdaAdesivos: "sim" })}>Sim</Button>
               <Button type="button" size="sm" variant={bloco.houvePerdaAdesivos === "nao" ? "default" : "outline"} onClick={() => onChange({ houvePerdaAdesivos: "nao", perdaAdesivos: "" })}>Não</Button>
@@ -176,7 +177,7 @@ function BlocoMotivoCampos({
           </div>
           {bloco.houvePerdaAdesivos === "sim" && (
             <div className="space-y-1">
-              <Label>Quantos adesivos perdidos? *</Label>
+              <Label>Quantos adesivos foram descartados? *</Label>
               <Input type="number" min="1" value={bloco.perdaAdesivos} onChange={(e) => onChange({ perdaAdesivos: e.target.value })} />
             </div>
           )}
@@ -367,10 +368,15 @@ export function RefacaoDialog({ open, onOpenChange, destinoLabel, destino, tipoE
           </Button>
 
           {mostraAdesivos && (
-            <div className="space-y-2">
+            <div className="rounded-md border bg-muted/20 p-3 space-y-3">
+              <div>
+                <div className="text-[11px] text-muted-foreground font-medium uppercase">Adesivos do pedido</div>
+                <div className="text-[11px] text-muted-foreground">Vale para a refação toda, não para um motivo específico</div>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label>Faltou adesivo? *</Label>
+                  <Label>Foram impressos menos adesivos do que o pedido precisava? *</Label>
+                  <div className="text-[11px] text-muted-foreground">A Arte imprimiu a menos e o pedido volta para a Arte</div>
                   <div className="flex gap-2">
                     <Button type="button" size="sm" variant={houveFaltaAdesivos === "sim" ? "default" : "outline"} onClick={() => setHouveFaltaAdesivos("sim")}>Sim</Button>
                     <Button type="button" size="sm" variant={houveFaltaAdesivos === "nao" ? "default" : "outline"} onClick={() => { setHouveFaltaAdesivos("nao"); setFaltaAdesivos(""); }}>Não</Button>
