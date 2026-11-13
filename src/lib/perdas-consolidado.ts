@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Cop, CopPerdaRegistro, Oficina, HistoricoPerda } from "@/lib/cop";
 import { rotuloCop, lancamentosPerda } from "@/lib/cop";
 import type { Pedido, PecaPerdida, RefacaoEpisodio } from "@/lib/pedidos";
+import { blocosDoEpisodio } from "@/lib/pedidos";
 
 export type PerdaOrigem = "pcp" | "cop" | "manual";
 
@@ -311,17 +312,27 @@ export function usePerdasConsolidadas() {
     for (const p of pedidos) {
       const refs = Array.isArray(p.refacoes) ? (p.refacoes as RefacaoEpisodio[]) : [];
       refs.forEach((ep, refIdx) => {
-        const pecas: PecaPerdida[] = Array.isArray(ep.pecas_perdidas) ? ep.pecas_perdidas : [];
-        pecas.forEach((pp, itemIdx) => {
+        // Saldo de reclassificação por chave, consumido uma única vez em ordem.
+        const saldoReclass = new Map<string, number>();
+        let itemIdx = -1;
+        for (const bloco of blocosDoEpisodio(ep)) {
+          const pecas: PecaPerdida[] = Array.isArray(bloco.pecas_perdidas) ? bloco.pecas_perdidas : [];
+          for (const pp of pecas) {
+          itemIdx++;
           const qtdOrig = Number(pp.qtd) || 0;
-          if (qtdOrig <= 0) return;
+          if (qtdOrig <= 0) continue;
           const k = `${keyRefacao(p.id, ep.data)}|${keyMCT(pp.modelo, pp.cor, pp.tamanho)}`;
-          const matches = reclassPorMCT.get(k) ?? [];
-          const jaReclass = matches
-            .filter((r) => r.refacao_idx === refIdx || Number.isNaN(r.refacao_idx))
-            .reduce((s, r) => s + (Number(r.qtd) || 0), 0);
-          const qtdRestante = Math.max(0, qtdOrig - jaReclass);
-          if (qtdRestante <= 0) return; // suprimida (total)
+          if (!saldoReclass.has(k)) {
+            const matches = reclassPorMCT.get(k) ?? [];
+            saldoReclass.set(k, matches
+              .filter((r) => r.refacao_idx === refIdx || Number.isNaN(r.refacao_idx))
+              .reduce((s, r) => s + (Number(r.qtd) || 0), 0));
+          }
+          const saldo = saldoReclass.get(k) ?? 0;
+          const deduz = Math.min(saldo, qtdOrig);
+          saldoReclass.set(k, saldo - deduz);
+          const qtdRestante = qtdOrig - deduz;
+          if (qtdRestante <= 0) continue; // suprimida (total)
           out.push({
             id: `pcp:${p.id}:${refIdx}:${itemIdx}`,
             origem: "pcp",
@@ -332,16 +343,17 @@ export function usePerdasConsolidadas() {
             tamanho: pp.tamanho,
             qtd: qtdRestante,
             motivo: ep.motivo ?? null,
-            area_erro: ep.area_erro ?? null,
-            erro_producao: ep.erro_producao ?? null,
+            area_erro: bloco.area_erro || null,
+            erro_producao: bloco.erro_producao ?? null,
             area_identificou: ep.area_identificou ?? null,
-            problema: ep.problema ?? null,
-            oficina_id: ep.oficina_id ?? null,
-            oficina_nome: oficinaNome(ep.oficina_id ?? null),
-            berco: ep.berco ?? null,
+            problema: bloco.problema || null,
+            oficina_id: bloco.oficina_id ?? null,
+            oficina_nome: oficinaNome(bloco.oficina_id ?? null),
+            berco: bloco.berco ?? null,
             fonte: { kind: "pcp", pedidoId: p.id, refacaoData: ep.data, refacaoIdx: refIdx, itemIdx },
           });
-        });
+          }
+        }
       });
     }
 

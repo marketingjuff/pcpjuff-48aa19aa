@@ -20,6 +20,7 @@
 import { REFACAO_TAMANHOS, cmpModelo, cmpCor } from "@/lib/pedidos";
 import type { RefacaoEpisodio, CorrecaoEtapa } from "@/lib/pedidos";
 import { diasUteisEntre, todayISO, type Feriados } from "@/lib/dias-uteis";
+import { blocosDoEpisodio } from "@/lib/pedidos";
 
 export type EmpresaFiltro = "CONSOLIDADO" | "JOKE" | "JUFF";
 export type Grupo = "casados" | "so_olist" | "excluidos" | "so_pcp";
@@ -877,12 +878,16 @@ export function produtividadePcp(
     }
 
     for (const e of r.refacoes ?? []) {
-      const area = (e?.area_erro || e?.area_identificou || "—").trim() || "—";
-      const l = areas.get(area) ?? { area, episodios: 0, pecas: 0, perdidas: 0 };
-      l.episodios += 1;
-      l.pecas += n(e?.pecas_refazer);
-      l.perdidas += n(e?.perda_pecas);
-      areas.set(area, l);
+      if (!e) continue;
+      const vistas = new Set<string>();
+      for (const b of blocosDoEpisodio(e as any)) {
+        const area = (b.area_erro || e?.area_identificou || "—").trim() || "—";
+        const l = areas.get(area) ?? { area, episodios: 0, pecas: 0, perdidas: 0 };
+        if (!vistas.has(area)) { l.episodios += 1; vistas.add(area); }
+        l.pecas += n(b.pecas_refazer);
+        l.perdidas += n(b.perda_pecas);
+        areas.set(area, l);
+      }
     }
     for (const c of r.correcoes_etapa ?? []) {
       const aba = (c?.aba_origem ?? "—") as string;

@@ -26,6 +26,7 @@ import {
 } from "@/lib/indicadores-olist";
 import { resolveNome } from "@/hooks/use-profiles-map";
 import { basePedidoOlist, sufixoParcial } from "@/lib/pedido-olist-match";
+import { blocosDoEpisodio } from "@/lib/pedidos";
 
 
 /* ------------------------------------------------------------------ */
@@ -697,11 +698,15 @@ export function drillRefacoes(
   for (const r of registros) {
     for (const e of r.refacoes ?? []) {
       if (!e) continue;
-      const areaEp = (e.area_erro || e.area_identificou || "—").trim() || "—";
-      if (area != null && areaEp !== area) continue;
-      const perda = num(e.perda_pecas);
-      if (modo === "perdidas" && perda <= 0) continue;
-      const detalhe = (e.pecas_perdidas ?? [])
+      const temBlocos = Array.isArray((e as any).blocos) && (e as any).blocos.length > 0;
+      blocosDoEpisodio(e as any).forEach((b, bi) => {
+      const areaEp = (b.area_erro || e.area_identificou || "—").trim() || "—";
+      if (area != null && areaEp !== area) return;
+      const perda = num(b.perda_pecas);
+      if (modo === "perdidas" && perda <= 0) return;
+      const erroProd = temBlocos ? b.erro_producao : e.erro_producao;
+      const primeiro = bi === 0;
+      const detalhe = (b.pecas_perdidas ?? [])
         .map((x: any) => `${x?.modelo ?? "—"} · ${x?.cor ?? "—"} · ${x?.tamanho ?? "—"} · ${num(x?.qtd)}`)
         .join(" | ");
       linhas.push({
@@ -713,18 +718,19 @@ export function drillRefacoes(
         }`,
         quem: resolveNome(nomes, e.quem),
         area_identificou: txt(e.area_identificou) ?? "—",
-        erro_producao: e.erro_producao == null ? "—" : e.erro_producao ? "Sim" : "Não",
-        area_erro: txt(e.area_erro) ?? "—",
-        problema: txt(e.problema) ?? "—",
+        erro_producao: erroProd == null ? "—" : erroProd ? "Sim" : "Não",
+        area_erro: txt(b.area_erro) ?? "—",
+        problema: txt(b.problema) ?? "—",
         motivo: txt(e.motivo) ?? "—",
-        pecas_refazer: num(e.pecas_refazer),
+        pecas_refazer: num(b.pecas_refazer),
         perda_pecas: perda,
         ...(modo === "perdidas" ? { detalhe_perdidas: detalhe || "—" } : {}),
-        falta_adesivos: e.falta_adesivos == null ? "—" : e.falta_adesivos ? "Sim" : "Não",
-        qtd_falta_adesivos: num(e.qtd_falta_adesivos),
-        perda_adesivos: num(e.perda_adesivos),
+        falta_adesivos: !primeiro || e.falta_adesivos == null ? "—" : e.falta_adesivos ? "Sim" : "Não",
+        qtd_falta_adesivos: primeiro ? num(e.qtd_falta_adesivos) : 0,
+        perda_adesivos: num(b.perda_adesivos),
         situacao: e.aberto ? "Aberto" : "Fechado",
         fechado_em: e.fechado_em ? String(e.fechado_em).slice(0, 10) : null,
+      });
       });
     }
   }

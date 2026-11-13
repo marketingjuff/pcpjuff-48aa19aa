@@ -6,8 +6,7 @@ import {
   totalProducao,
   type Pedido,
   type RefacaoEpisodio,
-  type RefacaoRetrato,
-} from "@/lib/pedidos";
+  type RefacaoRetrato, blocosDoEpisodio } from "@/lib/pedidos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FaixaSomenteLeitura } from "./DadosInTab";
 import { Input } from "@/components/ui/input";
@@ -135,9 +134,12 @@ export function RetrabalhoTab({ pedidos, onSave, soLeitura = false }: Props) {
         totalRefeitas += Number(e.pecas_refazer ?? 0);
         totalPerdaPecas += Number(e.perda_pecas ?? 0);
         totalPerdaAdesivos += Number(e.perda_adesivos ?? 0);
-        if (e.problema) problemaCount[e.problema] = (problemaCount[e.problema] ?? 0) + 1;
+        const blocosEp = blocosDoEpisodio(e);
+        const problemasEp = new Set(blocosEp.map((b) => b.problema).filter(Boolean));
+        const areasErroEp = new Set(blocosEp.map((b) => b.area_erro).filter(Boolean));
+        problemasEp.forEach((pr) => { problemaCount[pr] = (problemaCount[pr] ?? 0) + 1; });
         if (e.area_identificou) areaIdCount[e.area_identificou] = (areaIdCount[e.area_identificou] ?? 0) + 1;
-        if (e.area_erro) areaErroCount[e.area_erro] = (areaErroCount[e.area_erro] ?? 0) + 1;
+        areasErroEp.forEach((a) => { areaErroCount[a] = (areaErroCount[a] ?? 0) + 1; });
         if (e.aberto) abertas += 1;
         if (!e.aberto && e.data && (e as any).fechado_em) {
           const t0 = new Date(e.data).getTime();
@@ -153,8 +155,8 @@ export function RetrabalhoTab({ pedidos, onSave, soLeitura = false }: Props) {
           } else if (dtAb.getMonth() === mesPassado.getMonth() && dtAb.getFullYear() === mesPassado.getFullYear()) {
             perdaMesAnt += Number(e.perda_pecas ?? 0);
           }
-          if (dtAb >= cutoff30 && e.problema) {
-            problemaUlt30[e.problema] = (problemaUlt30[e.problema] ?? 0) + 1;
+          if (dtAb >= cutoff30) {
+            problemasEp.forEach((pr) => { problemaUlt30[pr] = (problemaUlt30[pr] ?? 0) + 1; });
           }
         }
       });
@@ -428,13 +430,27 @@ function EpisodioCard({
       <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-sm pt-2 border-t">
         <ReadField label="Identificado por" value={episodio.area_identificou ?? "—"} />
         <ReadField label="Erro dentro da Juff" value={typeof episodio.erro_producao === "boolean" ? (episodio.erro_producao ? "Sim" : "Não") : "—"} />
-        {episodio.area_erro && (
+        {(episodio.blocos?.length ?? 0) <= 1 && episodio.area_erro && (
           <>
             <ReadField label="Área que errou" value={episodio.area_erro ?? "—"} />
             <ReadField label="Problema" value={episodio.problema ?? "—"} />
           </>
         )}
       </div>
+
+      {(episodio.blocos?.length ?? 0) > 1 && episodio.blocos!.map((b, i) => (
+        <div key={i} className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-sm pt-2 border-t">
+          <div className="sm:col-span-2 text-[11px] text-muted-foreground font-medium uppercase">Motivo {i + 1}</div>
+          <ReadField label="Erro dentro da Juff" value={b.erro_producao ? "Sim" : "Não"} />
+          <ReadField label="Área que errou" value={b.area_erro || "—"} />
+          <ReadField label="Problema" value={b.problema || "—"} />
+          <ReadField label="Peças a refazer" value={String(b.pecas_refazer ?? 0)} />
+          <ReadField label="Peças perdidas" value={(b.perda_pecas ?? 0) > 0 ? `Sim — ${b.perda_pecas}` : "Não"} />
+          {mostraAdesivos && (
+            <ReadField label="Adesivos perdidos" value={(b.perda_adesivos ?? 0) > 0 ? `Sim — ${b.perda_adesivos}` : "Não"} />
+          )}
+        </div>
+      ))}
 
       <div>
         <div className="text-[11px] text-muted-foreground font-medium mb-0.5">Observações</div>

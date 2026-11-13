@@ -54,7 +54,7 @@ export default defineTool({
       tem_layout: !!layout_url,
       etapa, percentual,
       refacoes: resto.refacoes,
-      observacao_refacoes: "Em cada refação, perda_pecas (peças perdidas) e qtd_falta_adesivos (adesivos faltando) são coisas diferentes; nunca some.",
+      observacao_refacoes: "Em cada refação, perda_pecas (peças perdidas) e qtd_falta_adesivos (adesivos faltando) são coisas diferentes; nunca some. Uma refação pode ter `blocos` (vários motivos), cada um com área, problema e peças perdidas próprios; nesse caso os campos de topo são a soma dos blocos (peças) ou o primeiro bloco (área e problema).",
       correcoes_etapa: resto.correcoes_etapa,
       totalProducao: totalProducao(p),
       link: linkSistema("pedido", p.id, tabDoPedido(p)),

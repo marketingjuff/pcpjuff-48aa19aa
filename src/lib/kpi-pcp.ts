@@ -3,6 +3,7 @@
 import { diasUteisEntre } from "@/lib/dias-uteis";
 import { calcularEtapaAtual, tipoIncluiDTF, tipoIncluiSilk, type Pedido, type RefacaoEpisodio } from "@/lib/pedidos";
 import { parsePeople } from "@/components/pcp/MultiSelectPeople";
+import { blocosDoEpisodio } from "@/lib/pedidos";
 
 export type Feriados = Set<string>;
 
@@ -693,15 +694,18 @@ export function retrabalho(regs: Pedido[], pecasProduzidas: number): Retrabalho 
       itensReabertos.push(linhaPedido(p));
     }
     for (const e of refs(p)) {
-      const area = (e?.area_erro || e?.area_identificou || "—").trim() || "—";
-      const l = areas.get(area) ?? { area, episodios: 0, pecas: 0, perdidas: 0, itens: [] };
-      l.episodios += 1;
-      l.pecas += n(e?.pecas_refazer);
-      l.perdidas += n(e?.perda_pecas);
-      const li = linhaPedido(p, { batidas: n(e?.pecas_refazer), valor: n(e?.perda_pecas), nota: area });
-      l.itens.push(li);
-      itensRefeitas.push(li);
-      areas.set(area, l);
+      const vistas = new Set<string>();
+      for (const b of blocosDoEpisodio(e)) {
+        const area = (b.area_erro || e?.area_identificou || "—").trim() || "—";
+        const l = areas.get(area) ?? { area, episodios: 0, pecas: 0, perdidas: 0, itens: [] };
+        if (!vistas.has(area)) { l.episodios += 1; vistas.add(area); }
+        l.pecas += n(b.pecas_refazer);
+        l.perdidas += n(b.perda_pecas);
+        const li = linhaPedido(p, { batidas: n(b.pecas_refazer), valor: n(b.perda_pecas), nota: area });
+        l.itens.push(li);
+        itensRefeitas.push(li);
+        areas.set(area, l);
+      }
       pecasRefeitas += n(e?.pecas_refazer);
       pecasPerdidas += n(e?.perda_pecas);
     }

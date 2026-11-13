@@ -130,7 +130,38 @@ export type RefacaoEpisodio = {
   // --- Falta de adesivo (independente de perda) ---
   falta_adesivos?: boolean;
   qtd_falta_adesivos?: number;
+  /** Vários motivos na mesma refação. Topo = soma (peças) e bloco 1 (identificação). */
+  blocos?: RefacaoBloco[];
 };
+
+export type RefacaoBloco = {
+  erro_producao: boolean;
+  area_erro: string;
+  problema: string;
+  oficina_id?: string;
+  berco?: string;
+  pecas_refazer: number;
+  perda_pecas: number;
+  pecas_perdidas: PecaPerdida[];
+  perda_adesivos: number;
+};
+
+/** Blocos do episódio. Episódio antigo (sem blocos) vira um bloco único
+ *  montado a partir dos campos de topo. Nunca retorna array vazio. */
+export function blocosDoEpisodio(ep: RefacaoEpisodio): RefacaoBloco[] {
+  if (Array.isArray(ep?.blocos) && ep.blocos.length > 0) return ep.blocos;
+  return [{
+    erro_producao: ep?.erro_producao ?? false,
+    area_erro: ep?.area_erro ?? "",
+    problema: ep?.problema ?? "",
+    oficina_id: ep?.oficina_id,
+    berco: ep?.berco,
+    pecas_refazer: Number(ep?.pecas_refazer) || 0,
+    perda_pecas: Number(ep?.perda_pecas) || 0,
+    pecas_perdidas: Array.isArray(ep?.pecas_perdidas) ? ep.pecas_perdidas : [],
+    perda_adesivos: Number(ep?.perda_adesivos) || 0,
+  }];
+}
 
 /** Auditoria de uma refação desfeita por admin/gestor (append-only). */
 export type RefacaoDesfeita = {

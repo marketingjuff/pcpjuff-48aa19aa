@@ -142,6 +142,7 @@ export async function montarRefacoesAposRefazer(
     berco: payload.berco,
     falta_adesivos: payload.falta_adesivos,
     qtd_falta_adesivos: payload.qtd_falta_adesivos,
+    blocos: payload.blocos,
   };
   return { refacoes: [...refsAtuais, novo] };
 }

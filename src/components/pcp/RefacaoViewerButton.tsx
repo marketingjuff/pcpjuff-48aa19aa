@@ -213,31 +213,47 @@ function EpisodioRead({
   const qc = useQueryClient();
 
   const inicial: PecaPerdida[] = Array.isArray(episodio.pecas_perdidas) ? episodio.pecas_perdidas : [];
-  const [editing, setEditing] = useState(false);
+  const blocos = Array.isArray(episodio.blocos) ? episodio.blocos : [];
+  const variosBlocos = blocos.length > 1;
+  // null = sem edição; -1 = edição do topo (episódio sem blocos); >=0 = índice do bloco
+  const [editando, setEditando] = useState<number | null>(null);
+  const editing = editando !== null;
   const [draft, setDraft] = useState<PecaPerdida[]>(inicial);
   const [saving, setSaving] = useState(false);
 
-  function startEdit() {
-    setDraft(Array.isArray(episodio.pecas_perdidas) ? [...episodio.pecas_perdidas] : []);
-    setEditing(true);
+  function startEdit(blocoIdx: number = blocos.length > 0 ? 0 : -1) {
+    const fonte = blocoIdx >= 0 ? blocos[blocoIdx]?.pecas_perdidas : episodio.pecas_perdidas;
+    setDraft(Array.isArray(fonte) ? [...fonte] : []);
+    setEditando(blocoIdx);
   }
   function cancelEdit() {
-    setEditing(false);
+    setEditando(null);
   }
   async function salvar() {
     const limpas = draft.filter(pecaLinhaCompleta);
     const total = somaPecas(limpas);
     const refsAtuais = Array.isArray(pedido.refacoes) ? pedido.refacoes : [];
-    const novas = refsAtuais.map((e, i) =>
-      i === index ? { ...e, pecas_perdidas: limpas, perda_pecas: total } : e,
-    );
+    const bi = editando ?? -1;
+    const novas = refsAtuais.map((e, i) => {
+      if (i !== index) return e;
+      if (bi >= 0 && Array.isArray(e.blocos) && e.blocos.length > 0) {
+        const nb = e.blocos.map((b, j) => (j === bi ? { ...b, pecas_perdidas: limpas, perda_pecas: total } : b));
+        return {
+          ...e,
+          blocos: nb,
+          pecas_perdidas: nb.flatMap((b) => (Array.isArray(b.pecas_perdidas) ? b.pecas_perdidas : [])),
+          perda_pecas: nb.reduce((s, b) => s + (Number(b.perda_pecas) || 0), 0),
+        };
+      }
+      return { ...e, pecas_perdidas: limpas, perda_pecas: total };
+    });
     setSaving(true);
     try {
       const { error } = await supabase.from("pedidos").update({ refacoes: novas as any }).eq("id", pedido.id);
       if (error) throw error;
       toast.success("Peças perdidas atualizadas.");
       qc.invalidateQueries({ queryKey: ["pedidos"] });
-      setEditing(false);
+      setEditando(null);
     } catch (e: any) {
       toast.error(e?.message ?? "Erro ao salvar peças perdidas.");
     } finally {
@@ -288,11 +304,12 @@ function EpisodioRead({
         )}
       </div>
 
+      {!variosBlocos && (
       <div className="pt-2 border-t">
         <div className="flex items-center justify-between mb-1.5">
           <div className="text-[11px] text-muted-foreground font-medium">Peças perdidas (detalhe)</div>
           {canEditPecas && !editing && (
-            <Button type="button" size="sm" variant="outline" onClick={startEdit}>
+            <Button type="button" size="sm" variant="outline" onClick={() => startEdit()}>
               Editar peças perdidas
             </Button>
           )}
@@ -311,9 +328,49 @@ function EpisodioRead({
           <PecasPerdidasEditor value={inicial} readOnly />
         )}
       </div>
+      )}
+
+      {variosBlocos && blocos.map((b, bi) => (
+        <div key={bi} className="pt-2 border-t space-y-2">
+          <div className="text-[11px] text-muted-foreground font-medium uppercase">Motivo {bi + 1}</div>
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-sm">
+            <Read label="Erro dentro da Juff" value={b.erro_producao ? "Sim" : "Não"} />
+            <Read label="Área que errou" value={b.area_erro || "—"} />
+            <Read label="Problema" value={b.problema || "—"} />
+            {b.oficina_id && <OficinaRead oficinaId={b.oficina_id} />}
+            {b.berco && <Read label="Berço" value={b.berco} />}
+            <Read label="Peças a refazer" value={String(b.pecas_refazer ?? 0)} />
+            {mostraAdesivos && (
+              <Read label="Adesivos perdidos" value={(b.perda_adesivos ?? 0) > 0 ? `Sim — ${b.perda_adesivos}` : "Não"} />
+            )}
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] text-muted-foreground font-medium">Peças perdidas (detalhe)</div>
+            {canEditPecas && !editing && (
+              <Button type="button" size="sm" variant="outline" onClick={() => startEdit(bi)}>
+                Editar peças perdidas
+              </Button>
+            )}
+          </div>
+          {editando === bi ? (
+            <div className="space-y-2">
+              <PecasPerdidasEditor value={draft} onChange={setDraft} />
+              <div className="flex justify-end gap-2">
+                <Button type="button" size="sm" variant="ghost" onClick={cancelEdit} disabled={saving}>Cancelar</Button>
+                <Button type="button" size="sm" onClick={salvar} disabled={saving}>
+                  <Save className="h-3.5 w-3.5 mr-1" />Salvar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <PecasPerdidasEditor value={Array.isArray(b.pecas_perdidas) ? b.pecas_perdidas : []} readOnly />
+          )}
+        </div>
+      ))}
 
       <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-sm pt-2 border-t">
         <Read label="Identificado por" value={episodio.area_identificou ?? "—"} />
+        {!variosBlocos && <>
         <Read label="Erro dentro da Juff" value={typeof episodio.erro_producao === "boolean" ? (episodio.erro_producao ? "Sim" : "Não") : "—"} />
         {episodio.area_erro && (
           <>
@@ -323,6 +380,7 @@ function EpisodioRead({
         )}
         {episodio.oficina_id && <OficinaRead oficinaId={episodio.oficina_id} />}
         {episodio.berco && <Read label="Berço" value={episodio.berco} />}
+        </>}
       </div>
 
       <div>
